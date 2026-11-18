@@ -13,16 +13,22 @@
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { buildCompanionModules, compileBinary, teardown } from './_shared';
+import {
+  buildCompanionModules,
+  compileBinary,
+  recordReleaseBytecodeOrder,
+  teardown,
+} from './_shared';
 import { RELEASE_TARGETS } from './_release-artifacts';
 
 export function buildAllBinaries() {
   return Effect.gen(function* () {
+    const bytecodeOrder = yield* recordReleaseBytecodeOrder();
     yield* Console.log(`Building ${RELEASE_TARGETS.length} platform binaries...`);
 
     for (const target of RELEASE_TARGETS) {
       yield* Console.log(`\nBuilding ${target.artifact} (${target.bunTarget})...`);
-      const outfile = yield* compileBinary(target);
+      const outfile = yield* compileBinary(target, bytecodeOrder);
       yield* Console.log(`Built: ${outfile}`);
     }
 

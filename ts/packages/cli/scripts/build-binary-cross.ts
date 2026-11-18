@@ -14,7 +14,12 @@ import process from 'node:process';
 import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { buildCompanionModules, compileBinary, teardown } from './_shared';
+import {
+  buildCompanionModules,
+  compileBinary,
+  recordReleaseBytecodeOrder,
+  teardown,
+} from './_shared';
 import { RELEASE_TARGETS, type ReleaseTarget } from './_release-artifacts';
 
 function parseTarget(): ReleaseTarget {
@@ -43,7 +48,8 @@ export function buildBinaryCross() {
       `Cross-compiling binary in ${process.cwd()} for target ${target.bunTarget}`
     );
 
-    const outfile = yield* compileBinary(target);
+    const bytecodeOrder = yield* recordReleaseBytecodeOrder();
+    const outfile = yield* compileBinary(target, bytecodeOrder);
 
     yield* buildCompanionModules('./dist/binaries/companions');
 

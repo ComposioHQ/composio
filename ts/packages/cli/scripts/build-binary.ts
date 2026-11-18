@@ -1,11 +1,14 @@
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, References } from 'effect';
-import { ChildProcess as Command } from 'effect/process';
+import { Config, ConfigProvider, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
-import { BinaryBuildError } from './build-error';
-import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
+import {
+  buildCompanionModules,
+  compileArgs,
+  recordReleaseBytecodeOrder,
+  runBunBuild,
+  teardown,
+} from './_shared';
 
 /**
  * Usage: `bun scripts/build-binary.ts`
@@ -15,65 +18,8 @@ export function buildBinary() {
     const cwd = process.cwd();
     yield* Effect.logDebug(`Building binary in ${cwd}`);
 
-    const args = [
-      'bun',
-      /**
-       * Transpile and bundle the CLI app.
-       */
-      'build',
-      './src/bin.ts',
-
-      /**
-       * Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
-       */
-      '--env',
-      'DEBUG_OVERRIDE_*',
-      ...posthogBakeArgs(),
-
-      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
-
-      /**
-       * Generate a standalone Bun executable containing your bundled code.
-       */
-      '--compile',
-      '--production',
-
-      /**
-       * Output file destination.
-       */
-      '--outfile',
-      './dist/composio',
-    ] as const satisfies ReadonlyArray<string>;
-
-    yield* Effect.logDebug('Running build command with', args.join(' '), '');
-
-    const child = yield* Command.make(args[0], args.slice(1));
-
-    const { exitCode } = yield* Effect.all(
-      {
-        exitCode: child.exitCode,
-        output: Stream.merge(
-          Stream.decodeText(child.stdout, { encoding: 'utf-8' }),
-          Stream.decodeText(child.stderr, { encoding: 'utf-8' }),
-          { haltStrategy: 'left' }
-        ).pipe(
-          Stream.tap(chunk => Console.log(chunk)),
-          Stream.runDrain
-        ),
-      },
-      {
-        concurrency: 'unbounded',
-      }
-    );
-
-    process.exitCode = exitCode;
-
-    if (exitCode !== 0) {
-      return yield* new BinaryBuildError({
-        message: 'Failed to build binary',
-        exitCode,
-      });
-    }
+    const bytecodeOrder = yield* recordReleaseBytecodeOrder();
+    yield* runBunBuild(compileArgs({ outfile: './dist/composio', bytecodeOrder }));
 
     yield* Effect.logDebug('', 'Binary built successfully');
 

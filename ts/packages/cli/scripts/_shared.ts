@@ -9,6 +9,7 @@ import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-versi
 
 import { BinaryBuildError } from './build-error';
 import { compiledBinaryFileName, type ReleaseTarget } from './_release-artifacts';
+import { recordBytecodeOrder } from './_bytecode-order';
 
 export { teardown } from './_teardown';
 
@@ -361,25 +362,64 @@ export const buildCompanionModules = (outputDir: string) =>
   });
 
 /**
- * Cross-compile the CLI for one release target. Returns the path of the compiled binary.
+ * `bun build` arguments for a compiled CLI executable.
+ *
+ * `--bytecode` moves JavaScriptCore's parsing and bytecode generation from every start
+ * to build time: the executable starts about 2.5x faster for about 10 MiB more.
+ * `--format=esm` keeps the module format, which `--bytecode` would otherwise switch
+ * to CommonJS. `bytecodeOrder` lists the profiles `recordBytecodeOrder` recorded, most
+ * common first; they change only where the bytecode is placed.
  */
-export const compileBinary = ({ bunTarget, artifact }: ReleaseTarget) =>
+export const compileArgs = ({
+  outfile,
+  bunTarget,
+  bytecodeOrder = [],
+}: {
+  readonly outfile: string;
+  readonly bunTarget?: string;
+  readonly bytecodeOrder?: ReadonlyArray<string>;
+}): ReadonlyArray<string> => [
+  'build',
+  './src/bin.ts',
+  // Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
+  '--env',
+  'DEBUG_OVERRIDE_*',
+  ...posthogBakeArgs(),
+  ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
+  '--compile',
+  '--production',
+  '--bytecode',
+  '--format=esm',
+  ...(bytecodeOrder.length > 0 ? [`--bytecode-order=${bytecodeOrder.join(',')}`] : []),
+  ...(bunTarget ? ['--target', bunTarget] : []),
+  '--outfile',
+  outfile,
+];
+
+/**
+ * Compiles a host executable, records its bytecode profiles, and returns them for
+ * `compileBinary`. See `_bytecode-order.ts`.
+ */
+export const recordReleaseBytecodeOrder = () =>
+  recordBytecodeOrder(outfile => runBunBuild(compileArgs({ outfile })));
+
+/**
+ * Cross-compile the CLI for one release target with the given bytecode profiles.
+ * Returns the path of the compiled binary.
+ */
+export const compileBinary = (
+  { bunTarget, artifact }: ReleaseTarget,
+  bytecodeOrder: ReadonlyArray<string>
+) =>
   Effect.gen(function* () {
     const outfile = `./dist/binaries/${compiledBinaryFileName(artifact)}`;
-    const args = [
-      'build',
-      './src/bin.ts',
-      '--env',
-      'DEBUG_OVERRIDE_*',
-      ...posthogBakeArgs(),
-      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
-      '--compile',
-      '--production',
-      '--target',
-      bunTarget,
-      '--outfile',
-      outfile,
-    ];
+    yield* runBunBuild(compileArgs({ outfile, bunTarget, bytecodeOrder }), bunTarget);
+    return outfile;
+  });
+
+/** Runs `bun <args>`, streaming its output, and fails on a non-zero exit. */
+export const runBunBuild = (args: ReadonlyArray<string>, target?: string) =>
+  Effect.gen(function* () {
     yield* Effect.logDebug(`Running bun ${args.join(' ')}`);
 
     const child = yield* Command.make('bun', args);
@@ -402,10 +442,9 @@ export const compileBinary = ({ bunTarget, artifact }: ReleaseTarget) =>
       // `teardown` exits with this code.
       process.exitCode = exitCode;
       return yield* new BinaryBuildError({
-        message: `Failed to build binary for ${bunTarget}`,
-        target: bunTarget,
+        message: target ? `Failed to build binary for ${target}` : 'Failed to build binary',
+        ...(target ? { target } : {}),
         exitCode,
       });
     }
-    return outfile;
   });
