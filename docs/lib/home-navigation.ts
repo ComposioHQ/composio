@@ -131,6 +131,7 @@ export const DOCS_PRODUCTS = {
       '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
       '/docs/session-configs',
+      '/docs/governance/action-permissions',
       '/docs/governance/approvals',
       '/docs/firewall',
       '/docs/instant-tools',
@@ -188,6 +189,7 @@ export const DOCS_PRODUCTS = {
             type: 'group',
             label: 'Governance',
             links: [
+              { url: '/docs/governance/action-permissions' },
               { url: '/docs/governance/tool-hints' },
               { url: '/docs/governance/approvals' },
               { url: '/docs/firewall' },

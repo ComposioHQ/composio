@@ -399,6 +399,8 @@ curl -s -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSIO
 
 To control which individual tools are available within a toolkit, use the `tools` configuration. The key is the toolkit slug and the value specifies which tools to enable or disable.
 
+Composio enforces these filters on every session execution path, including multi-execute, the sandbox, and MCP. See [Per-action permissions](/docs/governance/action-permissions) for allow and deny examples and the paths the filters don't cover.
+
 To enable only specific tools, pass an `enable` list per toolkit:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
