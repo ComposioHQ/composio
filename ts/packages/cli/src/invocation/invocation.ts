@@ -46,6 +46,7 @@ import type { ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
 import type { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { BackgroundUpdateCheck, UpdateNotice } from 'src/services/update-check';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { extractMessage } from 'src/utils/api-error-extraction';
 import type { InvocationLive } from './live';
 
@@ -207,9 +208,11 @@ const report = (cause: Cause.Cause<unknown>) =>
     const printRetryHint = Option.exists(error, isSafeToRetry)
       ? ui.error(retryHint('safe'))
       : Effect.void;
+    // Both messages can quote a remote service, so their controls are escaped for display. An
+    // expected failure's message can have its own line breaks; a backend message is one line.
     const expected = Option.filter(error, isExpectedFailure);
     if (Option.isSome(expected)) {
-      yield* ui.error(expected.value.message);
+      yield* ui.error(escapeTerminalLines(expected.value.message));
       yield* printUnauthorizedHint(expected.value);
       yield* printRetryHint;
       return;
@@ -217,7 +220,11 @@ const report = (cause: Cause.Cause<unknown>) =>
     // Any other 401 gets the backend's message in place of a defect report.
     const rejected = Option.filter(error, isUnauthorized);
     if (Option.isSome(rejected)) {
-      yield* ui.error(extractMessage(rejected.value) ?? 'The Composio API rejected the request.');
+      yield* ui.error(
+        escapeTerminalText(
+          extractMessage(rejected.value) ?? 'The Composio API rejected the request.'
+        )
+      );
       yield* printUnauthorizedHint(rejected.value);
       return;
     }

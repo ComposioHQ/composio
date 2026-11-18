@@ -6,6 +6,12 @@
 
 - Update @composio/client to 2.1.35 to include the latest API changes.
 
+- `composio listen --stream` shows control characters, including embedded tabs and line breaks,
+  as visible escapes in each output record. Read the saved event JSON for the original value.
+  `composio dev listen`, `composio execute`, `composio proxy` and error messages also show
+  control characters from events, responses and API errors as escapes on the terminal. Printed
+  JSON decodes to the same values, and redirected `proxy` output stays unchanged.
+
 - `composio upgrade` on Windows now retries a busy executable rename for up to two seconds, allowing a brief file lock after a previous upgrade to clear before replacing the binary.
 
 - Update @composio/client to 2.1.33 to include the latest API changes.
