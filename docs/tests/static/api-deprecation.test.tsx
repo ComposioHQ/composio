@@ -442,4 +442,34 @@ describe("webhook API index", () => {
       ).exists(),
     ).toBe(false);
   });
+
+  test("generates one index per webhook tag, each listing only its own events", async () => {
+    const webhookSpec = createWebhookSpec();
+    webhookSpec.tags.push({ name: "Session Webhooks", description: "Session webhook requests" });
+    Object.assign(webhookSpec.webhooks, {
+      "composio.session_hook.before_execute": {
+        post: {
+          tags: ["Session Webhooks"],
+          summary: "Before execute",
+          operationId: "composio_session_hook_before_execute",
+        },
+      },
+    });
+    const fixtureDir = await generateFixture({ webhookSpec });
+    const readIndex = (tagSlug: string) =>
+      readFile(join(fixtureDir, `content/reference/api-reference/${tagSlug}/index.mdx`), "utf-8");
+
+    const webhookEvents = await readIndex("webhook-events");
+    expect(webhookEvents).toContain(
+      "[Test event](/reference/api-reference/webhook-events/composio_test_event)",
+    );
+    expect(webhookEvents).not.toContain("composio_session_hook_before_execute");
+
+    const sessionWebhooks = await readIndex("session-webhooks");
+    expect(sessionWebhooks).toContain("title: Session Webhooks");
+    expect(sessionWebhooks).toContain(
+      "[Before execute](/reference/api-reference/session-webhooks/composio_session_hook_before_execute)",
+    );
+    expect(sessionWebhooks).not.toContain("composio_test_event");
+  });
 });
