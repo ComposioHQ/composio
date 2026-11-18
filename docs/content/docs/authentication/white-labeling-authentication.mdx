@@ -397,16 +397,15 @@ To put the provider's redirect URI on your own domain instead of Composio's, see
 
 ## Use a callback URL on your own domain
 
+<Callout type="info" title="In short">
+1. Host a 302 forwarder on your domain.
+2. Register that URL with Google and set it as `oauth_redirect_uri` on every auth config that uses the client.
+3. Test each one, then remove `composio.dev` and submit for verification.
+</Callout>
+
 With the default callback, Google's consent screen names `composio.dev` as your app's domain until Google verifies your brand, and that verification is blocked: Google requires you to prove ownership of every authorized domain in Search Console, and you can't prove ownership of `composio.dev`. Pointing your OAuth client at a callback URL on your own domain removes `composio.dev` from the client, so the only domain Google asks you to verify is yours.
 
-Your endpoint receives the provider's redirect and forwards it to Composio with a 302. Composio still exchanges the code, stores the tokens, and returns the user to your application `callbackUrl`.
-
-```mermaid
-flowchart LR
-    P["Provider sign-in and consent"] --> Y["auth.yourapp.com/oauth/callback"]
-    Y -- "302 with the same query" --> C["backend.composio.dev/api/v3/toolkits/auth/callback"]
-    C --> R["your-app.com/connections/callback"]
-```
+Your endpoint receives the provider's redirect and forwards it to Composio with a 302, as the flow above shows. Composio still exchanges the code, stores the tokens, and returns the user to your application `callbackUrl`.
 
 ### Does this apply to you?
 
@@ -416,10 +415,10 @@ flowchart LR
 
 ### The two URLs
 
-| URL | Example | What to do with it |
-|-----|---------|--------------------|
-| Your callback URL | `https://auth.yourapp.com/oauth/callback` | Register it as the redirect URI on your OAuth client with the provider, and set it as `oauth_redirect_uri` on the auth config. The two must match exactly. |
-| Composio callback URL | `https://backend.composio.dev/api/v3/toolkits/auth/callback` | Forward requests here from your endpoint. Don't register it with the provider once you've switched; it's the forwarding target, not the redirect URI. |
+| URL | What to do with it |
+|-----|--------------------|
+| **Your callback URL**<br />`https://auth.yourapp.com/oauth/callback` | Register it as the redirect URI on your OAuth client with the provider, and set it as `oauth_redirect_uri` on the auth config. The two must match exactly. |
+| **Composio callback URL**<br />`https://backend.composio.dev/api/v3/toolkits/auth/callback` | Forward requests here from your endpoint. Don't register it with the provider once you've switched; it's the forwarding target, not the redirect URI. |
 
 <Callout type="warn" title="A 302 forwarder does not hide Composio">
 The browser still visits `backend.composio.dev` after your endpoint, and the hosted Connect Link keeps its `connect.composio.dev` host. This setup changes the domain Google shows and verifies; it isn't a CNAME or a self-hosted Connect Link.
@@ -526,7 +525,7 @@ If `Location` differs, the forwarder is altering the query. If you get a `404`, 
 
 Composio uses `oauth_redirect_uri` in both legs of the flow: as `redirect_uri` in the authorization request, and again in the token exchange. The provider checks it against the client's registered redirect URIs each time, so set it on the auth config at the same time you register it with the provider.
 
-**Dashboard:** open the [auth config](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=docs-white-labeling-authentication), select the pencil next to **Redirect URI**, paste your callback URL, and save. Managed auth configs don't show the field.
+**Dashboard:** open the [auth config](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=docs-white-labeling-authentication)'s **Manage** page, select the pencil next to the **Redirect URI** field, paste your callback URL, and select **Save**. Managed auth configs don't show the field.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -581,7 +580,7 @@ What Composio does with the value:
 - **Existing connected accounts keep working.** Token refreshes read the auth config's current `oauth_redirect_uri` and send it as `redirect_uri` on most toolkits; the OAuth 2.0 refresh grant doesn't define that parameter, so providers typically ignore it. Run a tool with an existing connection after the change to confirm.
 - **Attempts already at the consent screen fail.** A user who was mid-flow when you changed the value fails at the token exchange, because the exchange uses the new URL. They start the connection again.
 
-**To revert,** put the Composio URL that was registered before the switch back on the client's redirect URIs with the provider, then set `oauth_redirect_uri` on each switched auth config to that same URL with any of the calls above. That URL is usually `https://backend.composio.dev/api/v3/toolkits/auth/callback`, or the legacy default `https://backend.composio.dev/api/v1/auth-apps/add` for configs created without `oauth_redirect_uri`; the auth config's **Redirect URI** field shows which one it was.
+**To revert,** put the Composio URL you noted before the switch (step 5 below) back on the client's redirect URIs with the provider, then set `oauth_redirect_uri` on each switched auth config to that same URL with any of the calls above. That URL is usually `https://backend.composio.dev/api/v3/toolkits/auth/callback`, or the legacy default `https://backend.composio.dev/api/v1/auth-apps/add` for configs created without `oauth_redirect_uri`. Record it before you switch: once the field holds your callback URL and the old URL is gone from the client, nothing else tells you which one it was.
 
 ### Google, step by step
 
@@ -591,7 +590,7 @@ Google needs the domain verified before the client can reference it, and the cli
 2. **Add the domain to Authorized domains.** In Google Cloud Console open **Google Auth Platform → Branding** and add `yourapp.com` under **Authorized domains**. Leave `composio.dev` in place for now.
 3. **Add your callback URL to the OAuth client.** Under **Clients**, open your web client and add `https://auth.yourapp.com/oauth/callback` to **Authorized redirect URIs**. Keep the Composio URL that's already listed: usually `https://backend.composio.dev/api/v3/toolkits/auth/callback`, or the legacy default `https://backend.composio.dev/api/v1/auth-apps/add` for configs created without `oauth_redirect_uri`.
 4. **Deploy and test the forwarder** with the cURL check above.
-5. **List the auth configs that use this OAuth client.** Each Google toolkit (Gmail, Google Calendar, Google Drive, and so on) has its own auth config, and several can share one client ID. Every one of them has to switch before the old URI can go.
+5. **List the auth configs that use this OAuth client, and note each one's current Redirect URI.** Each Google toolkit (Gmail, Google Calendar, Google Drive, and so on) has its own auth config, and several can share one client ID. Every one of them has to switch before the old URI can go, and the value you note here is the only record of what to restore if you revert.
 6. **Switch and test each of those auth configs, one at a time.** Set `oauth_redirect_uri` to your callback URL, connect a test account through the config, confirm the connected account reaches `ACTIVE`, and run a tool with it. Repeat for the next config until all of them send your URL.
 7. **Remove the `composio.dev` entries, after every config has switched.** Delete the Composio URL you kept in step 3 from the client's redirect URIs and `composio.dev` from **Authorized domains**. A config still sending the Composio URL fails with `redirect_uri_mismatch` from this point on.
 8. **Submit for verification** from the **Verification Center**, now that every authorized domain is one you own.
@@ -608,10 +607,10 @@ Switch one auth config and complete its test connection before touching the next
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| The provider shows `redirect_uri_mismatch` (Google: "Error 400: redirect_uri_mismatch") | The URL Composio sent as `oauth_redirect_uri` isn't registered on the OAuth client, differs by scheme, host, path, or trailing slash, or belongs to an auth config on the same client that hasn't switched yet | Compare the auth config's `oauth_redirect_uri` with the client's Authorized redirect URIs character by character; they must match exactly |
-| Your callback returns `404` after consent | The forwarder isn't deployed at the path registered with the provider | Run the cURL check against the exact registered URL, then fix the route or the registration |
-| The connection fails with an invalid or missing state, or never becomes `ACTIVE` | The forwarder altered or dropped the query, or redirected somewhere other than the Composio callback | Check the cURL output: `Location` must carry `code` and `state` unchanged to `backend.composio.dev/api/v3/toolkits/auth/callback` |
-| Google's consent screen still shows `composio.dev` | The Composio URL is still on the client, `composio.dev` is still an authorized domain, or your brand isn't verified yet | Finish steps 7 and 8; the consent screen shows your app name only after Google verifies the brand |
+| `redirect_uri_mismatch` from the provider | The `oauth_redirect_uri` Composio sent isn't on the OAuth client, differs by scheme, host, path, or trailing slash, or belongs to a config on the same client that hasn't switched yet | Make the auth config's `oauth_redirect_uri` and the client's redirect URI match character for character |
+| Your callback returns `404` after consent | The forwarder isn't deployed at the registered path | Run the cURL check against the exact registered URL; fix the route or the registration |
+| Invalid or missing state, or the connection never becomes `ACTIVE` | The forwarder altered or dropped the query, or sent it somewhere other than the Composio callback | Check the cURL output: `Location` must carry `code` and `state` unchanged to the Composio callback |
+| Google's consent screen still shows `composio.dev` | The Composio URL is still on the client, `composio.dev` is still an authorized domain, or the brand isn't verified yet | Finish steps 7 and 8; your app name appears only after Google verifies the brand |
 
 ## Redirecting users after authentication
 
