@@ -112,6 +112,20 @@ For custom business logic, [session extension tools](/docs/extending-sessions/lo
 
 A [custom auth config](/docs/authentication/custom-app-vs-managed-app) lets you use your own OAuth app for branding, scopes, and provider quota. In Composio Cloud, Composio still stores and uses the resulting connected-account tokens. Owning the OAuth app does not move the token store into your infrastructure or change default API redaction.
 
+## Choose your controls
+
+Choose tool behavior, OAuth app ownership, credential custody, and retention separately. The table describes Composio Cloud unless a row points to a separate deployment arrangement.
+
+| Choice | What your application controls | What Composio operates and the limits |
+| --- | --- | --- |
+| Tool schemas and business logic | Keep your tool definitions and input validation in your application with [managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). Select the predefined tools exposed through [sessions](/docs/configuring-sessions). | Proxy Execute authenticates provider requests without requiring predefined tool schemas, MCP, or an LLM. The optional [local session-extension API](/docs/extending-sessions/local-tools-and-toolkits) is experimental. |
+| OAuth app and provider scopes | Use [your own OAuth app](/docs/authentication/custom-app-vs-managed-app) for branding, scopes, and dedicated provider quota. Managed apps can request only the scopes their app supports. | Composio stores the resulting connected-account credentials and handles token refresh where supported. The provider grants the authorization. |
+| Member or workspace connection ownership | Choose a stable `user_id` and enforce [tenant membership and roles](/docs/b2b-agents#choose-the-connection-owner) before selecting an account. | Composio associates connections with the supplied ID. That ID is not proof of identity. [Shared connections](/docs/extending-sessions/shared-connections) use explicit access-control lists and are experimental. |
+| Credential retrieval and portability | Call tools or Proxy Execute using connected-account IDs. Review any workflow that [imports existing credentials](/docs/authentication/importing-existing-connections). | [Connected-account reads redact credentials](/docs/auth-configuration/connected-accounts#credential-masking). They are not a supported raw-token export workflow, including with your own OAuth app. |
+| Provider operations | Restrict [project API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions), provider scopes, and the endpoints your code accepts. | Proxy Execute requires its own permission and can call operations beyond predefined tool schemas. Its [provider URL restrictions](/docs/tools-direct/executing-tools#proxy-execute) still apply. |
+| Execution location and key custody | Review the operator, decryption access, logs, backups, and outbound connections for your required environment. | Cloud hosts storage and execution by default. Other deployment choices require agreement with Composio; see [deployment options](#deployment-options) for availability and limits. |
+| Payload retention | Have an organization admin enable [Zero Data Retention](/docs/security/zero-data-retention) for the projects that need it. Review your own logs and downstream providers separately. | ZDR is available on paid plans and included on Enterprise. It suppresses new covered execution-log payloads, keeps metadata, and has [feature and managed-app exclusions](/docs/security/zero-data-retention#what-zdr-does-not-cover). It does not change credential custody. |
+
 ## Deployment options
 
 | Option | Credential boundary | Availability |
@@ -136,5 +150,13 @@ If your organization has an active customer-managed keyring, retrieve its public
 Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/configuring-sessions), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs.
 
 Credential redaction and payload retention are separate controls. Tool arguments and results are stored in execution logs by default. A project's [Zero Data Retention](/docs/security/zero-data-retention) setting stops storage of new call payloads for covered calls while retaining audit metadata. It does not prevent processing during execution, delete existing logs, or govern your own logs and model provider. See [data retention](/docs/security/data-retention) for file storage, Workbench processing, and retention details.
+
+### Where payloads go and how long they stay
+
+The [data-handling policy](/docs/security/data-retention#where-your-data-goes) describes processing by Composio's execution infrastructure, destination providers, and any enabled file, trigger, or sandbox paths. Keeping provider tokens out of your application does not keep tool arguments and results out of those paths.
+
+- [Tool execution and trigger event logs](/docs/security/data-retention#how-long-logs-are-retained) are retained for up to one year. Organization deletion removes execution logs, including request and response payloads, within 30 days.
+- [Staged files](/docs/security/data-retention#how-long-files-are-available) are deleted after 24 hours. Presigned URLs expire after one hour by default; URL expiry does not delete the file.
+- [ZDR coverage](/docs/security/zero-data-retention#what-zdr-covers) applies to new covered tool and proxy calls. Composio-managed OAuth apps are covered only on Enterprise. Triggers, sandbox state, files, search caching, and third-party retention have [separate limits](/docs/security/zero-data-retention#what-zdr-does-not-cover). Audit logs and telemetry [remain stored](/docs/security/zero-data-retention#always-stored).
 
 For compliance reports and the current sub-processor list, use the [Composio Trust Center](https://trust.composio.dev).
