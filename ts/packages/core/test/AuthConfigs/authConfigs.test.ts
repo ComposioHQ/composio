@@ -31,6 +31,7 @@ const mockComposioAuthConfigResponse: ComposioAuthConfigRetrieveResponse = {
     { name: 'client_secret', type: 'string' },
   ],
   is_composio_managed: true,
+  managed_app_id: 'ma_default0001',
   created_by: 'user_123',
   created_at: '2023-01-01T00:00:00Z',
   last_updated_at: '2023-01-01T00:00:00Z',
@@ -66,6 +67,7 @@ const mockTransformedAuthConfigResponse = {
     toolsAvailableForExecution: undefined,
     toolsForConnectedAccountCreation: undefined,
   },
+  managedAppId: 'ma_default0001',
 };
 
 // Extended mock client with all AuthConfigs methods
@@ -106,6 +108,16 @@ describe('AuthConfigs', () => {
     //     authConfigs.parseAuthConfigRetrieveResponse(invalidResponse);
     //   }).toThrow(ValidationError);
     // });
+
+    it('keeps a null managed_app_id for auth configs not on a managed app', () => {
+      expect(
+        transformAuthConfigRetrieveResponse({
+          ...mockComposioAuthConfigResponse,
+          is_composio_managed: false,
+          managed_app_id: null,
+        }).managedAppId
+      ).toBeNull();
+    });
 
     it('should handle optional fields correctly', () => {
       const responseWithOptionalFields = {
@@ -235,6 +247,7 @@ describe('AuthConfigs', () => {
         id: 'auth_12345',
         auth_scheme: 'OAUTH2',
         is_composio_managed: true,
+        managed_app_id: 'ma_default0001',
       },
       toolkit: {
         slug: 'github',
@@ -266,6 +279,7 @@ describe('AuthConfigs', () => {
         authScheme: 'OAUTH2',
         isComposioManaged: true,
         toolkit: 'github',
+        managedAppId: 'ma_default0001',
       });
     });
 
@@ -275,6 +289,7 @@ describe('AuthConfigs', () => {
         auth_config: {
           ...mockCreateResponse.auth_config,
           is_composio_managed: false,
+          managed_app_id: null,
         },
       });
 
@@ -318,6 +333,7 @@ describe('AuthConfigs', () => {
         authScheme: 'OAUTH2',
         isComposioManaged: false,
         toolkit: 'github',
+        managedAppId: null,
       });
     });
 
@@ -359,13 +375,17 @@ describe('AuthConfigs', () => {
         authScheme: 'OAUTH2',
         isComposioManaged: true,
         toolkit: 'github',
+        managedAppId: 'ma_default0001',
       });
     });
 
-    it('sends managedAppId as managed_app_id', async () => {
-      mockClient.authConfigs.create.mockResolvedValueOnce(mockCreateResponse);
+    it('sends managedAppId as managed_app_id and returns the app the config uses', async () => {
+      mockClient.authConfigs.create.mockResolvedValueOnce({
+        ...mockCreateResponse,
+        auth_config: { ...mockCreateResponse.auth_config, managed_app_id: 'ma_second00001' },
+      });
 
-      await authConfigs.create('slack', {
+      const result = await authConfigs.create('slack', {
         type: 'use_composio_managed_auth',
         managedAppId: 'ma_second00001',
       });
@@ -373,6 +393,7 @@ describe('AuthConfigs', () => {
       expect(mockClient.authConfigs.create.mock.calls[0][0].auth_config.managed_app_id).toBe(
         'ma_second00001'
       );
+      expect(result.managedAppId).toBe('ma_second00001');
     });
 
     it('omits managed_app_id when managedAppId is not given', async () => {
