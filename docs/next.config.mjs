@@ -69,6 +69,21 @@ const config = {
   },
   async redirects() {
     return [
+      // Vendor security review now lives in docs; preserve KB aliases and Markdown URLs.
+      ...[
+        '/kb/guide/platform-compliance-data-handling',
+        '/kb/security-and-trust/platform-compliance-data-handling',
+        '/kb/sdk-and-api/platform-compliance-data-handling',
+        '/kb/guide/canonical-public-sources',
+        '/kb/guide/model-training',
+        '/kb/guide/third-party-providers',
+        '/kb/guide/zero-data-retention-and-no-training-requirements',
+      ].flatMap(source => [
+        { source, destination: '/docs/security/vendor-security-review', permanent: true },
+        { source: `${source}.md`, destination: '/docs/security/vendor-security-review.md', permanent: true },
+        { source: `${source}.mdx`, destination: '/docs/security/vendor-security-review.md', permanent: true },
+        { source: `/llms.mdx${source}`, destination: '/docs/security/vendor-security-review.md', permanent: true },
+      ]),
       // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
       // Renamed/moved pages -> new location
       {

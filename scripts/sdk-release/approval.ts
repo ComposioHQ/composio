@@ -24,12 +24,13 @@ export interface Review {
 }
 
 /**
- * A writer who is not excluded (the PR author and the requester) approved this exact head, and
- * no writer's latest review requests changes.
+ * A writer other than the PR author approved this exact head. A requester must be an admin,
+ * and no writer's latest review may request changes.
  */
 export function eligibleApproval(
   reviews: ReadonlyArray<Review>,
-  excluded: ReadonlyArray<string>,
+  author: string,
+  requester: string,
   head: string
 ) {
   const latest = [...new Map(reviews.map(review => [review.user, review])).values()];
@@ -38,7 +39,10 @@ export function eligibleApproval(
     !writers.some(review => review.state === 'CHANGES_REQUESTED') &&
     writers.some(
       review =>
-        !excluded.includes(review.user) && review.state === 'APPROVED' && review.commitId === head
+        review.user !== author &&
+        (review.user !== requester || review.permission === 'admin') &&
+        review.state === 'APPROVED' &&
+        review.commitId === head
     )
   );
 }
@@ -177,7 +181,7 @@ export const trustedIssue = (pull: PullDetail, batch: ReleaseBatch, appSlug: str
  * The checks a release PR must pass before its head is tagged:
  * - the head is the release App's own commit on the frozen source, so nobody added changes the
  *   release-only diff check did not see;
- * - a writer other than the author and the requester approved that head;
+ * - a writer other than the author approved that head; requesters must be repository admins;
  * - the candidate build and smoke checks passed on it, and the docs check for a stable release.
  */
 export const verifyReleaseGate = (pull: PullDetail, batch: ReleaseBatch, appSlug: string) =>
@@ -188,12 +192,8 @@ export const verifyReleaseGate = (pull: PullDetail, batch: ReleaseBatch, appSlug
     );
     const reviews = yield* reviewsWithPermissions(pull.number);
     yield* ensure(
-      eligibleApproval(
-        reviews,
-        [pull.user?.login ?? '', batch.requestedBy].filter(Boolean),
-        pull.head.sha
-      ),
-      'Final release head lacks an approval from a writer other than the author and requester'
+      eligibleApproval(reviews, pull.user?.login ?? '', batch.requestedBy, pull.head.sha),
+      'Final release head lacks an approval from a writer other than the author; requesters must have repository admin permission'
     );
     // A release head that touches every SDK runs more than one page of checks.
     const checks = yield* Stream.runCollect(

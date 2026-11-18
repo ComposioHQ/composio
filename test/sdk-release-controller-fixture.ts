@@ -73,6 +73,7 @@ export interface ControllerOptions {
   readonly deletedReviewer?: boolean;
   readonly oldReview?: boolean;
   readonly reviewer?: string;
+  readonly reviewerPermission?: string;
   readonly mergeKind?: 'squash' | 'merge';
   readonly existingTag?: string;
   readonly failedCandidate?: boolean;
@@ -158,7 +159,7 @@ export function fakeController(options: ControllerOptions = {}) {
         },
       ]);
     if (path === `/collaborators/${options.reviewer ?? 'reviewer'}/permission`)
-      return response({ permission: 'write' });
+      return response({ permission: options.reviewerPermission ?? 'write' });
     if (path.startsWith(`/commits/${head}/check-runs`))
       return response({
         check_runs: [

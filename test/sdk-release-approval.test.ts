@@ -30,7 +30,6 @@ const commentBodies = (writes: ReadonlyArray<{ body: unknown }>) =>
   writes.map(write => (write.body as { body: string }).body);
 
 describe('release approval rule', () => {
-  const excluded = ['author', 'requester'];
   const review = { user: 'reviewer', state: 'APPROVED', commitId: head, permission: 'write' };
 
   test.each([
@@ -41,7 +40,32 @@ describe('release approval rule', () => {
       true,
     ],
     ['the requester', [{ ...review, user: 'requester' }], false],
+    ['an admin requester', [{ ...review, user: 'requester', permission: 'admin' }], true],
+    [
+      'a requester with maintain permission',
+      [{ ...review, user: 'requester', permission: 'maintain' }],
+      false,
+    ],
+    [
+      'an admin requester approving an older commit',
+      [{ ...review, user: 'requester', permission: 'admin', commitId: base }],
+      false,
+    ],
+    [
+      'an admin requester whose approval was dismissed',
+      [{ ...review, user: 'requester', permission: 'admin', state: 'DISMISSED' }],
+      false,
+    ],
+    [
+      'an admin requester while another writer requests changes',
+      [
+        { ...review, user: 'requester', permission: 'admin' },
+        { ...review, user: 'maintainer', state: 'CHANGES_REQUESTED' },
+      ],
+      false,
+    ],
     ['the author', [{ ...review, user: 'author' }], false],
+    ['an admin author', [{ ...review, user: 'author', permission: 'admin' }], false],
     ['an approval of an older commit', [{ ...review, commitId: base }], false],
     ['a reader', [{ ...review, permission: 'read' }], false],
     ['an approval later overridden', [review, { ...review, state: 'CHANGES_REQUESTED' }], false],
@@ -51,11 +75,20 @@ describe('release approval rule', () => {
       false,
     ],
   ])('%s → %p', (_name, reviews, expected) => {
-    expect(eligibleApproval(reviews, excluded, head)).toBe(expected);
+    expect(eligibleApproval(reviews, 'author', 'requester', head)).toBe(expected);
   });
 });
 
 describe('source tag', () => {
+  test('an admin requester can approve the exact bot-authored head', async () => {
+    const { fetcher, writes } = fakeController({
+      reviewer: 'requester',
+      reviewerPermission: 'admin',
+    });
+    expect(await tag(fetcher)).toEqual(tagged);
+    expect(writes).toEqual([tagWrite]);
+  });
+
   test.each(['merge', 'squash'] as const)(
     'a merged, approved release tags the reviewed head (%s merge)',
     async mergeKind => {
@@ -130,6 +163,16 @@ describe('source tag', () => {
 
   test.each<[string, ControllerOptions, string]>([
     ['the requester approves', { reviewer: 'requester' }, 'lacks an approval'],
+    [
+      'the admin requester approves an older head',
+      { reviewer: 'requester', reviewerPermission: 'admin', oldReview: true },
+      'lacks an approval',
+    ],
+    [
+      'the admin requester approves but the candidate build failed',
+      { reviewer: 'requester', reviewerPermission: 'admin', failedCandidate: true },
+      'SDK candidate (typescript)',
+    ],
     ['the approval is for an older head', { oldReview: true }, 'lacks an approval'],
     ['a human pushed the head', { headAuthor: 'writer' }, 'release App commit'],
     [
