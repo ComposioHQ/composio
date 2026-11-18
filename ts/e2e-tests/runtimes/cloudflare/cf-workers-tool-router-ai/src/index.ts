@@ -149,6 +149,21 @@ app.get('/test/agent', async c => {
     tools,
   });
 
+  const responseBodySchema = z.object({ incomplete_details: z.unknown() });
+  console.error(
+    'Agent step diagnostics',
+    JSON.stringify(
+      result.steps.map(step => ({
+        finishReason: step.finishReason,
+        incompleteDetails: responseBodySchema.safeParse(step.response.body).data
+          ?.incomplete_details,
+        usage: step.usage,
+        toolCalls: step.toolCalls.map(({ toolName, input }) => ({ toolName, input })),
+        text: step.text,
+      }))
+    )
+  );
+
   const toolCalls = result.steps.flatMap(step =>
     step.toolCalls.map(toolCall => ({ toolName: toolCall.toolName }))
   );

@@ -20,6 +20,7 @@ import { z } from 'zod';
 const MCP_CONNECT_TIMEOUT_MS = 15_000;
 const KARMA_SCHEMA = z.object({ karma: z.number() });
 const SEARCH_TOOL = 'myHttpClient_COMPOSIO_SEARCH_TOOLS';
+const EXECUTE_TOOL = 'myHttpClient_COMPOSIO_MULTI_EXECUTE_TOOL';
 
 // Allowlist for failure logs: Zod strips every other field.
 const idsSchema = z.object({ log_id: z.string().optional(), request_id: z.string().optional() });
@@ -38,6 +39,9 @@ const searchResponseSchema = idsSchema.extend({
         .optional(),
     })
     .optional(),
+});
+const executeArgsSchema = z.object({
+  tools: z.array(z.object({ tool_slug: z.string(), arguments: z.record(z.unknown()) })),
 });
 const mcpTextResultSchema = z.object({
   _meta: idsSchema.optional(),
@@ -144,6 +148,15 @@ e2e(import.meta.url, {
                 searches: result.toolResults
                   .filter(({ payload }) => payload.toolName === SEARCH_TOOL)
                   .map(({ payload }) => searchRecord(payload)),
+                executions: result.toolCalls
+                  .filter(({ payload }) => payload.toolName === EXECUTE_TOOL)
+                  .map(({ payload }) => executeArgsSchema.safeParse(payload.args).data?.tools),
+                steps: result.steps.map(step => ({
+                  finishReason: step.finishReason,
+                  usage: step.usage,
+                  providerMetadata: step.providerMetadata,
+                })),
+                warnings: result.warnings,
               };
               console.error('Tool Router search diagnostics', JSON.stringify(diagnostics, null, 2));
               throw parsed.error;
