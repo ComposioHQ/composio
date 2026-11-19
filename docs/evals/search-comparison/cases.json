@@ -1,0 +1,14 @@
+[
+  {"id":"session-tools","kind":"exact","query":"session.tools()","expectedUrls":["/docs/how-composio-works","/docs/toolkits","/docs/configuring-sessions"]},
+  {"id":"create-session","kind":"paraphrase","query":"How do I create a Composio session for a user with GitHub tools?","expectedUrls":["/docs/how-composio-works","/docs/configuring-sessions","/docs/quickstart"]},
+  {"id":"auth-concepts","kind":"paraphrase","query":"What is the difference between an auth config and a connected account?","expectedUrls":["/docs/authentication","/docs/auth-configuration","/docs/toolkits"]},
+  {"id":"custom-oauth","kind":"paraphrase","query":"How do I use my own OAuth client ID and client secret?","expectedUrls":["/docs/authentication/custom-app-vs-managed-app","/docs/auth-configuration/custom-auth-configs","/docs/authentication/programmatic-auth-configs"]},
+  {"id":"choose-account","kind":"paraphrase","query":"A user connected two Gmail accounts. How do I choose which account my session uses?","expectedUrls":["/docs/authentication/managing-multiple-connected-accounts","/docs/configuring-sessions","/docs/authentication/session-cant-find-account"]},
+  {"id":"claude-connect","kind":"paraphrase","query":"How do I connect Composio to Claude Desktop over MCP?","expectedUrls":["/docs/composio-connect"]},
+  {"id":"session-mcp","kind":"exact","query":"session.mcp.url session.mcp.headers","expectedUrls":["/docs/sessions-via-mcp"]},
+  {"id":"triggers","kind":"paraphrase","query":"How do I create a trigger for a connected account?","expectedUrls":["/docs/setting-up-triggers/creating-triggers","/docs/triggers"]},
+  {"id":"snowflake-setting","kind":"exact","query":"OAUTH_ISSUE_REFRESH_TOKENS","expectedUrls":["/kb/guide/toolkits-snowflake","/toolkits/snowflake"]},
+  {"id":"slack-permissions","kind":"paraphrase","query":"My Slack app can read messages but cannot reply in a conversation. What permissions are missing?","expectedUrls":["/kb/guide/toolkits-slack","/toolkits/slack"]},
+  {"id":"highlevel-setup","kind":"paraphrase","query":"How do I set up custom OAuth credentials for HighLevel Location?","expectedUrls":["/toolkits/highlevel_location"]},
+  {"id":"github-setup","kind":"paraphrase","query":"Where do I register the callback URL for a custom GitHub OAuth app?","expectedUrls":["/toolkits/github"]}
+]
