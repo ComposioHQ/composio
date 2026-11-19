@@ -32,7 +32,7 @@ export async function fetchDetailedTools(toolkit: Toolkit): Promise<Tool[]> {
     if (toolkit.tools.every(tool => details.has(tool.slug))) return parsed.data;
     return toolkit.tools.map(tool => details.get(tool.slug) ?? tool);
   } catch (error) {
-    const reason = error instanceof Error ? error.message : 'Unknown fetch error';
+    const reason = error instanceof SyntaxError ? 'Invalid JSON response' : 'Network request failed';
     console.warn(`[Toolkits] Error fetching tools for ${toolkit.slug}: ${reason}`);
     return toolkit.tools;
   }

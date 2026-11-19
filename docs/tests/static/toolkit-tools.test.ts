@@ -19,7 +19,8 @@ test('warns with the toolkit and reason when detail fetching fails', async () =>
   const failures = [
     { fetch: async () => new Response(null, { status: 429 }), reason: '429' },
     { fetch: async () => Response.json({ error: 'invalid list' }), reason: 'Invalid tool response' },
-    { fetch: async () => { throw new Error('Connection reset'); }, reason: 'Connection reset' },
+    { fetch: async () => new Response('not-json'), reason: 'Invalid JSON response' },
+    { fetch: async () => { throw new Error('private-diagnostic'); }, reason: 'Network request failed' },
   ];
 
   for (const failure of failures) {
@@ -29,6 +30,7 @@ test('warns with the toolkit and reason when detail fetching fails', async () =>
     expect(warn).toHaveBeenCalledTimes(1);
     expect(String(warn.mock.calls[0]?.[0])).toContain('tableau');
     expect(String(warn.mock.calls[0]?.[0])).toContain(failure.reason);
+    expect(String(warn.mock.calls[0]?.[0])).not.toContain('private-diagnostic');
   }
 });
 
