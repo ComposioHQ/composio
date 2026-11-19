@@ -32,6 +32,7 @@
     "test:kb-publish": "bun tests/e2e/kb-publish.ts",
     "generate:toolkits": "bun scripts/generate-toolkits.ts",
     "generate:toolkit-versions": "bun scripts/refresh-toolkit-versions.ts",
+    "check:toolkit-parity": "bun scripts/check-toolkit-parity.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",
     "generate:api-index": "bun scripts/generate-api-index.ts",
     "check:docs-parity": "bun scripts/check-docs-parity.ts",
