@@ -24,6 +24,7 @@ import { resolveConnectedAccountForToolkit } from 'src/services/connected-accoun
 import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { ListenCommandError } from './listen.errors';
 import { emitStreamLine, formatStopMessage, formatStreamValue } from './listen.format';
 import {
@@ -73,7 +74,7 @@ const disableTemporaryTrigger = (params: {
           cause,
         })
     ),
-    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.tapError(error => params.ui.log.warn(escapeTerminalText(error.message))),
     Effect.ignore
   );
 
@@ -498,12 +499,20 @@ export const runListen = (input: ListenParams) =>
           }
 
           // Ctrl-C or SIGTERM after the subscription is a clean stop: exit 0 after the release.
+          // So is a reader that closed stdout (`| head -1`): nothing written after can reach it.
           const stopReason = yield* Effect.raceAllFirst([
             listenEffect,
             Deferred.await(stopWhenDone),
             Effect.as(shutdown.requested, 'signal' as const),
+            Effect.as(ui.stdoutClosed, 'stdout-closed' as const),
           ]);
-          if (stopReason === 'max-events' || stopReason === 'timeout') {
+          // Events already accepted still finish their --out and --forward steps; once stdout
+          // is closed their own writes there are dropped.
+          if (
+            stopReason === 'max-events' ||
+            stopReason === 'timeout' ||
+            stopReason === 'stdout-closed'
+          ) {
             yield* finishAcceptedEvents(events, failed);
           }
           if (stopReason === 'max-events') {
@@ -540,7 +549,7 @@ export const runListen = (input: ListenParams) =>
       Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
         reportFailure(
           ui,
-          `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          `Could not subscribe to realtime trigger events: ${escapeTerminalText(error.message)}. Check your network connection or run \`composio login\`.`
         )
       )
     );

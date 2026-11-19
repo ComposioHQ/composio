@@ -1,6 +1,7 @@
 import { Deferred, Effect, FiberSet } from 'effect';
 import { reportFailure } from 'src/effects/report-failure';
 import type { TerminalUI } from 'src/services/terminal-ui';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 
 /**
  * On a normal stop (`--max-events`, `--timeout`), lets the events the listener already accepted
@@ -37,7 +38,8 @@ export const makeSinkFailures = (params: {
     record: (message: string) =>
       Effect.gen(function* () {
         count += 1;
-        yield* params.ui.log.warn(message);
+        // The message can quote a remote error or an event-derived path.
+        yield* params.ui.log.warn(escapeTerminalText(message));
         if (params.failFast) {
           yield* params.stop;
           return yield* Effect.interrupt;

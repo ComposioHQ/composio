@@ -160,7 +160,7 @@ export const releasePullBody = (
     '## How this ships',
     [
       `1. Release source is frozen at ${batch.inputBase}. Later \`next\` commits and their changesets wait for the next release.`,
-      `2. Review the diff and approve this head. Approval must come from a writer other than the requester (@${batch.requestedBy}). Do not push to this branch: the tag step only accepts the release bot's commit. To change the notes, fix the changesets on \`next\`, close this PR and request a new release.`,
+      `2. Review the diff and approve this head. Approval must come from a repository writer; the requester (@${batch.requestedBy}) may approve only with repository admin permission at release time. Do not push to this branch: the tag step only accepts the release bot's commit. To change the notes, fix the changesets on \`next\`, close this PR and request a new release.`,
       `3. After approval and green checks, merge this PR. The release workflow rechecks the approval and tags this exact head \`sdk-release/${batch.id}\`; if the check fails, it creates no tag and asks you to revert this PR and request the release again.`,
       '4. The tag run publishes the exact files the `SDK candidate` checks built and the `SDK candidate smoke` checks installed on this PR. If a publish job fails, use "Re-run failed jobs" on that run.',
       copy.afterPublish,

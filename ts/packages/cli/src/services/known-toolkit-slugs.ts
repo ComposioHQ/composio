@@ -1,3 +1,4 @@
+import * as BunPath from '@effect/platform-bun/BunPath';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -47,7 +48,7 @@ const KnownToolkitSlugsJSON = JSONTransformSchema(KnownToolkitSlugs);
 const provideFileSystem = <A, E>(
   effect: Effect.Effect<A, E, FileSystem.FileSystem | Path.Path | NodeOs>
 ): Effect.Effect<A, E> =>
-  effect.pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, Path.layer, NodeOs.Default)));
+  effect.pipe(Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default)));
 
 const knownToolkitSlugsPath = Effect.gen(function* () {
   const path = yield* Path.Path;

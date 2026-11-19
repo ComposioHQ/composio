@@ -9,7 +9,7 @@ Build an agent that chooses Composio tools at runtime. Type a task, connect an a
 <div className="not-prose my-6 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
   <div>
     <div className="mb-6">
-      Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [1000+ apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
+      Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [%TOOLKIT_COUNT% apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
     </div>
     <AgentSetupActions />
   </div>
@@ -480,12 +480,6 @@ Ask for any task that needs an app tool: `Summarize my unread emails from today`
 - Composio sessions persist. In an application, store the session ID (`session.session_id` in Python, `session.sessionId` in TypeScript) and restore it with `composio.use(session_id)` instead of creating a new session for every turn. See [Reusing a session](/docs/how-composio-works#how-sessions-behave).
 - `session.tools()` gives the agent a small set of meta tools for finding, connecting, and running app tools. It does not load thousands of tool schemas into the model context.
 
-<Callout type="warn" title="Use your application's user ID in production">
-`user_123` is only for this local example. Replace it with a stable ID from your database. Each ID gets separate connections and tool calls.
-</Callout>
-
-Note: Sessions are recommended for new integrations. If you maintain a legacy direct-execution integration, see [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions). You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).
-
 ## Adapt the example
 
 <Cards>
@@ -503,3 +497,9 @@ Note: Sessions are recommended for new integrations. If you maintain a legacy di
   <Card title="B2B agent architecture" href="/docs/b2b-agents" description="Choose member-owned or workspace-owned connections for a multi-tenant product." />
   <Card title="Production readiness" href="/docs/production-readiness" description="Review identity, auth, security, logging, and trigger decisions before launch." />
 </Cards>
+
+### Considerations
+
+- **Auth for your existing tools.** Use [managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools) for per-user OAuth with Connect Link + Proxy Execute. Keep your existing tools and call provider APIs through Composio. You don't need catalog tools, an agent framework, or an LLM.
+- **Use your application's user ID in production.** `user_123` is only for this local example. Replace it with a stable ID from your database. Each ID gets separate connections and tool calls.
+- **Sessions are recommended for new integrations.** If you maintain a legacy direct-execution integration, see [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions). You can inspect the selected tools, inputs, responses, and timing with the [Logs API](/reference/api-reference/logs).

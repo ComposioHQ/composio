@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { vi } from 'vitest';
@@ -13,6 +14,7 @@ import {
   RUN_COMPANION_MODULE_BASENAMES,
   RUN_COMPANION_MODULE_FILENAMES,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
+  resolveRunCompanionModulePath,
 } from 'src/services/run-companion-modules';
 
 const extractZipMock = vi.hoisted(() => vi.fn());
@@ -534,4 +536,17 @@ describe('loadInstalledCompanionModule', () => {
       })
     );
   });
+});
+
+describe('Windows compiled companion resolution', () => {
+  it.effect('falls back beside the executable for a Windows Bun virtual module', () =>
+    Effect.gen(function* () {
+      const result = yield* resolveRunCompanionModulePath({
+        callerImportMetaUrl: 'file:///B:/~BUN/root/commands.mjs',
+        execPath: 'C:\\Users\\Example User\\.composio\\composio.exe',
+        relativeNoExtensionFromCaller: '../../services/run-helpers-runtime',
+      });
+      expect(result).toBe('C:\\Users\\Example User\\.composio\\run-helpers-runtime.mjs');
+    }).pipe(Effect.provide(BunPath.layerWin32), Effect.provide(BunServices.layer))
+  );
 });

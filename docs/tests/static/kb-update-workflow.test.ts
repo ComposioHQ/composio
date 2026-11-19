@@ -245,7 +245,7 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(Object.keys(parsed.on ?? {}).sort()).toEqual(['schedule', 'workflow_dispatch']);
     expect(workflow).not.toContain('support-knowledge');
     expect(workflow).toContain('bun run build:kb-semantic');
-    expect(workflow).toContain('bun run verify:kb');
+    expect(workflow).toContain('bun run check:kb-semantic');
     expect(workflow).toContain('branch: docs/auto-update-kb');
     expect(workflow).toContain('base: next');
     expect(workflow).toContain('persist-credentials: false');
@@ -297,14 +297,19 @@ echo "head_ref=$live_head_ref" >> "$GITHUB_OUTPUT"`);
     expect(recovery?.run).toContain('gh issue close');
   });
 
-  test('downloads generated artifacts under the docs directory staged by the refresh PR', () => {
+  test('transfers the semantic index to the exact path staged by the repair PR', () => {
+    const upload = workflowSteps(workflowPath, 'refresh').find(
+      step => step.name === 'Upload verified semantic artifact',
+    );
     const steps = workflowSteps(workflowPath, 'propose');
-    const download = steps.find(step => step.name === 'Download verified KB artifacts');
+    const download = steps.find(step => step.name === 'Download verified semantic artifact');
     const createPullRequest = steps.find(step => step.name === 'Create repair pull request');
 
-    expect(download?.with?.path).toBe('docs');
-    expect(String(createPullRequest?.with?.['add-paths'])).toContain('docs/kb/');
-    expect(String(createPullRequest?.with?.['add-paths'])).not.toContain('docs/content/kb/');
+    expect(upload?.with?.name).toBe('kb-semantic-repair');
+    expect(download?.with?.name).toBe(upload?.with?.name);
+    expect(upload?.with?.path).toBe('docs/kb/semantic-index.json');
+    expect(download?.with?.path).toBe('docs/kb');
+    expect(String(createPullRequest?.with?.['add-paths']).trim()).toBe(upload?.with?.path);
   });
 
   test('treats keyword-only production retrieval as a semantic health failure', () => {

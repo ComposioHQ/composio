@@ -6,9 +6,9 @@
  * Usage: `bun scripts/package-binaries.ts`
  *
  * Creates a nested directory structure inside each zip:
- *   composio-<target>/composio
+ *   composio-<target>/composio (composio.exe on Windows)
  *
- * This matches the structure expected by `install.sh`.
+ * This matches the structure expected by `install.sh` and `install.ps1`.
  *
  * Input:  `dist/binaries/composio-{platform-arch}` (raw binaries)
  * Output: `dist/binaries/composio-{platform-arch}.zip`
@@ -23,7 +23,12 @@ import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
-import { archiveCompanionEntries, ARTIFACT_NAMES } from './_release-artifacts';
+import {
+  archiveCompanionEntries,
+  archiveExecutableName,
+  compiledBinaryFileName,
+  RELEASE_TARGETS,
+} from './_release-artifacts';
 
 const BINARIES_DIR = './dist/binaries';
 const COMPANIONS_DIR = path.join(BINARIES_DIR, 'companions');
@@ -33,7 +38,9 @@ export function packageBinaries() {
   return Effect.gen(function* () {
     const entries = yield* Effect.tryPromise(() => readdir(BINARIES_DIR));
 
-    const binaries = entries.filter(entry => ARTIFACT_NAMES.includes(entry));
+    const binaries = RELEASE_TARGETS.map(({ artifact }) => artifact).filter(artifact =>
+      entries.includes(compiledBinaryFileName(artifact))
+    );
 
     if (binaries.length === 0) {
       yield* Console.error('No binaries found in dist/binaries/. Run build:binary:all first.');
@@ -63,7 +70,7 @@ export function packageBinaries() {
     const companionEntries = archiveCompanionEntries(liveCompanionRelativePaths);
 
     for (const binary of binaries) {
-      const binaryPath = path.join(BINARIES_DIR, binary);
+      const binaryPath = path.join(BINARIES_DIR, compiledBinaryFileName(binary));
       const zipPath = path.join(BINARIES_DIR, `${binary}.zip`);
       const absoluteZipPath = path.resolve(zipPath);
 
@@ -75,7 +82,7 @@ export function packageBinaries() {
         await $`rm -f ${zipPath}`.quiet();
         await $`rm -rf ${tempDir}`.quiet();
         await $`mkdir -p ${nestedDir}`.quiet();
-        await $`cp ${binaryPath} ${nestedDir}/composio`.quiet();
+        await $`cp ${binaryPath} ${path.join(nestedDir, archiveExecutableName(binary))}`.quiet();
         for (const { relativePath, kind } of companionEntries) {
           const destinationPath = path.join(nestedDir, relativePath);
           await $`mkdir -p ${path.dirname(destinationPath)}`.quiet();

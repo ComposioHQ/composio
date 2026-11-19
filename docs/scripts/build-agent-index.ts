@@ -21,6 +21,7 @@
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { resolveToolkitCount } from '../lib/toolkit-count';
 
 const ROOT = process.cwd();
 const CONTENT = join(ROOT, 'content');
@@ -277,7 +278,7 @@ for (const collection of COLLECTIONS) {
     const absPath = join(dir, entry);
     const url = urlFromContentPath(absPath);
     if (!url) continue;
-    const raw = readFileSync(absPath, 'utf8');
+    const raw = resolveToolkitCount(readFileSync(absPath, 'utf8'));
     const { title, description, legacy } = parseFrontmatter(raw);
     pages.push({
       collection,

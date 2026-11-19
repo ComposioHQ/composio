@@ -1,21 +1,12 @@
-import type { SessionSearchResponse } from '@composio/client/resources/tool-router';
 import { Effect } from 'effect';
+import type { SearchResult, SearchToolSchemas } from 'src/models/tool-search';
 import type { Tool } from 'src/models/tools';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import type { CommandTree } from 'src/commands/surface';
 import { commandHintExample, commandHintStep } from 'src/services/command-hints';
 import { formatToolsTable } from '../format';
 
-export type SearchToolSchema = NonNullable<SessionSearchResponse['tool_schemas'][string]>;
-export type SearchResultRecord = SessionSearchResponse['results'][number];
-export type SearchResponseRecord = Pick<
-  SessionSearchResponse,
-  'results' | 'toolkit_connection_statuses' | 'tool_schemas' | 'next_steps_guidance' | 'error'
->;
-
-export const stripSearchResultMetadata = <
-  T extends { reference_workbench_snippets?: unknown; plan_id?: unknown },
->(
+export const stripSearchResultMetadata = <T extends Readonly<Record<string, unknown>>>(
   result: T
 ) => {
   const {
@@ -33,10 +24,10 @@ export const toHomeRelativePath = (cacheDir: string, absolutePath: string) =>
 
 export const collectToolsForResult = (params: {
   result: {
-    primary_tool_slugs: string[];
-    related_tool_slugs: string[];
+    primary_tool_slugs: ReadonlyArray<string>;
+    related_tool_slugs: ReadonlyArray<string>;
   };
-  toolSchemas: Record<string, SearchToolSchema>;
+  toolSchemas: SearchToolSchemas;
   toolkitSet?: Set<string>;
   limit: number;
 }): Tool[] => {
@@ -112,7 +103,7 @@ export const buildSearchNextSteps = (params: {
 export const emitHumanSearchOutput = (params: {
   ui: TerminalUI;
   queries: ReadonlyArray<string>;
-  resultsWithTools: Array<{ result: SearchResultRecord; tools: Tool[] }>;
+  resultsWithTools: Array<{ result: SearchResult; tools: Tool[] }>;
   nextStepsGuidance: ReadonlyArray<string>;
   firstSlug?: string;
   firstDataArg: string;

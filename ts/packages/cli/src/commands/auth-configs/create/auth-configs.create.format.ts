@@ -1,4 +1,4 @@
-import type { AuthConfigCreateResponse } from '@composio/client/resources/auth-configs';
+import type { AuthConfigCreateResponse } from 'src/models/auth-configs';
 import { bold } from 'src/ui/colors';
 import { redact } from 'src/ui/redact';
 

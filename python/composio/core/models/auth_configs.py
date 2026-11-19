@@ -18,6 +18,16 @@ from composio.client.types import (
 from composio.core.models.base import Resource
 
 
+class ComposioManagedAuthConfigOptions(
+    auth_config_create_params.AuthConfigUnionMember0, total=False
+):
+    """Options for an auth config on a Composio-managed app."""
+
+    managed_app_id: str
+    """The Composio-managed app to use, as ``composio_managed_auth[].managed_app_id``
+    from ``composio.toolkits.get(slug)``. Omit to use the toolkit's default app."""
+
+
 class AuthConfigs(Resource):
     """
     Manage authentication configurations.
@@ -39,18 +49,36 @@ class AuthConfigs(Resource):
 
     @t.overload
     def create(
+        self, toolkit: str, options: ComposioManagedAuthConfigOptions
+    ) -> auth_config_create_response.AuthConfig: ...
+
+    @t.overload
+    def create(
         self, toolkit: str, options: auth_config_create_params.AuthConfigUnionMember0
     ) -> auth_config_create_response.AuthConfig: ...
 
     def create(
-        self, toolkit: str, options: auth_config_create_params.AuthConfig
+        self,
+        toolkit: str,
+        options: t.Union[
+            auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions
+        ],
     ) -> auth_config_create_response.AuthConfig:
         """
         Create a new auth config
 
         :param toolkit: The toolkit to create the auth config for.
-        :param options: The options to create the auth config with.
+        :param options: The options to create the auth config with. For a
+            Composio-managed auth config, ``managed_app_id`` picks the app.
         :return: The created auth config.
+
+        Example:
+            toolkit = composio.toolkits.get("slack")
+            app = next(a for a in toolkit.composio_managed_auth if not a.is_default)
+            composio.auth_configs.create(
+                "slack",
+                {"type": "use_composio_managed_auth", "managed_app_id": app.managed_app_id},
+            )
         """
         return self._client.auth_configs.create(
             toolkit={"slug": toolkit}, auth_config=options

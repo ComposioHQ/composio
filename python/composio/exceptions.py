@@ -3,13 +3,46 @@ Composio exceptions.
 """
 
 import difflib
+import re
 import typing as t
 
 import typing_extensions as te
 
-from composio_client import ComposioDeprecationWarning as ComposioDeprecationWarning
+from composio_client import (
+    APIStatusError,
+    ComposioDeprecationWarning as ComposioDeprecationWarning,
+)
 
 ENV_COMPOSIO_API_KEY = "COMPOSIO_API_KEY"
+
+# CSI, OSC, and other ESC sequences a terminal would act on.
+_ANSI_ESCAPE = re.compile(
+    r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[@-_])"
+)
+# C0/C1 controls, DEL, and the Unicode line separators that can forge output lines.
+_CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+
+
+def sanitize_error_text(value: str) -> str:
+    """Make a server-controlled string safe to print in a terminal or one log line."""
+    return " ".join(_CONTROL_CHARACTERS.sub(" ", _ANSI_ESCAPE.sub(" ", value)).split())
+
+
+class APIErrorDetails(t.Protocol):
+    """The typed API surface the SDK adds to generated status errors."""
+
+    message: str
+    status_code: int
+    request_id: t.Optional[str]
+    api_error_code: t.Optional[int]
+    suggested_fix: t.Optional[str]
+    possible_fixes: t.List[str]
+    details: t.Optional[t.Dict[str, t.Any]]
+
+
+def api_error_details(error: APIStatusError) -> APIErrorDetails:
+    """Return the typed API surface of a status error raised by the SDK."""
+    return t.cast(APIErrorDetails, error)
 
 
 class ComposioError(Exception):

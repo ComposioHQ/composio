@@ -73,6 +73,8 @@ Do not introduce another LLM framework solely to demonstrate Composio.
 
 ## Integrate sessions
 
+If the application or MCP server already has its own tools and needs only per-user third-party authentication, follow [managed authentication for your own tools](https://docs.composio.dev/docs/authentication/managed-auth-for-custom-tools.md). Create a Connect Link with `session.authorize()`, then call provider endpoints with `composio.tools.proxyExecute()` in TypeScript or `composio.tools.proxy()` in Python. Keep the existing tool definitions and business logic. Skip `session.tools()` and catalog tool selection for this path. The proxy returns provider responses, not access or refresh tokens. Your application still authenticates its own callers.
+
 A session is the runtime context for one application user. It carries identity, connections, tool scope, and sandbox configuration.
 
 Trace the application's existing authenticated user or tenant ID and use that stable identifier. Do not add a parallel user system or share one placeholder identity across users.
@@ -135,6 +137,10 @@ Before you restrict a session, check whether the request names a toolkit. A capa
 Use the direct-tools preset only for a narrow, deterministic agent with a fixed allowlist. It removes meta tools by default. Re-enable connection management when users must authenticate in the agent, and keep or disable the sandbox deliberately. Fetch `configuring-sessions.md` for the current preset and option syntax before implementing it.
 
 If the application has its own connect UI, use session authorization and connection-state methods and suppress in-chat connection prompts. Use managed auth initially. Create a custom auth config only for the application's OAuth branding, additional scopes, dedicated provider quotas, or self-hosted or regional requirements.
+
+### Composio Built or Provider MCP
+
+Some products ship more than one toolkit grouped as one App in the catalog, for example a Composio Built toolkit (`notion`) and a Provider MCP toolkit backed by the product's own MCP server (`notion_mcp`). Use the catalog grouping; do not derive membership from names or suffixes. Different jobs or acting identities can remain separate. They are separate toolkits with separate auth configs and connected accounts. Session config takes exact slugs, never an App: enable one sibling (`toolkits: ["notion"]`), enable both (`toolkits: ["notion", "notion_mcp"]`), or use the disable list to remove the sibling the agent should not see (syntax in `configuring-sessions.md`). Enabling `notion` does not expose `notion_mcp`, and the siblings never share a connection. When the request or code names a slug, use it. Otherwise compare auth schemes, connected state, tool lists, and triggers (triggers exist only on Composio Built toolkits today), prefer the toolkit the user can authenticate, and state which one you chose. Do not assume Provider MCP means DCR OAuth: some need no auth at all, and a few use API Key or OAuth2. Read what the toolkit declares. Details: `https://docs.composio.dev/docs/apps-and-toolkits.md`. A Custom MCP server registered into the project (slug `CUSTOM_*`) is separate from both; see the `extending-sessions` guides.
 
 ## Handle advanced product work
 
@@ -206,13 +212,16 @@ Know the limits before promising a design: remote servers only (no local or STDI
 
 ## Verify setup when relevant
 
-For a first-time setup or integration request, success means a programmatic, safe, read-only tool call from the developer's real execution path returns an actual provider result and a non-empty Composio log ID.
+For a first-time setup or integration request, verify a safe, read-only provider request from the developer's real execution path:
 
-Ask which integration the developer wants to try unless the application already makes the choice clear. Discover the real toolkit and tool at runtime. If the current user is not connected, check the Instant Tools guide before assuming a connection is required. When authentication is required, return the Connect Link, wait for authorization, and retry.
+- For auth-only integrations with existing tools, call a provider endpoint through Proxy Execute using the intended user's connected account. Verify a successful HTTP status and the expected provider response. Catalog tool discovery and a Composio tool log ID are not required for this path.
+- For catalog-tool integrations, discover the real toolkit and tool at runtime. Verify an actual provider result and a non-empty Composio log ID. If the current user is not connected, check the Instant Tools guide before assuming a connection is required.
 
-A mock, Playground run, tool search, schema fetch, session creation, or Connect Link alone does not prove the integration. If the repository has no runnable agent loop, add only the smallest entrypoint compatible with its existing provider; do not require another hosted model.
+Ask which integration the developer wants to try unless the application already makes the choice clear. When authentication is required, return the Connect Link, wait for authorization, and retry.
 
-After success, report the code location, identity and session mapping, integration and tool, safe result summary, log ID, and useful dashboard destinations. For an explanation, migration plan, or narrow bug fix, use that task's own completion condition instead of forcing a new tool call.
+A mock, Playground run, tool search, schema fetch, session creation, or Connect Link alone does not prove the integration. If the repository has no runnable execution path, add only the smallest entrypoint compatible with its existing runtime; do not require another hosted model.
+
+After success, report the code location, user and account mapping, session ID when used, and safe result summary. For auth-only integrations, include the provider endpoint and HTTP status. For catalog-tool integrations, include the tool and Composio log ID. For an explanation, migration plan, or narrow bug fix, use that task's own completion condition instead of forcing a new tool call.
 
 ## Use canonical documentation
 

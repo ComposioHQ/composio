@@ -111,8 +111,9 @@ class ConnectionRequest(Resource):
         The delay between polls grows from 1 second to 5 seconds, so a connection
         can be up to 5 seconds old when this returns. A rate-limited poll doesn't
         fail the wait: once the client's own retries run out, it waits as long as
-        the response asks, up to the timeout, and polls again. The client's retries
-        can carry the wait past the timeout, because they aren't bound by it.
+        the response asks before polling again. If that delay reaches the timeout,
+        the wait times out without another poll. The client's retries can carry
+        the wait past the timeout, because they aren't bound by it.
 
         :param timeout: The timeout to wait for the connection to be established.
         :return: Connected account object.
@@ -122,9 +123,11 @@ class ConnectionRequest(Resource):
         poll_delay = _INITIAL_POLL_DELAY_SECONDS
         while True:
             delay = poll_delay
+            rate_limited = False
             try:
                 connection = self._client.connected_accounts.retrieve(nanoid=self.id)
             except RateLimitError as error:
+                rate_limited = True
                 delay = max(delay, _retry_after_seconds(error))
             else:
                 self.status = connection.status
@@ -141,15 +144,16 @@ class ConnectionRequest(Resource):
             remaining = deadline - time.time()
             # Written so a NaN timeout times out rather than polling forever.
             if not remaining > 0:
-                raise exceptions.ComposioSDKTimeoutError(
-                    message=(
-                        f"Timeout while waiting for connection {self.id} to be active"
-                    ),
-                )
-            # This delay stops at the deadline, so the last poll happens as the
-            # time runs out.
+                break
             time.sleep(min(delay, remaining))
+            # Don't start a fresh client retry cycle after a rate-limited wait expires.
+            if rate_limited and time.time() >= deadline:
+                break
             poll_delay = min(poll_delay * _POLL_DELAY_GROWTH, _MAX_POLL_DELAY_SECONDS)
+
+        raise exceptions.ComposioSDKTimeoutError(
+            message=f"Timeout while waiting for connection {self.id} to be active",
+        )
 
     @classmethod
     def from_id(cls, id: str, client: HttpClient) -> te.Self:

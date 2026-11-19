@@ -63,7 +63,7 @@ jobs:
           echo "$(wc -l < /tmp/client-definitions.ts) lines"
 
       - name: Sync Connect clients
-        uses: anthropics/claude-code-action@61a9c274fa7110a66dfafc1bbbced03833eb25fe # v1.0.269
+        uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
@@ -80,7 +80,7 @@ jobs:
 
       - name: Create PR if changed
         id: create-pr
-        uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
           token: ${{ steps.app-token.outputs.token }}
           commit-message: 'docs: sync Connect clients from dashboard'

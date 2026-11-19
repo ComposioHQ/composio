@@ -17,6 +17,7 @@ import {
   ToolRouterSessionExecuteResponseSchema,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
+import { handleToolExecutionError } from '../errors/ToolErrors';
 import { transformProxyParams } from './proxyParamsTransform';
 import {
   assertUnambiguousCustomToolSlug,
@@ -108,7 +109,9 @@ export class SessionContextImpl implements SessionContext {
           withoutRetries(requestOptions)
         ),
       requestOptions?.signal
-    );
+    ).catch((error: unknown) => {
+      throw handleToolExecutionError(toolSlug, error as Error);
+    });
     return ToolRouterSessionExecuteResponseSchema.parse(
       transformExecuteResponse(response, toolSlug)
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Message } from "@/components/terminal-kit/session/message";
 import { TerminalWindow } from "@/components/terminal-kit/shell/terminal-window";

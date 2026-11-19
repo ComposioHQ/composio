@@ -24,7 +24,8 @@ src/
     ├── macos-security-ffi.ts       # direct Security.framework via bun:ffi (fast path)
     ├── macos-security-subprocess.ts# /usr/bin/security subprocess fallback
     ├── linux-secret-tool.ts        # secret-tool subprocess
-    ├── unsupported.ts              # Windows / BSD / … — throws NoStorageAccess
+    ├── windows-credential-ffi.ts   # Credential Manager via bun:ffi (advapi32.dll)
+    ├── unsupported.ts              # BSD, Windows outside Bun, … — throws NoStorageAccess
     └── shared.ts                   # subprocess helpers + base64 on-disk encoding
 ```
 
@@ -32,12 +33,14 @@ The core is intentionally Promise-based and depends on neither Effect nor any ot
 
 ## Backends and runtime dispatch
 
-| platform    | runtime | backend                              | read latency |
-| ----------- | ------- | ------------------------------------ | ------------ |
-| macOS       | Bun     | `SecItem*` via `bun:ffi`             | **~1.4ms**   |
-| macOS       | Node    | `/usr/bin/security` subprocess       | ~22ms        |
-| Linux       | both    | `secret-tool` subprocess (libsecret) | ~15–40ms     |
-| Windows/BSD | both    | throws `NoStorageAccess`             | —            |
+| platform | runtime | backend                              | read latency |
+| -------- | ------- | ------------------------------------ | ------------ |
+| macOS    | Bun     | `SecItem*` via `bun:ffi`             | **~1.4ms**   |
+| macOS    | Node    | `/usr/bin/security` subprocess       | ~22ms        |
+| Linux    | both    | `secret-tool` subprocess (libsecret) | ~15–40ms     |
+| Windows  | Bun     | `Cred*` via `bun:ffi`                | not measured |
+| Windows  | Node    | throws `NoStorageAccess`             | —            |
+| BSD      | both    | throws `NoStorageAccess`             | —            |
 
 The Composio CLI ships as a compiled Bun binary, so production reads always hit the FFI path. Node is the fallback for vitest-under-Node, dev tools, and anyone importing the package outside the CLI's runtime.
 

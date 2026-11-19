@@ -1,5 +1,7 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { TestClock } from 'effect/testing';
 import { ListenCommandError } from 'src/commands/listen/listen.errors';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
@@ -40,6 +42,45 @@ const failingRealtime = Layer.succeed(
       Effect.fail(new TriggerRealtimeSubscriptionError({ message: 'socket closed' })),
   })
 );
+
+// Formatting fixtures: standalone controls (BEL, DEL, NEL), CR/LF, a tab, a literal backslash,
+// combining and astral Unicode, in a value, a nested key and a top-level key.
+const formattingEvent = {
+  id: 'evt_formatting_1',
+  type: 'composio.connected_account.expired',
+  timestamp: '2026-04-06T18:00:00.000Z',
+  'extra\u0085key': true,
+  metadata: {
+    project_id: 'consumer_project_id_test',
+    org_id: 'org_test',
+    'label\u007f': 'value\u0085',
+  },
+  data: {
+    id: 'con_expired_1',
+    note: 'line one\r\nline two\ttabbed\u0007 C:\\temp e\u0301 \u{1f600}',
+  },
+};
+
+/** Any C0, DEL or C1 code point but the line feed that ends a record. */
+const dataControl = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u;
+/** SGR styling, the only escape sequence the CLI writes on its own. */
+const sgr = /\u001b\[[0-9;]*m/gu;
+
+/** The payload file the `event:` record names, and the `events.jsonl` index next to it. */
+const readSavedEvent = (stdoutLines: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const eventLine = stdoutLines.find(line => line.startsWith('event: '));
+    expect(eventLine).toBeDefined();
+    const payloadPath = (eventLine ?? '').slice('event: '.length);
+    const payload: unknown = JSON.parse(yield* fs.readFileString(payloadPath));
+    const index = (yield* fs.readFileString(path.join(path.dirname(payloadPath), 'events.jsonl')))
+      .trim()
+      .split('\n')
+      .map(line => JSON.parse(line) as { readonly file_path: string });
+    return { payloadPath, payload, index };
+  });
 
 describe('CLI: composio listen', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
@@ -132,6 +173,20 @@ describe('CLI: composio listen', () => {
         })
     );
 
+    // No --max-events or --timeout: only the closed stdout can stop this run.
+    it.effect('[When] the reader closes stdout [Then] it stops listening and exits 0', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI({ stdoutReaderClosed: true });
+        const exit = yield* Effect.exit(
+          cli(['listen', 'composio.connected_account.expired']).pipe(Effect.provide(terminal.layer))
+        );
+
+        expect(exitCodeOf(exit)).toBe(0);
+        expect(terminal.stdout()).toBe('');
+      })
+    );
+
     it.effect('[Then] a bare --stream flag prints the whole event payload inline', () =>
       Effect.gen(function* () {
         yield* enableListen;
@@ -169,6 +224,106 @@ describe('CLI: composio listen', () => {
         expect(output).toContain('stream: ');
         expect(output).toContain('Stopped after receiving 1 event.');
       })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: { events: [formattingEvent] },
+    })
+  )('[Given] an event whose fields carry controls and line breaks', it => {
+    it.effect(
+      '[When] a value is projected with --debug [Then] each record is one escaped line and the payload file keeps the event',
+      () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const terminal = redirectedTerminalUI();
+          yield* cli([
+            'listen',
+            'composio.connected_account.expired',
+            '--max-events',
+            '1',
+            '--debug',
+            '--stream',
+            '.data.note',
+          ]).pipe(Effect.provide(terminal.layer));
+
+          const stdout = terminal.stdout();
+          expect(stdout.endsWith('\n')).toBe(true);
+          const lines = stdout.slice(0, -1).split('\n');
+          expect(stdout).not.toMatch(dataControl);
+          expect(lines.map(line => line.split(/[ :]/u)[0])).toEqual([
+            'listening',
+            '[debug]',
+            '[debug]',
+            '[debug]',
+            '[debug]',
+            'event',
+            'stream',
+          ]);
+          expect(lines).toContain(
+            '[debug] raw event keys: id, type, timestamp, extra\\u0085key, metadata, data'
+          );
+          expect(lines.at(-1)).toBe(
+            'stream: line one\\u000d\\u000aline two\\u0009tabbed\\u0007 C:\\temp e\u0301 \u{1f600}'
+          );
+
+          // The preview escapes DEL and C1 in nested keys and values and still decodes to the
+          // event.
+          const previewPrefix = '[debug] raw event (truncated): ';
+          const preview = lines.find(line => line.startsWith(previewPrefix)) ?? '';
+          expect(preview).toContain('"label\\u007f":"value\\u0085"');
+          expect(JSON.parse(preview.slice(previewPrefix.length))).toEqual(formattingEvent);
+
+          const { payloadPath, payload, index } = yield* readSavedEvent(lines);
+          expect(payload).toEqual(formattingEvent);
+          // The index is appended across runs; this run's entry is the last one.
+          expect(index.at(-1)?.file_path).toBe(payloadPath);
+          // stderr is redirected: no decoration, so no copy of the records.
+          expect(terminal.stderr()).toBe('');
+        })
+    );
+
+    it.effect(
+      '[When] stderr is a terminal and the whole event streams [Then] both sinks get the same escaped record',
+      () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const terminal = redirectedTerminalUI({ decoratedStderr: true });
+          yield* cli([
+            'listen',
+            'composio.connected_account.expired',
+            '--max-events',
+            '1',
+            '--stream',
+          ]).pipe(Effect.provide(terminal.layer));
+
+          const lines = terminal.stdout().slice(0, -1).split('\n');
+          const streamLines = lines.filter(line => line.startsWith('stream: '));
+          expect(streamLines).toHaveLength(1);
+          const record = streamLines[0] ?? '';
+          expect(record).not.toMatch(dataControl);
+          expect(JSON.parse(record.slice('stream: '.length))).toEqual(formattingEvent);
+
+          // Raw capture: the decoration renders, carries the same record on one line, and
+          // writes no escape sequence other than styling.
+          const stderr = terminal.stderr();
+          expect(stderr).toContain('│');
+          expect(stderr.replace(sgr, '')).not.toMatch(dataControl);
+          expect(stderr.replace(sgr, '')).not.toContain('\u001b');
+          expect(
+            stderr
+              .replace(sgr, '')
+              .split('\n')
+              .filter(line => line.includes(record))
+          ).toHaveLength(1);
+          expect(stderr).toContain('Stopped after receiving 1 event.');
+
+          const { payload } = yield* readSavedEvent(lines);
+          expect(payload).toEqual(formattingEvent);
+        })
     );
   });
 

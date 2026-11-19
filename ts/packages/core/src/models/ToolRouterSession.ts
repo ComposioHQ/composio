@@ -6,6 +6,7 @@ import type { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { handleToolExecutionError } from '../errors/ToolErrors';
 import {
   ComposioSessionConfigConflictError,
   ComposioToolInputRequiredError,
@@ -759,7 +760,9 @@ export class ToolRouterSession<
           withoutRetries(requestOptions)
         ),
       requestOptions?.signal
-    );
+    ).catch((error: unknown) => {
+      throw handleToolExecutionError(toolSlug, error as Error);
+    });
     const transformed = transformExecuteResponse(response, toolSlug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }
@@ -808,7 +811,9 @@ export class ToolRouterSession<
           withoutRetries(requestOptions)
         ),
       requestOptions?.signal
-    );
+    ).catch((error: unknown) => {
+      throw handleToolExecutionError(slug, error as Error);
+    });
     const transformed = transformExecuteResponse(response, slug);
     return ToolRouterSessionExecuteResponseSchema.parse(transformed);
   }

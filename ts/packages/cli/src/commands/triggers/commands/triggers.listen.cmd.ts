@@ -8,6 +8,7 @@ import { Deferred, Effect, FiberSet, Option } from 'effect';
 import { APP_CONFIG } from 'src/config';
 import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { matchesTriggerListenFilters } from '../filter';
@@ -281,13 +282,15 @@ export const triggersCmd$Listen = Command.make(
 
               yield* emitTableLine(tableLine, ui);
             } else if (json) {
+              // Shown JSON escapes the DEL and C1 controls JSON leaves as they are; the
+              // decoded values do not change. --out and --forward get the original JSON.
               yield* ui.note(formatTriggerListenSummary(parsed), `Event #${matchingEvents}`);
-              yield* ui.log.message(JSON.stringify(eventData, null, 2));
-              yield* ui.output(JSON.stringify(eventData));
+              yield* ui.log.message(escapeTerminalLines(JSON.stringify(eventData, null, 2)));
+              yield* ui.output(escapeTerminalText(JSON.stringify(eventData)));
             } else {
               yield* ui.note(formatTriggerListenSummary(parsed), `Event #${matchingEvents}`);
-              yield* ui.log.message(JSON.stringify(parsed.payload, null, 2));
-              yield* ui.output(JSON.stringify(eventData));
+              yield* ui.log.message(escapeTerminalLines(JSON.stringify(parsed.payload, null, 2)));
+              yield* ui.output(escapeTerminalText(JSON.stringify(eventData)));
             }
 
             const payloadForForwarding = JSON.stringify(eventData);
@@ -369,14 +372,20 @@ export const triggersCmd$Listen = Command.make(
         const events = yield* FiberSet.make();
         const runEvent = yield* FiberSet.runtime(events)();
         // Without --max-events or --fail-fast nothing resolves stopWhenDone, so this waits on
-        // the listener until Ctrl-C or SIGTERM stops it or another signal interrupts it.
+        // the listener until Ctrl-C or SIGTERM stops it, a reader closes stdout
+        // (`--json | head -1`), or another signal interrupts it.
         const stopReason = yield* Effect.raceAllFirst([
           listenEffect(runEvent),
           Deferred.await(stopWhenDone),
           shutdown.requested,
+          Effect.as(ui.stdoutClosed, 'stdout-closed' as const),
         ]);
-        if (stopReason === 'max-events') {
+        // Events already accepted still finish their --out and --forward steps; once stdout is
+        // closed their own writes there are dropped.
+        if (stopReason === 'max-events' || stopReason === 'stdout-closed') {
           yield* finishAcceptedEvents(events, failed);
+        }
+        if (stopReason === 'max-events') {
           yield* ui.outro(`Stopped after receiving ${matchingEvents} matching events.`);
         }
       }).pipe(

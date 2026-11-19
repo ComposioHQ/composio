@@ -11,6 +11,7 @@
     "agent-setup",
     "---Core concepts---",
     "how-composio-works",
+    "apps-and-toolkits",
     "configuring-sessions",
     "session-configs",
     "instant-tools",
@@ -19,6 +20,7 @@
     "triggers",
     "skills",
     "---Governance---",
+    "governance/action-permissions",
     "governance/tool-hints",
     "governance/approvals",
     "firewall",
@@ -35,8 +37,15 @@
     "sessions-vs-direct-execution",
     "tools-direct",
     "auth-configuration",
-    "---Migration and security---",
-    "migration-guide",
-    "security"
+    "---Security and Compliance---",
+    "security/overview",
+    "security/vendor-security-review",
+    "security/token-custody",
+    "security/data-retention",
+    "security/zero-data-retention",
+    "security/audit-logs",
+    "security/outbound-ips",
+    "---Migration---",
+    "migration-guide"
   ]
 }

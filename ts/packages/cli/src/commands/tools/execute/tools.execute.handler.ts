@@ -1,5 +1,6 @@
 import { Effect, Option } from 'effect';
 import { CommandSurface } from 'src/commands/surface';
+import { retryAdviceFor } from 'src/effects/retry-advice';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
 import {
@@ -15,6 +16,7 @@ import {
 } from 'src/services/tool-input-validation';
 import { detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolsExecutor } from 'src/services/tools-executor';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { redact } from 'src/ui/redact';
 import {
   resolveExecuteContext,
@@ -25,7 +27,11 @@ import {
 } from './tools.execute.context';
 import { perfDebugLog } from './tools.execute.debug';
 import { invalidArguments, ReportedToolExecutionError } from './tools.execute.errors';
-import { emitExecuteFailureTelemetry, handleExecutionError } from './tools.execute.failure';
+import {
+  emitExecuteFailureTelemetry,
+  handleExecutionError,
+  printExecuteRetryAdvice,
+} from './tools.execute.failure';
 import {
   ciRedactReplacer,
   connectionTips,
@@ -255,9 +261,19 @@ const runExecuteWithSpinner = (params: {
                   stage: 'execution',
                   projectScope: toolkitProjectScope(params.resolvedProject),
                 });
+                // Whether the request can be sent again as it is: `"retry": "safe"` (exit 75) or
+                // `"retry": "check-first"` when it may have run before it failed.
+                const retry = Option.getOrUndefined(retryAdviceFor(error));
+                if (retry !== undefined) {
+                  yield* printExecuteRetryAdvice(params.ui, retry, params.surface);
+                }
                 yield* writeExecuteStdout(
                   params.ui,
-                  JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
+                  JSON.stringify(
+                    { successful: false, ...summary, ...(retry === undefined ? {} : { retry }) },
+                    ciRedactReplacer,
+                    2
+                  )
                 );
                 yield* appendCliSessionHistory({
                   ...executeSessionHistoryScope(params.resolvedProject),
@@ -273,6 +289,7 @@ const runExecuteWithSpinner = (params: {
                   reason: 'execution_failed',
                   toolSlug: params.slug,
                   message: summary.error,
+                  ...(retry === 'safe' ? { retryable: true } : {}),
                 });
               }),
             onSuccess: result =>
@@ -289,7 +306,7 @@ const runExecuteWithSpinner = (params: {
         if (!result.successful) {
           yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catch(() => Effect.void));
           const logId = result.logId
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
+            ? ` (logId: ${escapeTerminalText(redact({ value: result.logId, prefix: 'log_' }))})`
             : '';
           yield* spinner.error(`Execution failed${logId}`);
 
@@ -314,7 +331,7 @@ const runExecuteWithSpinner = (params: {
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
           yield* params.ui.log.warn(
-            `The tool executed successfully but the response may contain an error: ${inBandWarning}`
+            `The tool executed successfully but the response may contain an error: ${escapeTerminalText(inBandWarning)}`
           );
         }
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);

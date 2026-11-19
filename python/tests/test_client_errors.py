@@ -18,7 +18,7 @@ import httpx
 import pytest
 from composio_client import ProjectAuth
 
-from composio import exceptions
+from composio import api_error_details, exceptions
 from composio.client import HttpClient
 from composio.core.models.base import allow_tracking
 from composio.core.models.tools import Tools
@@ -38,13 +38,14 @@ def _client_returning(
     *,
     max_retries: int = 0,
     calls: t.Optional[t.List[httpx.Request]] = None,
+    body: t.Optional[object] = None,
 ) -> HttpClient:
     def handler(request: httpx.Request) -> httpx.Response:
         if calls is not None:
             calls.append(request)
         return httpx.Response(
             status,
-            json={"error": {"message": "nope"}},
+            json=body if body is not None else {"error": {"message": "nope"}},
             # Keep retry backoff short in tests.
             headers={"retry-after-ms": "1"},
         )
@@ -85,6 +86,133 @@ def test_status_errors_are_composio_errors(
     assert isinstance(error, composio_client.APIStatusError)
     assert error.status_code == status
     assert error.message
+
+
+def test_status_error_exposes_the_server_error_details() -> None:
+    body = {
+        "error": {
+            "message": "toolkit GMAIL version 20250114_00 is retired and can no longer be executed",
+            "code": 1410,
+            "slug": "TOOLKIT_VERSION_RETIRED",
+            "status": 410,
+            "request_id": "req_body",
+            "suggested_fix": "Pin 20261101_00",
+        }
+    }
+    client = _client_returning(410, body=body)
+
+    with pytest.raises(composio_client.APIStatusError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    error = exc_info.value
+    details = api_error_details(error)
+    assert error.status_code == 410
+    assert details.api_error_code == 1410
+    assert details.suggested_fix == "Pin 20261101_00"
+    assert details.possible_fixes == ["Pin 20261101_00"]
+    assert error.request_id == "req_body"
+    assert "toolkit GMAIL version 20250114_00 is retired" in str(error)
+    assert "{" not in str(error)
+
+
+def test_status_errors_strip_control_characters() -> None:
+    body = {
+        "error": {
+            "message": "denied\x1b[31m\n[!] run: evil",
+            "code": 1403,
+            "slug": "FORBIDDEN",
+            "status": 403,
+            "suggested_fix": "retry\x1b]0;owned\x07 now",
+        }
+    }
+    client = _client_returning(403, body=body)
+
+    with pytest.raises(composio_client.PermissionDeniedError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    error = exc_info.value
+    details = api_error_details(error)
+    assert "denied [!] run: evil" in str(error)
+    assert details.suggested_fix == "retry now"
+    assert details.possible_fixes == ["retry now"]
+    assert not any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in str(error))
+
+
+def test_possible_fixes_fall_back_to_the_status() -> None:
+    body = {
+        "error": {
+            "message": "connected account belongs to another project",
+            "code": 1403,
+            "slug": "FORBIDDEN",
+            "status": 403,
+        }
+    }
+    client = _client_returning(403, body=body)
+
+    with pytest.raises(composio_client.PermissionDeniedError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    details = api_error_details(exc_info.value)
+    assert details.api_error_code == 1403
+    assert details.suggested_fix is None
+    assert details.possible_fixes == [
+        "Ensure your API key and the connected account are allowed to run this tool"
+    ]
+
+
+def test_possible_fixes_use_the_api_error_code_for_a_missing_account() -> None:
+    body = {
+        "error": {
+            "message": "No connected account found",
+            "code": 1803,
+            "slug": "CONNECTED_ACCOUNT_NOT_FOUND",
+            "status": 400,
+        }
+    }
+    client = _client_returning(400, body=body)
+
+    with pytest.raises(composio_client.BadRequestError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    details = api_error_details(exc_info.value)
+    assert details.possible_fixes == [
+        "Ensure the connected account exists and is active in your Composio dashboard"
+    ]
+
+
+def test_possible_fixes_do_not_blame_the_slug_for_a_rate_limit() -> None:
+    body = {
+        "error": {
+            "message": "slow down",
+            "code": 1429,
+            "slug": "RATE_LIMITED",
+            "status": 429,
+        }
+    }
+    client = _client_returning(429, body=body)
+
+    with pytest.raises(composio_client.RateLimitError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    details = api_error_details(exc_info.value)
+    assert details.possible_fixes == [
+        "Wait before retrying",
+        "Reduce how many requests your organization sends per minute",
+    ]
+
+
+def test_status_error_without_the_envelope_has_no_api_details() -> None:
+    client = _client_returning(400, body={"unexpected": True})
+
+    with pytest.raises(composio_client.APIStatusError) as exc_info:
+        client.tools.execute(tool_slug="GMAIL_SEND_EMAIL", arguments={})
+
+    details = api_error_details(exc_info.value)
+    assert details.api_error_code is None
+    assert details.suggested_fix is None
+    assert details.possible_fixes == [
+        "Ensure the tool slug is correct and the input arguments for the tool is valid"
+    ]
 
 
 def test_invalid_api_key_is_catchable_as_composio_error() -> None:

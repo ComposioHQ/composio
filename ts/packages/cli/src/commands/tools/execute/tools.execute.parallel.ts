@@ -12,6 +12,7 @@ import {
   getOrFetchToolInputDefinition,
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { redact } from 'src/ui/redact';
 import {
   resolveExecuteContext,
@@ -340,7 +341,12 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
           Effect.catch(error =>
             toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
-                const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
+                const mapped = mapComposioError({
+                  error,
+                  toolkit,
+                  toolSlug: spec.slug,
+                  tree: params.surface,
+                });
                 return {
                   slug: spec.slug,
                   successful: false,
@@ -356,7 +362,7 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
     if (ui) {
       for (const result of results) {
         if (!result.successful) {
-          yield* ui.log.error(`[${result.slug}] ${result.error}`);
+          yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(result.error)}`);
           continue;
         }
 
@@ -496,7 +502,12 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           Effect.catch(error =>
             toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
               Effect.map(toolkit => {
-                const mapped = mapComposioError({ error, toolkit, toolSlug: spec.slug });
+                const mapped = mapComposioError({
+                  error,
+                  toolkit,
+                  toolSlug: spec.slug,
+                  tree: params.surface,
+                });
                 return {
                   slug: spec.slug,
                   successful: false,
@@ -516,7 +527,7 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
             'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
               ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
               : '';
-          yield* ui.log.error(`[${result.slug}] ${result.error}${logId}`);
+          yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(`${result.error}${logId}`)}`);
           continue;
         }
 
@@ -541,7 +552,10 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
           `[${result.slug}] Execution successful${executionSuccessSuffix(result)}`
         );
         if ('data' in result) {
-          yield* ui.note(serializeExecuteOutput(result), `Response: ${result.slug}`);
+          yield* ui.note(
+            escapeTerminalLines(serializeExecuteOutput(result)),
+            `Response: ${result.slug}`
+          );
         }
       }
     }

@@ -1,12 +1,23 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { ConfigProvider, DateTime, Effect, Layer } from 'effect';
-import { cli, TestLive, MockConsole } from 'test/__utils__';
+import { ConfigProvider, DateTime, Effect, Layer, Option } from 'effect';
+import { cli, cliExit, TestLive, MockConsole } from 'test/__utils__';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
 import type { Toolkits } from 'src/models/toolkits';
 import { ComposioToolkitsRepository } from 'src/services/composio-clients';
+import { ProjectContext } from 'src/services/project-context';
 import { notFoundError } from 'test/__utils__/layers/not-found';
 import { exitCodeOf } from 'test/__utils__/exit-code';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
+import {
+  DEFAULT_PROJECT_SCOPE,
+  defaultDeveloperProjectAccountData,
+  DIRECTORY_PROJECT_SCOPE,
+  inDeveloperProjectDirectory,
+  loginWithoutDeveloperProject,
+  NO_DIRECTORY_PROJECT_NOTICE,
+  OTHER_DEVELOPER_PROJECT,
+  OTHER_PROJECT_SCOPE,
+} from 'test/__utils__/layers/developer-project';
 import { routeRequests, stubClientResources } from 'test/__utils__/services/stub-composio-client';
 import { makeToolkitsRepositoryStub } from 'test/__utils__/services/toolkits-repository-stub';
 
@@ -155,21 +166,24 @@ describe('CLI: composio dev toolkits list', () => {
     }
   );
 
-  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
-    '[Given] explicit --user-id [Then] shows connected status column',
-    it => {
-      it.effect('shows connected column with explicit user id', () =>
-        Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'list', '--user-id', 'default']);
-          const lines = yield* MockConsole.getLines({ stripAnsi: true });
-          const output = lines.join('\n');
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )('[Given] explicit --user-id [Then] shows connected status column', it => {
+    it.effect('shows connected column with explicit user id', () =>
+      Effect.gen(function* () {
+        yield* cli(['dev', 'toolkits', 'list', '--user-id', 'default']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = lines.join('\n');
 
-          expect(output).toContain('Connected');
-          expect(output).toContain('Listing 3 of 3 toolkits');
-        })
-      );
-    }
-  );
+        expect(output).toContain('Connected');
+        expect(output).toContain('Listing 3 of 3 toolkits');
+      })
+    );
+  });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(
     '[Given] --query "email"',
@@ -321,7 +335,7 @@ describe('CLI: composio dev toolkits list', () => {
         const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
 
         expect(stderr).toContain(
-          '`--connected` filter could not be applied — session data unavailable.'
+          'Warning: `--connected` filter could not be applied — session data unavailable.'
         );
         expect(
           (JSON.parse(String(stdout.at(-1))) as Array<{ slug: string }>).map(row => row.slug)
@@ -335,12 +349,28 @@ describe('CLI: composio dev toolkits list', () => {
     it => {
       it.effect('[Then] warns that the filter needs a user id and lists the catalog', () =>
         Effect.gen(function* () {
-          yield* cli(['dev', 'toolkits', 'list', '--connected']);
+          // Logged in without a global test user, in a directory whose project has none either.
+          yield* loginWithoutDeveloperProject;
+          const directoryProject = Layer.succeed(
+            ProjectContext,
+            ProjectContext.of({
+              resolve: Effect.succeedSome({
+                ...DIRECTORY_PROJECT_SCOPE,
+                projectName: Option.none(),
+                orgName: Option.none(),
+                email: Option.none(),
+                testUserId: Option.none(),
+              }),
+            })
+          );
+          yield* cli(['dev', 'toolkits', 'list', '--connected']).pipe(
+            Effect.provide(directoryProject)
+          );
           const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
           const stdout = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' });
 
           expect(stderr[0]).toBe(
-            '`--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
+            'Warning: `--connected` requires a user id. Use `--user-id` or run `composio dev init`.'
           );
           expect(stderr.join('\n')).toContain('Listing 3 of 3 toolkits');
           expect(
@@ -396,6 +426,155 @@ describe('CLI: composio dev toolkits list', () => {
 
         expect(output).toContain('No toolkits found');
       })
+    );
+  });
+});
+
+// The connection status comes from a session in the developer project the command resolved,
+// never in the one the backend would pick for the key.
+describe('CLI: composio dev toolkits list reads connection status in the developer project', () => {
+  const emptyPage = () =>
+    Response.json({
+      items: [],
+      next_cursor: null,
+      total_pages: 1,
+      current_page: 1,
+      total_items: 0,
+    });
+
+  layer(
+    TestLive({
+      ...inDeveloperProjectDirectory,
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+    })
+  )(it => {
+    it.effect.each([
+      { given: 'a directory set up for a project', args: [], scope: DIRECTORY_PROJECT_SCOPE },
+      {
+        given: '--project-name',
+        args: ['--project-name', OTHER_DEVELOPER_PROJECT.name],
+        scope: OTHER_PROJECT_SCOPE,
+      },
+    ])('[Given] $given [Then] opens its session in that project', ({ args, scope }) =>
+      Effect.gen(function* () {
+        const stub = stubSessionToolkits(emptyPage);
+        yield* cli(['dev', 'toolkits', 'list', ...args]).pipe(Effect.provide(stub.layer));
+
+        expect(stub.requests.map(request => request.path)).toEqual([
+          '/api/v3.1/tool_router/session',
+          `${SESSION_TOOLKITS_PATH}?limit=30`,
+        ]);
+        expect(stub.scopes).toEqual([scope, scope]);
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      toolkitsData,
+      accountData: defaultDeveloperProjectAccountData(),
+    })
+  )(it => {
+    it.effect(
+      '[Given] --user-id in a directory set up for no project [Then] opens its session in the default developer project, saying so',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubSessionToolkits(emptyPage);
+          const { exitCode } = yield* cliExit([
+            'dev',
+            'toolkits',
+            'list',
+            '--user-id',
+            'alice',
+          ]).pipe(Effect.provide(stub.layer));
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+          expect(exitCode).toBe(0);
+          expect(stub.scopes).toEqual([DEFAULT_PROJECT_SCOPE, DEFAULT_PROJECT_SCOPE]);
+          expect(lines).toContain(NO_DIRECTORY_PROJECT_NOTICE);
+          expect(lines.join('\n')).toContain('Listing 3 of 3 toolkits');
+        })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(it => {
+    it.effect(
+      '[Given] no user in a directory set up for no project [Then] lists the catalog without connection status',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubSessionToolkits(emptyPage);
+          const { exitCode } = yield* cliExit(['dev', 'toolkits', 'list']).pipe(
+            Effect.provide(stub.layer)
+          );
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+
+          expect(exitCode).toBe(0);
+          expect(stub.requests).toEqual([]);
+          expect(lines).toContain(
+            'No developer project to read connection status from; showing toolkits without it. Run `composio dev init`, or pass --user-id or --project-name.'
+          );
+          expect(lines).not.toContain(NO_DIRECTORY_PROJECT_NOTICE);
+        })
+    );
+  });
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, toolkitsData }))(it => {
+    it.effect(
+      '[Given] a failed project lookup with redirected stderr [Then] names the skipped filter and keeps the catalog and successful exit',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubClientResources(['auth'], () =>
+            Response.json(
+              { error: { message: 'Session service unavailable', status: 500, code: 500 } },
+              { status: 500, headers: { 'x-should-retry': 'false' } }
+            )
+          );
+          const terminal = redirectedTerminalUI();
+          const { exitCode } = yield* cliExit([
+            'dev',
+            'toolkits',
+            'list',
+            '--connected',
+            '--user-id',
+            'alice',
+          ]).pipe(Effect.provide([stub.layer, terminal.layer]));
+
+          expect(exitCode).toBe(0);
+          expect(JSON.parse(terminal.stdout()).map((row: { slug: string }) => row.slug)).toEqual([
+            'gmail',
+            'slack',
+            'github',
+          ]);
+          expect(terminal.stderr()).toBe(
+            'Warning: `--connected` filter could not be applied — developer project unavailable. Showing the unfiltered catalog.\n'
+          );
+        })
+    );
+
+    it.effect(
+      '[Given] --connected in a directory set up for no project [Then] warns that the filter needs a developer project and lists the catalog',
+      () =>
+        Effect.gen(function* () {
+          yield* loginWithoutDeveloperProject;
+          const stub = stubSessionToolkits(emptyPage);
+          const { exitCode } = yield* cliExit(['dev', 'toolkits', 'list', '--connected']).pipe(
+            Effect.provide(stub.layer)
+          );
+          const stderr = yield* MockConsole.getLines({ stripAnsi: true, stream: 'stderr' });
+
+          expect(exitCode).toBe(0);
+          expect(stub.requests).toEqual([]);
+          expect(stderr).toContain(
+            'Warning: `--connected` filter could not be applied — developer project unavailable. Showing the unfiltered catalog.'
+          );
+          expect(stderr.join('\n')).not.toContain('`--connected` requires a user id.');
+          expect(stderr.join('\n')).toContain('Listing 3 of 3 toolkits');
+        })
     );
   });
 });

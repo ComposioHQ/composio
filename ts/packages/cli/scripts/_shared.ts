@@ -2,9 +2,13 @@ import { builtinModules } from 'node:module';
 import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import process from 'node:process';
-import { Effect } from 'effect';
+import { Console, Effect, Stream } from 'effect';
+import { ChildProcess as Command } from 'effect/process';
 import { RUN_COMPANION_MODULE_BASENAMES } from '../src/services/run-companion-modules';
 import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
+
+import { BinaryBuildError } from './build-error';
+import { compiledBinaryFileName, type ReleaseTarget } from './_release-artifacts';
 
 export { teardown } from './_teardown';
 
@@ -354,4 +358,54 @@ export const buildCompanionModules = (outputDir: string) =>
 
     yield* Effect.tryPromise(() => assertBundledRuntimeFiles(outputDir));
     yield* Effect.tryPromise(() => assertExecutableExcludesCompanionModules());
+  });
+
+/**
+ * Cross-compile the CLI for one release target. Returns the path of the compiled binary.
+ */
+export const compileBinary = ({ bunTarget, artifact }: ReleaseTarget) =>
+  Effect.gen(function* () {
+    const outfile = `./dist/binaries/${compiledBinaryFileName(artifact)}`;
+    const args = [
+      'build',
+      './src/bin.ts',
+      '--env',
+      'DEBUG_OVERRIDE_*',
+      ...posthogBakeArgs(),
+      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
+      '--compile',
+      '--production',
+      '--target',
+      bunTarget,
+      '--outfile',
+      outfile,
+    ];
+    yield* Effect.logDebug(`Running bun ${args.join(' ')}`);
+
+    const child = yield* Command.make('bun', args);
+    const { exitCode } = yield* Effect.all(
+      {
+        exitCode: child.exitCode,
+        output: Stream.merge(
+          Stream.decodeText(child.stdout, { encoding: 'utf-8' }),
+          Stream.decodeText(child.stderr, { encoding: 'utf-8' }),
+          { haltStrategy: 'left' }
+        ).pipe(
+          Stream.tap(chunk => Console.log(chunk)),
+          Stream.runDrain
+        ),
+      },
+      { concurrency: 'unbounded' }
+    );
+
+    if (exitCode !== 0) {
+      // `teardown` exits with this code.
+      process.exitCode = exitCode;
+      return yield* new BinaryBuildError({
+        message: `Failed to build binary for ${bunTarget}`,
+        target: bunTarget,
+        exitCode,
+      });
+    }
+    return outfile;
   });

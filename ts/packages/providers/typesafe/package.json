@@ -1,6 +1,6 @@
 {
   "name": "@composio/typesafe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "TypeSafe (Jev) Provider for Composio SDK",
   "main": "src/index.ts",
   "type": "module",
@@ -54,7 +54,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@composio/google": "workspace:*",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.6",
     "@typesafe-ai/sdk": "0.6.0",
     "fast-check": "^4.10.2",
     "tsdown": "catalog:",

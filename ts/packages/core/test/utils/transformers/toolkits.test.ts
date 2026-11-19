@@ -176,6 +176,46 @@ describe('transformToolkitRetrieveResponse', () => {
     expect(details?.authHintUrl).toBe('https://shopify.dev/api-keys');
   });
 
+  it('maps every Composio-managed app with its id, default flag and scopes', () => {
+    const withManagedApps = {
+      ...rawToolkit,
+      composio_managed_auth: [
+        {
+          managed_app_id: 'ma_default0001',
+          is_default: true,
+          mode: 'OAUTH2',
+          scopes: { available: ['channels:read'] },
+          user_scopes: { available: ['search:read'] },
+        },
+        {
+          managed_app_id: 'ma_second00001',
+          is_default: false,
+          mode: 'OAUTH2',
+          scopes: { available: ['channels:read'] },
+        },
+      ],
+    } as RawRetrieveResponse;
+
+    const apps = transformToolkitRetrieveResponse(withManagedApps).composioManagedAuth;
+
+    expect(apps).toEqual([
+      {
+        managedAppId: 'ma_default0001',
+        isDefault: true,
+        mode: 'OAUTH2',
+        scopes: { available: ['channels:read'] },
+        userScopes: { available: ['search:read'] },
+      },
+      {
+        managedAppId: 'ma_second00001',
+        isDefault: false,
+        mode: 'OAUTH2',
+        scopes: { available: ['channels:read'] },
+      },
+    ]);
+    expect(apps?.[1]).not.toHaveProperty('userScopes');
+  });
+
   it('maps meta.app_url to meta.appUrl', () => {
     const withAppUrl = {
       ...rawToolkit,

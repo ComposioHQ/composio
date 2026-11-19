@@ -1,0 +1,163 @@
+{
+  "$comment": "Recorded from anthropic claude-haiku-5-5 by record.ts. Do not edit by hand; record again.",
+  "fixtures": [
+    {
+      "match": {
+        "turnIndex": 0,
+        "userMessage": "Send a Slack message to the #general channel that says: deploy finished",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": false
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01DT8ERFKDiGexrcVsgcHwr1",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio execute SLACK_SEND_MESSAGE --get-schema\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 2652,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 168
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 1,
+        "userMessage": "Send a Slack message to the #general channel that says: deploy finished",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01DT8ERFKDiGexrcVsgcHwr1",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01GZCNChP9qHLoARjymEeCZs",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio execute SLACK_SEND_MESSAGE -d '{ channel: \\\"#general\\\", text: \\\"deploy finished\\\" }'\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3114,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 87
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 2,
+        "userMessage": "Send a Slack message to the #general channel that says: deploy finished",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01GZCNChP9qHLoARjymEeCZs",
+        "toolResultContains": "\"exit_code\":1,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_0127uqjnBQzn8fmy7kHupVeN",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio link slack\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3321,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 72
+        },
+        "content": "Slack isn't connected yet, so I'll start the link flow."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 3,
+        "userMessage": "Send a Slack message to the #general channel that says: deploy finished",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_0127uqjnBQzn8fmy7kHupVeN",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "toolu_01DRoezXpTnynHs7KEncA9qL",
+            "name": "shell",
+            "arguments": "{\"command\":\"composio execute SLACK_SEND_MESSAGE -d '{ channel: \\\"#general\\\", text: \\\"deploy finished\\\" }'\"}"
+          }
+        ],
+        "usage": {
+          "input_tokens": 3571,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 87
+        }
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    },
+    {
+      "match": {
+        "turnIndex": 4,
+        "userMessage": "Send a Slack message to the #general channel that says: deploy finished",
+        "model": "claude-haiku-5-5",
+        "hasToolResult": true,
+        "toolCallId": "toolu_01DRoezXpTnynHs7KEncA9qL",
+        "toolResultContains": "\"exit_code\":0,"
+      },
+      "response": {
+        "usage": {
+          "input_tokens": 3821,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+          },
+          "output_tokens": 84
+        },
+        "content": "The message \"deploy finished\" was posted to #general.\n\nSlack wasn't connected at first, so I ran `composio link slack` to authorize it, then retried the send. The link completed on the first try, and the send succeeded (log ID `log_e2e0001`)."
+      },
+      "metadata": {
+        "systemHash": "6ee9d189",
+        "toolsHash": "95a7fdfe"
+      }
+    }
+  ]
+}

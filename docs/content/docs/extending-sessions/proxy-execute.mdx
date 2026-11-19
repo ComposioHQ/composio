@@ -155,14 +155,16 @@ At creation, the API rejects a disabled proxy setting combined with an enabled s
 
 Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.
 
-Hint filters and per-toolkit tool rules do not apply, because a proxy request names an endpoint, not a tool. To remove the raw HTTP path from the session's sandbox, turn proxy execution off in the sandbox config:
+A proxy request names an endpoint, not a tool, so Composio can't match it against a tool rule. Instead, the session refuses every proxy call for a toolkit that has a tool `enable` or `disable` list, or a hint filter that applies to it, with `403` `ToolRouterV2_ProxyExecutionDisabled`. Toolkits without those filters keep proxy access to any endpoint on their API domain. See [Per-action permissions](/docs/governance/action-permissions).
+
+To remove the raw HTTP path from the session's sandbox for every toolkit, turn proxy execution off in the sandbox config:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
-    tags=["readOnlyHint"],
+    toolkits=["github"],
     sandbox={"enable": True, "enable_proxy_execution": False},
 )
 ```
@@ -173,7 +175,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
-  tags: ["readOnlyHint"],
+  toolkits: ["github"],
   sandbox: { enable: true, enableProxyExecution: false },
 });
 ```
@@ -185,7 +187,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user_123",
-    "tags": {"enable": ["readOnlyHint"]},
+    "toolkits": {"enable": ["github"]},
     "workbench": {"enable": true, "enable_proxy_execution": false}
   }'
 ```

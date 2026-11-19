@@ -1,10 +1,13 @@
+import type { DecodeError } from '@composio/client/effect';
 import { hasProperty, isFunction } from 'effect/Predicate';
 import {
   describeDecodeError,
   isClientApiError,
   isClientConnectionError,
   isClientDecodeError,
+  isOperationDecodingError,
   type ClientApiError,
+  type OperationDecodingError,
 } from 'src/utils/api-error-extraction';
 
 interface ErrorDetails {
@@ -13,13 +16,17 @@ interface ErrorDetails {
   message: unknown;
 }
 
+const decodeErrorDetail = (error: DecodeError | OperationDecodingError): string => {
+  const { message, hint } = describeDecodeError(error);
+  return `${message}\n${hint}`;
+};
+
 // A client error has no cause chain: its own message is the status line and
 // response body, and a connection error's description is the transport's text.
 // A response that failed decoding is reported by operation and request id.
 const clientApiErrorDetail = (error: ClientApiError): string => {
   if (isClientDecodeError(error)) {
-    const { message, hint } = describeDecodeError(error);
-    return `${message}\n${hint}`;
+    return decodeErrorDetail(error);
   }
   if (isClientConnectionError(error)) {
     return error.description ?? error.message;
@@ -42,6 +49,8 @@ const causeDetail = (cause: unknown): string | undefined => {
     }
 
     if (isClientApiError(current)) return clientApiErrorDetail(current);
+    // Its cause is the schema issues, which may quote the response.
+    if (isOperationDecodingError(current)) return decodeErrorDetail(current);
 
     if (typeof current === 'string' && current.length > 0) {
       detail = current;
@@ -84,6 +93,10 @@ export const extractErrorDetails = (error: unknown): ErrorDetails => {
       type: error.name,
       message: clientApiErrorMessage(error),
     };
+  }
+
+  if (isOperationDecodingError(error)) {
+    return { isPlainString: false, type: error.name, message: decodeErrorDetail(error) };
   }
 
   const isTaggedErrorWithCause =

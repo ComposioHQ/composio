@@ -53,6 +53,8 @@ When you exceed the rate limit, you'll receive a `429 Too Many Requests` respons
 
 3. **Cache what doesn't change.** Keep tool definitions and other static data client-side so you don't spend requests re-fetching them.
 
+For retry code in Python and TypeScript, telling Composio limits from provider quotas, and capping concurrency per connected account, see [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits).
+
 ## Provider quota errors
 
 Providers can limit an OAuth app, developer token, workspace, account, or individual API operation. With managed auth, some of those quotas are shared across connections using Composio's provider credentials.
@@ -78,6 +80,8 @@ If you need help tracing a limit, include the UTC timestamp, tool slug, Composio
 ## Need higher limits?
 
 If you regularly hit Composio's organization API limit, upgrade your plan or [talk to us](https://composio.dev/contact?utm_source=docs&cta_placement=docs-rate-limits) about custom limits. For a provider quota, use the provider recovery steps above.
+
+If you keep hitting a provider quota on a Composio-managed app, the fix is to move to your own OAuth app, so your connections draw from your own provider quota. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app).
 
 <Cards>
   <Card title="Errors" href="/reference/errors">

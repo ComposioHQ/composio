@@ -52,8 +52,8 @@ const buildCliWorkflow = readFileSync(
   new URL('../.github/workflows/build-cli-binaries.yml', import.meta.url),
   'utf8'
 );
-const buildAllCliBinariesScript = readFileSync(
-  new URL('../ts/packages/cli/scripts/build-all-binaries.ts', import.meta.url),
+const cliBuildSharedScript = readFileSync(
+  new URL('../ts/packages/cli/scripts/_shared.ts', import.meta.url),
   'utf8'
 );
 const installGuide = readFileSync(new URL('../INSTALL.md', import.meta.url), 'utf8');
@@ -672,12 +672,8 @@ const generatedWindowsInstallGuidance = requireMatch(
   'generated Windows install guidance'
 );
 
-if (
-  !canonicalWindowsInstallGuidance.includes(
-    '[WSL](https://learn.microsoft.com/windows/wsl/install)'
-  )
-) {
-  throw new Error('INSTALL.md must direct Windows users to the canonical WSL instructions');
+if (!canonicalWindowsInstallGuidance.includes('PowerShell')) {
+  throw new Error('INSTALL.md must document native Windows x64 PowerShell installation');
 }
 if (generatedWindowsInstallGuidance !== canonicalWindowsInstallGuidance) {
   throw new Error(
@@ -743,6 +739,143 @@ if (!createDraftScript.includes('--draft')) {
 }
 if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
   throw new Error('verify-assets.sh must require assets be fully uploaded (state == "uploaded")');
+}
+
+// Windows must be uploaded before a release becomes public, just like existing platforms.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-windows-release-assets-'));
+  try {
+    const fakeBin = join(fixtureDir, 'bin');
+    mkdirSync(fakeBin);
+    const fixturePath = join(fixtureDir, 'assets.json');
+    const ghPath = join(fakeBin, 'gh');
+    writeFileSync(ghPath, '#!/bin/sh\ncat "$CLI_RELEASE_ASSETS_FIXTURE"\n');
+    chmodSync(ghPath, 0o755);
+    const assets = [
+      'composio-linux-x64.zip',
+      'composio-linux-aarch64.zip',
+      'composio-darwin-x64.zip',
+      'composio-darwin-aarch64.zip',
+      'composio-windows-x64.zip',
+      'composio-skill.zip',
+      'checksums.txt',
+    ].map(name => ({ name, state: 'uploaded' }));
+    const verify = (rows, extraEnv = {}) => {
+      writeFileSync(fixturePath, JSON.stringify({ assets: rows }));
+      return spawnSync(
+        'bash',
+        [new URL('../.github/scripts/cli-release/verify-assets.sh', import.meta.url).pathname],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            PATH: `${fakeBin}:${process.env.PATH}`,
+            CLI_RELEASE_ASSETS_FIXTURE: fixturePath,
+            RELEASE_TAG: '@composio/cli@1.2.3',
+            VERIFY_ATTEMPTS: '1',
+            VERIFY_SLEEP_SECONDS: '0',
+            ...extraEnv,
+          },
+        }
+      );
+    };
+    const complete = verify(assets);
+    if (complete.status !== 0) {
+      throw new Error(`complete CLI release must pass verification: ${complete.stderr}`);
+    }
+    const withoutWindows = assets.filter(asset => asset.name !== 'composio-windows-x64.zip');
+    const missing = verify(withoutWindows);
+    // Windows is experimental: when its native checks fail, the release ships without it.
+    const unverified = verify(withoutWindows, { WINDOWS_VERIFIED: 'false' });
+    if (unverified.status !== 0) {
+      throw new Error(
+        `a release without the unverified Windows archive must pass: ${unverified.stdout}`
+      );
+    }
+    // A Windows archive left on a resumed draft has no checksum entry, so it must not ship.
+    const stale = verify(assets, { WINDOWS_VERIFIED: 'false' });
+    if (stale.status === 0 || !stale.stdout.includes('unexpected assets')) {
+      throw new Error('CLI release verification must reject an unverified Windows archive');
+    }
+    const pending = verify(
+      assets.map(asset =>
+        asset.name === 'composio-windows-x64.zip' ? { ...asset, state: 'new' } : asset
+      )
+    );
+    for (const result of [missing, pending]) {
+      if (result.status === 0 || !result.stdout.includes('composio-windows-x64.zip')) {
+        throw new Error(
+          'CLI release verification must reject a missing or pending Windows archive'
+        );
+      }
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
+}
+
+// Resuming a draft must remove assets the current run does not ship: the regenerated
+// checksums.txt no longer covers them.
+{
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-resume-draft-'));
+  try {
+    const fakeBin = join(fixtureDir, 'bin');
+    const binariesDir = join(fixtureDir, 'binaries');
+    mkdirSync(fakeBin);
+    mkdirSync(binariesDir);
+    for (const name of ['composio-linux-x64.zip', 'checksums.txt']) {
+      writeFileSync(join(binariesDir, name), '');
+    }
+    const ghLog = join(fixtureDir, 'gh.log');
+    const ghPath = join(fakeBin, 'gh');
+    writeFileSync(
+      ghPath,
+      [
+        '#!/bin/sh',
+        'echo "$*" >> "$GH_LOG"',
+        'case "$*" in',
+        '  *isDraft*) echo true ;;',
+        '  *assets*) printf "%s\\n" composio-linux-x64.zip composio-windows-x64.zip checksums.txt ;;',
+        'esac',
+        '',
+      ].join('\n')
+    );
+    chmodSync(ghPath, 0o755);
+    const resumed = spawnSync(
+      'bash',
+      [
+        new URL('../.github/scripts/cli-release/create-or-resume-draft.sh', import.meta.url)
+          .pathname,
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${fakeBin}:${process.env.PATH}`,
+          GH_LOG: ghLog,
+          BINARIES_DIR: binariesDir,
+          RELEASE_TAG: '@composio/cli@1.2.3',
+          RELEASE_NAME: 'CLI 1.2.3',
+          CHECKOUT_REF: 'abc123',
+          PRERELEASE: 'false',
+        },
+      }
+    );
+    const deletions = readFileSync(ghLog, 'utf8')
+      .split('\n')
+      .filter(line => line.startsWith('release delete-asset'));
+    if (
+      resumed.status !== 0 ||
+      deletions.length !== 1 ||
+      !deletions[0].includes('composio-windows-x64.zip')
+    ) {
+      throw new Error(
+        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions}`
+      );
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
+  }
 }
 
 // Beta status must survive the draft→publish flip (regression: the old single create set
@@ -880,11 +1013,9 @@ if (!buildCliWorkflow.includes('RELEASE_TAG: ${{ needs.prepare.outputs.release_t
   throw new Error('CLI binary builds must receive the resolved GitHub release tag');
 }
 if (
-  !buildAllCliBinariesScript.includes(
-    '...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)'
-  )
+  !cliBuildSharedScript.includes('...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG)')
 ) {
-  throw new Error('the all-target CLI build must embed the resolved GitHub release version');
+  throw new Error('CLI binary compilation must embed the resolved GitHub release version');
 }
 if (
   !buildCliWorkflow.includes(

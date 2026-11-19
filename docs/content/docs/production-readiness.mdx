@@ -10,13 +10,13 @@ Use this guide after the [quickstart](/docs/quickstart) works and before custome
 
 ## Production decisions at a glance
 
-| Prototype default | Production decision |
+| Starting point | Production decision |
 |---|---|
 | One sample user such as `user_123` | Stable, immutable application user IDs |
 | One project for every test | Separate projects for environments that must not share credentials or resources |
 | A new session on every run | Persist and reuse session IDs for multi-turn work |
 | Every toolkit is discoverable | Restrict toolkits and tools to the product's intended scope |
-| Managed auth | Keep it, or use custom auth for branding, scopes, quotas, or custom providers |
+| Managed auth | Works in production. Consider your own OAuth app for dedicated rate limits, your own consent screen, or custom scopes |
 | API keys in a local `.env` file | Server-side secret manager and environment-specific keys |
 | A successful demo call | Real account, failure-path, webhook, and tenant-isolation tests |
 
@@ -44,9 +44,9 @@ For consumer requests, set `org_id` and `project_id` in Python or `orgId` and `p
 
 ## 3. Decide how customers authenticate
 
-Keep managed auth when its provider app, scopes, and quotas fit your product. It removes OAuth app setup and token-refresh work.
+Composio-managed OAuth apps work in production. They remove OAuth app setup and token refresh work. Because the OAuth app is shared, you may run into shared provider rate limits as your usage grows. When you're ready for higher volume, we recommend your own OAuth app with a [custom auth config](/docs/authentication/custom-app-vs-managed-app). [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits) shows how to spot and handle those limits.
 
-Use a [custom auth config](/docs/authentication/custom-app-vs-managed-app) when you need:
+Your own OAuth app also gives you:
 
 - Your own app name on the provider consent screen
 - Different or additional OAuth scopes
