@@ -2905,7 +2905,12 @@ describe('CLI: composio execute', () => {
     )('[When] the JSON arrives after the timeout', it => {
       it.effect('[Then] fails instead of running the tool with empty arguments', () =>
         Effect.gen(function* () {
-          const lateWrite = setTimeout(() => slowPipe.end('{"owner":"x"}'), 1500);
+          // Time the write from when the reader starts listening, not from test start, so slow
+          // setup cannot move it inside the 1 second window.
+          let lateWrite: ReturnType<typeof setTimeout> | undefined;
+          slowPipe.once('resume', () => {
+            lateWrite = setTimeout(() => slowPipe.end('{"owner":"x"}'), 1500);
+          });
           const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(
             Effect.flip,
             Effect.ensuring(Effect.sync(() => clearTimeout(lateWrite)))

@@ -125,9 +125,10 @@ describe('CLI: composio proxy', () => {
         const piped = new PassThrough();
         setTimeout(() => piped.end('{"message":{"raw":"abc"}}'), 1500);
 
-        const { body } = yield* proxyBodyOver(piped, ['-X', 'POST', '-d', '-']);
+        const { body, output } = yield* proxyBodyOver(piped, ['-X', 'POST', '-d', '-']);
 
         expect(body).toEqual({ message: { raw: 'abc' } });
+        expect(output).not.toContain('Sending the request without a body');
       })
     );
 
