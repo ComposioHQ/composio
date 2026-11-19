@@ -3,12 +3,16 @@
   "info": {
     "title": "Composio Webhook Events",
     "version": "1.0.0",
-    "description": "Payloads Composio delivers to your registered webhook endpoints. Composio POSTs these to the URL on your webhook subscription. For signature verification and delivery headers, see the Verifying webhooks guide."
+    "description": "Payloads Composio sends to your webhook endpoints. Webhook events go to the URL on your webhook subscription. Session webhooks go to your session webhook URL, and Composio waits for your answer. For signature verification, see the Verifying webhooks guide."
   },
   "tags": [
     {
       "name": "Webhook Events",
       "description": "Events delivered by Composio to your registered webhook endpoints"
+    },
+    {
+      "name": "Session Webhooks",
+      "description": "Requests Composio sends to your session webhook URL during a tool call, and the answer it waits for"
     }
   ],
   "components": {
@@ -18597,6 +18601,907 @@
         "responses": {
           "200": {
             "description": "Return any 2xx status to acknowledge receipt. Non-2xx responses are retried."
+          }
+        }
+      }
+    },
+    "composio.session_hook.before_execute": {
+      "post": {
+        "operationId": "composio_session_hook_before_execute",
+        "tags": [
+          "Session Webhooks"
+        ],
+        "summary": "Session hook: before execute",
+        "description": "Sent before a tool or proxy call runs, when the session has a `before_execute` hook with a `webhook` handler. Composio waits for your answer, then runs the call, blocks it, or runs it with your changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unique request id. Equals the payload `id`."
+            },
+            "required": true,
+            "description": "Unique request id. Equals the payload `id`.",
+            "name": "webhook-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unix timestamp (seconds) of when the request was sent."
+            },
+            "required": true,
+            "description": "Unix timestamp (seconds) of when the request was sent.",
+            "name": "webhook-timestamp",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Base64 HMAC-SHA256 signature made with your session webhook secret, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`."
+            },
+            "required": true,
+            "description": "Base64 HMAC-SHA256 signature made with your session webhook secret, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`.",
+            "name": "webhook-signature",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^msg_[0-9a-f-]{36}$",
+                    "description": "Unique request id (msg_<uuid>). Also sent as the `webhook-id` header."
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp of when the request was created."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "composio.session_hook.before_execute"
+                    ]
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "properties": {
+                      "project_id": {
+                        "type": "string",
+                        "description": "ID of the project."
+                      },
+                      "session_id": {
+                        "type": "string",
+                        "description": "ID of the session the call was made in."
+                      },
+                      "user_id": {
+                        "type": "string",
+                        "description": "ID of the user the session belongs to."
+                      },
+                      "hook_id": {
+                        "type": "string",
+                        "description": "ID of the hook that sent this request, as set on the session."
+                      }
+                    },
+                    "required": [
+                      "project_id",
+                      "session_id",
+                      "user_id",
+                      "hook_id"
+                    ]
+                  },
+                  "data": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "tool_execute"
+                            ],
+                            "description": "A tool call. The call is in `tool_call`."
+                          },
+                          "tool_call": {
+                            "type": "object",
+                            "properties": {
+                              "toolkit_slug": {
+                                "type": "string",
+                                "description": "Slug of the toolkit (for example gmail)."
+                              },
+                              "tool_slug": {
+                                "type": "string",
+                                "description": "Slug of the tool (for example GMAIL_SEND_EMAIL)."
+                              },
+                              "toolkit_version": {
+                                "type": "string",
+                                "description": "Version of the toolkit the tool runs from (for example 20261101_00)."
+                              },
+                              "connected_account_id": {
+                                "type": "string",
+                                "description": "ID of the connected account the call uses. Omitted when the call doesn't use one, for example a toolkit that needs no auth."
+                              },
+                              "arguments": {
+                                "type": "object",
+                                "additionalProperties": {},
+                                "description": "The arguments the tool is called with."
+                              }
+                            },
+                            "required": [
+                              "toolkit_slug",
+                              "tool_slug",
+                              "toolkit_version",
+                              "arguments"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "tool_call"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "proxy_execute"
+                            ],
+                            "description": "A proxy call: an HTTP request to the toolkit API. The call is in `http_request`."
+                          },
+                          "http_request": {
+                            "type": "object",
+                            "properties": {
+                              "toolkit_slug": {
+                                "type": "string",
+                                "description": "Slug of the toolkit whose API is called (for example github)."
+                              },
+                              "connected_account_id": {
+                                "type": "string",
+                                "description": "ID of the connected account the call uses. Omitted when the call doesn't use one, for example a toolkit that needs no auth."
+                              },
+                              "method": {
+                                "type": "string",
+                                "enum": [
+                                  "GET",
+                                  "POST",
+                                  "PUT",
+                                  "DELETE",
+                                  "PATCH",
+                                  "HEAD"
+                                ],
+                                "description": "HTTP method of the request."
+                              },
+                              "endpoint": {
+                                "type": "string",
+                                "description": "The endpoint as the agent gave it: a path relative to the toolkit's API base URL, or a full URL."
+                              },
+                              "parameters": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string",
+                                      "description": "Header or query parameter name."
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "description": "Header or query parameter value."
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "header",
+                                        "query"
+                                      ],
+                                      "description": "Whether the parameter is a header or a query parameter."
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "value",
+                                    "type"
+                                  ]
+                                },
+                                "description": "Headers and query parameters the agent added. The credentials Composio adds are not included."
+                              },
+                              "body": {
+                                "description": "The request body. Omitted when there is none or when it is binary."
+                              }
+                            },
+                            "required": [
+                              "toolkit_slug",
+                              "method",
+                              "endpoint",
+                              "parameters"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "http_request"
+                        ]
+                      }
+                    ],
+                    "description": "The call about to run. `type` says whether it is a tool call or a proxy call."
+                  }
+                },
+                "required": [
+                  "id",
+                  "timestamp",
+                  "type",
+                  "metadata",
+                  "data"
+                ]
+              },
+              "example": {
+                "id": "msg_6f1d2c3b-8a4e-4f6a-9b1c-2d3e4f5a6b7c",
+                "type": "composio.session_hook.before_execute",
+                "timestamp": "2026-11-11T10:30:00Z",
+                "metadata": {
+                  "project_id": "proj_abc123",
+                  "session_id": "trs_abc123",
+                  "user_id": "user_123",
+                  "hook_id": "email_policy"
+                },
+                "data": {
+                  "type": "tool_execute",
+                  "tool_call": {
+                    "toolkit_slug": "gmail",
+                    "tool_slug": "GMAIL_SEND_EMAIL",
+                    "toolkit_version": "20261101_00",
+                    "connected_account_id": "ca_def456",
+                    "arguments": {
+                      "recipient_email": "jane@customer.com",
+                      "subject": "Pricing",
+                      "body": "Our floor price is $40 per seat."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer with HTTP 200 and a JSON body that says what to do with the call. Any other status, a body that doesn't match (a misspelled field included), or no answer within the hook's `timeout_ms` counts as a failure: Composio doesn't retry, and the hook's `fallback_action` applies. Fields you don't use can be left out or sent as null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "continue"
+                          ],
+                          "description": "Let the call run."
+                        },
+                        "message": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "Not used when the call goes ahead."
+                        },
+                        "override": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "tool_call": {
+                                  "type": "object",
+                                  "properties": {
+                                    "arguments": {
+                                      "type": "object",
+                                      "additionalProperties": {},
+                                      "description": "Arguments to call the tool with, in place of the original ones."
+                                    }
+                                  },
+                                  "required": [
+                                    "arguments"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "http_request": {
+                                  "type": "null",
+                                  "description": "Not used here. Leave it out, or send null."
+                                }
+                              },
+                              "required": [
+                                "tool_call"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "http_request": {
+                                  "type": "object",
+                                  "properties": {
+                                    "method": {
+                                      "type": "string",
+                                      "enum": [
+                                        "GET",
+                                        "POST",
+                                        "PUT",
+                                        "DELETE",
+                                        "PATCH",
+                                        "HEAD"
+                                      ]
+                                    },
+                                    "endpoint": {
+                                      "type": "string"
+                                    },
+                                    "parameters": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string",
+                                            "description": "Header or query parameter name."
+                                          },
+                                          "value": {
+                                            "type": "string",
+                                            "description": "Header or query parameter value."
+                                          },
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "header",
+                                              "query"
+                                            ],
+                                            "description": "Whether the parameter is a header or a query parameter."
+                                          }
+                                        },
+                                        "required": [
+                                          "name",
+                                          "value",
+                                          "type"
+                                        ]
+                                      }
+                                    },
+                                    "body": {}
+                                  },
+                                  "additionalProperties": false,
+                                  "description": "Fields of the request to replace. Fields left out keep their original value. The toolkit cannot be changed."
+                                },
+                                "tool_call": {
+                                  "type": "null",
+                                  "description": "Not used here. Leave it out, or send null."
+                                }
+                              },
+                              "required": [
+                                "http_request"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Run the call with these changes. Use `tool_call` for a tool call and `http_request` for a proxy call; the other one counts as an answer that does not match."
+                        }
+                      },
+                      "required": [
+                        "action"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "block"
+                          ],
+                          "description": "Stop the call."
+                        },
+                        "message": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Why the call was stopped. Shown to the agent."
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "message"
+                      ]
+                    }
+                  ]
+                },
+                "example": {
+                  "action": "block",
+                  "message": "jane@customer.com is outside acme.com"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "composio.session_hook.after_execute": {
+      "post": {
+        "operationId": "composio_session_hook_after_execute",
+        "tags": [
+          "Session Webhooks"
+        ],
+        "summary": "Session hook: after execute",
+        "description": "Sent after a tool or proxy call runs, when the session has an `after_execute` hook with a `webhook` handler. Composio waits for your answer before the agent sees the result, and can withhold it or pass on your changes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unique request id. Equals the payload `id`."
+            },
+            "required": true,
+            "description": "Unique request id. Equals the payload `id`.",
+            "name": "webhook-id",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Unix timestamp (seconds) of when the request was sent."
+            },
+            "required": true,
+            "description": "Unix timestamp (seconds) of when the request was sent.",
+            "name": "webhook-timestamp",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Base64 HMAC-SHA256 signature made with your session webhook secret, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`."
+            },
+            "required": true,
+            "description": "Base64 HMAC-SHA256 signature made with your session webhook secret, formatted `v1,<signature>`, over `${webhook-id}.${webhook-timestamp}.${raw_body}`.",
+            "name": "webhook-signature",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^msg_[0-9a-f-]{36}$",
+                    "description": "Unique request id (msg_<uuid>). Also sent as the `webhook-id` header."
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "ISO 8601 timestamp of when the request was created."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "composio.session_hook.after_execute"
+                    ]
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "properties": {
+                      "project_id": {
+                        "type": "string",
+                        "description": "ID of the project."
+                      },
+                      "session_id": {
+                        "type": "string",
+                        "description": "ID of the session the call was made in."
+                      },
+                      "user_id": {
+                        "type": "string",
+                        "description": "ID of the user the session belongs to."
+                      },
+                      "hook_id": {
+                        "type": "string",
+                        "description": "ID of the hook that sent this request, as set on the session."
+                      }
+                    },
+                    "required": [
+                      "project_id",
+                      "session_id",
+                      "user_id",
+                      "hook_id"
+                    ]
+                  },
+                  "data": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "tool_execute"
+                            ],
+                            "description": "A tool call. The call is in `tool_call`."
+                          },
+                          "tool_call": {
+                            "type": "object",
+                            "properties": {
+                              "toolkit_slug": {
+                                "type": "string",
+                                "description": "Slug of the toolkit (for example gmail)."
+                              },
+                              "tool_slug": {
+                                "type": "string",
+                                "description": "Slug of the tool (for example GMAIL_SEND_EMAIL)."
+                              },
+                              "toolkit_version": {
+                                "type": "string",
+                                "description": "Version of the toolkit the tool runs from (for example 20261101_00)."
+                              },
+                              "connected_account_id": {
+                                "type": "string",
+                                "description": "ID of the connected account the call uses. Omitted when the call doesn't use one, for example a toolkit that needs no auth."
+                              },
+                              "arguments": {
+                                "type": "object",
+                                "additionalProperties": {},
+                                "description": "The arguments the tool is called with."
+                              }
+                            },
+                            "required": [
+                              "toolkit_slug",
+                              "tool_slug",
+                              "toolkit_version",
+                              "arguments"
+                            ]
+                          },
+                          "tool_response": {
+                            "type": "object",
+                            "properties": {
+                              "data": {
+                                "type": "object",
+                                "additionalProperties": {},
+                                "description": "The data the tool returned."
+                              },
+                              "error": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "description": "Error message when the tool failed, otherwise null."
+                              }
+                            },
+                            "required": [
+                              "data",
+                              "error"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "tool_call",
+                          "tool_response"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "proxy_execute"
+                            ],
+                            "description": "A proxy call: an HTTP request to the toolkit API. The call is in `http_request`."
+                          },
+                          "http_request": {
+                            "type": "object",
+                            "properties": {
+                              "toolkit_slug": {
+                                "type": "string",
+                                "description": "Slug of the toolkit whose API is called (for example github)."
+                              },
+                              "connected_account_id": {
+                                "type": "string",
+                                "description": "ID of the connected account the call uses. Omitted when the call doesn't use one, for example a toolkit that needs no auth."
+                              },
+                              "method": {
+                                "type": "string",
+                                "enum": [
+                                  "GET",
+                                  "POST",
+                                  "PUT",
+                                  "DELETE",
+                                  "PATCH",
+                                  "HEAD"
+                                ],
+                                "description": "HTTP method of the request."
+                              },
+                              "endpoint": {
+                                "type": "string",
+                                "description": "The endpoint as the agent gave it: a path relative to the toolkit's API base URL, or a full URL."
+                              },
+                              "parameters": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string",
+                                      "description": "Header or query parameter name."
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "description": "Header or query parameter value."
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "header",
+                                        "query"
+                                      ],
+                                      "description": "Whether the parameter is a header or a query parameter."
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "value",
+                                    "type"
+                                  ]
+                                },
+                                "description": "Headers and query parameters the agent added. The credentials Composio adds are not included."
+                              },
+                              "body": {
+                                "description": "The request body. Omitted when there is none or when it is binary."
+                              }
+                            },
+                            "required": [
+                              "toolkit_slug",
+                              "method",
+                              "endpoint",
+                              "parameters"
+                            ]
+                          },
+                          "http_response": {
+                            "type": "object",
+                            "properties": {
+                              "status": {
+                                "type": "integer",
+                                "description": "HTTP status the app's API returned."
+                              },
+                              "headers": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                },
+                                "description": "Headers the app's API returned. Credential values Composio added are redacted."
+                              },
+                              "data": {
+                                "description": "Response body the app's API returned. Omitted when it is binary."
+                              },
+                              "binary_data": {
+                                "type": "object",
+                                "properties": {
+                                  "url": {
+                                    "type": "string",
+                                    "description": "URL to download binary content"
+                                  },
+                                  "content_type": {
+                                    "type": "string",
+                                    "description": "Content-Type of the binary data"
+                                  },
+                                  "size": {
+                                    "type": "number",
+                                    "description": "File size in bytes"
+                                  },
+                                  "expires_at": {
+                                    "type": "string",
+                                    "description": "ISO 8601 timestamp when the URL expires"
+                                  }
+                                },
+                                "required": [
+                                  "url",
+                                  "content_type",
+                                  "size"
+                                ],
+                                "description": "The file the API returned, as a temporary download link. Present when the response is binary."
+                              }
+                            },
+                            "required": [
+                              "status",
+                              "headers"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "http_request",
+                          "http_response"
+                        ]
+                      }
+                    ],
+                    "description": "The call that just ran and what it returned. `type` says whether it is a tool call or a proxy call; the result is in `tool_response` or `http_response`."
+                  }
+                },
+                "required": [
+                  "id",
+                  "timestamp",
+                  "type",
+                  "metadata",
+                  "data"
+                ]
+              },
+              "example": {
+                "id": "msg_9a2b4c6d-1e3f-4a5b-8c7d-0e9f8a7b6c5d",
+                "type": "composio.session_hook.after_execute",
+                "timestamp": "2026-11-11T10:31:00Z",
+                "metadata": {
+                  "project_id": "proj_abc123",
+                  "session_id": "trs_abc123",
+                  "user_id": "user_123",
+                  "hook_id": "redact_cards"
+                },
+                "data": {
+                  "type": "tool_execute",
+                  "tool_call": {
+                    "toolkit_slug": "gmail",
+                    "tool_slug": "GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID",
+                    "toolkit_version": "20261101_00",
+                    "connected_account_id": "ca_def456",
+                    "arguments": {
+                      "message_id": "18c"
+                    }
+                  },
+                  "tool_response": {
+                    "data": {
+                      "body": "My card is 4242 4242 4242 4242, please update billing."
+                    },
+                    "error": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer with HTTP 200 and a JSON body that says what to do with the call. Any other status, a body that doesn't match (a misspelled field included), or no answer within the hook's `timeout_ms` counts as a failure: Composio doesn't retry, and the hook's `fallback_action` applies. Fields you don't use can be left out or sent as null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "continue"
+                          ],
+                          "description": "Pass the response on to the agent."
+                        },
+                        "message": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "Not used when the response is passed on."
+                        },
+                        "override": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "tool_response": {
+                                  "type": "object",
+                                  "properties": {
+                                    "data": {
+                                      "type": "object",
+                                      "additionalProperties": {},
+                                      "description": "Data to give the agent, in place of the tool's data."
+                                    }
+                                  },
+                                  "required": [
+                                    "data"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "http_response": {
+                                  "type": "null",
+                                  "description": "Not used here. Leave it out, or send null."
+                                }
+                              },
+                              "required": [
+                                "tool_response"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "http_response": {
+                                  "type": "object",
+                                  "properties": {
+                                    "data": {
+                                      "description": "Response body to give the agent, in place of the API's response body."
+                                    },
+                                    "headers": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "string"
+                                      },
+                                      "description": "Headers to give the agent, in place of the API's headers. Replaces them in full."
+                                    }
+                                  },
+                                  "additionalProperties": false,
+                                  "description": "Fields of the response to replace. Fields left out keep their original value. The status and a binary file cannot be changed."
+                                },
+                                "tool_response": {
+                                  "type": "null",
+                                  "description": "Not used here. Leave it out, or send null."
+                                }
+                              },
+                              "required": [
+                                "http_response"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Give the agent this in place of what the call returned. Use `tool_response` for a tool call and `http_response` for a proxy call; the other one counts as an answer that does not match."
+                        }
+                      },
+                      "required": [
+                        "action"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "type": "string",
+                          "enum": [
+                            "block"
+                          ],
+                          "description": "Stop the call."
+                        },
+                        "message": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Why the call was stopped. Shown to the agent."
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "message"
+                      ]
+                    }
+                  ]
+                },
+                "example": {
+                  "action": "continue",
+                  "override": {
+                    "tool_response": {
+                      "data": {
+                        "body": "My card is [REDACTED], please update billing."
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
