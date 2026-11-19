@@ -178,10 +178,9 @@ overrides:
   '@modelcontextprotocol/node@>=2.0.0 <2.1.2': 2.1.2
   '@modelcontextprotocol/server@>=2.0.0 <2.4.0': 2.4.0
   '@modelcontextprotocol/server-legacy@>=2.0.0 <2.4.0': 2.4.0
-  # temporary: GHSA-4cwx-7wf7-3272, then GHSA-xjj6-f33q-929c raised the patched
-  # floor to 7.30.1. @ai-sdk/provider-utils accepts the patched 7.x line. Drop
-  # when its lockfile resolution is >=7.30.1 without an override.
-  'undici@>=7.0.0 <7.30.1': '>=7.30.1 <8'
+  # temporary: GHSA-mqg3-3v4r-cm32 fixes cache policy checks on redirects
+  # in 7.30.2 and 8.12.4. Keep the existing major for each dependency.
+  'undici@>=7.0.0 <7.30.2': '>=7.30.2 <8'
   # temporary: GHSA-27r3-jxmh-p828; express accepts the patched 2.x line. Drop
   # when its lockfile resolution is >=2.4.0 without an override.
   'body-parser@>=2.0.0 <2.4.0': '>=2.4.0 <3'
@@ -225,11 +224,11 @@ overrides:
   # ^4.11.4. Drop when their lockfile resolution is >=4.13.16 without an
   # override.
   'hono@<4.13.18': '>=4.13.18 <5'
-  # temporary: eve (dev and peer dependency of @composio/experimental)
-  # exact-pins undici 8.10.2; GHSA-2m5v-pch6-74hx, GHSA-4w7w-5xrc-9h26, and six
-  # other advisories raised the patched 8.x floor to 8.12.2. Drop when eve
-  # depends on >=8.12.2 itself.
-  'undici@>=8.0.0 <8.12.2': '>=8.12.2 <9'
+  # Drop when eve resolves >=8.12.4 without an override.
+  'undici@>=8.0.0 <8.12.4': '>=8.12.4 <9'
+  # temporary: GHSA-g3hv-75wg-m249 is fixed only on the 11.x line.
+  # Scope the override to TypeDoc's dependency.
+  'typedoc>minimatch': 11.0.3
 
 auditConfig:
   ignoreGhsas:
