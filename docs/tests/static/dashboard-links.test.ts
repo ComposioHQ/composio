@@ -10,14 +10,16 @@
  *    page inside the user's workspace.
  *
  * Code fences and inline mentions are exempt from rules 2-3; rule 1 applies
- * to all file content. content/reference is generated upstream and excluded.
+ * to all file content. Scans .mdx and .md (toolkit FAQs) under docs,
+ * examples, changelog and toolkits. content/reference is generated upstream
+ * and excluded.
  * TS/TSX is enforced by the no-restricted-syntax rules in .oxlintrc.json.
  */
 import { describe, test, expect } from "bun:test";
 import { readdir, readFile } from "fs/promises";
 import { join, relative } from "path";
 
-const CONTENT_DIRS = ["docs", "examples", "changelog"].map((dir) =>
+const CONTENT_DIRS = ["docs", "examples", "changelog", "toolkits"].map((dir) =>
   join(import.meta.dir, "../../content", dir),
 );
 const CONTENT_ROOT = join(import.meta.dir, "../../content");
@@ -40,7 +42,7 @@ async function findMdxFiles(dir: string): Promise<string[]> {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
       results.push(...(await findMdxFiles(fullPath)));
-    } else if (entry.name.endsWith(".mdx")) {
+    } else if (/\.mdx?$/.test(entry.name)) {
       results.push(fullPath);
     }
   }

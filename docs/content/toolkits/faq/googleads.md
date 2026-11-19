@@ -1,8 +1,85 @@
-## Google Ads developer token now belongs on the auth config, not connection initiation
+## How do I set up custom Google OAuth credentials for Google Ads?
 
-Google Ads was changed so the developer token lives on the auth config itself, not on each connection initiation request. Older auth configs created before this change do not have the developer token field, and new connections through those auth configs can fail because the token is no longer accepted at the connection level. Create a new Google Ads authConfig with the developer token included, then create a fresh connection through that authConfig.
+Use your own Google OAuth app when you want your app name on the consent screen, your own API quota, or full control over the requested scopes.
 
-![Google Ads auth config form showing the developer token field under custom developer credentials.](/images/kb/toolkits/googleads/google-ads-developer-token-auth-config.png)
+You need a Google Ads account you can access and its 10-digit Customer ID. Live-account API access is controlled by the Google Cloud project that owns the OAuth client, not by a developer token on the auth config.
+
+### Create the Google OAuth app
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), select the project that will own the OAuth client, or create one.
+
+   ![Google Cloud console project picker](/images/toolkits/shared/hjaj4jg5CtBRolXXYddY8NDXCes.webp)
+
+2. Open **APIs & Services** → **Library**, search for **Google Ads API**, and select **Enable**. If the page shows **Manage**, the API is already enabled.
+
+   ![Google Ads API page in the API Library with the Enable button](/images/toolkits/googleads/enable-google-ads-api.webp)
+
+3. Enabling the Google Ads API grants **Test** access only. To use production Ads accounts, open the Google Ads API **Overview** page for your Cloud project and apply for **Explorer** access. Higher usage or extra features can require **Basic** or **Standard** access. See Google's [access levels](https://developers.google.com/google-ads/api/docs/api-policy/access-levels) and [Cloud project setup](https://developers.google.com/google-ads/api/docs/oauth/cloud-project).
+4. Open **Google Auth Platform** → **Branding**. If Google shows **Get started**, enter the app name, user support email, and developer contact email, then save.
+
+   ![Google Auth Platform Branding page with app name, support email, and developer contact fields](/images/toolkits/shared/x4VkWS3iceKKFGyjlFN1THrtTRQ.webp)
+
+5. Open **Audience**. Choose **Internal** to limit the app to users in your Google Workspace organization, or **External** for consumer accounts and users outside it. While an external app's publishing status is **Testing**, only accounts listed under **Test users** can connect, so add every account you'll test with.
+
+   ![Google Auth Platform Audience page with Testing status, External user type, and Test users](/images/toolkits/shared/Jttbz3Cm6xJFWNlukXLGTxWjf6c.webp)
+
+6. Open **Data Access** → **Add or remove scopes** and add the scopes listed under **Scopes** below. If a scope isn't in the list, paste its full URL under **Manually add scopes** and select **Add to table**. Select **Update**, then **Save**.
+
+   ![Data Access scope picker with the Google Ads adwords scope selected](/images/toolkits/googleads/data-access-adwords-scope.webp)
+
+7. Open **Clients** → **Create client**, choose **Web application**, and give it a name.
+
+   ![Create OAuth client ID form with Web application selected and a client name](/images/toolkits/shared/sA0bvCBPtMCWw8lqecCrx76Dyc.webp)
+
+8. Under **Authorized redirect URIs**, add `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field on your Composio auth config.
+
+   ![OAuth client form with the Composio redirect URI under Authorized redirect URIs](/images/toolkits/shared/jDTS80dlfwHF6u1WAQhBdnjTrI.webp)
+
+9. Select **Create**. Copy the **Client ID** and **Client secret**. Google shows the full secret only once, so save it before you close the dialog.
+
+   ![OAuth client created dialog with the Client ID and Client secret](/images/toolkits/shared/YdKWAswsL2nVXnSbA4zgBUDmwA.webp)
+
+### Create the auth config in Composio
+
+1. In the [Composio dashboard](https://dashboard.composio.dev/~/project/auth-configs?utm_source=docs&utm_medium=content&utm_campaign=toolkits-googleads), open **Auth Configs** → **Create** and select **Google Ads**.
+
+   ![Composio Auth Configs page with the Create button](/images/toolkits/shared/DUtMN0UWIU2kEqnvS5DvD7qhWU.webp)
+
+   ![Create Auth Config dialog with Google Ads in the search results](/images/toolkits/googleads/select-google-ads-toolkit.webp)
+
+2. Choose **OAuth 2.0** and **Your Own Credentials**, then paste your **Client ID** and **Client secret**. Leave **Redirect URI** unchanged, keep the scopes in line with what you added in Google, and select **Create Auth Config**.
+
+   ![Google Ads auth config form with Client ID, Client secret, Redirect URI, an empty Developer Token field, and the adwords scope](/images/toolkits/googleads/auth-config-credentials.webp)
+
+3. Open the auth config, select **Connect Account**, and enter the Customer ID of the Google Ads account or manager (MCC) account you want to use, for example `123-456-7890`. This is not your Google Cloud project ID. Then sign in with a Google account that can access that Ads account.
+
+   ![Composio Connect Account form asking for the Google Ads Customer ID](/images/toolkits/googleads/enter-customer-id.webp)
+
+   ![Google consent screen asking to manage your Google Ads accounts and data](/images/toolkits/googleads/google-consent-screen.webp)
+
+4. Open **Accounts** on the auth config and confirm the connected account shows **Active**. The auth config's own **Enabled** label doesn't confirm a connection.
+
+   ![Composio auth config panel with the Google Ads connected account shown as Active](/images/toolkits/googleads/connected-account-active.webp)
+
+For the general flow, see [Custom auth configs](/docs/auth-configuration/custom-auth-configs).
+
+### Scopes
+
+The default auth config requests `https://www.googleapis.com/auth/adwords`. It's the only Google Ads API scope and includes account-management access, so it isn't read-only. The user's Google Ads account role still limits what they can do. See Google's [OAuth overview for Google Ads](https://developers.google.com/google-ads/api/docs/oauth/overview).
+
+Short scope names on this page leave out the `https://www.googleapis.com/auth/` prefix. When you paste a scope under **Manually add scopes**, use the full URL, for example `https://www.googleapis.com/auth/userinfo.email`. Scopes already written as a full URL, such as `https://mail.google.com/`, go in as shown.
+
+### Developer token
+
+If the auth config form shows a **Developer Token** field, you can leave it empty. It's a legacy field kept for older auth configs, and Composio no longer sends it to Google. API access comes from the Google Cloud project that owns your OAuth client.
+
+### Publish and verify the app
+
+While an external app is in **Testing**, Google shows an unverified-app notice and refresh tokens expire after seven days, so users have to reconnect. Before you invite production users, select **Publish app** on the **Audience** page. A public app that requests sensitive or restricted scopes also needs Google's OAuth verification, which you start from **Verification Center**. Publishing doesn't complete verification on its own. Internal apps and apps in Testing can be exempt. See Google's [verification requirements](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview).
+
+![Google hasn't verified this app notice for an app in Testing](/images/toolkits/shared/M0mS4XrLbK5mU52ry578MBa7M.webp)
+
+If you change the requested scopes later, reconnect the account so the user grants the new access.
 
 ## What can cause Google Ads 429s?
 
