@@ -10,6 +10,7 @@ on:
       # 0.1.0-alpha.76 -> 2.0.0-rc.5 skipped this suite entirely that way.
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
+      - 'patches/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/build-e2e-image/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
@@ -24,6 +25,7 @@ on:
       # 0.1.0-alpha.76 -> 2.0.0-rc.5 skipped this suite entirely that way.
       - 'pnpm-workspace.yaml'
       - 'pnpm-lock.yaml'
+      - 'patches/**'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/build-e2e-image/action.yml'
       - '.github/workflows/ts.test-e2e.yml'
