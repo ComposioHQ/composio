@@ -165,6 +165,8 @@ composio upgrade
 
 This replaces the bundle in `~/.composio` in place and leaves the `~/.local/bin/composio` entry point pointing at it. Pass a version to pin a specific release (`composio upgrade 0.3.1`), or `--beta` for the latest prerelease.
 
+Some releases can only be installed over a recent enough CLI. If yours is too old, `composio upgrade` stops before changing anything and prints the install command to run instead. Rerun the [installer](#install) to get the new release.
+
 ### Install manually from GitHub Releases
 
 Download the archive for your platform from [GitHub Releases](https://github.com/ComposioHQ/composio/releases), then install the complete bundle. Keep the support files beside the executable.
