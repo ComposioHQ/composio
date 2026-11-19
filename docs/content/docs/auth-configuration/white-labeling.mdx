@@ -38,6 +38,8 @@ A custom provider callback endpoint can forward the browser to Composio with a 3
 
 See [Callback domains and forwarding](/docs/authentication/white-labeling-authentication#routing-the-callback-through-your-domain) for the supported response shape and the difference between the provider's `redirect_uri` and your application's `callbackUrl`. Use the latter to return to your own result page after authentication, not to replace the provider callback.
 
+For the forwarder code, a cURL test, and the Google verification order (Google can't verify `composio.dev` as an authorized domain), see [Use a callback URL on your own domain](/docs/authentication/white-labeling-authentication#use-a-callback-url-on-your-own-domain).
+
 ## Verify before enabling access
 
 Save each connection attempt against the authenticated application user on your server. Don't trust callback query parameters alone. [Verify the saved account ID, user binding, auth config, toolkit, and active status](/docs/authentication/white-labeling-authentication#verify-the-connection-on-your-server) before using it for direct tool execution. Apply any provider-identity policy separately, and complete the [deployment checklist](/docs/authentication/white-labeling-authentication#deployment-checklist).

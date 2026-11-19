@@ -69,6 +69,8 @@ For OAuth toolkits, register an app in the provider's developer portal and add t
 
 For API key, bearer token, basic auth, or other auth schemes, collect the credential fields the toolkit requires and enter them in the dashboard.
 
+**Shipping a Google app? Decide your redirect URI before verification.** Google requires Search Console ownership of every domain on your OAuth client, and the default Composio callback puts `composio.dev` on it, which you can't verify. If you plan to submit the app for Google OAuth verification, register a callback URL on your own domain from the start rather than switching later. See [Use a callback URL on your own domain](/docs/authentication/white-labeling-authentication#use-a-callback-url-on-your-own-domain).
+
 Step-by-step OAuth guides: [Google](https://composio.dev/auth/googleapps) | [GitHub](https://composio.dev/auth/github) | [Slack](https://composio.dev/auth/slack) | [HubSpot](https://composio.dev/auth/hubspot) | [All toolkits](https://composio.dev/auth)
 </Step>
 
