@@ -1116,6 +1116,18 @@ const config = {
         destination: '/docs',
         permanent: true,
       },
+      // Guessed /auth slugs that have a real target page (DEVREL-330).
+      // Must precede the /auth/:path* catch-all below.
+      {
+        source: '/auth/token-custody',
+        destination: '/docs/security/token-custody',
+        permanent: true,
+      },
+      {
+        source: '/auth/proxy-execute',
+        destination: '/docs/extending-sessions/proxy-execute',
+        permanent: true,
+      },
       {
         source: '/auth/:path*',
         destination: '/docs/authentication',
@@ -1281,6 +1293,63 @@ const config = {
       {
         source: '/cli',
         destination: '/docs/cli',
+        permanent: true,
+      },
+      // Framework, MCP, and Connect Link URLs agents guess from feature
+      // names (DEVREL-330). Each source returned 404 in Gauge sessions.
+      {
+        source: '/docs/mastra',
+        destination: '/docs/providers/mastra',
+        permanent: true,
+      },
+      {
+        source: '/docs/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/docs/integrations/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/docs/:legacy(langchain|langgraph)',
+        destination: '/docs/providers/langchain',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/providers/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/docs/connect-links',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/mcp-auth',
+        destination: '/docs/authentication/managed-auth-for-custom-tools',
+        permanent: true,
+      },
+      {
+        source: '/docs/auth-tools/auth-on-mcp',
+        destination: '/docs/authentication/managed-auth-for-custom-tools',
+        permanent: true,
+      },
+      {
+        source: '/providers/mcp',
+        destination: '/docs/single-toolkit-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/mcp',
+        destination: '/docs/single-toolkit-mcp',
         permanent: true,
       },
     ];
