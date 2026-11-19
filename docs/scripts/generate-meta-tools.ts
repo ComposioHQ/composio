@@ -97,6 +97,15 @@ These schemas are for reference only. We do not guarantee backward compatibility
   return content;
 }
 
+/**
+ * A frontmatter title: plain when it is unambiguous YAML text, quoted otherwise,
+ * so a remote displayName cannot end the frontmatter or change its meaning.
+ */
+function yamlTitle(value: string): string {
+  const plain = /^\w(?:[\w ()-]*[\w)])?$/.test(value) && !/^(?:true|false|null|yes|no|on|off|[\d.+-]+)$/i.test(value);
+  return plain ? value : encodeYamlString(value);
+}
+
 /** Generate an individual tool MDX page */
 export function generateToolMdx(tool: MetaToolPage): string {
   // The API's search-tool description contains an outdated catalog count.
@@ -106,7 +115,7 @@ export function generateToolMdx(tool: MetaToolPage): string {
   const desc = encodeYamlString(briefDescription(description));
 
   return `---
-title: ${tool.displayName}
+title: ${yamlTitle(tool.displayName)}
 description: ${desc}
 keywords: [${tool.slug}, meta tool]
 ---

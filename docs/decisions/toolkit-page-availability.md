@@ -48,14 +48,21 @@ toolkit, OpenAPI, API index, or meta-tool generation.
   to a value other than `0`, then deploy again.
 - The guaranteed code rollback is to revert the toolkit route integration and
   deploy the reverted revision.
-- Every docs call to the Composio API goes through `@composio/client` (v3.1),
-  built in `lib/composio-api.ts`. The toolkit page, `/llms.mdx` and
+- Every docs catalog read (toolkits, tools, trigger types, and the toolkit
+  changelog) goes through `@composio/client` (v3.1), built in
+  `lib/composio-api.ts`. `scripts/fetch-openapi.mjs` and `app/api/proxy` keep
+  raw `fetch`: the first downloads OpenAPI documents, and the second forwards
+  arbitrary playground requests. The toolkit page, `/llms.mdx` and
   `/api/tools/[slug]` use `Composio.fromEnv`, so `COMPOSIO_BASE_URL` selects
   the API host; the toolkit generator, `/api/toolkits/instant` and the snapshot-miss
   lookup always call production. Lists use its
   helpers, which page with `@composio/client/pagination`: toolkit pages and
   `/llms.mdx/toolkits/<slug>` at `TOOL_PAGE_SIZE`, `/api/toolkits/instant` at
-  `TOOLKIT_PAGE_SIZE`, and `generate:toolkits` at the API's 1000-item cap. In
+  `TOOLKIT_PAGE_SIZE`, and `generate:toolkits` at the API's per-endpoint cap
+  (1000 tools or toolkits, 50 trigger types). Live traversals during a page
+  render abort after `LIVE_TRAVERSAL_TIMEOUT_MS` and fall back to the snapshot.
+  A failed traversal fails `generate:toolkits` instead of publishing an empty
+  list. In
   Next.js each page is its own Data Cache entry. Next.js does not cache an
   entry over 2 MiB, and keeps serving the previous entry; an entry holds the body
   base64-encoded, so a response must stay under about 1.5 MiB. The limit is
@@ -72,7 +79,8 @@ toolkit, OpenAPI, API index, or meta-tool generation.
 - After deployment, verify one snapshot-backed slug and one valid production
   slug absent from the committed snapshot both return 200.
 - `Docs - Toolkit Parity` runs `bun run check:toolkit-parity` every six hours.
-  For the toolkits with the most tools, it fails when a deployed `.md` page
+  For the toolkits with the most tools, ranked by production count and by
+  snapshot count, it fails when a deployed `.md` page
   lists a tool count matching neither production nor the snapshot, when the
   snapshot stops at the 1000-item page cap below production, when
   `/api/toolkits/instant` differs from production, or when a production

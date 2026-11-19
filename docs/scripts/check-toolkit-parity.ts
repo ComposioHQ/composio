@@ -79,7 +79,7 @@ export function findProblems(observation: ToolkitObservation): string[] {
   }
   if (snapshotCount === API_PAGE_LIMIT && productionCount > API_PAGE_LIMIT) {
     problems.push(
-      `the ${slug} snapshot stops at ${snapshotCount} of ${productionCount} tools, the API page cap; generate:toolkits did not follow next_cursor`
+      `the ${slug} snapshot stops at ${snapshotCount} of ${productionCount} tools, the API page cap; the committed snapshot predates the paginated generator, so re-run generate:toolkits`
     );
   }
   if (cacheEntryBytes(largestPageBytes) > PAGE_BYTES_BUDGET) {
@@ -118,6 +118,43 @@ export function findInstantProblems({ productionSlugs, deployedSlugs, largestPag
 
 const snapshotSchema = z.array(z.object({ slug: z.string(), toolCount: z.number() }));
 
+type CountedToolkit = z.infer<typeof snapshotSchema>[number];
+
+const productionToolkitsSchema = z.array(
+  z.object({ slug: z.string(), meta: z.object({ tools_count: z.number() }) })
+);
+
+/** Production tool counts from a /toolkits listing, keyed by lowercase slug. */
+export function productionToolCounts(items: unknown[]): CountedToolkit[] {
+  return productionToolkitsSchema
+    .parse(items)
+    .map(toolkit => ({ slug: toolkit.slug.toLowerCase(), toolCount: toolkit.meta.tools_count }));
+}
+
+/**
+ * The toolkits to check: the `top` largest by production count, then the `top`
+ * largest by snapshot count, without duplicates. Ranking by production too
+ * keeps a toolkit whose snapshot count collapsed in the set. Only published
+ * toolkits (those in the snapshot) are eligible, since others have no page.
+ */
+export function selectWatchList(
+  snapshot: CountedToolkit[],
+  production: CountedToolkit[],
+  top: number
+): CountedToolkit[] {
+  const published = new Map(snapshot.map(toolkit => [toolkit.slug, toolkit]));
+  const largest = (toolkits: CountedToolkit[]) =>
+    [...toolkits].sort((a, b) => b.toolCount - a.toolCount).slice(0, top);
+  const fromProduction = largest(production.filter(toolkit => published.has(toolkit.slug))).flatMap(
+    toolkit => published.get(toolkit.slug) ?? []
+  );
+  const watched = new Map<string, CountedToolkit>();
+  for (const toolkit of [...fromProduction, ...largest(snapshot)]) {
+    if (!watched.has(toolkit.slug)) watched.set(toolkit.slug, toolkit);
+  }
+  return [...watched.values()];
+}
+
 /** A production client that records the size of the largest response body it reads. */
 function measuringClient(apiKey: string) {
   let largestPageBytes = 0;
@@ -139,14 +176,22 @@ async function observeProduction(slug: string, apiKey: string) {
   return { productionCount: tools.length, largestPageBytes: largestPageBytes() };
 }
 
-async function observeInstant(apiKey: string): Promise<InstantObservation> {
+interface CatalogObservation {
+  toolkits: unknown[];
+  largestPageBytes: number;
+}
+
+async function observeCatalog(apiKey: string): Promise<CatalogObservation> {
   const { client, largestPageBytes } = measuringClient(apiKey);
   const toolkits = await listToolkits(client);
+  return { toolkits, largestPageBytes: largestPageBytes() };
+}
 
+async function observeInstant({ toolkits, largestPageBytes }: CatalogObservation): Promise<InstantObservation> {
   const response = await fetchWithRetry(`${DOCS_BASE_URL}/api/toolkits/instant`);
   if (!response.ok) throw new Error(`/api/toolkits/instant responded ${response.status}`);
   const deployed = instantToolkitSlugsSchema.parse(await response.json());
-  return { productionSlugs: instantToolkitSlugs(toolkits), deployedSlugs: deployed.slugs, largestPageBytes: largestPageBytes() };
+  return { productionSlugs: instantToolkitSlugs(toolkits), deployedSlugs: deployed.slugs, largestPageBytes };
 }
 
 async function observeDeployed(slug: string): Promise<number> {
@@ -167,10 +212,20 @@ async function main() {
   const markdownPath = argValue('--markdown');
 
   const snapshot = snapshotSchema.parse(JSON.parse(await readFile(SNAPSHOT_PATH, 'utf-8')));
-  const toolkits = [...snapshot].sort((a, b) => b.toolCount - a.toolCount).slice(0, top);
 
   const problems: string[] = [];
   const rows: string[] = [];
+
+  // One production catalog read feeds both the watch list and the Instant check.
+  let catalog: CatalogObservation | undefined;
+  let production: CountedToolkit[] = [];
+  try {
+    catalog = await observeCatalog(apiKey);
+    production = productionToolCounts(catalog.toolkits);
+  } catch (error) {
+    problems.push(`Production toolkit catalog: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const toolkits = selectWatchList(snapshot, production, top);
   for (const toolkit of toolkits) {
     try {
       const production = await observeProduction(toolkit.slug, apiKey);
@@ -185,14 +240,16 @@ async function main() {
     }
   }
 
-  try {
-    const instant = await observeInstant(apiKey);
-    problems.push(...findInstantProblems(instant));
-    rows.push(
-      `| (Instant toolkit list) | n/a | ${instant.productionSlugs.length} | ${instant.deployedSlugs.length} | ${instant.largestPageBytes} |`
-    );
-  } catch (error) {
-    problems.push(`Instant toolkit list: ${error instanceof Error ? error.message : String(error)}`);
+  if (catalog) {
+    try {
+      const instant = await observeInstant(catalog);
+      problems.push(...findInstantProblems(instant));
+      rows.push(
+        `| (Instant toolkit list) | n/a | ${instant.productionSlugs.length} | ${instant.deployedSlugs.length} | ${instant.largestPageBytes} |`
+      );
+    } catch (error) {
+      problems.push(`Instant toolkit list: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   const report = [

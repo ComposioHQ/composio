@@ -199,9 +199,9 @@ export function parseNamedItems(value: unknown) {
   return namedItemListSchema.parse(value);
 }
 
-// The backend caps `limit` at 1000 per page and defaults to usage ordering, so
-// a single request returns only the first 1000 toolkits, tools or triggers.
-// Every list request follows `next_cursor` until exhausted.
+// The backend caps `limit` per page (1000 for toolkits and tools, 50 for
+// triggers) and defaults to usage ordering, so a single request returns only
+// the first page. Every list request follows `next_cursor` until exhausted.
 let client: Composio | undefined;
 
 /** The production client; fetchWithRetry owns retries, so the client makes none. */
@@ -230,28 +230,14 @@ async function fetchToolkits(): Promise<unknown[]> {
   });
 }
 
-// A failed toolkit publishes no tools or triggers rather than stopping the sync.
-async function fetchNamedItems(
-  list: () => Promise<unknown[]>,
-  label: string
-): Promise<ReturnType<typeof parseNamedItems>> {
-  try {
-    return parseNamedItems(await list());
-  } catch (error) {
-    console.warn(`  Failed to fetch ${label}: ${error instanceof Error ? error.message : String(error)}`);
-    return [];
-  }
+// A failed traversal fails the run: publishing an empty list would replace the
+// toolkit's tools in the committed snapshot. Malformed items are still dropped.
+async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
+  return parseNamedItems(await listToolkitTools(api(), slug, { pageSize: API_PAGE_LIMIT }));
 }
 
-function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
-  return fetchNamedItems(() => listToolkitTools(api(), slug, { pageSize: API_PAGE_LIMIT }), `tools for ${slug}`);
-}
-
-function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
-  return fetchNamedItems(
-    () => listToolkitTriggers(api(), slug, { pageSize: API_PAGE_LIMIT }),
-    `triggers for ${slug}`
-  );
+async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
+  return parseNamedItems(await listToolkitTriggers(api(), slug));
 }
 
 async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {

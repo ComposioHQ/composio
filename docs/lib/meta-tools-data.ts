@@ -87,7 +87,10 @@ export const metaToolSchema = z
   .object({
     slug: z.string(),
     name: z.string(),
-    displayName: z.string(),
+    // Generated pages put it on one frontmatter line.
+    displayName: z.string().refine(value => !/[\r\n]/.test(value), {
+      message: 'Meta-tool displayName must be a single line',
+    }),
     description: z.string(),
     tags: z.array(z.string()),
     inputParameters: parameterSchema.transform(toDisplayParameter),

@@ -4,6 +4,7 @@ import {
   listToolkitTools,
   listToolkitTriggers,
   TOOL_PAGE_SIZE,
+  TRIGGER_PAGE_LIMIT,
 } from '../../lib/composio-api';
 
 type Init = RequestInit & { next?: { revalidate?: number } };
@@ -44,5 +45,6 @@ describe('listToolkitTriggers', () => {
     expect(url.pathname).toBe('/api/v3.1/triggers_types');
     expect(url.searchParams.get('toolkit_slugs')).toBe('GITHUB');
     expect(url.searchParams.get('toolkit_versions')).toBe('latest');
+    expect(url.searchParams.get('limit')).toBe(String(TRIGGER_PAGE_LIMIT));
   });
 });

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { fetchWithRetry, type FetchWithRetryOptions } from './fetch-with-retry';
 import { createComposioClient } from '../lib/composio-api';
 
@@ -6,14 +7,19 @@ interface ToolkitWithVersion {
   version: string | null;
 }
 
-interface ChangelogEntry {
-  slug?: string;
-  versions?: Array<{ version?: string }>;
-}
+// A malformed entry is dropped rather than failing the run; only a response
+// without an items array is rejected.
+const changelogEntrySchema = z
+  .object({
+    slug: z.string().optional().catch(undefined),
+    versions: z
+      .array(z.object({ version: z.string().optional().catch(undefined) }).catch({}))
+      .optional()
+      .catch(undefined),
+  })
+  .catch({});
 
-interface ChangelogResponse {
-  items?: ChangelogEntry[];
-}
+const changelogSchema = z.object({ items: z.array(changelogEntrySchema) });
 
 export type ToolkitVersionFetcher = (
   url: string,
@@ -31,21 +37,22 @@ export async function fetchProductionToolkitVersions(
     fetch: (input, init) => fetcher(String(input), init),
   });
 
-  let data: ChangelogResponse;
+  let response: unknown;
   try {
-    data = (await client.toolkits.retrieveChangelog()) as ChangelogResponse;
+    response = await client.toolkits.retrieveChangelog();
   } catch (error) {
     throw new Error(
       `Failed to fetch production toolkit changelog: ${error instanceof Error ? error.message : String(error)}`
     );
   }
-  if (!Array.isArray(data.items)) {
+  const data = changelogSchema.safeParse(response);
+  if (!data.success) {
     throw new Error('Production toolkit changelog response is missing an items array');
   }
 
   const versionMap = new Map<string, string>();
 
-  for (const entry of data.items) {
+  for (const entry of data.data.items) {
     const slug = entry.slug?.toLowerCase();
     const latestVersion = entry.versions?.[0]?.version;
     if (slug && latestVersion) {

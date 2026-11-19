@@ -13,8 +13,18 @@ export const TOOL_PAGE_SIZE = 25;
 /** Toolkits per page. At 500 the largest production page measured 404 KB. */
 export const TOOLKIT_PAGE_SIZE = 500;
 
-/** The most items one list request returns; the API caps `limit` here. */
+/** The most items one `/tools` or `/toolkits` list request returns; the API caps `limit` here. */
 export const API_PAGE_LIMIT = 1000;
+
+/** The most items one `/triggers_types` list request returns; the API caps `limit` here. */
+export const TRIGGER_PAGE_LIMIT = 50;
+
+/**
+ * Milliseconds a live list traversal may take during a page render. A larger
+ * toolkit takes many sequential pages, so the bound covers the whole traversal;
+ * when it fires the caller falls back to the committed snapshot.
+ */
+export const LIVE_TRAVERSAL_TIMEOUT_MS = 15_000;
 
 type Fetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -92,7 +102,7 @@ export function listToolkitTools(
 export function listToolkitTriggers(
   client: Composio,
   toolkitSlug: string,
-  { pageSize = TOOL_PAGE_SIZE, signal }: ListOptions = {}
+  { pageSize = TRIGGER_PAGE_LIMIT, signal }: ListOptions = {}
 ) {
   return paginate(({ cursor }) =>
     client.triggersTypes.list(

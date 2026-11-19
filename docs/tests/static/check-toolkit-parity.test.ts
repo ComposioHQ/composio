@@ -6,6 +6,8 @@ import {
   findInstantProblems,
   findProblems,
   PAGE_BYTES_BUDGET,
+  productionToolCounts,
+  selectWatchList,
 } from '../../scripts/check-toolkit-parity';
 
 const markdown = [
@@ -73,7 +75,7 @@ describe('findProblems', () => {
 
   test('flags a snapshot cut off at the API page cap', () => {
     expect(findProblems({ ...healthy, slug: 'microsoft_365', snapshotCount: 1000, productionCount: 1208, deployedCount: 1208 })).toEqual([
-      'the microsoft_365 snapshot stops at 1000 of 1208 tools, the API page cap; generate:toolkits did not follow next_cursor',
+      'the microsoft_365 snapshot stops at 1000 of 1208 tools, the API page cap; the committed snapshot predates the paginated generator, so re-run generate:toolkits',
     ]);
   });
 
@@ -100,5 +102,54 @@ describe('findInstantProblems', () => {
 
   test('flags a production /toolkits page whose cache entry is over budget', () => {
     expect(findInstantProblems({ ...instant, largestPageBytes: 1_600_000 })).toHaveLength(1);
+  });
+});
+
+describe('selectWatchList', () => {
+  const snapshot = [
+    { slug: 'github', toolCount: 905 },
+    { slug: 'tableau', toolCount: 10 },
+    { slug: 'gmail', toolCount: 60 },
+    { slug: 'slack', toolCount: 150 },
+  ];
+
+  test('keeps a toolkit whose snapshot count collapsed, using production counts', () => {
+    const production = [
+      { slug: 'github', toolCount: 905 },
+      { slug: 'tableau', toolCount: 436 },
+      { slug: 'gmail', toolCount: 60 },
+      { slug: 'slack', toolCount: 150 },
+    ];
+
+    expect(selectWatchList(snapshot, production, 2).map(toolkit => toolkit.slug)).toEqual([
+      'github',
+      'tableau',
+      'slack',
+    ]);
+  });
+
+  test('carries snapshot counts and skips production toolkits without a published page', () => {
+    const production = [{ slug: 'unpublished', toolCount: 5000 }, { slug: 'tableau', toolCount: 436 }];
+
+    expect(selectWatchList(snapshot, production, 1)).toEqual([
+      { slug: 'tableau', toolCount: 10 },
+      { slug: 'github', toolCount: 905 },
+    ]);
+  });
+
+  test('falls back to the snapshot ranking without production counts', () => {
+    expect(selectWatchList(snapshot, [], 2).map(toolkit => toolkit.slug)).toEqual(['github', 'slack']);
+  });
+});
+
+describe('productionToolCounts', () => {
+  test('reads meta.tools_count and lowercases slugs', () => {
+    expect(productionToolCounts([{ slug: 'TABLEAU', meta: { tools_count: 436 } }])).toEqual([
+      { slug: 'tableau', toolCount: 436 },
+    ]);
+  });
+
+  test('rejects a listing without tool counts', () => {
+    expect(() => productionToolCounts([{ slug: 'tableau' }])).toThrow();
   });
 });

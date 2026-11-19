@@ -30,7 +30,12 @@ import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
-import { createComposioClientFromEnv, listToolkitTools, listToolkitTriggers } from '@/lib/composio-api';
+import {
+  createComposioClientFromEnv,
+  LIVE_TRAVERSAL_TIMEOUT_MS,
+  listToolkitTools,
+  listToolkitTriggers,
+} from '@/lib/composio-api';
 import { z } from 'zod';
 import {
   getKnowledgeByProductArea,
@@ -58,7 +63,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
   }
 
   try {
-    return apiToolListSchema.parse(await listToolkitTools(client, toolkitSlug));
+    return apiToolListSchema.parse(await listToolkitTools(client, toolkitSlug, { signal: AbortSignal.timeout(LIVE_TRAVERSAL_TIMEOUT_MS) }));
   } catch (error) {
     console.warn(`[LLM Markdown] Failed to fetch tools for ${toolkitSlug}:`, error);
     return null;
@@ -72,7 +77,7 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
   }
 
   try {
-    return apiTriggerListSchema.parse(await listToolkitTriggers(client, toolkitSlug));
+    return apiTriggerListSchema.parse(await listToolkitTriggers(client, toolkitSlug, { signal: AbortSignal.timeout(LIVE_TRAVERSAL_TIMEOUT_MS) }));
   } catch (error) {
     console.warn(`[LLM Markdown] Failed to fetch triggers for ${toolkitSlug}:`, error);
     return null;

@@ -98,6 +98,23 @@ describe("Toolkit version source - production only", () => {
     );
   });
 
+  test("skips malformed changelog entries instead of failing the run", async () => {
+    const fetcher: ToolkitVersionFetcher = async () =>
+      Response.json({
+        items: [
+          null,
+          { slug: 7, versions: [{ version: "20260101_01" }] },
+          { slug: "SLACK", versions: "none" },
+          { slug: "NOTION", versions: [{ version: 3 }] },
+          { slug: "GMAIL", versions: [{ version: "20260702_01" }] },
+        ],
+      });
+
+    const versions = await fetchProductionToolkitVersions("test-key", fetcher);
+
+    expect([...versions]).toEqual([["gmail", "20260702_01"]]);
+  });
+
   test("rejects an empty production version map before rewriting the catalog", async () => {
     const fetcher: ToolkitVersionFetcher = async () => Response.json({ items: [] });
 

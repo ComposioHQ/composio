@@ -314,6 +314,19 @@ describe("generated meta-tool MDX", () => {
 
     expect(generateToolMdx(tool)).toContain('description: "Use \\"quotes\\" at C:\\\\tools"');
   });
+
+  test("serializes generated frontmatter titles as YAML strings", () => {
+    const tool = {
+      slug: "COMPOSIO_X",
+      displayName: 'Search: "Advanced" Tools',
+      description: "Searches",
+    };
+
+    expect(generateToolMdx(tool)).toContain('title: "Search: \\"Advanced\\" Tools"\n');
+    expect(generateToolMdx({ ...tool, displayName: "Line\n---\n{evil}" })).toContain('title: "Line\\n---\\n{evil}"\n');
+    expect(generateToolMdx({ ...tool, displayName: "null" })).toContain('title: "null"\n');
+    expect(generateToolMdx({ ...tool, displayName: "Search Tools" })).toContain("title: Search Tools\n");
+  });
 });
 
 describe("parseNamedItems", () => {

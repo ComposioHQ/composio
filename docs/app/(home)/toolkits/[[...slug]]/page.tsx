@@ -16,7 +16,12 @@ import type { Metadata } from 'next';
 import type { Tool, Trigger } from '@/types/toolkit';
 import type { FaqItem } from '@/components/toolkits/faq-section';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
-import { createComposioClientFromEnv, listToolkitTools, listToolkitTriggers } from '@/lib/composio-api';
+import {
+  createComposioClientFromEnv,
+  LIVE_TRAVERSAL_TIMEOUT_MS,
+  listToolkitTools,
+  listToolkitTriggers,
+} from '@/lib/composio-api';
 
 // COMPOSIO_BASE_URL selects the API host; production by default.
 const client = process.env.COMPOSIO_API_KEY
@@ -35,7 +40,7 @@ async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
   }
 
   try {
-    return apiToolListSchema.parse(await listToolkitTools(client, toolkitSlug));
+    return apiToolListSchema.parse(await listToolkitTools(client, toolkitSlug, { signal: AbortSignal.timeout(LIVE_TRAVERSAL_TIMEOUT_MS) }));
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed tools for ${toolkitSlug}:`, error);
     return null;
@@ -51,7 +56,7 @@ async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | n
   }
 
   try {
-    return apiTriggerListSchema.parse(await listToolkitTriggers(client, toolkitSlug));
+    return apiTriggerListSchema.parse(await listToolkitTriggers(client, toolkitSlug, { signal: AbortSignal.timeout(LIVE_TRAVERSAL_TIMEOUT_MS) }));
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed triggers for ${toolkitSlug}:`, error);
     return null;
