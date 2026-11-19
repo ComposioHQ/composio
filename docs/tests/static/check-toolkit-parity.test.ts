@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
   countMarkdownTools,
-  API_LIST_PAGE_LIMIT,
   cacheEntryBytes,
   CACHE_ENTRY_LIMIT,
   findInstantProblems,
@@ -24,6 +23,10 @@ const markdown = [
   '',
   '**Slug:** `TABLEAU_LIST_USERS`',
   '',
+  '## Pagination',
+  '',
+  'Use the cursor to retrieve more users.',
+  '',
   '### List Views',
   '',
   '**Slug:** `TABLEAU_LIST_VIEWS`',
@@ -44,7 +47,7 @@ const healthy = {
 };
 
 describe('countMarkdownTools', () => {
-  test('counts tool slugs in the Tools section only', () => {
+  test('counts tools after a heading in a description and excludes triggers', () => {
     expect(countMarkdownTools(markdown)).toBe(2);
   });
 
@@ -69,7 +72,7 @@ describe('findProblems', () => {
   });
 
   test('flags a snapshot cut off at the API page cap', () => {
-    expect(findProblems({ ...healthy, slug: 'microsoft_365', snapshotCount: API_LIST_PAGE_LIMIT, productionCount: 1208, deployedCount: 1208 })).toEqual([
+    expect(findProblems({ ...healthy, slug: 'microsoft_365', snapshotCount: 1000, productionCount: 1208, deployedCount: 1208 })).toEqual([
       'the microsoft_365 snapshot stops at 1000 of 1208 tools, the API page cap; generate:toolkits did not follow next_cursor',
     ]);
   });

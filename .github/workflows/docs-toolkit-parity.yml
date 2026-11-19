@@ -48,7 +48,7 @@ jobs:
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Check toolkit parity
         run: |
@@ -63,7 +63,6 @@ jobs:
       - name: Open tracking issue on failure
         id: open-issue
         if: failure()
-        continue-on-error: true
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -96,7 +95,6 @@ jobs:
 
       - name: Notify Slack
         if: failure() && steps.open-issue.outputs.issue_url
-        continue-on-error: true
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
@@ -104,6 +102,8 @@ jobs:
           payload: |
             {"text": "🚨 *Docs Toolkit Parity*: deployed toolkit pages disagree with production. <${{ steps.open-issue.outputs.issue_url }}|Tracking issue>"}
 
+      # GitHub issue cleanup is best effort after a successful parity check.
+      # ast-grep-ignore: yaml-continue-on-error
       - name: Close tracking issue on recovery
         if: success()
         continue-on-error: true

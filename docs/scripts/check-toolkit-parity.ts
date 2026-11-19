@@ -22,6 +22,7 @@ import { writeFile, readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import {
+  API_PAGE_LIMIT,
   createComposioClient,
   listToolkits,
   listToolkitTools,
@@ -29,10 +30,8 @@ import {
   TOOLKIT_PAGE_SIZE,
 } from '../lib/composio-api';
 import { instantToolkitSlugs } from '../lib/instant-toolkit-api';
+import { instantToolkitSlugsSchema } from '../lib/instant-toolkit-filter';
 import { fetchWithRetry } from './fetch-with-retry';
-
-/** The most items one API list request returns. */
-export const API_LIST_PAGE_LIMIT = 1000;
 
 /** The Next.js data-cache entry limit, measured on the serialized entry. */
 export const CACHE_ENTRY_LIMIT = 2 * 1024 * 1024;
@@ -63,8 +62,9 @@ export interface ToolkitObservation {
 export function countMarkdownTools(markdown: string): number {
   const start = markdown.indexOf('\n## Tools\n');
   if (start === -1) return 0;
-  const next = markdown.indexOf('\n## ', start + 1);
-  const section = markdown.slice(start, next === -1 ? undefined : next);
+  // Tool descriptions can contain headings. The renderer puts triggers after tools.
+  const triggers = markdown.indexOf('\n## Triggers\n', start + 1);
+  const section = markdown.slice(start, triggers === -1 ? undefined : triggers);
   return section.match(/^\*\*Slug:\*\* `/gm)?.length ?? 0;
 }
 
@@ -77,7 +77,7 @@ export function findProblems(observation: ToolkitObservation): string[] {
       `${slug}.md lists ${deployedCount} tools; production has ${productionCount}, the snapshot has ${snapshotCount}`
     );
   }
-  if (snapshotCount === API_LIST_PAGE_LIMIT && productionCount > API_LIST_PAGE_LIMIT) {
+  if (snapshotCount === API_PAGE_LIMIT && productionCount > API_PAGE_LIMIT) {
     problems.push(
       `the ${slug} snapshot stops at ${snapshotCount} of ${productionCount} tools, the API page cap; generate:toolkits did not follow next_cursor`
     );
@@ -145,7 +145,7 @@ async function observeInstant(apiKey: string): Promise<InstantObservation> {
 
   const response = await fetchWithRetry(`${DOCS_BASE_URL}/api/toolkits/instant`);
   if (!response.ok) throw new Error(`/api/toolkits/instant responded ${response.status}`);
-  const deployed = z.object({ slugs: z.array(z.string()) }).parse(await response.json());
+  const deployed = instantToolkitSlugsSchema.parse(await response.json());
   return { productionSlugs: instantToolkitSlugs(toolkits), deployedSlugs: deployed.slugs, largestPageBytes: largestPageBytes() };
 }
 
