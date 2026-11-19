@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   buildContentFreshness, getExplicitLastUpdated, normalizeLastUpdated,
 } from '../../lib/content-freshness-build';
-import { createPageLastUpdatedReader, getPageLastUpdated } from '../../lib/content-freshness';
+import { createPageLastUpdatedReader } from '../../lib/content-freshness';
 
 const directories: string[] = [];
 const initial = '2025-01-01T12:00:00+00:00';
@@ -67,15 +67,18 @@ describe('source-backed page freshness', () => {
     }
   });
 
-  test('bundled freshness is independent of the runtime working directory', async () => {
+  test('bundled freshness is independent of the runtime working directory', () => {
     const root = temporaryDirectory();
-    const script = `import { getPageLastUpdated } from ${JSON.stringify(fileURLToPath(new URL('../../lib/content-freshness.ts', import.meta.url)))};
-      console.log(await getPageLastUpdated('/docs/quickstart'));`;
+    const timestamp = '2025-01-01T12:00:00.000Z';
+    const script = `import { mock } from 'bun:test';
+      mock.module(${JSON.stringify(fileURLToPath(new URL('../../.generated/content-freshness.json', import.meta.url)))}, () => ({
+        default: { version: 1, pages: { '/fixture': ${JSON.stringify(timestamp)} } },
+      }));
+      const { getPageLastUpdated } = await import(${JSON.stringify(fileURLToPath(new URL('../../lib/content-freshness.ts', import.meta.url)))});
+      console.log(await getPageLastUpdated('/fixture'));
+      console.log(await getPageLastUpdated('toString'));`;
     const output = execFileSync(process.execPath, ['-e', script], { cwd: root, encoding: 'utf8' }).trim();
-    const expected = await getPageLastUpdated('/docs/quickstart');
-    expect(expected).not.toBeNull();
-    expect(output).toBe(expected);
-    expect(await getPageLastUpdated('toString')).toBeNull();
+    expect(output).toBe(`${timestamp}\nnull`);
   });
 
   test('tracks a changed source, not unrelated commits or filesystem write time', () => {
