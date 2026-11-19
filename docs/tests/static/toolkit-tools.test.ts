@@ -23,10 +23,10 @@ test('an older detail response cannot shrink the refreshed Tableau catalog', asy
   expect(tools.length).toBe(tableau.toolCount);
   expect(tools.map(tool => tool.slug)).toEqual(tableau.tools.map(tool => tool.slug));
   const url = new URL(String(fetchMock.mock.calls[0]?.[0]));
-  expect(url.searchParams.get('toolkit_versions[tableau]')).toBe(tableau.version);
+  expect(url.searchParams.get('toolkit_versions[tableau]')).toBe('latest');
 });
 
-test('keeps schemas for matching tools without adding tools outside the snapshot', async () => {
+test('enriches matching tools without importing another incomplete inventory', async () => {
   const tableau = (await getToolkitBySlug('tableau'))!;
   process.env.COMPOSIO_API_KEY = 'test-key';
   globalThis.fetch = mock(async () => Response.json({ items: [
@@ -37,6 +37,16 @@ test('keeps schemas for matching tools without adding tools outside the snapshot
   const tools = await fetchDetailedTools(tableau);
   expect(tools[0].input_parameters?.id.type).toBe('string');
   expect(tools.map(tool => tool.slug)).toEqual(tableau.tools.map(tool => tool.slug));
+});
+
+test('accepts a complete newer inventory when the snapshot lags a release', async () => {
+  const tableau = (await getToolkitBySlug('tableau'))!;
+  process.env.COMPOSIO_API_KEY = 'test-key';
+  const newTool = { slug: 'TABLEAU_NEW_RELEASE', name: 'New release', description: '' };
+  globalThis.fetch = mock(async () => Response.json({ items: [...tableau.tools, newTool] }));
+  const tools = await fetchDetailedTools(tableau);
+  expect(tools).toHaveLength(tableau.tools.length + 1);
+  expect(tools.at(-1)?.slug).toBe(newTool.slug);
 });
 
 test('retains the snapshot on a failed fetch and supports toolkits missing from it', async () => {

@@ -6,11 +6,9 @@ export async function fetchDetailedTools(toolkit: Toolkit): Promise<Tool[]> {
   if (!apiKey) return toolkit.tools;
 
   const apiBase = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
-  // Version the cache key with the generated catalog instead of reusing an old
-  // response for the mutable "latest" alias across data-sync deployments.
   const params = new URLSearchParams({
     toolkit_slug: toolkit.slug.toUpperCase(),
-    [`toolkit_versions[${toolkit.slug}]`]: toolkit.version || 'latest',
+    [`toolkit_versions[${toolkit.slug}]`]: 'latest',
     include_pricing: 'true',
     limit: '1000',
   });
@@ -22,12 +20,10 @@ export async function fetchDetailedTools(toolkit: Toolkit): Promise<Tool[]> {
     if (!response.ok) return toolkit.tools;
     const parsed = apiToolListSchema.safeParse(await response.json());
     if (!parsed.success) return toolkit.tools;
-    // A snapshot miss has metadata but no inventory yet; use production's list.
-    if (toolkit.tools.length === 0 && toolkit.toolCount > 0) return parsed.data;
-
-    // The sync owns the inventory. Runtime requests only add parameter schemas,
-    // so a stale, empty, or truncated response cannot replace the refreshed list.
     const details = new Map(parsed.data.map(tool => [tool.slug, tool]));
+    // Accept new releases (and snapshot misses) when the response covers the
+    // catalog. A stale or truncated response can only enrich existing tools.
+    if (toolkit.tools.every(tool => details.has(tool.slug))) return parsed.data;
     return toolkit.tools.map(tool => details.get(tool.slug) ?? tool);
   } catch {
     return toolkit.tools;
