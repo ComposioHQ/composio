@@ -69,8 +69,11 @@ jobs:
         id: classify
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          # The OpenRouter workload identity policy that trusts this repository's GitHub OIDC tokens. Not a secret.
+          # The OpenRouter workload identity policy that trusts this repository's GitHub OIDC tokens, and the
+          # audience that policy expects. Both are repository variables, not secrets.
           OPENROUTER_FEDERATION_POLICY_ID: ${{ vars.OPENROUTER_FEDERATION_POLICY_ID }}
+          OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE: ${{ vars.OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE }}
+          OPENROUTER_MODEL: typesafe/jev-router
           ISSUE_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.issue_number || github.event.issue.number }}
         with:
           script: |
@@ -106,8 +109,14 @@ jobs:
               return;
             }
             const federationPolicyId = process.env.OPENROUTER_FEDERATION_POLICY_ID;
-            if (!federationPolicyId) {
-              throw new Error("OPENROUTER_FEDERATION_POLICY_ID is not configured");
+            const audience = process.env.OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE;
+            const model = process.env.OPENROUTER_MODEL;
+            for (const [name, value] of Object.entries({
+              OPENROUTER_FEDERATION_POLICY_ID: federationPolicyId,
+              OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE: audience,
+              OPENROUTER_MODEL: model,
+            })) {
+              if (!value) throw new Error(`${name} is not configured`);
             }
 
             const schema = {
@@ -159,8 +168,8 @@ jobs:
             `;
 
             // Workload identity federation (RFC 8693): GitHub's OIDC token for this run is exchanged for an
-            // OpenRouter access token that expires within 15 minutes. The audience must match the policy's.
-            const subjectToken = await core.getIDToken("openrouter");
+            // OpenRouter access token that expires within 15 minutes.
+            const subjectToken = await core.getIDToken(audience);
             const exchange = await fetch("https://openrouter.ai/api/v1/oauth/token", {
               method: "POST",
               redirect: "error",
@@ -194,7 +203,7 @@ jobs:
                 "content-type": "application/json",
               },
               body: JSON.stringify({
-                model: "typesafe/jev-router",
+                model,
                 max_tokens: 4096,
                 messages: [
                   { role: "system", content: system },

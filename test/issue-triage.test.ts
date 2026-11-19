@@ -38,6 +38,7 @@ type ClassifierOptions = {
   payload?: { action?: string; label?: { name: string } };
   eventName?: 'issues' | 'workflow_dispatch';
   federationPolicyId?: string;
+  audience?: string;
   exchange?: { status?: number; body?: unknown };
   result?: unknown;
   status?: number;
@@ -67,6 +68,7 @@ async function runClassifier({
   payload = {},
   eventName = 'issues',
   federationPolicyId = 'policy-id',
+  audience = 'policy-audience',
   exchange = {},
   result = completion(JSON.stringify(classification)),
   status = 200,
@@ -81,6 +83,8 @@ async function runClassifier({
       env: {
         ISSUE_NUMBER: issueNumber,
         OPENROUTER_FEDERATION_POLICY_ID: federationPolicyId,
+        OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE: audience,
+        OPENROUTER_MODEL: step.env?.OPENROUTER_MODEL,
         GITHUB_TOKEN: 'github-secret-sentinel',
         PLAIN_API_KEY: 'plain-secret-sentinel',
       },
@@ -139,7 +143,16 @@ test('public issue classification has no checkout, shell, write token, or stored
   expect(Object.keys(step.env ?? {}).sort()).toEqual([
     'ISSUE_NUMBER',
     'OPENROUTER_FEDERATION_POLICY_ID',
+    'OPENROUTER_MODEL',
+    'OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE',
   ]);
+  expect(step.env?.OPENROUTER_FEDERATION_POLICY_ID).toBe(
+    '${{ vars.OPENROUTER_FEDERATION_POLICY_ID }}'
+  );
+  expect(step.env?.OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE).toBe(
+    '${{ vars.OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE }}'
+  );
+  expect(step.with.script).not.toContain('jev-router');
   expect(JSON.stringify(workflow.jobs.classify)).not.toContain('secrets.');
   expect(workflow.jobs.apply.needs).toBe('classify');
   expect(workflow.jobs.apply.permissions).toEqual({ issues: 'write' });
@@ -158,7 +171,7 @@ test('injected issue instructions stay in user data in a single tool-free reques
   });
   await execution;
   expect(reads).toEqual([{ owner: 'ComposioHQ', repo: 'composio', issue_number: 42 }]);
-  expect(audiences).toEqual(['openrouter']);
+  expect(audiences).toEqual(['policy-audience']);
   expect(masked).toEqual(['openrouter-secret-sentinel']);
   expect(requests).toHaveLength(2);
   const exchange = requests[0];
@@ -275,12 +288,17 @@ for (const [label, exchange, message] of [
   });
 }
 
-test('a missing federation policy fails before an OIDC token is minted', async () => {
-  const { execution, requests, audiences } = await runClassifier({ federationPolicyId: '' });
-  await expect(execution).rejects.toThrow('OPENROUTER_FEDERATION_POLICY_ID');
-  expect(requests).toEqual([]);
-  expect(audiences).toEqual([]);
-});
+for (const [name, options] of [
+  ['OPENROUTER_FEDERATION_POLICY_ID', { federationPolicyId: '' }],
+  ['OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE', { audience: '' }],
+] as const) {
+  test(`a missing ${name} fails before an OIDC token is minted`, async () => {
+    const { execution, requests, audiences } = await runClassifier(options);
+    await expect(execution).rejects.toThrow(name);
+    expect(requests).toEqual([]);
+    expect(audiences).toEqual([]);
+  });
+}
 
 test('rejects a pull request before sending it to the classifier', async () => {
   const { execution, outputs, requests } = await runClassifier({ issue: { pull_request: {} } });
