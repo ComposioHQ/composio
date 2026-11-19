@@ -6,8 +6,7 @@ name: Audit Python SDK
 # `pnpm audit --prod` gate: the exports pass `--no-dev`, and workspace members
 # themselves are skipped since they are not published on PyPI.
 #
-# Advisories with no patched release belong in IGNORED_VULNS below, with a
-# comment. Do not silence the gate by dropping `--strict`.
+# Keep `--strict` so audit errors fail the check.
 
 on:
   push:
@@ -47,21 +46,6 @@ permissions:
 
 env:
   PIP_AUDIT_VERSION: 2.10.1
-  # chromadb <=1.5.9 (via crewai, which pins chromadb~=1.5.9). Upstream has
-  # published no patched release for any of the four advisories, so no bump
-  # reaches them. All four affect the Chroma *server* (auth, RBAC, and code
-  # injection in server endpoints); composio-crewai only imports the client
-  # library through crewai and never starts a server. Drop each entry once
-  # crewai moves to a chromadb release that closes it.
-  #   PYSEC-2026-311 = CVE-2026-45829 = GHSA-f4j7-r4q5-qw2c (pre-auth code injection)
-  #   CVE-2026-45833 = GHSA-36p7-vc44-83pf (code injection)
-  #   CVE-2026-45830 = GHSA-2wm9-hf6c-p5cr (cross-tenant data access)
-  #   CVE-2026-45831 = GHSA-xph7-9rjv-w5fr (RBAC scope not checked)
-  IGNORED_VULNS: >-
-    PYSEC-2026-311
-    CVE-2026-45833
-    CVE-2026-45830
-    CVE-2026-45831
 
 jobs:
   audit:
@@ -148,16 +132,9 @@ jobs:
           echo "Audited the $origin lockfile"
 
       - name: Run pip-audit
-        env:
-          LOCK_IGNORED_VULNS: ${{ matrix.lock.ignored-vulns }}
         run: |
-          ignore_flags=()
-          for id in $IGNORED_VULNS $LOCK_IGNORED_VULNS; do
-            ignore_flags+=(--ignore-vuln "$id")
-          done
           uvx --from "pip-audit==$PIP_AUDIT_VERSION" pip-audit \
             --requirement "$RUNNER_TEMP/requirements.txt" \
             --no-deps \
             --strict \
-            --progress-spinner off \
-            "${ignore_flags[@]}"
+            --progress-spinner off
