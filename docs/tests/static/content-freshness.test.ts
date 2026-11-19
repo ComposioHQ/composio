@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   buildContentFreshness, getExplicitLastUpdated, normalizeLastUpdated,
 } from '../../lib/content-freshness-build';
-import { createPageLastUpdatedReader } from '../../lib/content-freshness';
+import { createPageLastUpdatedReader, getPageLastUpdated } from '../../lib/content-freshness';
 
 const directories: string[] = [];
 const initial = '2025-01-01T12:00:00+00:00';
@@ -45,6 +45,17 @@ afterEach(() => {
 });
 
 describe('source-backed page freshness', () => {
+  test('bundled freshness is independent of the runtime working directory', async () => {
+    const root = temporaryDirectory();
+    const script = `import { getPageLastUpdated } from ${JSON.stringify(fileURLToPath(new URL('../../lib/content-freshness.ts', import.meta.url)))};
+      console.log(await getPageLastUpdated('/docs/quickstart'));`;
+    const output = execFileSync(process.execPath, ['-e', script], { cwd: root, encoding: 'utf8' }).trim();
+    const expected = await getPageLastUpdated('/docs/quickstart');
+    expect(expected).not.toBeNull();
+    expect(output).toBe(expected);
+    expect(await getPageLastUpdated('toString')).toBeNull();
+  });
+
   test('tracks a changed source, not unrelated commits or filesystem write time', () => {
     const root = repository();
     put(root, 'content/docs/guide.mdx', 'original');

@@ -154,9 +154,11 @@ server and its read-only search tool. Leave this variable unset in Production
 until publication is approved. This does not mount anything at the existing
 `docs.composio.dev/mcp` redirect or add Cloudflare UI to docs.
 
-The existing source-backed sitemap implementation is already on `next` in
-commit `945771297`. A 2026-11-19 production curl found 2,503 URLs and zero dates.
-The local generator produced dates for 241 authored pages. Verify the preview's
+The source-backed sitemap implementation is already on `next` in commit
+`945771297`, but deployed filesystem reads silently lost its metadata. This
+change bundles the generated manifest into the server code. A 2026-11-19
+production curl found 2,503 URLs and zero dates. The local generator produced
+dates for 241 authored pages. Verify the preview's
 `/sitemap.xml` includes the quickstart's real source date. Generated toolkit,
 API, KB, and browse pages deliberately omit dates until their updates can be
 attributed to individual pages. Do not substitute build time for `<lastmod>`.
