@@ -1,0 +1,28 @@
+diff --git a/dist/index.js b/dist/index.js
+index b8c857b..3d1fce5 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -5444,7 +5444,8 @@ var OpenAISchemaCompatLayer = class extends SchemaCompatLayer3 {
+       ];
+     }
+     if (isObjectSchema(schema)) {
+-      schema.additionalProperties = false;
++      const isOpenMap = !schema.properties && (schema.additionalProperties === true || (typeof schema.additionalProperties === "object" && schema.additionalProperties !== null));
++      if (!isOpenMap) schema.additionalProperties = false;
+       if (schema.properties) {
+         for (const key of Object.keys(schema.properties)) {
+           const prop = schema.properties[key];
+diff --git a/dist/index.cjs b/dist/index.cjs
+index c9d2329..e5aa516 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -5444,7 +5444,8 @@ var OpenAISchemaCompatLayer = class extends SchemaCompatLayer3 {
+       ];
+     }
+     if (isObjectSchema(schema)) {
+-      schema.additionalProperties = false;
++      const isOpenMap = !schema.properties && (schema.additionalProperties === true || (typeof schema.additionalProperties === "object" && schema.additionalProperties !== null));
++      if (!isOpenMap) schema.additionalProperties = false;
+       if (schema.properties) {
+         for (const key of Object.keys(schema.properties)) {
+           const prop = schema.properties[key];
