@@ -57,22 +57,16 @@ const workflow = Bun.YAML.parse(
   readFileSync(join(repo, '.github/workflows/docs-kb-publish.yml'), 'utf8'),
 ) as { jobs: { publish: { steps: Step[] } } };
 
-function sh(
-  command: string,
-  args: string[],
-  cwd: string,
-  env: Record<string, string> = {},
-  input?: string,
-) {
+function sh(command: 'git' | 'bun', args: string[], cwd: string, env: Record<string, string> = {}) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: 'utf8',
     env: { ...process.env, ...env },
-    input,
+    shell: false,
   });
   return { ok: result.status === 0, out: `${result.stdout ?? ''}${result.stderr ?? ''}`.trim() };
 }
-function must(command: string, args: string[], cwd = work, env: Record<string, string> = {}) {
+function must(command: 'git' | 'bun', args: string[], cwd = work, env: Record<string, string> = {}) {
   const result = sh(command, args, cwd, env);
   if (!result.ok) throw new Error(`${command} ${args.join(' ')} failed:\n${result.out}`);
   return result.out;
@@ -81,13 +75,14 @@ function workflowStep(name: string, env: Record<string, string>) {
   const script = workflow.jobs.publish.steps.find(step => step.name === name)?.run;
   if (!script) throw new Error(`docs-kb-publish.yml has no step "${name}"`);
   // The job's default shell is bash, which Actions runs with -e -o pipefail.
-  return sh(
-    'bash',
-    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-s'],
-    docs,
-    { RUNNER_TEMP: runnerTemp, ...env },
-    script,
-  );
+  const result = spawnSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-s'], {
+    cwd: docs,
+    encoding: 'utf8',
+    env: { ...process.env, RUNNER_TEMP: runnerTemp, ...env },
+    input: script,
+    shell: false,
+  });
+  return { ok: result.status === 0, out: `${result.stdout ?? ''}${result.stderr ?? ''}`.trim() };
 }
 
 let failed = false;
