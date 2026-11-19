@@ -46,7 +46,6 @@ export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinary
   readonly message?: string;
 }> {}
 
-/** The release refuses an upgrade from the running version; only a fresh install reaches it. */
 export class UpgradeBelowMinimumError extends Data.TaggedError(
   'services/UpgradeBelowMinimumError'
 )<{
@@ -537,46 +536,66 @@ const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =
     message: `${message}: ${error.message}`,
   });
 
-/**
- * Refuses an archive whose manifest sets a minimum version above the running
- * one. A running version that is unknown (a source build) is not checked.
- */
 const ensureUpgradeAllowedFrom = (
-  manifest: ReleaseManifest,
+  { minimumUpgradeFrom }: ReleaseManifest,
   currentVersion: Option.Option<string>,
   platform: NodeJS.Platform
 ): Effect.Effect<void, UpgradeBelowMinimumError | UpgradeBinaryError> =>
-  Option.match(currentVersion, {
-    onNone: () =>
-      Effect.logDebug(
-        `Running version unknown; not checking the archive's minimum of ${manifest.minimumUpgradeFrom}`
-      ),
-    onSome: current =>
-      semverComparator(current, manifest.minimumUpgradeFrom).pipe(
-        Effect.mapError(
-          cause =>
-            new UpgradeBinaryError({
-              cause,
-              message: `Cannot compare the running version ${current} with the release's minimum ${manifest.minimumUpgradeFrom}`,
-            })
-        ),
-        Effect.flatMap(comparison =>
-          comparison < 0
-            ? Effect.fail(
-                new UpgradeBelowMinimumError({
-                  currentVersion: current,
-                  minimumUpgradeFrom: manifest.minimumUpgradeFrom,
-                  message: [
-                    `This release can only be installed over Composio CLI ${manifest.minimumUpgradeFrom} or newer, and this CLI is ${current}.`,
-                    'Reinstall the CLI to get it:',
-                    `  ${reinstallCommand(platform)}`,
-                  ].join('\n'),
-                })
-              )
-            : Effect.void
-        )
-      ),
+  Effect.gen(function* () {
+    if (Option.isNone(currentVersion)) {
+      return yield* Effect.logDebug(
+        `Running version unknown; not checking the archive's minimum of ${minimumUpgradeFrom}`
+      );
+    }
+    const current = currentVersion.value;
+    const comparison = yield* semverComparator(current, minimumUpgradeFrom).pipe(
+      Effect.mapError(
+        cause =>
+          new UpgradeBinaryError({
+            cause,
+            message: `Cannot compare the running version ${current} with the release's minimum ${minimumUpgradeFrom}`,
+          })
+      )
+    );
+    if (comparison < 0) {
+      return yield* new UpgradeBelowMinimumError({
+        currentVersion: current,
+        minimumUpgradeFrom,
+        message: [
+          `This release can only be installed over Composio CLI ${minimumUpgradeFrom} or newer, and this CLI is ${current}.`,
+          'Reinstall the CLI to get it:',
+          `  ${reinstallCommand(platform)}`,
+        ].join('\n'),
+      });
+    }
   });
+
+const syncInstalledReleaseManifest = (
+  ctx: Pick<UpgradeBinaryContext, 'fs' | 'path'>,
+  archiveCompanions: ArchiveCompanions,
+  sourceDirectory: string,
+  targetDirectory: string
+) => {
+  const installedManifestPath = ctx.path.join(targetDirectory, RELEASE_MANIFEST_FILENAME);
+  if (ArchiveCompanions.$is('CompiledNames')(archiveCompanions)) {
+    return ctx.fs.remove(installedManifestPath, { force: true }).pipe(
+      Effect.mapError(
+        cause =>
+          new UpgradeBinaryError({
+            cause,
+            message: `Failed to remove the previous release manifest: ${installedManifestPath}`,
+          })
+      )
+    );
+  }
+  return provideFsAndPath(
+    ctx,
+    atomicReplaceFile({
+      sourcePath: ctx.path.join(sourceDirectory, RELEASE_MANIFEST_FILENAME),
+      targetPath: installedManifestPath,
+    })
+  ).pipe(Effect.mapError(mapAtomicReplaceError('Failed to update installed release manifest')));
+};
 
 const replaceBinary = (
   ctx: Pick<UpgradeBinaryContext, 'fs' | 'path' | 'platform'>,
@@ -697,28 +716,7 @@ const replaceBinary = (
       );
     }
 
-    // The manifest goes in with the release it describes; an archive without one
-    // takes away the previous release's, which would describe other files.
-    const installedManifestPath = path.join(targetDirectory, RELEASE_MANIFEST_FILENAME);
-    yield* ArchiveCompanions.$is('Manifest')(archiveCompanions)
-      ? provideFsAndPath(
-          ctx,
-          atomicReplaceFile({
-            sourcePath: path.join(sourceDirectory, RELEASE_MANIFEST_FILENAME),
-            targetPath: installedManifestPath,
-          })
-        ).pipe(
-          Effect.mapError(mapAtomicReplaceError('Failed to update installed release manifest'))
-        )
-      : fs.remove(installedManifestPath, { force: true }).pipe(
-          Effect.mapError(
-            cause =>
-              new UpgradeBinaryError({
-                cause,
-                message: `Failed to remove the previous release manifest: ${installedManifestPath}`,
-              })
-          )
-        );
+    yield* syncInstalledReleaseManifest(ctx, archiveCompanions, sourceDirectory, targetDirectory);
 
     if (releaseTag) {
       yield* provideFsAndPath(
@@ -769,7 +767,7 @@ const upgrade = (
     const currentReleaseIdentifier = yield* resolveCurrentReleaseIdentifier(ctx, currentPath);
     const currentVersion = yield* provideFsAndPath(
       ctx,
-      resolveRecordedRunningCliVersion(currentPath)
+      resolveRecordedRunningCliVersion(currentPath, APP_VERSION)
     );
     yield* Effect.logDebug(`Current executable path: ${currentPath}`);
     yield* Effect.logDebug(`Current release identifier: ${currentReleaseIdentifier}`);

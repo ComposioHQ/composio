@@ -98,7 +98,6 @@ const mockArchiveContents = (missingRelativePath?: string) => {
   );
 };
 
-// An archive that carries a manifest: `relativePaths` with contents, plus the manifest.
 const mockManifestArchive = (relativePaths: ReadonlyArray<string>, manifest: unknown) => {
   extractZipMock.mockImplementation(
     async (archivePath: string, options: { readonly dir: string }) => {

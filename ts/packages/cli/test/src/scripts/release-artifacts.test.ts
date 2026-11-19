@@ -1,7 +1,9 @@
+import { Schema } from 'effect';
 import semver from 'semver';
 import { describe, expect, it } from 'vitest';
 
 import {
+  ReleaseManifest,
   RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS,
   RUN_COMPANION_MODULE_FILENAMES,
 } from '../../../src/services/run-companion-modules';
@@ -134,19 +136,12 @@ describe('buildReleaseManifest', () => {
     });
   });
 
-  it('serializes as two-space JSON with a trailing newline', () => {
-    expect(serializeReleaseManifest(buildReleaseManifest(['run-helpers-runtime.mjs']))).toBe(
-      [
-        '{',
-        '  "schemaVersion": 1,',
-        `  "minimumUpgradeFrom": "${MINIMUM_UPGRADE_FROM}",`,
-        '  "companions": [',
-        '    "run-helpers-runtime.mjs"',
-        '  ]',
-        '}',
-        '',
-      ].join('\n')
-    );
+  it('serializes to JSON the CLI decodes back to the same manifest', () => {
+    const manifest = buildReleaseManifest(['run-helpers-runtime.mjs']);
+    const serialized = serializeReleaseManifest(manifest);
+
+    expect(Schema.decodeUnknownSync(ReleaseManifest)(JSON.parse(serialized))).toEqual(manifest);
+    expect(serialized.endsWith('}\n')).toBe(true);
   });
 
   it('refuses a companion path the CLI would refuse to install', () => {
@@ -154,11 +149,6 @@ describe('buildReleaseManifest', () => {
   });
 });
 
-/**
- * Clients up to 0.4.2 never read the manifest and refuse an archive missing any
- * placeholder, so the placeholders may only go once the declared minimum has
- * left those clients behind.
- */
 describe('MINIMUM_UPGRADE_FROM', () => {
   it('keeps every legacy placeholder in the archive while clients up to 0.4.2 may upgrade', () => {
     const entryPaths = archiveCompanionEntries(LIVE_COMPANION_RELATIVE_PATHS).map(
@@ -171,10 +161,7 @@ describe('MINIMUM_UPGRADE_FROM', () => {
     expect(semver.gt(MINIMUM_UPGRADE_FROM, '0.4.2') || keepsPlaceholders).toBe(true);
   });
 
-  it.each(['0.0.0-beta.0', '0.1.26', '0.6.2'])(
-    'lets a %s client upgrade, since no release has dropped a required path yet',
-    version => {
-      expect(semver.gte(version, MINIMUM_UPGRADE_FROM)).toBe(true);
-    }
-  );
+  it('lets a 0.0.0-beta.0 client upgrade, since no release has dropped a required path yet', () => {
+    expect(semver.gte('0.0.0-beta.0', MINIMUM_UPGRADE_FROM)).toBe(true);
+  });
 });

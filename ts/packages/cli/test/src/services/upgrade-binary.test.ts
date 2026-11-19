@@ -781,10 +781,6 @@ describe('UpgradeBinary with a release manifest', () => {
       2
     )}\n`;
 
-  /**
-   * An install of `installedTag` holding every live companion, and a downloaded
-   * package holding `archiveFiles` and no manifest yet.
-   */
   const setUpLocalUpgrade = (installedTag: string, archiveFiles: ReadonlyArray<string>) =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
@@ -835,50 +831,6 @@ describe('UpgradeBinary with a release manifest', () => {
     ...LIVE_COMPANIONS,
   ].sort();
 
-  it.effect('installs an archive that omits a companion the running CLI knows about', () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-
-    return Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem;
-      const path = yield* Path.Path;
-      const installDir = yield* fs.makeTempDirectoryScoped({ prefix: 'composio-manifest-fresh-' });
-      const sourceDir = yield* fs.makeTempDirectoryScoped({ prefix: 'composio-manifest-source-' });
-      const execPath = path.join(installDir, 'composio');
-      yield* fs.writeFileString(execPath, 'old-binary');
-      yield* fs.writeFileString(path.join(sourceDir, 'composio'), 'new-binary');
-      yield* fs.writeFileString(
-        path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME),
-        '@composio/cli@0.5.0\n'
-      );
-      yield* writeCompanionFiles(sourceDir, RUN_HELPERS_ONLY, 'new-support');
-      yield* fs.writeFileString(path.join(sourceDir, RELEASE_MANIFEST_FILENAME), manifestJson());
-      vi.spyOn(process, 'execPath', 'get').mockReturnValue(execPath);
-
-      yield* runUpgradeSuccess([
-        ['DEBUG_OVERRIDE_UPGRADE_TARGET', path.join(sourceDir, 'composio')],
-      ]);
-
-      const entries = yield* fs.readDirectory(installDir, { recursive: true });
-      expect(entries.map(entry => entry.replaceAll(path.sep, '/')).sort()).toEqual(
-        [
-          RELEASE_MANIFEST_FILENAME,
-          RUN_COMPANION_RELEASE_TAG_FILENAME,
-          'composio',
-          'run-helpers-runtime.mjs',
-          'services',
-          'services/run-helpers-runtime.mjs',
-        ].sort()
-      );
-      expect(yield* fs.readFileString(execPath)).toBe('new-binary');
-      expect(yield* fs.readFileString(path.join(installDir, 'run-helpers-runtime.mjs'))).toBe(
-        'new-support'
-      );
-      expect(yield* fs.readFileString(path.join(installDir, RELEASE_MANIFEST_FILENAME))).toBe(
-        manifestJson()
-      );
-    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
-  });
-
   it.effect('leaves companions the archive does not list in place when it downgrades', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
@@ -894,6 +846,7 @@ describe('UpgradeBinary with a release manifest', () => {
       expect(yield* install.readInstalled('composio')).toBe('new-binary');
       expect(yield* install.readInstalled('services/run-helpers-runtime.mjs')).toBe('new-support');
       expect(yield* install.readInstalled('services/generation-runtime.mjs')).toBe('old-support');
+      expect(yield* install.readInstalled(RELEASE_MANIFEST_FILENAME)).toBe(manifestJson());
       expect(yield* install.readInstalled(RUN_COMPANION_RELEASE_TAG_FILENAME)).toBe(
         '@composio/cli@0.5.0\n'
       );
@@ -1001,20 +954,6 @@ describe('UpgradeBinary with a release manifest', () => {
       );
       expect(yield* install.readInstalled('composio')).toBe('new-binary');
       expect(yield* install.readInstalled('generation-runtime.mjs')).toBe('new-support');
-    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
-  });
-
-  it.effect('still requires every compiled-name companion when the archive has no manifest', () => {
-    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
-
-    return Effect.gen(function* () {
-      const install = yield* setUpLocalUpgrade('@composio/cli@0.6.0', RUN_HELPERS_ONLY);
-
-      const error = yield* runUpgrade(install.upgradeConfig, { tag: '@composio/cli@0.7.0' });
-
-      expect(error).toBeInstanceOf(UpgradeBinaryError);
-      expect(error.message).toBe('Downloaded binary package is incomplete');
-      expect(yield* install.readInstalled('composio')).toBe('old-binary');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 });

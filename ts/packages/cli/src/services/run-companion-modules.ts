@@ -65,13 +65,11 @@ const isArchiveRelativePath = (value: string): boolean =>
   !/^[A-Za-z]:/.test(value) &&
   value.split('/').every(segment => segment !== '' && segment !== '.' && segment !== '..');
 
-/** A path inside a release archive's package directory, safe to join onto an install directory. */
-export const ArchiveRelativePath = Schema.String.check(
+const ArchiveRelativePath = Schema.String.check(
   Schema.makeFilter(isArchiveRelativePath, {
     expected: 'a relative POSIX path with no empty, "." or ".." segments',
   })
-).pipe(Schema.brand('ArchiveRelativePath'));
-export type ArchiveRelativePath = typeof ArchiveRelativePath.Type;
+);
 
 const isSortedAndUnique = (values: ReadonlyArray<string>): boolean =>
   values.every((value, index) => index === 0 || values[index - 1]! < value);
@@ -103,44 +101,26 @@ const ReleaseManifestVersion = Schema.fromJsonString(
 );
 const ReleaseManifestFromJson = Schema.fromJsonString(ReleaseManifest);
 
-/** A release archive whose `release-manifest.json` cannot be read or trusted. */
 export class ReleaseManifestError extends Data.TaggedError('services/ReleaseManifestError')<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
-/**
- * The companion files a release archive provides: the ones its manifest lists,
- * or, for an archive from before manifests, the ones this CLI's own companion
- * names reach.
- */
 export type ArchiveCompanions = Data.TaggedEnum<{
   Manifest: { readonly manifest: ReleaseManifest; readonly relativePaths: ReadonlyArray<string> };
   CompiledNames: { readonly relativePaths: ReadonlyArray<string> };
 }>;
 export const ArchiveCompanions = Data.taggedEnum<ArchiveCompanions>();
 
-const readReleaseManifest = (
-  fs: FileSystem.FileSystem,
-  manifestPath: string
+const manifestError = (message: string) => (cause: unknown) =>
+  new ReleaseManifestError({ message, cause });
+
+const decodeReleaseManifest = (
+  text: string
 ): Effect.Effect<ReleaseManifest, ReleaseManifestError> =>
   Effect.gen(function* () {
-    const text = yield* fs
-      .readFileString(manifestPath, 'utf8')
-      .pipe(
-        Effect.mapError(
-          cause =>
-            new ReleaseManifestError({ message: `Cannot read ${RELEASE_MANIFEST_FILENAME}`, cause })
-        )
-      );
     const { schemaVersion } = yield* Schema.decodeUnknownEffect(ReleaseManifestVersion)(text).pipe(
-      Effect.mapError(
-        cause =>
-          new ReleaseManifestError({
-            message: `${RELEASE_MANIFEST_FILENAME} is not valid JSON`,
-            cause,
-          })
-      )
+      Effect.mapError(manifestError(`${RELEASE_MANIFEST_FILENAME} is not valid JSON`))
     );
     if (schemaVersion !== RELEASE_MANIFEST_SCHEMA_VERSION) {
       return yield* new ReleaseManifestError({
@@ -148,10 +128,7 @@ const readReleaseManifest = (
       });
     }
     return yield* Schema.decodeUnknownEffect(ReleaseManifestFromJson)(text).pipe(
-      Effect.mapError(
-        cause =>
-          new ReleaseManifestError({ message: `${RELEASE_MANIFEST_FILENAME} is invalid`, cause })
-      )
+      Effect.mapError(manifestError(`${RELEASE_MANIFEST_FILENAME} is invalid`))
     );
   });
 
@@ -166,21 +143,19 @@ export const resolveArchiveCompanions = (
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const manifestPath = path.join(packageDir, RELEASE_MANIFEST_FILENAME);
-    const hasManifest = yield* fs
-      .exists(manifestPath)
+    const manifestText = yield* fs
+      .readFileString(path.join(packageDir, RELEASE_MANIFEST_FILENAME), 'utf8')
       .pipe(
-        Effect.mapError(
-          cause =>
-            new ReleaseManifestError({ message: `Cannot read ${RELEASE_MANIFEST_FILENAME}`, cause })
-        )
+        Effect.map(Option.some),
+        Effect.catchReason('PlatformError', 'NotFound', () => Effect.succeed(Option.none())),
+        Effect.mapError(manifestError(`Cannot read ${RELEASE_MANIFEST_FILENAME}`))
       );
-    if (!hasManifest) {
+    if (Option.isNone(manifestText)) {
       return ArchiveCompanions.CompiledNames({
         relativePaths: yield* collectExpectedRunCompanionAssetRelativePaths(packageDir),
       });
     }
-    const manifest = yield* readReleaseManifest(fs, manifestPath);
+    const manifest = yield* decodeReleaseManifest(manifestText.value);
     return ArchiveCompanions.Manifest({ manifest, relativePaths: manifest.companions });
   });
 
@@ -376,18 +351,13 @@ export const resolveRunningCliVersion = (
     ? Effect.succeed(normalizeCliReleaseVersion(appVersion))
     : resolveInstalledCliVersion(execPath, appVersion);
 
-/**
- * The running CLI's release version when it is known: compiled into a release
- * build, or recorded in `release-tag.txt` next to the executable. A source
- * build with no recorded tag has none, since its package version is a
- * placeholder rather than a release.
- */
 export const resolveRecordedRunningCliVersion = (
   execPath: string,
+  appVersion: string,
   isReleaseBuild = IS_RELEASE_BUILD
 ): Effect.Effect<Option.Option<string>, never, FileSystem.FileSystem | Path.Path> =>
   isReleaseBuild
-    ? Effect.succeed(Option.some(normalizeCliReleaseVersion(APP_VERSION)))
+    ? Effect.succeed(Option.some(normalizeCliReleaseVersion(appVersion)))
     : Effect.map(readInstalledReleaseTag(execPath), releaseTag =>
         Option.map(Option.fromNullishOr(releaseTag), normalizeCliReleaseVersion)
       );

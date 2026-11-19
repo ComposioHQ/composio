@@ -46,6 +46,14 @@ const legacyBundleSetup = [
 // RELEASE_MANIFEST_FILENAME
 const manifestFileName = 'release-manifest.json';
 
+const manifestCompanions = ['run-helpers-runtime.mjs', 'services/run-helpers-runtime.mjs'];
+
+const releaseManifest = (minimumUpgradeFrom: string) => ({
+  schemaVersion: 1,
+  minimumUpgradeFrom,
+  companions: manifestCompanions,
+});
+
 /**
  * A bundle from a release that dropped the generation runtime and the legacy
  * placeholders: its manifest lists only what it ships.
@@ -53,18 +61,11 @@ const manifestFileName = 'release-manifest.json';
 const manifestBundleSetup = (minimumUpgradeFrom: string) =>
   [
     'mkdir -p "$source_dir/services"',
-    'cp /usr/local/bin/run-helpers-runtime.mjs "$source_dir/run-helpers-runtime.mjs"',
-    'cp /usr/local/bin/services/run-helpers-runtime.mjs "$source_dir/services/run-helpers-runtime.mjs"',
-    `cat > "$source_dir/${manifestFileName}" <<'EOF'`,
-    JSON.stringify(
-      {
-        schemaVersion: 1,
-        minimumUpgradeFrom,
-        companions: ['run-helpers-runtime.mjs', 'services/run-helpers-runtime.mjs'],
-      },
-      null,
-      2
+    ...manifestCompanions.map(
+      relativePath => `cp "/usr/local/bin/${relativePath}" "$source_dir/${relativePath}"`
     ),
+    `cat > "$source_dir/${manifestFileName}" <<'EOF'`,
+    JSON.stringify(releaseManifest(minimumUpgradeFrom), null, 2),
     'EOF',
   ].join('\n');
 
@@ -144,10 +145,6 @@ printf 'upgrade_status=%s\nbefore=%s\nafter=%s\nversion_status=%s\nversion=%s\nl
   "$upgrade_status" "$before" "$after" "$version_status" "$version_output" "$leftovers"
 `;
 
-/**
- * An upgrade to a bundle whose manifest requires a newer CLI than the one
- * installed, which `release-tag.txt` records as 0.5.0.
- */
 const belowMinimumCommand = `
 set -u
 install_dir=/opt/composio-below-minimum
@@ -232,11 +229,7 @@ e2e(import.meta.url, {
 
       it('installs the manifest next to the executable', () => {
         expect(outputField(manifestResult, 'installed_manifest')).toBe(
-          JSON.stringify({
-            schemaVersion: 1,
-            minimumUpgradeFrom: '0.1.26',
-            companions: ['run-helpers-runtime.mjs', 'services/run-helpers-runtime.mjs'],
-          })
+          JSON.stringify(releaseManifest('0.1.26'))
         );
       });
     });
