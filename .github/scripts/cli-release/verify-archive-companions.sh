@@ -2,7 +2,7 @@
 #
 # Loud failure gate: assert one release archive carries the companion layout the CLI
 # actually ships — the legacy paths present but empty, the live bundles present with
-# real bytes.
+# real bytes, and a release-manifest.json that lists exactly what upgrades must install.
 #
 # Each check guards a different failure:
 #
@@ -14,6 +14,10 @@
 #   - An empty live bundle passes every existence check and still breaks `composio run`
 #     and `composio generate`. The root files of the same name are one-line re-export
 #     wrappers, so the bundles under services/ are what carries the code.
+#   - Manifest-aware clients install what release-manifest.json lists and nothing else,
+#     and refuse a manifest they cannot decode. A manifest that omits a live bundle
+#     ships an install that cannot run; one that lists a placeholder or a missing entry
+#     fails every upgrade to this release.
 #
 # The unit tests cover the packaging rules on synthetic inputs; only this gate looks at a
 # real archive, so a change to the packaging pipeline cannot quietly reintroduce any of
@@ -82,5 +86,44 @@ for relative_path in "${live_bundles[@]}"; do
     fail "'$entry' is empty; the CLI cannot run without it"
   echo "ok: $relative_path carries $size bytes"
 done
+
+manifest_entry="${ARTIFACT}/release-manifest.json"
+grep -Fxq "$manifest_entry" <<<"$entries" ||
+  fail "missing '$manifest_entry'; manifest-aware clients check upgrades against it"
+manifest="$(unzip -p "$ARCHIVE" "$manifest_entry")"
+
+jq -e '.schemaVersion == 1' <<<"$manifest" >/dev/null ||
+  fail "'$manifest_entry' must have schemaVersion 1"
+jq -e '.minimumUpgradeFrom | type == "string" and test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$")' \
+  <<<"$manifest" >/dev/null ||
+  fail "'$manifest_entry' must have a semver minimumUpgradeFrom"
+jq -e '.companions | type == "array" and length > 0 and all(type == "string")' \
+  <<<"$manifest" >/dev/null ||
+  fail "'$manifest_entry' must list its companions"
+# jq on Windows writes CRLF line endings in text mode.
+manifest_companions="$(jq -r '.companions[]' <<<"$manifest" | tr -d '\r')"
+
+for relative_path in "${live_bundles[@]}"; do
+  grep -Fxq "$relative_path" <<<"$manifest_companions" ||
+    fail "'$manifest_entry' does not list '$relative_path'; upgrades would not install it"
+done
+
+for relative_path in "${legacy_placeholders[@]}"; do
+  if grep -Fxq "$relative_path" <<<"$manifest_companions"; then
+    fail "'$manifest_entry' lists the legacy placeholder '$relative_path'; it must list live companions only"
+  fi
+done
+
+listed=0
+while IFS= read -r relative_path; do
+  entry="${ARTIFACT}/${relative_path}"
+  grep -Fxq "$entry" <<<"$entries" ||
+    fail "'$manifest_entry' lists '$relative_path', which the archive does not contain"
+  size="$(entry_size "$entry")"
+  [ "$size" -gt 0 ] ||
+    fail "'$manifest_entry' lists '$relative_path', which is empty"
+  listed=$((listed + 1))
+done <<<"$manifest_companions"
+echo "ok: release-manifest.json lists $listed live companions"
 
 echo "Archive companion layout verified for $ARTIFACT."
