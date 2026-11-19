@@ -15,6 +15,7 @@ import {
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 const testConfigProvider = ConfigProvider.fromEnv({
   env: { COMPOSIO_USER_API_KEY: 'test_api_key' },
@@ -586,6 +587,90 @@ describe('CLI: composio proxy', () => {
           expect(failure).toBeInstanceOf(toolPermissions.ToolPermissionDeniedError);
           expect(failure).toMatchObject({ deniedBy: 'permissions', toolSlug: 'gmail' });
           expect(proxyCalled).toBe(false);
+        })
+      );
+    }
+  );
+
+  // Formatting fixtures: standalone controls (BEL, DEL), CR/LF, a lone CR and a tab.
+  const remoteText = 'first line\r\nsecond\tcol\u0007 \u007f end\rover';
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] a text response with controls, stdout redirected and stderr a terminal',
+    it => {
+      it.effect('[Then] the note escapes them and stdout gets the body as it is', () =>
+        Effect.gen(function* () {
+          const terminal = redirectedTerminalUI({ decoratedStderr: true });
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              proxyExecute: () =>
+                Effect.succeed({
+                  result_type: 'completed' as const,
+                  status: 200,
+                  data: remoteText,
+                  headers: { 'content-type': 'text/plain' },
+                }),
+            },
+          });
+
+          yield* cli([
+            'proxy',
+            'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+            '--toolkit',
+            'gmail',
+            '--skip-connection-check',
+          ]).pipe(Effect.provide(terminal.layer), Effect.provide(live));
+
+          expect(terminal.stdout()).toBe(`${remoteText}\n`);
+          const stderr = terminal.stderr();
+          expect(stderr).toContain('Proxy Response');
+          expect(stderr).toContain('first line');
+          expect(stderr).toContain('second\tcol\\u0007 \\u007f end\\u000dover');
+          expect(stderr).not.toMatch(/[\u0007\u007f]/u);
+        })
+      );
+    }
+  );
+
+  layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
+    '[Given] a blocked request whose message has controls',
+    it => {
+      it.effect('[Then] stderr shows it escaped and the stdout JSON keeps the message', () =>
+        Effect.gen(function* () {
+          const terminal = redirectedTerminalUI({ decoratedStderr: true });
+          const live = TestLive({
+            baseConfigProvider: testConfigProvider,
+            fixture: 'global-test-user-id',
+            toolRouter: {
+              proxyExecute: () =>
+                Effect.succeed({
+                  result_type: 'blocked' as const,
+                  reason: { type: 'request_blocked' as const, hook_id: 'policy' },
+                  message: remoteText,
+                }),
+            },
+          });
+
+          const failure = yield* cli([
+            'proxy',
+            'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+            '--toolkit',
+            'gmail',
+            '--skip-connection-check',
+          ]).pipe(Effect.provide(terminal.layer), Effect.flip, Effect.provide(live));
+
+          expect(failure).toMatchObject({ _tag: 'commands/ProxyRequestError' });
+          const result = JSON.parse(terminal.stdout()) as { readonly error: string };
+          expect(result.error).toBe(
+            `GET proxy call via "gmail" was blocked by session hook "policy": ${remoteText}`
+          );
+          const stderr = terminal.stderr();
+          expect(stderr).toContain(
+            'blocked by session hook "policy": first line\\u000d\\u000asecond\\u0009col\\u0007 \\u007f end\\u000dover'
+          );
+          expect(stderr).not.toMatch(/[\u0007\u007f]/u);
         })
       );
     }

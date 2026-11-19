@@ -1,0 +1,66 @@
+{
+  "slug": "toolkits-google-classroom",
+  "title": "Google Classroom",
+  "description": "Public OAuth and connection troubleshooting for Google Classroom.",
+  "articlePath": "toolkits-google-classroom.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/google_classroom/public.md",
+      "sourceHeading": "Set up custom Google OAuth credentials"
+    },
+    {
+      "sourcePath": "toolkits/google_classroom/public.md",
+      "sourceHeading": "Resolve an \"App is blocked\" connection error"
+    },
+    {
+      "sourcePath": "toolkits/google_classroom/public.md",
+      "sourceHeading": "Enable the Google Classroom API for custom OAuth"
+    },
+    {
+      "sourcePath": "toolkits/google_classroom/public.md",
+      "sourceHeading": "Resolve `Error 400: invalid_scope`"
+    },
+    {
+      "sourcePath": "toolkits/google_classroom/public.md",
+      "sourceHeading": "Choose managed or customer-owned Google OAuth"
+    },
+    {
+      "sourcePath": "toolkits/google_classroom/public.md",
+      "sourceHeading": "Resolve 401 errors on tool calls"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "google_classroom",
+    "oauth",
+    "platform",
+    "scopes"
+  ],
+  "aliases": [
+    "/kb/toolkits/google-classroom-troubleshooting",
+    "enable-the-google-classroom-api-for-custom-oauth",
+    "google-blocks-sensitive-gmail-scopes",
+    "google-classroom-troubleshooting",
+    "resolve-401-errors-on-tool-calls",
+    "resolve-an-app-is-blocked-connection-error",
+    "resolve-an-app-is-blocked-connection-error-2",
+    "resolve-error-400-invalid-scope",
+    "set-up-custom-google-oauth-credentials",
+    "this-app-is-blocked-means-the-requested-google-scope-is-not-verified-o"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-24",
+  "lastVerifiedAt": "2026-08-24",
+  "reviewAfter": "2026-11-22",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

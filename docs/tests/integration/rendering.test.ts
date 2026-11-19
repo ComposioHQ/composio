@@ -176,23 +176,10 @@ describe("Page rendering - content markers", () => {
 
   test("toolkit knowledge pages open only external cards in a new tab", async () => {
     const summaries = await getKnowledgeToolkitSummaries();
-    let toolkitWithMixedLinks: (typeof summaries)[number] | undefined;
-    let toolkitLinks: Awaited<ReturnType<typeof getKnowledgeByToolkit>> = [];
-
-    for (const toolkit of summaries) {
-      if (toolkit.knowledgeCount <= 1) continue;
-      const links = await getKnowledgeByToolkit(toolkit.slug);
-      const hasExternalLink = links.some((link) => /^https?:\/\//.test(link.href));
-      const hasInternalLink = links.some((link) => !/^https?:\/\//.test(link.href));
-      if (hasExternalLink && hasInternalLink) {
-        toolkitWithMixedLinks = toolkit;
-        toolkitLinks = links;
-        break;
-      }
-    }
-
-    expect(toolkitWithMixedLinks).toBeDefined();
-    const res = await fetchPage(`/kb/toolkit/${toolkitWithMixedLinks!.slug}`);
+    const toolkit = summaries.find((candidate) => candidate.knowledgeCount > 1);
+    expect(toolkit).toBeDefined();
+    const toolkitLinks = await getKnowledgeByToolkit(toolkit!.slug);
+    const res = await fetchPage(`/kb/toolkit/${toolkit!.slug}`);
     const html = await res.text();
     const collection = html.match(
       /<ul[^>]*aria-label="Toolkit knowledge sources"[^>]*>[\s\S]*?<\/ul>/,

@@ -2,6 +2,8 @@
 
 One directory per decision about the `composio-cli` skill or the CLI text agents read: why the change was made, what was measured, and the batches it was measured with. `results/` is git-ignored; this directory is where the evidence behind a kept or dropped change stays.
 
+A baseline has a directory of its own, named `baseline-*`, when the harness changed and the older batches can no longer be compared. It holds no decision: it is the line later decisions are measured from. See [`baseline-grader-guards`](./baseline-grader-guards/README.md).
+
 Each decision has:
 
 - `README.md`: the problem seen in the runs, the change, the commands that measured it, the comparison, and the decision.

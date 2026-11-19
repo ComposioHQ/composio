@@ -4,6 +4,20 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.36 to include the latest API changes.
+
+- Release archives now include a `release-manifest.json` that lists the support files they ship. `composio upgrade` installs exactly what the manifest lists, so later releases can drop a support file without breaking upgrades. Files a release no longer lists stay in place. A release can name the oldest CLI version that may upgrade to it; an older CLI refuses it before changing anything and prints the install command to run instead.
+
+- Update @composio/client to 2.1.35 to include the latest API changes.
+
+- `composio listen --stream` shows control characters, including embedded tabs and line breaks,
+  as visible escapes in each output record. Read the saved event JSON for the original value.
+  `composio dev listen`, `composio execute`, `composio proxy` and error messages also show
+  control characters from events, responses and API errors as escapes on the terminal. Printed
+  JSON decodes to the same values, and redirected `proxy` output stays unchanged.
+
+- `composio upgrade` on Windows now retries a busy executable rename for up to two seconds, allowing a brief file lock after a previous upgrade to clear before replacing the binary.
+
 - Update @composio/client to 2.1.33 to include the latest API changes.
 
 - A failed request that is safe to send again now exits 75 (`EX_TEMPFAIL`) instead of 1 and says so on stderr: one the API refused with a 429, or a read that timed out, lost its connection, or got a 408 or 5xx. Scripts and agents can retry on 75 without guessing. A failed `composio execute` adds `"retry": "safe"`, or `"retry": "check-first"` when the tool may have run before the request failed, to its `{ "successful": false }` result, and the `composio-cli` skill tells agents what both mean. Every other failed request still exits 1.

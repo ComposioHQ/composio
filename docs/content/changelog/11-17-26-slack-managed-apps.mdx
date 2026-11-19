@@ -1,0 +1,17 @@
+---
+title: 'Higher rate limits for Slack on Composio managed auth'
+description: 'Slack now has two Composio managed apps: Standard, approved by Slack with higher rate limits, and Legacy, which receives every Slack trigger.'
+date: '2026-11-17'
+---
+
+Composio now offers two managed apps for the Slack toolkit. The new Standard app is approved by Slack, so it gets higher Slack API rate limits than an unapproved app, and it is opt-in. The existing app is now called Legacy, remains the default, and keeps receiving every Slack trigger. You don't register anything with Slack for either one.
+
+### What's new
+
+- **Standard managed app (opt-in).** Approved by Slack, with higher rate limits. Select it with `managed_app_id`. It receives every Slack trigger except `SLACK_CHANNEL_MESSAGE_RECEIVED`, `SLACK_DIRECT_MESSAGE_RECEIVED`, `SLACK_RECEIVE_BOT_MESSAGE` and `SLACK_RECEIVE_MESSAGE`.
+- **Legacy managed app.** Not approved by Slack, so it has lower rate limits. It receives every Slack trigger, including the four message triggers above. This is still the default.
+- **`managed_app_id` on auth configs.** When you create an auth config with `type: "use_composio_managed_auth"`, pass `managed_app_id` to choose the managed app. If you omit it, the auth config uses the Legacy app. List the available IDs under `composio_managed_auth[].managed_app_id` in `GET /api/v3/toolkits/slack`. The field is also returned on the auth config.
+
+### Which one to use
+
+Use Standard unless your product reacts to new Slack messages. Pick Legacy when you need one of the four message triggers and your traffic fits under its lower limits. If you need message triggers and your own app name on the Slack consent screen, or scopes neither managed app requests, use your own Slack app. See the [Slack toolkit page](/toolkits/slack), the [create auth config API reference](/reference/api-reference/auth-configs/postAuthConfigs) and [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits).

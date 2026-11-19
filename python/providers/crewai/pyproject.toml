@@ -13,7 +13,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "crewai>=1.15.7,<2.0.0",
+    "crewai>=1.15.42,<2.0.0",
     "composio",
 ]
 

@@ -8,6 +8,7 @@ import { Deferred, Effect, FiberSet, Option } from 'effect';
 import { APP_CONFIG } from 'src/config';
 import { CommandSurface, resolveSurfaceProject } from 'src/commands/surface';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
 import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { matchesTriggerListenFilters } from '../filter';
@@ -281,13 +282,15 @@ export const triggersCmd$Listen = Command.make(
 
               yield* emitTableLine(tableLine, ui);
             } else if (json) {
+              // Shown JSON escapes the DEL and C1 controls JSON leaves as they are; the
+              // decoded values do not change. --out and --forward get the original JSON.
               yield* ui.note(formatTriggerListenSummary(parsed), `Event #${matchingEvents}`);
-              yield* ui.log.message(JSON.stringify(eventData, null, 2));
-              yield* ui.output(JSON.stringify(eventData));
+              yield* ui.log.message(escapeTerminalLines(JSON.stringify(eventData, null, 2)));
+              yield* ui.output(escapeTerminalText(JSON.stringify(eventData)));
             } else {
               yield* ui.note(formatTriggerListenSummary(parsed), `Event #${matchingEvents}`);
-              yield* ui.log.message(JSON.stringify(parsed.payload, null, 2));
-              yield* ui.output(JSON.stringify(eventData));
+              yield* ui.log.message(escapeTerminalLines(JSON.stringify(parsed.payload, null, 2)));
+              yield* ui.output(escapeTerminalText(JSON.stringify(eventData)));
             }
 
             const payloadForForwarding = JSON.stringify(eventData);

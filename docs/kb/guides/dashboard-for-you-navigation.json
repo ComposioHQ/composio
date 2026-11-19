@@ -1,0 +1,34 @@
+{
+  "slug": "dashboard-for-you-navigation",
+  "title": "Composio For You navigation",
+  "description": "Current navigation for connecting apps and agents in Composio For You.",
+  "articlePath": "dashboard-for-you-navigation.md",
+  "sources": [
+    {
+      "sourcePath": "dashboard/for-you-navigation/public.md",
+      "sourceHeading": "Use Connect Apps for provider accounts and Connect my agent for clients"
+    },
+    {
+      "sourcePath": "dashboard/for-you-navigation/public.md",
+      "sourceHeading": "For You settings include Sessions & API Key"
+    }
+  ],
+  "topics": [
+    "account-and-billing",
+    "authentication",
+    "getting-started"
+  ],
+  "tags": [
+    "dashboard",
+    "for-you"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

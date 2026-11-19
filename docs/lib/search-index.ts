@@ -747,7 +747,14 @@ export async function getDocsSearchIndexes(): Promise<SearchIndex[]> {
     keywords: record.keywords,
   } satisfies SearchIndex));
 
-  return [...mdxIndexes, ...dynamicToolkitIndexes, ...getChangelogIndexes(), ...oauthIndexes];
+  // Migrated auth guides share the toolkit page, so keep one local search hit.
+  const oauthUrls = new Set(oauthIndexes.map(index => index.url));
+  return [
+    ...mdxIndexes,
+    ...dynamicToolkitIndexes.filter(index => !oauthUrls.has(index.url)),
+    ...getChangelogIndexes(),
+    ...oauthIndexes,
+  ];
 }
 
 async function getOpenApiRecords(): Promise<AlgoliaDocsRecord[]> {

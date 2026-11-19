@@ -14,7 +14,37 @@ With Composio-managed HubSpot auth, you can only remove optional scopes that are
 
 You cannot add new scopes to the managed app, and you cannot remove scopes that are non-optional for that managed auth config. If you need a different scope set, create a custom HubSpot OAuth app and configure those scopes there.
 
-Use your own HubSpot OAuth app when you need a different scope set, your own app name and branding on the consent screen, tighter control over app review and rollout, or a production setup owned by your team. For setup steps, see [How to create OAuth credentials for HubSpot](https://composio.dev/auth/hubspot).
+Use your own HubSpot OAuth app when you need a different scope set, your own app name and branding on the consent screen, tighter control over app review and rollout, or a production setup owned by your team. Setup steps are in the next question.
+
+## How do I set up custom OAuth credentials for HubSpot?
+
+Use your own HubSpot app when you need your own scope set, app name, or consent screen, or when the unverified-app warning blocks your rollout.
+
+### Create the HubSpot app
+
+1. Create a developer account in the [HubSpot developer portal](https://developers.hubspot.com/get-started). HubSpot public apps must belong to a developer account.
+2. In the developer account, open **Apps** and click **Create App**.
+
+   ![HubSpot Apps page with the Create app button](/images/toolkits/hubspot/create-app.webp)
+3. Enter the app name, description, logo, and support information. Users see these details when they authorize the app.
+
+   ![HubSpot app App Info tab with name, logo and description fields](/images/toolkits/hubspot/app-info.webp)
+4. Open the **Auth** tab and copy the **Client ID** and **Client Secret**.
+5. In **Redirect URLs**, below the credentials, add `https://backend.composio.dev/api/v1/auth-apps/add`. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
+6. Enable the scopes your integration needs, marking each as required or optional to match how you'll list it in Composio (see the scope questions below).
+
+### Create the auth config in Composio
+
+1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **HubSpot**.
+2. Set the authentication type to **OAuth2** (not Bearer Token) and choose **Use your own developer authentication**.
+
+   ![Use your own developer credentials toggle turned on in the Composio auth config](/images/toolkits/hubspot/use-own-credentials.webp)
+3. Paste the **Client ID** and **Client Secret**. Set `scopes` and `optional_scopes` to match the required and optional scopes in your HubSpot app, then click **Create HubSpot Auth Config**.
+
+   ![Composio auth config Client id and Client secret fields](/images/toolkits/hubspot/composio-client-fields.webp)
+4. Click **Connect Account**, authorize the app in HubSpot, and confirm the account shows as **Active**.
+
+See [Custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow. The default auth config requests a broad CRM scope set in `scopes` and `transactional-email automation marketing.campaigns.read marketing.campaigns.write` in `optional_scopes`. Every requested scope must be enabled in your HubSpot app, or HubSpot rejects the authorization. See HubSpot's [scopes reference](https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/scopes) for the full list.
 
 ## How do scopes work in HubSpot?
 

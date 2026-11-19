@@ -16,6 +16,7 @@ import {
 } from 'src/services/tool-input-validation';
 import { detectInBandWarning } from 'src/services/tools-executor';
 import type { ToolExecuteParams, ToolsExecutor } from 'src/services/tools-executor';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { redact } from 'src/ui/redact';
 import {
   resolveExecuteContext,
@@ -305,7 +306,7 @@ const runExecuteWithSpinner = (params: {
         if (!result.successful) {
           yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catch(() => Effect.void));
           const logId = result.logId
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
+            ? ` (logId: ${escapeTerminalText(redact({ value: result.logId, prefix: 'log_' }))})`
             : '';
           yield* spinner.error(`Execution failed${logId}`);
 
@@ -330,7 +331,7 @@ const runExecuteWithSpinner = (params: {
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
           yield* params.ui.log.warn(
-            `The tool executed successfully but the response may contain an error: ${inBandWarning}`
+            `The tool executed successfully but the response may contain an error: ${escapeTerminalText(inBandWarning)}`
           );
         }
         const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);

@@ -1,0 +1,33 @@
+{
+  "slug": "toolkits-calendly",
+  "title": "Calendly",
+  "description": "Public support knowledge for Calendly.",
+  "articlePath": "toolkits-calendly.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/calendly/public.md",
+      "sourceHeading": "Use CALENDLY_POST_INVITEE instead of deprecated CALENDLY_CREATE_EVENT_INVITEE"
+    }
+  ],
+  "topics": [
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "calendly",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/use-calendly-post-invitee",
+    "use-calendly-post-invitee"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -1,9 +1,15 @@
 import { describe, expect, layer } from '@effect/vitest';
 import { vi, afterEach } from 'vitest';
-import { Console, DateTime, Effect, Exit, Option } from 'effect';
+import { Console, DateTime, Effect, Exit, Fiber, Option } from 'effect';
+import { TestClock } from 'effect/testing';
 import path from 'node:path';
 import * as FileSystem from 'effect/FileSystem';
-import { cli, MockConsole, TestLive } from 'test/__utils__';
+import { AUTHORIZATION_TIMEOUT_SECONDS } from 'src/effects/authorization-poll';
+import {
+  invalidTimeoutMessage,
+  TIMEOUT_WITHOUT_POLL_MESSAGE,
+} from 'src/commands/login/login.format';
+import { cli, cliExit, MockConsole, TestLive } from 'test/__utils__';
 import { terminalUITestImpl } from 'test/__utils__/services/terminal-ui-test';
 import * as constants from 'src/constants';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
@@ -97,6 +103,22 @@ const headlessStdinUI = terminalUIWithTtyState({
   stderr: false,
 });
 
+/**
+ * Runs an effect whose context is already provided on the test clock, with a pump fiber that
+ * keeps advancing the clock while it runs: every pump iteration lets the effect reach its next
+ * scheduled sleep, then moves the clock past it. Answers what the effect answered once done.
+ */
+const runWithAdvancingClock = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* () {
+    const run = yield* Effect.forkChild(effect);
+    const pump = yield* Effect.forkChild(
+      Effect.forever(Effect.andThen(Effect.yieldNow, () => TestClock.adjust('10 seconds')))
+    );
+    const result = yield* Fiber.join(run);
+    yield* Fiber.interrupt(pump);
+    return result;
+  });
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('CLI: composio login', () => {
@@ -120,6 +142,7 @@ describe('CLI: composio login', () => {
           expect(output).toContain('--org');
           expect(output).toContain('--yes');
           expect(output).toContain('-y');
+          expect(output).toContain('--timeout');
           expect(output).not.toMatch(/(^|\s)--api-key(?:\s|$)/);
         })
       );
@@ -159,8 +182,10 @@ describe('CLI: composio login', () => {
         expect(output).toContain('Then run this command to complete login:');
         expect(output).toContain('composio login --poll');
         expect(output).toContain('hint: For agents:');
-        expect(output).toContain('cached login key');
-        expect(output).toContain('polls for up to 10 minutes');
+        // The hint bounds the poll itself: one ten-minute call is longer than any agent turn.
+        expect(output).toContain('composio login --poll --timeout 120');
+        expect(output).toContain('the pending login lives 10 minutes');
+        expect(output).toContain('it prints the URL again');
         expect(output).not.toContain('Expires at:');
         expect(output).toContain('Do not ask the user whether to poll');
         expect(output).toContain('hint: For unattended agents:');
@@ -351,6 +376,104 @@ describe('CLI: composio login', () => {
           })
       );
     });
+  });
+
+  layer(TestLive())(it => {
+    it.effect.each([
+      { name: 'names no whole number', timeout: 'soon' },
+      { name: 'names zero', timeout: '0' },
+      { name: 'outlives the pending login', timeout: `${AUTHORIZATION_TIMEOUT_SECONDS + 1}` },
+    ])('[Given] --poll --timeout that $name [Then] fails as a usage error', ({ timeout }) =>
+      Effect.gen(function* () {
+        const error = yield* cli(['login', '--poll', '--timeout', timeout]).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'login',
+          message: invalidTimeoutMessage(AUTHORIZATION_TIMEOUT_SECONDS),
+          option: '--timeout',
+        });
+      })
+    );
+
+    it.effect('[Given] --timeout without --poll [Then] fails as a usage error', () =>
+      Effect.gen(function* () {
+        const error = yield* cli(['login', '--timeout', '60']).pipe(Effect.flip);
+
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'login',
+          message: TIMEOUT_WITHOUT_POLL_MESSAGE,
+          option: '--timeout',
+        });
+      })
+    );
+  });
+
+  layer(TestLive())(it => {
+    it.effect(
+      '[Given] a cached login nobody completes [When] the --timeout runs out [Then] exits 1 with the URL and the command to run again, storing nothing',
+      () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const cacheDir = yield* setupCacheDir;
+          const now = yield* DateTime.now;
+          const expiresAt = DateTime.add(now, { minutes: 10 });
+          const sessionId = 'pending-poll-session';
+          const pendingPath = path.join(cacheDir, 'pending-login-session.json');
+          const pendingLogin = `${JSON.stringify(
+            {
+              key: sessionId,
+              loginUrl: `https://dashboard.composio.dev/?cliKey=${sessionId}`,
+              expiresAt: DateTime.formatIso(expiresAt),
+              cachedAt: new Date().toISOString(),
+            },
+            null,
+            2
+          )}\n`;
+          yield* fs.writeFileString(pendingPath, pendingLogin);
+
+          yield* cliExit(['login', '--poll', '--timeout', '30', '--no-skill-install']).pipe(
+            Effect.provideService(
+              ComposioSessionRepository,
+              ComposioSessionRepository.of({
+                createSession: () => Effect.die(new Error('unexpected session creation')),
+                getSession: () =>
+                  Effect.succeed({
+                    id: sessionId,
+                    code: '001122',
+                    expiresAt,
+                    status: 'pending' as const,
+                    api_key: null,
+                  }),
+                getRealtimeCredentials: () =>
+                  Effect.die(new Error('unexpected realtime credentials')),
+                authRealtimeChannel: () => Effect.die(new Error('unexpected realtime auth')),
+              })
+            ),
+            runWithAdvancingClock,
+            Effect.flatMap(({ exitCode }) =>
+              Effect.gen(function* () {
+                expect(exitCode).toBe(1);
+
+                const errors = (yield* MockConsole.getLines({
+                  stream: 'stderr',
+                  stripAnsi: true,
+                })).join('\n');
+                expect(errors).toContain(
+                  "Login still pending: session status is 'pending', waiting for 'linked'."
+                );
+                expect(errors).toContain(`https://dashboard.composio.dev/?cliKey=${sessionId}`);
+                expect(errors).toContain('composio login --poll --timeout 30');
+
+                const ctx = yield* ComposioUserContext;
+                expect(Option.getOrUndefined(ctx.data.apiKey)).toBeUndefined();
+                expect(yield* fs.readFileString(pendingPath, 'utf8')).toBe(pendingLogin);
+              })
+            )
+          );
+        })
+    );
   });
 
   layer(TestLive())(it => {

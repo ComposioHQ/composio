@@ -1,0 +1,38 @@
+{
+  "slug": "platform-self-hosted-helm",
+  "title": "Self-hosted Helm",
+  "description": "Public support knowledge for Self-hosted Helm.",
+  "articlePath": "platform-self-hosted-helm.md",
+  "sources": [
+    {
+      "sourcePath": "platform/self-hosted-helm/public.md",
+      "sourceHeading": "Apollo S3 with IRSA / ServiceAccount credentials needs no static S3 secret keys"
+    },
+    {
+      "sourcePath": "platform/self-hosted-helm/public.md",
+      "sourceHeading": "Disable social login explicitly for self-hosted deployments"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "getting-started"
+  ],
+  "tags": [
+    "platform",
+    "self-hosted-helm"
+  ],
+  "aliases": [
+    "/kb/sdk-and-api/platform-self-hosted-helm",
+    "apollo-s3-with-irsa-serviceaccount-credentials-needs-no-static-s3-secr",
+    "disable-social-login-explicitly-for-self-hosted-deployments"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

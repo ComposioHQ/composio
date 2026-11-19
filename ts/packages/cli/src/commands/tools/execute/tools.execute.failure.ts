@@ -19,6 +19,7 @@ import {
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { connectionTips, formatUnknownObject, redactRequestId } from './tools.execute.format';
 
 export const emitExecuteFailureTelemetry = (params: {
@@ -251,9 +252,10 @@ export const handleExecutionError = (
       });
       yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
       yield* ui.note(
-        [`Schema: ${normalized.schemaPath}`, ...normalized.issues.map(issue => `- ${issue}`)].join(
-          '\n'
-        ),
+        [
+          `Schema: ${normalized.schemaPath}`,
+          ...normalized.issues.map(issue => `- ${escapeTerminalText(issue)}`),
+        ].join('\n'),
         'Tool schema validation'
       );
       return { error: normalized.message, slug: context.toolSlug };
@@ -274,8 +276,11 @@ export const handleExecutionError = (
       mappedError: mapped,
     });
 
+    // The message and details can quote the API or the tool; the returned summary keeps them as
+    // they are for the JSON result.
+    const displayMessage = escapeTerminalText(mapped.message);
     if (normalized instanceof ComposioNoActiveConnectionError) {
-      yield* ui.log.error(mapped.message);
+      yield* ui.log.error(displayMessage);
       if (toolkit) {
         yield* ui.note(
           connectionTips({ toolkit, toolSlug: context.toolSlug, surface: context.surface }),
@@ -285,11 +290,14 @@ export const handleExecutionError = (
       return { error: mapped.message, slug: slugValue ?? context.toolSlug };
     }
 
-    yield* ui.log.error(mapped.message);
+    yield* ui.log.error(displayMessage);
 
     const detailsObject = apiDetails;
     if (detailsObject) {
-      yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
+      yield* ui.note(
+        escapeTerminalLines(formatUnknownObject(redactRequestId(detailsObject))),
+        'Error details'
+      );
     }
 
     return { error: mapped.message, slug: slugValue };

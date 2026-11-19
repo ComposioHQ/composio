@@ -27,10 +27,9 @@ toolkit pages.
 
 The sync failure came from requesting a GitHub App permission that the
 installation did not grant. Issue tracking does not need the App token because
-it only writes to the current repository. The separate token for
-`ComposioHQ/support-knowledge` and every step that consumes it are optional and
-non-fatal. A failure in that path can reduce KB freshness evidence, but it cannot
-block toolkit, OpenAPI, API index, or meta-tool generation.
+it only writes to the current repository. The KB freshness check is optional and
+non-fatal. A failure there can reduce KB freshness evidence, but it cannot block
+toolkit, OpenAPI, API index, or meta-tool generation.
 
 ## Consequences
 

@@ -1,10 +1,7 @@
-import type {
-  AuthConfigCreateParams,
-  AuthConfigCreateResponse,
-} from '@composio/client/resources/auth-configs';
+import type { AuthConfigCreateParams } from '@composio/client/resources/auth-configs';
 import type { LinkCreateResponse } from '@composio/client/resources/link';
 import { Array as Arr, Effect, Layer, Stream } from 'effect';
-import type { AuthConfigItem } from 'src/models/auth-configs';
+import type { AuthConfigCreateResponse, AuthConfigItem } from 'src/models/auth-configs';
 import type { ConnectedAccountItem } from 'src/models/connected-accounts';
 import {
   ComposioToolkitsRepository,
@@ -15,7 +12,7 @@ import { notFoundError } from './not-found';
 import { DEFAULT_PAGE_LIMIT } from './page';
 
 /**
- * The auth configs a test repository serves, and what creating one answers.
+ * The decoded auth config responses a test repository returns.
  */
 export interface AuthConfigsTestData {
   items?: AuthConfigItem[];

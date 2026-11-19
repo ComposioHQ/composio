@@ -12,6 +12,7 @@ on:
       - 'ts/packages/core/scripts/generate-docs.ts'
       - 'ts/packages/core/package.json'
       - 'pnpm-lock.yaml'
+      - 'patches/**'
       - 'python/composio/**'
       - 'python/scripts/generate-docs.py'
       - 'python/pyproject.toml'

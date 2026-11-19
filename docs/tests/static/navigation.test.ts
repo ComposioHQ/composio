@@ -82,6 +82,7 @@ describe("Navigation - meta.json validity", () => {
         pages.indexOf("---Guides---")
       )
     ).toEqual([
+      "governance/action-permissions",
       "governance/tool-hints",
       "governance/approvals",
       "firewall",

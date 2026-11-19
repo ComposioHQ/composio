@@ -1,0 +1,33 @@
+{
+  "slug": "toolkits-googlebigquery",
+  "title": "Google BigQuery",
+  "description": "Current authentication guidance for the Google BigQuery toolkit.",
+  "articlePath": "toolkits-googlebigquery.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/googlebigquery/public.md",
+      "sourceHeading": "BigQuery supports managed OAuth2, custom OAuth2, and service-account auth"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "googlebigquery",
+    "oauth",
+    "platform"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-24",
+  "reviewAfter": "2026-11-22",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -217,6 +217,7 @@ const authConfigItem = (authConfig: AuthConfig, world: World) => ({
   name: authConfig.name,
   auth_scheme: 'OAUTH2',
   is_composio_managed: true,
+  managed_app_id: `ma_${authConfig.toolkit}`,
   status: 'ENABLED',
   created_by: MEMBER.id,
   created_at: SEEDED_AT,
@@ -871,7 +872,7 @@ const DEVELOPER_ROUTES: ReadonlyArray<Route> = [
         candidate => candidate.id === params.id && candidate.projectLabel === project!.label
       );
       return authConfig
-        ? { json: authConfigItem(authConfig, world) }
+        ? { json: { ...authConfigItem(authConfig, world), keyring_routed: false } }
         : notFound(`Auth config ${params.id} not found`, 'AuthConfig_NotFound');
     },
   }),

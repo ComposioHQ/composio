@@ -497,4 +497,37 @@ export class World {
     this.toolExecutions += 1;
     return `log_e2e${String(this.toolExecutions).padStart(4, '0')}`;
   }
+
+  /**
+   * Everything the world holds, as plain data: the seed and what requests have
+   * changed since. A tool's `respond` is code and a release asset's bytes are
+   * read on demand, so a tool is kept without the one and an asset by its name.
+   *
+   * The deployment's user API key stays out: no request changes it, so it is
+   * not state a run is compared by, and a digest of a credential is a password
+   * hash to any reader (and to CodeQL).
+   */
+  snapshot(): unknown {
+    return {
+      org: this.org,
+      organizations: this.organizations,
+      member: this.member,
+      projects: this.projects,
+      defaultProject: this.defaultProject.label,
+      toolkits: this.toolkits,
+      tools: this.tools.map(({ respond: _respond, ...tool }) => tool),
+      connections: this.connections,
+      authConfigs: this.authConfigs,
+      loginSessions: this.loginSessions,
+      toolRouterSessions: this.toolRouterSessions,
+      mintedProjectKeys: this.mintedProjectKeys,
+      releases: this.releases.map(release => ({
+        tag: release.tag,
+        prerelease: release.prerelease,
+        assets: release.assets.map(asset => asset.name),
+      })),
+      linkCompletesAfterPolls: this.linkCompletesAfterPolls,
+      toolExecutions: this.toolExecutions,
+    };
+  }
 }
