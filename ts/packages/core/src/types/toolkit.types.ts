@@ -125,12 +125,32 @@ export const ToolkitAuthConfigDetailsSchema = z.object({
     .optional(),
 });
 
+const ToolkitManagedAuthScopesSchema = z.object({
+  available: z.array(z.string()),
+});
+
+/**
+ * A Composio-managed app for a toolkit. Pass `managedAppId` to
+ * `composio.authConfigs.create` to create an auth config on this app.
+ */
+export const ToolkitComposioManagedAuthSchema = z.object({
+  managedAppId: z.string(),
+  /** Whether this is the app used when `managedAppId` is omitted. */
+  isDefault: z.boolean(),
+  mode: z.string(),
+  scopes: ToolkitManagedAuthScopesSchema,
+  /** Present only for Slack. */
+  userScopes: ToolkitManagedAuthScopesSchema.optional(),
+});
+
 export const ToolkitRetrieveResponseSchema = z.object({
   name: z.string(),
   slug: z.string(),
   meta: ToolKitMetaSchema,
   isLocalToolkit: z.boolean(),
   composioManagedAuthSchemes: z.array(z.string()).optional(),
+  /** One entry per Composio-managed app, the default first. */
+  composioManagedAuth: z.array(ToolkitComposioManagedAuthSchema).optional(),
   authConfigDetails: z.array(ToolkitAuthConfigDetailsSchema).optional(),
   baseUrl: z.string().optional(),
   getCurrentUserEndpoint: z.string().optional(),
@@ -139,6 +159,7 @@ export const ToolkitRetrieveResponseSchema = z.object({
 
 export type ToolkitAuthField = z.infer<typeof ToolkitAuthFieldSchema>;
 export type ToolkitAuthConfigDetails = z.infer<typeof ToolkitAuthConfigDetailsSchema>;
+export type ToolkitComposioManagedAuth = z.infer<typeof ToolkitComposioManagedAuthSchema>;
 export type ToolkitRetrieveResponse = z.infer<typeof ToolkitRetrieveResponseSchema>;
 
 /**

@@ -10,7 +10,6 @@ import {
   type AlgoliaDocsRecord,
 } from '@/lib/search-index';
 import { isHiddenApiTagUrl } from '@/lib/filter-api-version';
-import type { KbManifest } from '@/lib/kb/types';
 import { embedTexts, embeddingContentHash } from './embeddings';
 import {
   fusePublicKbCandidates,
@@ -500,9 +499,6 @@ let semanticArtifact: KnowledgeSemanticArtifact | null = null;
 
 async function loadSemanticArtifact(): Promise<KnowledgeSemanticArtifact> {
   if (semanticArtifact) return semanticArtifact;
-  const manifest = JSON.parse(
-    readFileSync(join(process.cwd(), 'kb', 'manifest.json'), 'utf8'),
-  ) as KbManifest;
   const artifact = JSON.parse(
     readFileSync(join(process.cwd(), 'kb', 'semantic-index.json'), 'utf8'),
   ) as KnowledgeSemanticArtifact;
@@ -513,7 +509,6 @@ async function loadSemanticArtifact(): Promise<KnowledgeSemanticArtifact> {
     records.map(record => [record.objectID, embeddingContentHash(record)]),
   );
   semanticArtifact = validateSemanticArtifact(artifact, {
-    supportKnowledgeCommit: manifest.source.commit,
     docsContentHash: docsContentHashFromRecords(semanticRecords),
     contentHashes,
   });

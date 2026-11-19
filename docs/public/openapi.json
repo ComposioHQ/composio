@@ -6057,6 +6057,16 @@
               }
             }
           },
+          "410": {
+            "description": "Gone - The toolkit is retired and can no longer be proxied to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable entity - Invalid state of the connected account",
             "content": {
@@ -22428,7 +22438,7 @@
             }
           },
           "403": {
-            "description": "Zero Data Retention requires a paid plan.",
+            "description": "Forbidden. The org API key's owner is not an org admin, or Zero Data Retention requires a paid plan.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23115,7 +23125,7 @@
             }
           },
           "403": {
-            "description": "Forbidden. API key regeneration is not enabled for this organization.",
+            "description": "Forbidden. API key regeneration is not enabled for this organization, or the org API key's owner is not an org admin.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23314,7 +23324,7 @@
       },
       "get": {
         "summary": "List webhook subscriptions",
-        "description": "Lists all webhook subscriptions for the authenticated project with pagination. Currently limited to one subscription per project.",
+        "description": "Lists all webhook subscriptions for the authenticated project with pagination. Currently limited to one subscription per project. Viewers get a 403.",
         "tags": [
           "Webhook Subscriptions"
         ],
@@ -23451,6 +23461,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow viewing webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -23468,7 +23488,7 @@
     "/api/v3.1/webhook_subscriptions/{id}": {
       "get": {
         "summary": "Get webhook subscription",
-        "description": "Retrieves a webhook subscription by ID.",
+        "description": "Retrieves a webhook subscription by ID. Viewers get a 403.",
         "tags": [
           "Webhook Subscriptions"
         ],
@@ -23552,6 +23572,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow viewing webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {

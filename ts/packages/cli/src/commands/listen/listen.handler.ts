@@ -12,7 +12,7 @@ import {
   makeSinkFailures,
 } from 'src/commands/triggers/sink-failures';
 import { reportFailure } from 'src/effects/report-failure';
-import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
+import { resolveExplicitTextInput } from 'src/effects/resolve-optional-text-input';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import {
   resolveArtifactsRoot,
@@ -24,6 +24,7 @@ import { resolveConnectedAccountForToolkit } from 'src/services/connected-accoun
 import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { ListenCommandError } from './listen.errors';
 import { emitStreamLine, formatStopMessage, formatStreamValue } from './listen.format';
 import {
@@ -73,14 +74,11 @@ const disableTemporaryTrigger = (params: {
           cause,
         })
     ),
-    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.tapError(error => params.ui.log.warn(escapeTerminalText(error.message))),
     Effect.ignore
   );
 
 const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
-
-const resolveParamsInput = (input: Option.Option<string>) =>
-  resolveOptionalTextInput(input, { missingValue: '{}' });
 
 const assertSupportedListenParams = (params: {
   listeningToProjectEvent: boolean;
@@ -223,9 +221,7 @@ const resolveListenSetup = (params: {
   Effect.gen(function* () {
     const consumerUserId = params.consumerUserId;
     const listeningToProjectEvent = isProjectEventType(params.slug);
-    const rawParams = Option.isSome(params.inputParams)
-      ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
-      : '{}';
+    const rawParams = (yield* resolveExplicitTextInput(params.inputParams))?.trim() || '{}';
     const createParamsInput = yield* Effect.fromResult(parseCreateParams(rawParams));
     yield* assertSupportedListenParams({
       listeningToProjectEvent,
@@ -548,7 +544,7 @@ export const runListen = (input: ListenParams) =>
       Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
         reportFailure(
           ui,
-          `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          `Could not subscribe to realtime trigger events: ${escapeTerminalText(error.message)}. Check your network connection or run \`composio login\`.`
         )
       )
     );

@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { Context, Effect, Layer } from 'effect';
+import { Context, Duration, Effect, Layer, Option } from 'effect';
 
 const MAX_STDIN_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -13,16 +13,32 @@ export class StdinSizeLimitError extends Error {
 export interface Stdin {
   readonly isTTY: () => boolean;
   readonly readAll: () => Effect.Effect<string, Error>;
+  /**
+   * Reads stdin to its end, unless stdin stays silent (no data and no end of input) for
+   * `silenceTimeout`: then it stops listening and returns none. Once the first chunk or the end
+   * of input arrives, it waits for the rest without a timeout.
+   */
+  readonly readAllUnlessSilent: (
+    silenceTimeout: Duration.Duration
+  ) => Effect.Effect<Option.Option<string>, Error>;
 }
 
 export const Stdin = Context.Service<Stdin>('services/Stdin');
 
-const readAll = (): Promise<string> =>
+/**
+ * Reads a stdin stream to its end. Resolves `undefined` when `silenceTimeoutMs` passes before
+ * any data or the end of input arrives.
+ */
+export const readStdinToEnd = (
+  input: NodeJS.ReadableStream,
+  silenceTimeoutMs?: number
+): Promise<string | undefined> =>
   new Promise((resolve, reject) => {
     const chunks: string[] = [];
     let totalLength = 0;
 
     const onData = (chunk: string) => {
+      clearTimeout(silenceTimer);
       totalLength += chunk.length;
       if (totalLength > MAX_STDIN_SIZE) {
         cleanup();
@@ -42,27 +58,50 @@ const readAll = (): Promise<string> =>
       reject(error);
     };
 
-    const cleanup = () => {
-      process.stdin.off('data', onData);
-      process.stdin.off('end', onEnd);
-      process.stdin.off('error', onError);
+    const onSilence = () => {
+      cleanup();
+      // An agent harness or task runner can hand the CLI a pipe it never writes to or closes;
+      // waiting for its end would hang the command with no output.
+      input.pause();
+      resolve(undefined);
     };
 
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', onData);
-    process.stdin.on('end', onEnd);
-    process.stdin.on('error', onError);
-    process.stdin.resume();
+    const cleanup = () => {
+      clearTimeout(silenceTimer);
+      input.off('data', onData);
+      input.off('end', onEnd);
+      input.off('error', onError);
+    };
+
+    const silenceTimer =
+      silenceTimeoutMs === undefined ? undefined : setTimeout(onSilence, silenceTimeoutMs);
+
+    input.setEncoding('utf8');
+    input.on('data', onData);
+    input.on('end', onEnd);
+    input.on('error', onError);
+    input.resume();
+  });
+
+const toStdinError = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
+
+/** A `Stdin` that reads `input`: `process.stdin` in `StdinLive`, a `PassThrough` in tests. */
+export const makeStreamStdin = (input: NodeJS.ReadableStream, isTTY: () => boolean): Stdin =>
+  Stdin.of({
+    isTTY,
+    readAll: () =>
+      Effect.tryPromise({
+        try: () => readStdinToEnd(input).then(text => text ?? ''),
+        catch: toStdinError,
+      }),
+    readAllUnlessSilent: silenceTimeout =>
+      Effect.tryPromise({
+        try: () => readStdinToEnd(input, Duration.toMillis(silenceTimeout)),
+        catch: toStdinError,
+      }).pipe(Effect.map(Option.fromUndefinedOr)),
   });
 
 export const StdinLive = Layer.succeed(
   Stdin,
-  Stdin.of({
-    isTTY: () => !!process.stdin.isTTY,
-    readAll: () =>
-      Effect.tryPromise({
-        try: readAll,
-        catch: e => (e instanceof Error ? e : new Error(String(e))),
-      }),
-  })
+  makeStreamStdin(process.stdin, () => !!process.stdin.isTTY)
 );

@@ -95,9 +95,8 @@ describe('docs data update workflow', () => {
     }
   });
 
-  test('isolates the optional KB source path from every required data-sync step', () => {
-    const sourceToken = stepNamed(steps, 'Generate read-only KB source token');
-    expect(sourceToken['continue-on-error']).toBe(true);
+  test('keeps the optional KB freshness check out of every required data-sync step', () => {
+    expect(stepNamed(steps, 'Verify KB freshness against refreshed data')['continue-on-error']).toBe(true);
 
     const requiredStepNames = [
       'Generate GitHub App token',
@@ -112,7 +111,6 @@ describe('docs data update workflow', () => {
     for (const name of requiredStepNames) {
       const step = stepNamed(steps, name);
       const dependencies = JSON.stringify({ if: step.if, env: step.env, with: step.with });
-      expect(dependencies).not.toContain('steps.source-token');
       expect(dependencies).not.toContain('steps.verify-kb');
     }
   });

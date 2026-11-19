@@ -39,4 +39,27 @@ describe('makeSinkFailures', () => {
       expect(Exit.isSuccess(exit)).toBe(true);
     })
   );
+
+  it.effect(
+    '[Given] a failure message quoting remote text [Then] its warn is one escaped line',
+    () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        yield* Effect.gen(function* () {
+          const failures = makeSinkFailures({
+            ui: yield* TerminalUI,
+            failFast: false,
+            stop: Effect.void,
+            summary: count => `${count} failed`,
+          });
+          // Formatting fixture: a BEL and CR/LF, as a remote error message could carry them.
+          yield* failures.record('Forwarding failed: busy\u0007\r\nretry later');
+        }).pipe(Effect.provide(terminal.layer));
+
+        expect(terminal.stderr()).toContain(
+          'Forwarding failed: busy\\u0007\\u000d\\u000aretry later'
+        );
+        expect(terminal.stderr()).not.toMatch(/[\u0007\r]/u);
+      })
+  );
 });

@@ -1,0 +1,33 @@
+{
+  "slug": "toolkits-docusign",
+  "title": "DocuSign",
+  "description": "Public support knowledge for DocuSign.",
+  "articlePath": "toolkits-docusign.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/docusign/public.md",
+      "sourceHeading": "DocuSign auth guide URL"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "docusign",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/docusign-auth-guide-url",
+    "docusign-auth-guide-url"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -1,0 +1,34 @@
+{
+  "slug": "platform-file-storage",
+  "title": "File Download Storage and Expiry",
+  "description": "Public guidance for staged files, signed download URLs, retention, and size questions.",
+  "articlePath": "platform-file-storage.md",
+  "sources": [
+    {
+      "sourcePath": "platform/file-storage/public.md",
+      "sourceHeading": "Composio file URLs are short-lived staged downloads"
+    }
+  ],
+  "topics": [
+    "errors-and-troubleshooting",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "files",
+    "platform",
+    "signed-urls",
+    "storage"
+  ],
+  "aliases": [
+    "/kb/sdk-and-api/composio-file-urls-are-short-lived-staged-downloads",
+    "composio-file-urls-are-short-lived-staged-downloads"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

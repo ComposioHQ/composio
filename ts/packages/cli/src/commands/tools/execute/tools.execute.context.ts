@@ -74,7 +74,7 @@ export const resolveExecuteContext = (
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const executor = yield* ToolsExecutor;
-    const input = (yield* resolveInput(params.data)) ?? '{}';
+    const input = yield* resolveInput(params.data);
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
 

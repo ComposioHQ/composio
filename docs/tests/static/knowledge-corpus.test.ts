@@ -6,7 +6,7 @@ import { GET as getLlmsIndex } from '@/app/llms-index.txt/route';
 import { getAlgoliaSearchDocuments, getDocsSearchIndexes } from '@/lib/search-index';
 import * as searchIndexModule from '@/lib/search-index';
 import { getLocalKnowledgeDiscoveryPaths } from '@/lib/knowledge/discovery';
-import { getPublishedKbGuides } from '@/lib/kb/repository';
+import { getPublishedKbGuides, readKbManifest } from '@/lib/kb/repository';
 import type { KnowledgeSourceType } from '@/lib/knowledge/types';
 import type { KbManifest } from '@/lib/kb/types';
 
@@ -137,7 +137,10 @@ describe('unified public knowledge corpus', () => {
       records.filter(record => record.source_type === 'oauth-guide').map(record => record.canonical_url),
     );
     expect(oauthUrls.size).toBeGreaterThan(0);
-    expect(indexes.some(index => oauthUrls.has(index.url))).toBe(true);
+    for (const url of oauthUrls) {
+      expect(url.startsWith('/toolkits/')).toBe(true);
+      expect(indexes.filter(index => index.url === url)).toHaveLength(1);
+    }
   });
 
   test('discovers local hub and browse routes without duplicating external OAuth pages', async () => {
@@ -205,9 +208,7 @@ describe('unified public knowledge corpus', () => {
   });
 
   test('accounts for every snapshot file and excludes retired guides from public discovery', async () => {
-    const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8'),
-    ) as KbManifest;
+    const manifest = readKbManifest();
     const snapshotFiles = listFiles(join(process.cwd(), 'kb/source'));
     const guideSourcePaths = [...new Set(
       manifest.guides.flatMap(guide => guide.sources.map(source => source.sourcePath)),

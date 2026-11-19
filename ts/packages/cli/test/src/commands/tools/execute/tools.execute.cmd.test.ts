@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { PassThrough } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Schema } from 'effect';
@@ -23,6 +24,7 @@ import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execu
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
+import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 vi.mock('node:dns/promises', () => ({
   lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
@@ -2869,6 +2871,58 @@ describe('CLI: composio execute', () => {
     );
   });
 
+  describe('[Given] no -d and a stdin pipe that sends nothing within 1 second', () => {
+    const silentPipe = new PassThrough();
+    const slowPipe = new PassThrough();
+    const executedToolSlugs: string[] = [];
+    const recordExecutions = { onExecute: (slug: string) => void executedToolSlugs.push(slug) };
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: false, data: '', stream: silentPipe },
+        toolsExecutor: recordExecutions,
+      })
+    )('[When] the pipe stays open and silent', it => {
+      it.effect('[Then] fails without running the tool', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(Effect.flip);
+
+          expectInvalidValueMessage(failure, 'No input arrived on stdin within 1 second.');
+          expect(executedToolSlugs).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: false, data: '', stream: slowPipe },
+        toolsExecutor: recordExecutions,
+      })
+    )('[When] the JSON arrives after the timeout', it => {
+      it.effect('[Then] fails instead of running the tool with empty arguments', () =>
+        Effect.gen(function* () {
+          // Time the write from when the reader starts listening, not from test start, so slow
+          // setup cannot move it inside the 1 second window.
+          let lateWrite: ReturnType<typeof setTimeout> | undefined;
+          slowPipe.once('resume', () => {
+            lateWrite = setTimeout(() => slowPipe.end('{"owner":"x"}'), 1500);
+          });
+          const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(
+            Effect.flip,
+            Effect.ensuring(Effect.sync(() => clearTimeout(lateWrite)))
+          );
+
+          expectInvalidValueMessage(failure, 'No input arrived on stdin within 1 second.');
+          expect(executedToolSlugs).toEqual([]);
+        })
+      );
+    });
+  });
+
   layer(
     TestLive({
       baseConfigProvider: testConfigProvider,
@@ -3529,6 +3583,97 @@ describe('CLI: composio execute without a resolvable acting user', () => {
         expect(failure).toMatchObject({
           message: 'Missing consumer user id. Run `composio login` and try again.',
         });
+      })
+    );
+  });
+
+  // Formatting fixtures: standalone controls (BEL, DEL, NEL), CR/LF and a tab, in keys and values.
+  const remoteText = 'first\r\nsecond\tcol\u0007 \u007f \u0085 end';
+  /** DEL and C1, which JSON leaves as they are, and any C0 but LF in the printed text. */
+  const shownControl = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u;
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        respondWith: {
+          successful: true,
+          data: { status: 'failed', error: remoteText, ['note\u0085']: remoteText },
+          error: null,
+          logId: 'log_formatting',
+        },
+      },
+    })
+  )('[Given] a response whose data carries controls', it => {
+    it.effect('[Then] the printed JSON escapes them and decodes to the same data', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        yield* cli([
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '--skip-connection-check',
+          '-d',
+          '{"recipient":"a"}',
+        ]).pipe(Effect.provide(terminal.layer));
+
+        const stdout = terminal.stdout();
+        expect(stdout).not.toMatch(shownControl);
+        expect(stdout).toContain('"note\\u0085"');
+        const output = JSON.parse(stdout) as { readonly data: unknown };
+        expect(output.data).toEqual({
+          status: 'failed',
+          error: remoteText,
+          ['note\u0085']: remoteText,
+        });
+        // The in-band warning quotes the response on one escaped line.
+        expect(terminal.stderr()).toContain(
+          'the response may contain an error: first\\u000d\\u000asecond\\u0009col\\u0007 \\u007f \\u0085 end'
+        );
+        expect(terminal.stderr()).not.toMatch(/[\u0007\u007f\u0085]/u);
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      stdin: { isTTY: true, data: '' },
+      toolsExecutor: {
+        failWith: new BadRequestError({
+          message: `400 ${remoteText}`,
+          method: 'POST',
+          url: 'https://mock.invalid/api/v3.1/tools/execute/GMAIL_SEND_EMAIL',
+          status: 400,
+          requestId: undefined,
+          details: { message: remoteText, code: 400, slug: 'Tool_Failed', status: 400 },
+          body: undefined,
+        }),
+      },
+    })
+  )('[Given] an execution error whose message carries controls', it => {
+    it.effect('[Then] stderr shows it escaped and the JSON result keeps the message', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const exit = yield* Effect.exit(
+          cli([
+            'execute',
+            'GMAIL_SEND_EMAIL',
+            '--skip-connection-check',
+            '-d',
+            '{"recipient":"a"}',
+          ]).pipe(Effect.provide(terminal.layer))
+        );
+
+        expect(Exit.isFailure(exit)).toBe(true);
+        const stdout = terminal.stdout();
+        expect(stdout).not.toMatch(shownControl);
+        expect(JSON.parse(stdout)).toMatchObject({ successful: false, error: remoteText });
+        const stderr = terminal.stderr();
+        expect(stderr).toContain('first\\u000d\\u000asecond\\u0009col\\u0007 \\u007f \\u0085 end');
+        expect(stderr).not.toMatch(/[\u0007\u007f\u0085]/u);
       })
     );
   });

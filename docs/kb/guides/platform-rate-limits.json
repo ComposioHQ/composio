@@ -1,0 +1,32 @@
+{
+  "slug": "platform-rate-limits",
+  "title": "Platform API Rate Limits",
+  "description": "Public guidance for organization-level Composio API limits and 429 handling.",
+  "articlePath": "platform-rate-limits.md",
+  "sources": [
+    {
+      "sourcePath": "platform/rate-limits/public.md",
+      "sourceHeading": "Organization API limits and 429 handling"
+    }
+  ],
+  "topics": [
+    "account-and-billing",
+    "errors-and-troubleshooting",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "api",
+    "billing",
+    "platform",
+    "rate-limits"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}
