@@ -20,6 +20,10 @@ url = "https://registry.npmjs.org/@oven/bun-darwin-aarch64/-/bun-darwin-aarch64-
 checksum = "sha512:a0a19cc4bb2f878a078c0a36f273e6f1cff1374a3f3a61b28f520761cf78be9ae45ac5b684d83691e119b797f8d1c2391efbb88c395245347450da6fd54200c7"
 url = "https://registry.npmjs.org/@oven/bun-darwin-x64/-/bun-darwin-x64-1.4.4.tgz"
 
+[tools.bun."platforms.windows-x64"]
+checksum = "sha512:6b72cd72d0553bc3e378fb0565fc0395e17625761fd817d0d6efcf2d19c10cb9c2d918a697ee3e2e02692a3e31446841f762b0786c902393d769390ff6aca931"
+url = "https://registry.npmjs.org/@oven/bun-windows-x64/-/bun-windows-x64-1.4.4.tgz"
+
 [[tools.node]]
 version = "24.22.3"
 backend = "core:node"
@@ -39,6 +43,10 @@ url = "https://nodejs.org/dist/v24.22.3/node-v24.22.3-darwin-arm64.tar.gz"
 [tools.node."platforms.macos-x64"]
 checksum = "sha256:977614af0504c81045e7fd85596dbca0e5f951b96681516dadafedcca8c447f7"
 url = "https://nodejs.org/dist/v24.22.3/node-v24.22.3-darwin-x64.tar.gz"
+
+[tools.node."platforms.windows-x64"]
+checksum = "sha256:e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f"
+url = "https://nodejs.org/dist/v24.22.3/node-v24.22.3-win-x64.zip"
 
 [[tools."npm:pnpm"]]
 version = "11.8.0"
@@ -68,6 +76,11 @@ checksum = "sha256:127053f1736f721e391ddb46f07585d05756e15bb8d757d3bbc0519738998
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260807/cpython-3.12.13+20260807-x86_64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
+[tools.python."platforms.windows-x64"]
+checksum = "sha256:18bcc65b17921806b72cdc88bcf000bf67a2c99a8fc381fe1629f2b9ba56858d"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260807/cpython-3.12.13+20260807-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
 [[tools.uv]]
 version = "0.13.5"
 backend = "aqua:astral-sh/uv"
@@ -94,4 +107,10 @@ provenance = "github-attestations"
 checksum = "sha256:b0f52b0e3945b4107d89024ea38e625683011fbfc05a0d98f9fa2d6dcee28c66"
 url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-apple-darwin.tar.gz"
 url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335993"
+provenance = "github-attestations"
+
+[tools.uv."platforms.windows-x64"]
+checksum = "sha256:a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336006"
 provenance = "github-attestations"

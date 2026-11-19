@@ -50,7 +50,7 @@ jobs:
 
       - name: Verify mise.lock is fresh
         run: |
-          mise lock --platform linux-x64,linux-arm64,macos-arm64,macos-x64
+          mise lock
           git diff --exit-code mise.lock
 
       - name: Run pnpm audit (production dependencies only)
