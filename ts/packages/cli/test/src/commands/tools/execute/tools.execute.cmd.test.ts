@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { PassThrough } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Schema } from 'effect';
@@ -2868,6 +2869,58 @@ describe('CLI: composio execute', () => {
         expect(output.data.arguments).toEqual({ owner: 'composio' });
       })
     );
+  });
+
+  describe('[Given] no -d and a stdin pipe that sends nothing within 1 second', () => {
+    const silentPipe = new PassThrough();
+    const slowPipe = new PassThrough();
+    const executedToolSlugs: string[] = [];
+    const recordExecutions = { onExecute: (slug: string) => void executedToolSlugs.push(slug) };
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: false, data: '', stream: silentPipe },
+        toolsExecutor: recordExecutions,
+      })
+    )('[When] the pipe stays open and silent', it => {
+      it.effect('[Then] fails without running the tool', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(Effect.flip);
+
+          expectInvalidValueMessage(failure, 'No input arrived on stdin within 1 second.');
+          expect(executedToolSlugs).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: false, data: '', stream: slowPipe },
+        toolsExecutor: recordExecutions,
+      })
+    )('[When] the JSON arrives after the timeout', it => {
+      it.effect('[Then] fails instead of running the tool with empty arguments', () =>
+        Effect.gen(function* () {
+          // Time the write from when the reader starts listening, not from test start, so slow
+          // setup cannot move it inside the 1 second window.
+          let lateWrite: ReturnType<typeof setTimeout> | undefined;
+          slowPipe.once('resume', () => {
+            lateWrite = setTimeout(() => slowPipe.end('{"owner":"x"}'), 1500);
+          });
+          const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(
+            Effect.flip,
+            Effect.ensuring(Effect.sync(() => clearTimeout(lateWrite)))
+          );
+
+          expectInvalidValueMessage(failure, 'No input arrived on stdin within 1 second.');
+          expect(executedToolSlugs).toEqual([]);
+        })
+      );
+    });
   });
 
   layer(

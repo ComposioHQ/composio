@@ -12,7 +12,7 @@ import {
   makeSinkFailures,
 } from 'src/commands/triggers/sink-failures';
 import { reportFailure } from 'src/effects/report-failure';
-import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
+import { resolveExplicitTextInput } from 'src/effects/resolve-optional-text-input';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import {
   resolveArtifactsRoot,
@@ -79,9 +79,6 @@ const disableTemporaryTrigger = (params: {
   );
 
 const isProjectEventType = (value: string): boolean => value.startsWith('composio.');
-
-const resolveParamsInput = (input: Option.Option<string>) =>
-  resolveOptionalTextInput(input, { missingValue: '{}' });
 
 const assertSupportedListenParams = (params: {
   listeningToProjectEvent: boolean;
@@ -224,9 +221,7 @@ const resolveListenSetup = (params: {
   Effect.gen(function* () {
     const consumerUserId = params.consumerUserId;
     const listeningToProjectEvent = isProjectEventType(params.slug);
-    const rawParams = Option.isSome(params.inputParams)
-      ? (yield* resolveParamsInput(params.inputParams))?.trim() || '{}'
-      : '{}';
+    const rawParams = (yield* resolveExplicitTextInput(params.inputParams))?.trim() || '{}';
     const createParamsInput = yield* Effect.fromResult(parseCreateParams(rawParams));
     yield* assertSupportedListenParams({
       listeningToProjectEvent,

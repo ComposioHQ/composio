@@ -2,6 +2,7 @@ import { BadRequestError, type RequestOptions } from '@composio/client/effect';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
+import { PassThrough } from 'node:stream';
 import type {
   SessionCreateParams,
   SessionProxyExecuteParams,
@@ -47,6 +48,100 @@ describe('CLI: composio proxy', () => {
   it('parses JSON-like request bodies when possible', () => {
     expect(parseProxyBody('{ foo: "bar" }')).toEqual({ foo: 'bar' });
     expect(parseProxyBody('plain text')).toBe('plain text');
+  });
+
+  describe('[Given] stdin is a pipe', () => {
+    /** Runs `composio proxy` over `stdin` and returns the body it sent to proxy_execute. */
+    const proxyBodyOver = (stdin: PassThrough, args: ReadonlyArray<string>) =>
+      Effect.gen(function* () {
+        let sentParams: SessionProxyExecuteParams | undefined;
+        const live = TestLive({
+          baseConfigProvider: testConfigProvider,
+          fixture: 'global-test-user-id',
+          stdin: { isTTY: false, data: '', stream: stdin },
+          toolRouter: {
+            proxyExecute: (_sessionId: string, params: SessionProxyExecuteParams) =>
+              Effect.sync(() => {
+                sentParams = params;
+                return {
+                  result_type: 'completed' as const,
+                  status: 200,
+                  data: { ok: true },
+                  headers: {},
+                };
+              }),
+          },
+        });
+        const output = yield* Effect.gen(function* () {
+          yield* cli([
+            'proxy',
+            'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+            '--toolkit',
+            'gmail',
+            ...args,
+          ]);
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          return lines.join('\n');
+        }).pipe(Effect.provide(live));
+        expect(sentParams).toBeDefined();
+        return { body: sentParams?.body, output };
+      });
+
+    it.live(
+      '[When] it is held open and no -d is passed [Then] the request is sent without reading it',
+      () =>
+        Effect.gen(function* () {
+          const heldOpen = new PassThrough();
+          heldOpen.write('{"never":"read"}');
+
+          const { body, output } = yield* proxyBodyOver(heldOpen, []);
+
+          expect(body).toBeUndefined();
+          expect(heldOpen.readableLength).toBeGreaterThan(0);
+          expect(output).not.toContain('Sending the request without a body');
+        })
+    );
+
+    // A bodiless GET is the read agents run with a held-open pipe, so only the other methods warn.
+    it.live.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
+      '[When] a %s is sent without -d [Then] it warns that piped input is not the body, without reading it',
+      method =>
+        Effect.gen(function* () {
+          const piped = new PassThrough();
+          piped.write('{"meant":"as body"}');
+
+          const { body, output } = yield* proxyBodyOver(piped, ['-X', method]);
+
+          expect(body).toBeUndefined();
+          expect(piped.readableLength).toBeGreaterThan(0);
+          expect(output).toContain(
+            'Sending the request without a body: composio proxy reads stdin only with -d -. Pass -d - to send piped input as the body.'
+          );
+        })
+    );
+
+    it.live('[When] -d - is passed [Then] the body is read from stdin', () =>
+      Effect.gen(function* () {
+        const piped = new PassThrough();
+        setTimeout(() => piped.end('{"message":{"raw":"abc"}}'), 1500);
+
+        const { body, output } = yield* proxyBodyOver(piped, ['-X', 'POST', '-d', '-']);
+
+        expect(body).toEqual({ message: { raw: 'abc' } });
+        expect(output).not.toContain('Sending the request without a body');
+      })
+    );
+
+    it.live('[When] -d @- is passed [Then] the body is read from stdin', () =>
+      Effect.gen(function* () {
+        const piped = new PassThrough();
+        piped.end('plain text');
+
+        const { body } = yield* proxyBodyOver(piped, ['-X', 'POST', '-d', '@-']);
+
+        expect(body).toBe('plain text');
+      })
+    );
   });
 
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
