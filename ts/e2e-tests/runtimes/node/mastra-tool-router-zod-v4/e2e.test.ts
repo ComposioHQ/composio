@@ -137,6 +137,12 @@ e2e(import.meta.url, {
                 console.error(
                   'OpenAI exchange',
                   JSON.stringify({
+                    id: body.id,
+                    requestId: response.headers.get('x-request-id'),
+                    model: request.model,
+                    finishReasons: body.choices?.map(
+                      (choice: { finish_reason: string }) => choice.finish_reason
+                    ),
                     requestKeys: Object.keys(request),
                     max_output_tokens: request.max_output_tokens,
                     previous_response_id: request.previous_response_id,

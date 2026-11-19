@@ -155,6 +155,8 @@ app.get('/test/agent', async c => {
     JSON.stringify(
       result.steps.map(step => ({
         finishReason: step.finishReason,
+        responseId: step.response.id,
+        modelId: step.response.modelId,
         incompleteDetails: responseBodySchema.safeParse(step.response.body).data
           ?.incomplete_details,
         usage: step.usage,
