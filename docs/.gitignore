@@ -47,3 +47,6 @@ next-env.d.ts.cache
 
 # Source-history manifest (generated before dev/build/typecheck; bundled for runtime).
 /.generated/
+
+# Generated from kb/ by `bun run generate:kb` (postinstall, dev, build, test, typecheck).
+/content/kb/

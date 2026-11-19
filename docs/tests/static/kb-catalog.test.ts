@@ -44,12 +44,6 @@ This is the second safe answer.
 function manifest(overrides: Partial<KbManifest['guides'][number]> = {}): KbManifest {
   return {
     schemaVersion: 2,
-    source: {
-      repository: 'ComposioHQ/example-knowledge',
-      commit: '5eed614',
-      capturedAt: '2026-07-21',
-      contentHash: 'sha256:fixture',
-    },
     topics: [
       {
         slug: 'platform',
@@ -399,7 +393,7 @@ This is the second safe answer.`);
       }
     }
     const heldGuides = getKbCatalog().guides.filter(guide => guide.state === 'needs-review');
-    // Reconciled support-knowledge contains only reviewed public leaves, so the
+    // The published snapshot contains only reviewed public leaves, so the
     // imported snapshot should not create downstream editorial holds.
     expect(heldGuides).toHaveLength(0);
   });

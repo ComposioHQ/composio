@@ -1,0 +1,42 @@
+{
+  "slug": "toolkits-databricks",
+  "title": "Databricks",
+  "description": "Public support knowledge for Databricks.",
+  "articlePath": "toolkits-databricks.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/databricks/public.md",
+      "sourceHeading": "Databricks OAuth client and secret setup reference"
+    },
+    {
+      "sourcePath": "toolkits/databricks/public.md",
+      "sourceHeading": "Enter Databricks API key credentials during connected account linking"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "databricks",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/databricks-troubleshooting",
+    "databricks-oauth-client-and-secret-setup-reference",
+    "databricks-requires-custom-credentials-when-managed-auth-is-unavailabl",
+    "databricks-toolkit-does-not-yet-support-oauth-m2m",
+    "databricks-troubleshooting",
+    "enter-databricks-api-key-credentials-during-connected-account-linking"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

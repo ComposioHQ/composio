@@ -1,0 +1,42 @@
+{
+  "slug": "toolkits-fathom",
+  "title": "Fathom",
+  "description": "Public support knowledge for Fathom.",
+  "articlePath": "toolkits-fathom.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/fathom/public.md",
+      "sourceHeading": "Fathom and granola_mcp are supported meeting transcription toolkits; request unsupported tools separately"
+    },
+    {
+      "sourcePath": "toolkits/fathom/public.md",
+      "sourceHeading": "OAuth authorization URLs are provider-specific"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "sessions-and-execution",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "fathom",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [
+    "/kb/toolkits/fathom-troubleshooting",
+    "fathom-and-granola-mcp-are-supported-meeting-transcription-toolkits-re",
+    "fathom-troubleshooting",
+    "oauth-authorization-urls-are-provider-specific"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-06-24",
+  "lastVerifiedAt": "2026-08-12",
+  "reviewAfter": "2026-11-10",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -46,8 +46,6 @@ export interface KnowledgeSemanticArtifact {
   model: typeof KB_EMBEDDING_MODEL;
   dimensions: number;
   source: {
-    repository: string;
-    supportKnowledgeCommit: string;
     docsContentHash: string;
   };
   builtAt: string;
@@ -143,9 +141,6 @@ export function validateSemanticArtifact(
   artifact: KnowledgeSemanticArtifact,
   expected: {
     dimensions?: number;
-    supportKnowledgeCommit?: string;
-    /** @deprecated Use supportKnowledgeCommit. */
-    sourceCommit?: string;
     docsContentHash?: string;
     contentHashes?: ReadonlyMap<string, string>;
   },
@@ -155,9 +150,6 @@ export function validateSemanticArtifact(
   if (artifact.model !== KB_EMBEDDING_MODEL) throw new Error('Semantic artifact model mismatch');
   if (artifact.dimensions !== (expected.dimensions ?? KB_EMBEDDING_DIMENSIONS)) {
     throw new Error('Semantic artifact dimension mismatch');
-  }
-  if (artifact.source.repository !== 'ComposioHQ/support-knowledge') {
-    throw new Error('Semantic artifact source repository mismatch');
   }
   if (artifact.records.length === 0) throw new Error('Semantic artifact has no records');
 
@@ -187,10 +179,6 @@ export function validateSemanticArtifact(
     }
   }
   // Check integrity first so advisory freshness checks cannot hide corrupt artifacts.
-  const supportKnowledgeCommit = expected.supportKnowledgeCommit ?? expected.sourceCommit;
-  if (!supportKnowledgeCommit || artifact.source.supportKnowledgeCommit !== supportKnowledgeCommit) {
-    throw new SemanticArtifactStaleError('Semantic artifact source commit mismatch');
-  }
   if (expected.docsContentHash && artifact.source.docsContentHash !== expected.docsContentHash) {
     throw new SemanticArtifactStaleError('Semantic artifact docs content hash mismatch');
   }
@@ -247,9 +235,6 @@ export function rankSemanticCandidates(
 
 export async function buildSemanticArtifact(input: {
   records: AlgoliaDocsRecord[];
-  supportKnowledgeCommit?: string;
-  /** @deprecated Use supportKnowledgeCommit. */
-  sourceCommit?: string;
   docsContentHash?: string;
   builtAt: string;
   previousArtifact?: KnowledgeSemanticArtifact;
@@ -258,8 +243,6 @@ export async function buildSemanticArtifact(input: {
   const records = [...input.records]
     .sort((left, right) => left.objectID.localeCompare(right.objectID));
   const metadata = records.map(semanticRecordFromSearchRecord);
-  const supportKnowledgeCommit = input.supportKnowledgeCommit ?? input.sourceCommit;
-  if (!supportKnowledgeCommit) throw new Error('Semantic artifact support-knowledge commit is required');
   const docsContentHash = input.docsContentHash ?? docsContentHashFromRecords(metadata);
   const previousVectors = input.previousArtifact &&
     input.previousArtifact.provider === KB_EMBEDDING_PROVIDER &&
@@ -312,17 +295,12 @@ export async function buildSemanticArtifact(input: {
     provider: KB_EMBEDDING_PROVIDER,
     model: KB_EMBEDDING_MODEL,
     dimensions: KB_EMBEDDING_DIMENSIONS,
-    source: {
-      repository: 'ComposioHQ/support-knowledge',
-      supportKnowledgeCommit,
-      docsContentHash,
-    },
+    source: { docsContentHash },
     builtAt: input.builtAt,
     records: metadata,
     vectorsBase64: encodeVectors(vectors as number[][]),
   };
   return validateSemanticArtifact(artifact, {
-    supportKnowledgeCommit,
     docsContentHash,
     contentHashes: new Map(metadata.map(record => [record.objectID, record.contentHash])),
   });

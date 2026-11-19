@@ -13,7 +13,7 @@ const MAX_CHARS = 12000;
 
 export default defineTool({
   description:
-    'Read the full Markdown content of a Composio docs page by its URL (e.g. "/docs/authentication"). Returns the page content plus its `sections` (with anchors). Use this on the most relevant pages from search_docs before answering, and link the specific section anchor (e.g. /docs/how-composio-works#users) when your answer comes from one.',
+    'Read the full Markdown content of a Composio docs page or Knowledge Base guide by its URL (e.g. "/docs/authentication" or "/kb/guide/<slug>"). Returns the page content plus its `sections` (with anchors). Use this on the most relevant pages from search_docs before answering, and link the specific section anchor (e.g. /docs/how-composio-works#users) when your answer comes from one.',
   inputSchema: z.object({
     url: z.string().min(1).describe('The page URL, e.g. "/docs/authentication" or "/docs/configuring-sessions".'),
   }),
