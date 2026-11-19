@@ -1,6 +1,6 @@
 import { Duration, Effect, Option } from 'effect';
 import { Stdin } from 'src/services/stdin';
-import { TerminalUI } from 'src/services/terminal-ui';
+import { warnOnStderr } from 'src/commands/surface';
 
 /**
  * How long a command waits for piped stdin to send anything when the caller did not ask for
@@ -24,8 +24,9 @@ export const readStdinIfPiped = Effect.gen(function* () {
   }
   const piped = yield* stdin.readAllUnlessSilent(PIPED_STDIN_SILENCE_TIMEOUT);
   if (Option.isNone(piped)) {
-    const ui = yield* TerminalUI;
-    yield* ui.log.warn(
+    // Agents usually redirect stderr, where `ui.log.warn` prints nothing; they need to see why
+    // their input was ignored.
+    yield* warnOnStderr(
       'Ignored stdin: nothing arrived on it within 1 second. Pass -d - to wait for input on stdin.'
     );
   }

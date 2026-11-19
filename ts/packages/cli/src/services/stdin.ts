@@ -25,8 +25,14 @@ export interface Stdin {
 
 export const Stdin = Context.Service<Stdin>('services/Stdin');
 
-/** Resolves `undefined` when `silenceTimeoutMs` passes before any data or the end of input. */
-const readStdinToEnd = (silenceTimeoutMs?: number): Promise<string | undefined> =>
+/**
+ * Reads a stdin stream to its end. Resolves `undefined` when `silenceTimeoutMs` passes before
+ * any data or the end of input arrives.
+ */
+export const readStdinToEnd = (
+  input: NodeJS.ReadableStream,
+  silenceTimeoutMs?: number
+): Promise<string | undefined> =>
   new Promise((resolve, reject) => {
     const chunks: string[] = [];
     let totalLength = 0;
@@ -56,25 +62,25 @@ const readStdinToEnd = (silenceTimeoutMs?: number): Promise<string | undefined> 
       cleanup();
       // An agent harness or task runner can hand the CLI a pipe it never writes to or closes;
       // waiting for its end would hang the command with no output.
-      process.stdin.pause();
+      input.pause();
       resolve(undefined);
     };
 
     const cleanup = () => {
       clearTimeout(silenceTimer);
-      process.stdin.off('data', onData);
-      process.stdin.off('end', onEnd);
-      process.stdin.off('error', onError);
+      input.off('data', onData);
+      input.off('end', onEnd);
+      input.off('error', onError);
     };
 
     const silenceTimer =
       silenceTimeoutMs === undefined ? undefined : setTimeout(onSilence, silenceTimeoutMs);
 
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', onData);
-    process.stdin.on('end', onEnd);
-    process.stdin.on('error', onError);
-    process.stdin.resume();
+    input.setEncoding('utf8');
+    input.on('data', onData);
+    input.on('end', onEnd);
+    input.on('error', onError);
+    input.resume();
   });
 
 const toStdinError = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
@@ -85,12 +91,12 @@ export const StdinLive = Layer.succeed(
     isTTY: () => !!process.stdin.isTTY,
     readAll: () =>
       Effect.tryPromise({
-        try: () => readStdinToEnd().then(text => text ?? ''),
+        try: () => readStdinToEnd(process.stdin).then(text => text ?? ''),
         catch: toStdinError,
       }),
     readAllUnlessSilent: silenceTimeout =>
       Effect.tryPromise({
-        try: () => readStdinToEnd(Duration.toMillis(silenceTimeout)),
+        try: () => readStdinToEnd(process.stdin, Duration.toMillis(silenceTimeout)),
         catch: toStdinError,
       }).pipe(Effect.map(Option.fromUndefinedOr)),
   })
