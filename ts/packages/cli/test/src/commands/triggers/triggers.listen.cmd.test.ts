@@ -1,6 +1,9 @@
 import type { ServerResponse } from 'node:http';
+import * as os from 'node:os';
+import * as nodePath from 'node:path';
 import { describe, expect, layer } from '@effect/vitest';
 import { ConfigProvider, Effect, Fiber, Latch, Layer } from 'effect';
+import * as FileSystem from 'effect/FileSystem';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import { makeShutdownController, ShutdownSignal } from 'src/services/shutdown-signal';
@@ -32,6 +35,24 @@ const failingRealtime = Layer.succeed(
       Effect.fail(new TriggerRealtimeSubscriptionError({ message: 'socket closed' })),
   })
 );
+
+// Formatting fixtures: standalone controls (BEL, DEL, NEL), CR/LF and a tab in a trigger event.
+const formattingEvent = {
+  id: 'msg_formatting_1',
+  type: 'composio.trigger.message',
+  timestamp: '2026-04-06T18:00:00.000Z',
+  metadata: {
+    trigger_slug: 'GM\u0007AIL_NEW',
+    trigger_id: 'ti_1\u0085',
+    connected_account_id: 'ca\r\n1',
+  },
+  data: { subject: 'hello\u007f', body: 'line\r\nnext\tcol' },
+};
+
+/** Any C0, DEL or C1 code point but the line feed that ends a line. */
+const dataControl = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u;
+/** SGR styling, the only escape sequence the CLI writes on its own. */
+const sgr = /\u001b\[[0-9;]*m/gu;
 
 describe('CLI: composio dev listen', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
@@ -371,6 +392,70 @@ describe('CLI: composio dev listen', () => {
         expect(exitCodeOf(exit)).toBe(0);
         expect(terminal.stdout()).toBe('');
       })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
+      realtimeData: { events: [formattingEvent] },
+    })
+  )('[Given] an event whose fields carry controls and line breaks', it => {
+    it.effect('[When] --table [Then] each cell is escaped before the row is styled', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        yield* cli(['dev', 'listen', '--table', '--max-events', '1']).pipe(
+          Effect.provide(terminal.layer)
+        );
+
+        const lines = terminal.stdout().slice(0, -1).split('\n');
+        expect(lines).toHaveLength(2);
+        const row = lines[1] ?? '';
+        expect(row.replace(sgr, '')).not.toMatch(dataControl);
+        expect(row.replace(sgr, '')).not.toContain('\u001b');
+        expect(row.replace(sgr, '').split(' ').filter(Boolean)).toEqual([
+          '2026-04-06T18:00:00.000Z',
+          'ti_1\\u0085',
+          'GM\\u0007AIL_NEW',
+          // The 8-column toolkit cell truncates what is shown, escape included.
+          'GM\\u0...',
+          '-',
+          'ca\\u000d\\u000a1',
+        ]);
+      })
+    );
+
+    it.effect(
+      '[When] --json --out [Then] the terminal shows escaped JSON and the file keeps the event',
+      () =>
+        Effect.gen(function* () {
+          yield* enableListen;
+          const fs = yield* FileSystem.FileSystem;
+          const directory = yield* fs.makeTempDirectoryScoped({
+            directory: os.tmpdir(),
+            prefix: 'composio-dev-listen-formatting-',
+          });
+          const outFile = nodePath.join(directory, 'events.jsonl');
+          const terminal = redirectedTerminalUI({ decoratedStderr: true });
+          yield* cli(['dev', 'listen', '--json', '--out', outFile, '--max-events', '1']).pipe(
+            Effect.provide(terminal.layer)
+          );
+
+          const stdout = terminal.stdout();
+          expect(stdout.split('\n')).toHaveLength(2);
+          expect(stdout).not.toMatch(dataControl);
+          expect(JSON.parse(stdout)).toEqual(formattingEvent);
+
+          const stderr = terminal.stderr().replace(sgr, '');
+          expect(stderr).not.toMatch(dataControl);
+          expect(stderr).toContain('Trigger: GM\\u0007AIL_NEW');
+          expect(stderr).toContain('Connected Account: ca\\u000d\\u000a1');
+          expect(stderr).toContain('"subject": "hello\\u007f"');
+
+          expect(yield* fs.readFileString(outFile)).toBe(`${JSON.stringify(formattingEvent)}\n`);
+        })
     );
   });
 });

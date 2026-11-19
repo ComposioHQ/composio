@@ -8,6 +8,7 @@ import {
   refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
 import { actingUser } from 'src/commands/surface';
 import {
@@ -88,8 +89,10 @@ const handleProxyExecutionError = (params: {
       toolkit: params.toolkit,
     });
 
+    // The message can quote the upstream API; the stdout result keeps it as it is.
+    const displayMessage = escapeTerminalText(mapped.message);
     if (mapped.normalized instanceof ComposioNoActiveConnectionError) {
-      yield* params.ui.log.error(mapped.message);
+      yield* params.ui.log.error(displayMessage);
       yield* params.ui.note(
         [
           `Link the toolkit first: composio link ${params.toolkit}`,
@@ -98,7 +101,7 @@ const handleProxyExecutionError = (params: {
         'Tips'
       );
     } else {
-      yield* params.ui.log.error(mapped.message);
+      yield* params.ui.log.error(displayMessage);
     }
     const output = formatProxyErrorOutput({
       error: mapped.message,
@@ -295,9 +298,10 @@ export const runProxy = (params: ProxyParams) =>
     );
 
     const output = formatProxyOutput(result);
-    yield* ui.log.info(`Status: ${String(result.status ?? 'unknown')}`);
+    yield* ui.log.info(`Status: ${escapeTerminalText(String(result.status ?? 'unknown'))}`);
     if (output) {
-      yield* ui.note(output, 'Proxy Response');
+      // The note shows the response on the terminal; redirected stdout gets the body as it is.
+      yield* ui.note(escapeTerminalLines(output), 'Proxy Response');
       yield* ui.output(output);
     }
   });

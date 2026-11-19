@@ -4,6 +4,7 @@ import { commandHintStep } from 'src/services/command-hints';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import type { InstantCharge } from 'src/services/tools-executor';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { redact } from 'src/ui/redact';
 import { isPlainRecord } from 'src/utils/parse-json';
 
@@ -108,11 +109,16 @@ export const executionSuccessSuffix = (result: {
     instantChargeLabel(result.instantCharge),
     result.logId ? `logId: ${redact({ value: result.logId, prefix: 'log_' })}` : undefined,
   ].filter((value): value is string => Boolean(value));
-  return metadata.length > 0 ? ` (${metadata.join(', ')})` : '';
+  return metadata.length > 0 ? ` (${escapeTerminalText(metadata.join(', '))})` : '';
 };
 
+/**
+ * Prints serialized execute JSON on stdout, shown on a terminal too. JSON already escapes C0
+ * controls in strings; DEL and C1 are escaped here as well, which decodes to the same values. A
+ * response stored in a file keeps its original bytes.
+ */
 export const writeExecuteStdout = (ui: TerminalUI, data: string) =>
-  ui.output(data, { force: true });
+  ui.output(escapeTerminalLines(data), { force: true });
 
 export type DryRunSummary = {
   readonly successful: true;

@@ -24,6 +24,7 @@ import { resolveConnectedAccountForToolkit } from 'src/services/connected-accoun
 import { LISTENER_STOP, ShutdownSignal } from 'src/services/shutdown-signal';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { TriggersRealtime } from 'src/services/triggers-realtime';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { ListenCommandError } from './listen.errors';
 import { emitStreamLine, formatStopMessage, formatStreamValue } from './listen.format';
 import {
@@ -73,7 +74,7 @@ const disableTemporaryTrigger = (params: {
           cause,
         })
     ),
-    Effect.tapError(error => params.ui.log.warn(error.message)),
+    Effect.tapError(error => params.ui.log.warn(escapeTerminalText(error.message))),
     Effect.ignore
   );
 
@@ -548,7 +549,7 @@ export const runListen = (input: ListenParams) =>
       Effect.catchTag('services/TriggerRealtimeSubscriptionError', error =>
         reportFailure(
           ui,
-          `Could not subscribe to realtime trigger events: ${error.message}. Check your network connection or run \`composio login\`.`
+          `Could not subscribe to realtime trigger events: ${escapeTerminalText(error.message)}. Check your network connection or run \`composio login\`.`
         )
       )
     );

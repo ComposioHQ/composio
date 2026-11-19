@@ -2,18 +2,20 @@ import type { TriggerType } from 'src/models/trigger-types';
 import type { TriggerListenEvent } from './types';
 import type { TriggerInstanceItem } from 'src/models/triggers';
 import { bold, gray } from 'src/ui/colors';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { truncate } from 'src/ui/truncate';
 import { extractSchemaProperties } from 'src/ui/extract-schema-properties';
 
+/** One line per field; event values are escaped so each stays on its own line. */
 export const formatTriggerListenSummary = (event: TriggerListenEvent): string => {
   const userId = event.userId || '-';
   const connectedAccountId = event.metadata.connectedAccount.id || '-';
   return [
-    `Trigger: ${event.triggerSlug}`,
-    `Toolkit: ${event.toolkitSlug}`,
-    `Trigger Id: ${event.id}`,
-    `Connected Account: ${connectedAccountId}`,
-    `User Id: ${userId}`,
+    `Trigger: ${escapeTerminalText(event.triggerSlug)}`,
+    `Toolkit: ${escapeTerminalText(event.toolkitSlug)}`,
+    `Trigger Id: ${escapeTerminalText(event.id)}`,
+    `Connected Account: ${escapeTerminalText(connectedAccountId)}`,
+    `User Id: ${escapeTerminalText(userId)}`,
   ].join('\n');
 };
 
@@ -36,6 +38,10 @@ export const formatTriggerListenTableHeader = (): string =>
     bold('Connected Account Id'),
   ].join(' ');
 
+/**
+ * One table row. Each cell is escaped before it is truncated, padded and styled, so the row
+ * stays one line and its widths count what is shown.
+ */
 export const formatTriggerListenTableRow = ({
   timestamp,
   event,
@@ -43,18 +49,24 @@ export const formatTriggerListenTableRow = ({
   timestamp: string;
   event: TriggerListenEvent;
 }): string => {
-  const connectedAccountId = event.metadata.connectedAccount.id || '-';
-  const userId = event.userId || '-';
-  const timestampCell = truncate(timestamp, TRIGGER_TABLE.timestamp).padEnd(
+  const connectedAccountId = escapeTerminalText(event.metadata.connectedAccount.id || '-');
+  const userId = escapeTerminalText(event.userId || '-');
+  const timestampCell = truncate(escapeTerminalText(timestamp), TRIGGER_TABLE.timestamp).padEnd(
     TRIGGER_TABLE.timestamp
   );
-  const triggerIdCell = truncate(event.id, TRIGGER_TABLE.triggerId).padEnd(TRIGGER_TABLE.triggerId);
+  const triggerIdCell = truncate(escapeTerminalText(event.id), TRIGGER_TABLE.triggerId).padEnd(
+    TRIGGER_TABLE.triggerId
+  );
 
   return [
     gray(timestampCell),
     triggerIdCell,
-    truncate(event.triggerSlug, TRIGGER_TABLE.triggerSlug).padEnd(TRIGGER_TABLE.triggerSlug),
-    truncate(event.toolkitSlug, TRIGGER_TABLE.toolkit).padEnd(TRIGGER_TABLE.toolkit),
+    truncate(escapeTerminalText(event.triggerSlug), TRIGGER_TABLE.triggerSlug).padEnd(
+      TRIGGER_TABLE.triggerSlug
+    ),
+    truncate(escapeTerminalText(event.toolkitSlug), TRIGGER_TABLE.toolkit).padEnd(
+      TRIGGER_TABLE.toolkit
+    ),
     truncate(userId, TRIGGER_TABLE.userId).padEnd(TRIGGER_TABLE.userId),
     truncate(connectedAccountId, TRIGGER_TABLE.connectedAccountId),
   ].join(' ');
