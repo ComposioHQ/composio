@@ -86,6 +86,7 @@ jobs:
             "$HOME/.local/bin/composio" \
             "$HOME/.composio/composio" \
             "$HOME/.composio/release-tag.txt" \
+            "$HOME/.composio/release-manifest.json" \
             "$HOME/.composio/run-helpers-runtime.mjs" \
             "$HOME/.composio/run-subagent-shared.mjs" \
             "$HOME/.composio/run-subagent-acp.mjs" \
