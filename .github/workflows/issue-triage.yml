@@ -57,17 +57,20 @@ jobs:
     timeout-minutes: 5
     permissions:
       issues: read
+      # Exchanged for a short-lived OpenRouter token below; this job stores no model API key.
+      id-token: write
     outputs:
       structured_output: ${{ steps.classify.outputs.structured_output }}
       issue_number: ${{ steps.classify.outputs.issue_number }}
 
     steps:
       # A single tool-free API call: issue text never reaches a local agent.
-      - name: Classify issue with Claude Sonnet
+      - name: Classify issue with Jev on OpenRouter
         id: classify
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The OpenRouter workload identity policy that trusts this repository's GitHub OIDC tokens. Not a secret.
+          OPENROUTER_FEDERATION_POLICY_ID: ${{ vars.OPENROUTER_FEDERATION_POLICY_ID }}
           ISSUE_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.issue_number || github.event.issue.number }}
         with:
           script: |
@@ -87,7 +90,7 @@ jobs:
             const explicitTriage = context.eventName === "workflow_dispatch" ||
               (context.payload.action === "labeled" && context.payload.label?.name === "triage");
             if (labels.includes("support") && !explicitTriage) {
-              // A maintainer's explicit routing decision needs no model or API key.
+              // A maintainer's explicit routing decision needs no model or token.
               core.setOutput("structured_output", JSON.stringify({
                 category: "other",
                 is_bug: labels.includes("bug"),
@@ -102,8 +105,9 @@ jobs:
               core.info("The support label has been removed; skipping forwarding.");
               return;
             }
-            if (!process.env.ANTHROPIC_API_KEY) {
-              throw new Error("ANTHROPIC_API_KEY is not configured");
+            const federationPolicyId = process.env.OPENROUTER_FEDERATION_POLICY_ID;
+            if (!federationPolicyId) {
+              throw new Error("OPENROUTER_FEDERATION_POLICY_ID is not configured");
             }
 
             const schema = {
@@ -154,39 +158,71 @@ jobs:
             Set should_comment to false otherwise.
             `;
 
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
+            // Workload identity federation (RFC 8693): GitHub's OIDC token for this run is exchanged for an
+            // OpenRouter access token that expires within 15 minutes. The audience must match the policy's.
+            const subjectToken = await core.getIDToken("openrouter");
+            const exchange = await fetch("https://openrouter.ai/api/v1/oauth/token", {
+              method: "POST",
+              redirect: "error",
+              signal: AbortSignal.timeout(30_000),
+              headers: {
+                "content-type": "application/x-www-form-urlencoded",
+                "accept": "application/json",
+              },
+              body: new URLSearchParams({
+                grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+                subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+                subject_token: subjectToken,
+                federation_policy_id: federationPolicyId,
+              }).toString(),
+            });
+            if (!exchange.ok) {
+              throw new Error(`OpenRouter token exchange failed with HTTP ${exchange.status}`);
+            }
+            const accessToken = (await exchange.json())?.access_token;
+            if (typeof accessToken !== "string" || !accessToken) {
+              throw new Error("OpenRouter token exchange returned no access token");
+            }
+            core.setSecret(accessToken);
+
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               redirect: "error",
               signal: AbortSignal.timeout(60_000),
               headers: {
-                "x-api-key": process.env.ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
+                "authorization": `Bearer ${accessToken}`,
                 "content-type": "application/json",
               },
               body: JSON.stringify({
-                model: "claude-sonnet-5-5",
-                max_tokens: 2048,
-                system,
-                messages: [{
-                  role: "user",
-                  content: JSON.stringify({ title: issue.title || "", body: issue.body || "" }),
-                }],
-                output_config: { format: { type: "json_schema", schema } },
+                model: "typesafe/jev-router",
+                max_tokens: 4096,
+                messages: [
+                  { role: "system", content: system },
+                  { role: "user", content: JSON.stringify({ title: issue.title || "", body: issue.body || "" }) },
+                ],
+                response_format: {
+                  type: "json_schema",
+                  json_schema: { name: "issue_triage", strict: true, schema },
+                },
+                // Jev routes each request to a model; only accept one that enforces the schema.
+                provider: { require_parameters: true },
               }),
             });
             if (!response.ok) {
-              throw new Error(`Claude API request failed with HTTP ${response.status}`);
+              throw new Error(`OpenRouter request failed with HTTP ${response.status}`);
             }
             const result = await response.json();
-            if (result.stop_reason !== "end_turn" || result.content?.length !== 1 || result.content[0].type !== "text") {
-              throw new Error("Claude did not return a complete classification");
+            const choice = result.choices?.length === 1 ? result.choices[0] : undefined;
+            if (choice?.finish_reason !== "stop" || typeof choice.message?.content !== "string" ||
+                choice.message.tool_calls?.length) {
+              throw new Error("The model did not return a complete classification");
             }
-            const parsed = JSON.parse(result.content[0].text);
+            const parsed = JSON.parse(choice.message.content);
             if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
                 Object.keys(parsed).length !== schema.required.length ||
                 !schema.required.every(key => Object.hasOwn(parsed, key) && typeof parsed[key] === schema.properties[key].type) ||
                 !schema.properties.category.enum.includes(parsed.category)) {
-              throw new Error("Claude returned an invalid classification");
+              throw new Error("The model returned an invalid classification");
             }
             core.setOutput("structured_output", JSON.stringify(parsed));
             core.setOutput("issue_number", String(issue_number));
@@ -319,7 +355,7 @@ jobs:
                 owner,
                 repo,
                 issue_number,
-                body: "🤖 Automated Claude triage note: this issue is missing details needed to investigate it. Please add the steps to reproduce, the expected and actual behavior, your environment (package or CLI version, runtime, OS), and any relevant logs or screenshots. Claude cannot reply back in a conversation.",
+                body: "🤖 Automated triage note: this issue is missing details needed to investigate it. Please add the steps to reproduce, the expected and actual behavior, your environment (package or CLI version, runtime, OS), and any relevant logs or screenshots. This bot cannot reply back in a conversation.",
               });
             }
 
