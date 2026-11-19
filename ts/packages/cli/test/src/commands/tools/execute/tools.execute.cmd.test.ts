@@ -2885,6 +2885,9 @@ describe('CLI: composio execute', () => {
 
         expect(output.successful).toBe(true);
         expect(output.data.arguments).toEqual({});
+        expect(lines.join('\n')).toContain(
+          'Ignored stdin: nothing arrived on it within 1 second. Pass -d - to wait for input on stdin.'
+        );
       })
     );
   });

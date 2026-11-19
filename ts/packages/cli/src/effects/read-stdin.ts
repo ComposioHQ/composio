@@ -14,8 +14,9 @@ export const readStdin = Effect.gen(function* () {
 });
 
 /**
- * Reads piped stdin when stdin is not a terminal. A pipe that sends nothing (no data and no end
- * of input) within `PIPED_STDIN_SILENCE_TIMEOUT` counts as no input.
+ * Reads piped stdin when stdin is not a terminal and the command got no `-d` (`execute`,
+ * `proxy`; `listen` reads stdin only through `-p -`). A pipe that sends nothing (no data and no
+ * end of input) within `PIPED_STDIN_SILENCE_TIMEOUT` counts as no input.
  */
 export const readStdinIfPiped = Effect.gen(function* () {
   const stdin = yield* Stdin;
