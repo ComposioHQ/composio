@@ -31,7 +31,7 @@ export COMPOSIO_API_KEY="your-composio-api-key"
 export COMPOSIO_USER_ID="domain-check-demo"
 ```
 
-In your application, derive the user ID from your authenticated session. Keep the API key and this code on the server. If you use a scoped project key, enable [Session tool execution or Proxy execute](/reference/authenticating-to-composio/project-api-key-permissions) with Write only access for session proxy calls.
+In your application, derive the user ID from your authenticated session. Keep the API key and this code on the server. If you use a scoped project key, enable [Proxy execute (Legacy) → Write only](/reference/authenticating-to-composio/project-api-key-permissions#proxy-execute-legacy). These scripts call the direct proxy route, which Session tool execution does not grant.
 
 The script calls Gmail's [`users.getProfile`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users/getProfile) endpoint with `me`, which selects the authenticated mailbox. It reads the returned `emailAddress`. The endpoint requires a Gmail scope such as `https://www.googleapis.com/auth/gmail.readonly`; `openid` and `email` alone don't grant this access. Ensure your Gmail auth config requests `gmail.readonly` if the agent will also read messages. See [Controlling scopes](/docs/authentication/controlling-scopes) to configure scopes and reconnect after changing them.
 
