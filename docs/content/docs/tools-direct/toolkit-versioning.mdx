@@ -388,6 +388,8 @@ You don't need to move triggers off a deprecated version. Composio handles it:
 - **Polling triggers** move on their own. Once a trigger's version is deprecated, Composio moves the trigger to a newer version on its next poll. The trigger keeps its ID, and you don't lose events, though a few can arrive twice.
 - **Gmail and Google Calendar triggers** move the same way as polling triggers, even when they use a webhook.
 
+Newer trigger versions only add fields to the payload, so your handler keeps working after a trigger moves.
+
 Composio can't move a polling trigger when the latest version rejects its configuration or no longer supports polling for it. That trigger keeps running on its version until the version retires. Composio then disables it with the reason `toolkit_version_retired`, and sends a [`composio.trigger.disabled`](/reference/api-reference/webhook-events/composio_trigger_disabled) event if you subscribe to it. To get its events again, create the trigger on the latest version with a configuration that version accepts.
 
 Creating or enabling a trigger on a deprecated version still works. The response carries the deprecation header, so the SDKs warn, and Composio moves a polling trigger to a newer version on its next poll.

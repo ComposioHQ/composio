@@ -132,7 +132,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GITHUB_COMM
   </Tab>
 </Tabs>
 
-Trigger instances default to the `'latest'` toolkit version. Pinning a version doesn't lock a trigger's payload schema, because triggers move to newer versions on their own. See [Triggers on deprecated and retired versions](/docs/tools-direct/toolkit-versioning#triggers-on-deprecated-and-retired-versions).
+Trigger instances default to the `'latest'` toolkit version. Composio moves triggers to newer versions for you, and newer versions only add fields to the payload, so your handler keeps working. See [Triggers on deprecated and retired versions](/docs/tools-direct/toolkit-versioning#triggers-on-deprecated-and-retired-versions).
 
 The trigger instance is created. Next, [receive its events](/docs/setting-up-triggers/subscribing-to-events) and test with a new matching event in the provider. If nothing arrives, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
 
