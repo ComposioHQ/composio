@@ -2874,6 +2874,25 @@ describe('CLI: composio execute', () => {
     TestLive({
       baseConfigProvider: testConfigProvider,
       fixture: 'global-test-user-id',
+      stdin: { isTTY: false, data: '', silent: true },
+    })
+  )('[Given] stdin is a pipe that never sends anything [Then] runs without stdin input', it => {
+    it.effect('executes with empty arguments instead of waiting for stdin', () =>
+      Effect.gen(function* () {
+        yield* cli(['execute', 'GITHUB_GET_REPOS']);
+        const lines = yield* MockConsole.getLines({ stripAnsi: true });
+        const output = parseLastJson(lines);
+
+        expect(output.successful).toBe(true);
+        expect(output.data.arguments).toEqual({});
+      })
+    );
+  });
+
+  layer(
+    TestLive({
+      baseConfigProvider: testConfigProvider,
+      fixture: 'global-test-user-id',
       stdin: { isTTY: true, data: '' },
       toolsExecutor: {
         failWith: new ComposioNoActiveConnectionError({

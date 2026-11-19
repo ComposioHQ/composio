@@ -185,6 +185,8 @@ export interface TestLiveInput {
   stdin?: {
     isTTY: boolean;
     data: string;
+    /** Simulates a pipe that never sends data or closes, like an agent harness can leave open. */
+    silent?: boolean;
   };
 
   /**
@@ -491,6 +493,10 @@ export const TestLayer = (input?: TestLiveInput) =>
       Stdin.of({
         isTTY: () => input?.stdin?.isTTY ?? true,
         readAll: () => Effect.succeed(input?.stdin?.data ?? ''),
+        readAllUnlessSilent: () =>
+          Effect.succeed(
+            input?.stdin?.silent === true ? Option.none() : Option.some(input?.stdin?.data ?? '')
+          ),
       })
     );
 

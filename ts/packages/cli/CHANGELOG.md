@@ -8,6 +8,8 @@
 
 - Release archives now include a `release-manifest.json` that lists the support files they ship. `composio upgrade` installs exactly what the manifest lists, so later releases can drop a support file without breaking upgrades. Files a release no longer lists stay in place. A release can name the oldest CLI version that may upgrade to it; an older CLI refuses it before changing anything and prints the install command to run instead.
 
+- `composio execute`, `composio proxy`, and `composio listen` no longer hang when stdin is a pipe that never sends anything or closes, as some agent harnesses leave it. Without `-d`, they read piped stdin as before, but a pipe that stays silent for 1 second now counts as no input, with a warning on stderr, instead of blocking the command with no output and no timeout. Pass `-d -` to wait for stdin as long as it takes.
+
 - Update @composio/client to 2.1.35 to include the latest API changes.
 
 - `composio listen --stream` shows control characters, including embedded tabs and line breaks,
