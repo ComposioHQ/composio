@@ -459,7 +459,7 @@ export type ToolRetrievalOptions = {
    *
    * @example Override with specific version
    * ```typescript
-   * const tool = await tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE', {
+   * const tool = await tools.getRawComposioToolBySlug('GITHUB_CREATE_AN_ISSUE', {
    *   version: '20250909_00'
    * });
    * ```

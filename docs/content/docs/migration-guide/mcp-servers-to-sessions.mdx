@@ -283,7 +283,7 @@ For a deterministic, non-agent path, call a tool directly on the session.
 <Tab value="Python">
 ```python
 result = session.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
 )
 ```
@@ -294,7 +294,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 const session = await composio.create("user-123");
 // ---cut---
-const result = await session.execute("GITHUB_CREATE_ISSUE", {
+const result = await session.execute("GITHUB_CREATE_AN_ISSUE", {
   owner: "my-org",
   repo: "my-repo",
   title: "Fix login bug",
@@ -308,7 +308,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "tool_slug": "GITHUB_CREATE_ISSUE",
+    "tool_slug": "GITHUB_CREATE_AN_ISSUE",
     "arguments": {"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"}
   }'
 ```

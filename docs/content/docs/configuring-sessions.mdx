@@ -412,7 +412,7 @@ session = composio.sessions.create(
         # Only these Gmail tools will be available
         "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
         # Only issue-related GitHub tools
-        "github": {"enable": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]}
+        "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
     }
 )
 ```
@@ -427,7 +427,7 @@ const session = await composio.create("user_123", {
     // Only these Gmail tools will be available
     gmail: { enable: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"] },
     // Only issue-related GitHub tools
-    github: { enable: ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"] }
+    github: { enable: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"] }
   }
 });
 ```
@@ -441,7 +441,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
     "user_id": "user_123",
     "tools": {
       "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
-      "github": {"enable": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]}
+      "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
     }
   }'
 ```
@@ -457,7 +457,7 @@ session = composio.sessions.create(
     user_id="user_123",
     tools={
         "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
-        "github": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]
+        "github": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]
     }
 )
 ```
@@ -470,7 +470,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const session = await composio.create("user_123", {
   tools: {
     gmail: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
-    github: ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]
+    github: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]
   }
 });
 ```
@@ -485,7 +485,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
     "user_id": "user_123",
     "tools": {
       "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
-      "github": {"enable": ["GITHUB_CREATE_ISSUE", "GITHUB_GET_ISSUE"]}
+      "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
     }
   }'
 ```

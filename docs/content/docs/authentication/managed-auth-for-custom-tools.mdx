@@ -14,7 +14,7 @@ This example connects GitHub and reads the connected account's profile through `
 
 For a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions), enable **Session management → Write only**, **Connected accounts → Read only**, and **Proxy execute (Legacy) → Write only**. Default full-access project keys already include these permissions. Keep the key server-side.
 
-Use the exact **Proxy execute (Legacy)** permission label when configuring a scoped key. The same permission also grants the current session proxy route. The label does not require a v3.0 API or a legacy SDK; the examples below use v3.1.
+Use the exact **Proxy execute (Legacy)** permission label when configuring a scoped key. It grants both the direct and session proxy routes. For session proxy calls, **Session tool execution → Write only** is another option. The label does not require a v3.0 API or a legacy SDK; the examples below use v3.1.
 
 The example uses `org_42:user_7` as an illustrative connection owner. In your application, derive this value from the authenticated request after checking workspace membership. Never accept a model-supplied or browser-supplied owner ID as authorization. See [B2B connection ownership](/docs/b2b-agents#choose-the-connection-owner) for member-owned and workspace-owned connections.
 

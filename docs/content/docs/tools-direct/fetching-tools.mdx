@@ -149,12 +149,12 @@ Fetch specific tools when you know their names.
 # Fetch specific tools by name
 tools = composio.tools.get(
     user_id,
-    tools=["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 )
 
 # Get schemas without user_id
 raw_tools = composio.tools.get_raw_composio_tools(
-    tools=["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 )
 ```
   </Tab>
@@ -166,19 +166,19 @@ const userId = 'user_123';
 // ---cut---
 // Fetch specific tools by name
 const specificTools = await composio.tools.get(userId, {
-  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+  tools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 });
 
 // Get schemas without userId
 const specificRawTools = await composio.tools.getRawComposioTools({
-  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+  tools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 });
 ```
   </Tab>
   <Tab value="API">
 ```bash
 # Fetch specific tools by name
-curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_ISSUE,GITHUB_CREATE_PULL_REQUEST" \
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_AN_ISSUE,GITHUB_CREATE_PULL_REQUEST" \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>
