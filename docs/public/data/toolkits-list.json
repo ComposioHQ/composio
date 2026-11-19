@@ -342,7 +342,7 @@
     "name": "LinkedIn",
     "logo": "https://logos.composio.dev/api/linkedin",
     "category": "social media accounts",
-    "toolCount": 29,
+    "toolCount": 31,
     "triggerCount": 0
   },
   {
@@ -385,7 +385,7 @@
     "name": "Salesforce",
     "logo": "https://logos.composio.dev/api/salesforce",
     "category": "crm",
-    "toolCount": 327,
+    "toolCount": 595,
     "triggerCount": 7
   },
   {
@@ -527,7 +527,7 @@
     "name": "Zoho",
     "logo": "https://logos.composio.dev/api/zoho",
     "category": "crm",
-    "toolCount": 113,
+    "toolCount": 115,
     "triggerCount": 0
   },
   {
@@ -618,7 +618,7 @@
     "name": "Affinity",
     "logo": "https://logos.composio.dev/api/affinity",
     "category": "crm",
-    "toolCount": 20,
+    "toolCount": 130,
     "triggerCount": 0
   },
   {
@@ -1016,7 +1016,7 @@
     "name": "Close",
     "logo": "https://logos.composio.dev/api/close",
     "category": "crm",
-    "toolCount": 72,
+    "toolCount": 75,
     "triggerCount": 45
   },
   {
@@ -1088,7 +1088,7 @@
     "name": "Zoho Books",
     "logo": "https://logos.composio.dev/api/zoho_books",
     "category": "accounting",
-    "toolCount": 295,
+    "toolCount": 326,
     "triggerCount": 0
   },
   {
@@ -1096,7 +1096,7 @@
     "name": "Zoho Inventory",
     "logo": "https://logos.composio.dev/api/zoho_inventory",
     "category": "accounting",
-    "toolCount": 91,
+    "toolCount": 97,
     "triggerCount": 0
   },
   {
@@ -1696,7 +1696,7 @@
     "name": "Cloudflare",
     "logo": "https://logos.composio.dev/api/cloudflare",
     "category": "security & identity tools",
-    "toolCount": 149,
+    "toolCount": 170,
     "triggerCount": 0
   },
   {
@@ -1720,7 +1720,7 @@
     "name": "Xero",
     "logo": "https://logos.composio.dev/api/xero",
     "category": "accounting",
-    "toolCount": 107,
+    "toolCount": 109,
     "triggerCount": 0
   },
   {
@@ -1744,7 +1744,7 @@
     "name": "ActiveCampaign",
     "logo": "https://logos.composio.dev/api/active_campaign",
     "category": "marketing automation",
-    "toolCount": 506,
+    "toolCount": 510,
     "triggerCount": 0
   },
   {
@@ -1832,7 +1832,7 @@
     "name": "Zoho Invoice",
     "logo": "https://logos.composio.dev/api/zoho_invoice",
     "category": "proposal & invoice management",
-    "toolCount": 137,
+    "toolCount": 144,
     "triggerCount": 0
   },
   {
@@ -2100,7 +2100,26 @@
     "logo": "https://logos.composio.dev/api/agent_mail",
     "category": "email",
     "toolCount": 94,
-    "triggerCount": 1
+    "triggerCount": 1,
+    "instant": {
+      "supported": true
+    }
+  },
+  {
+    "slug": "agent37",
+    "name": "Agent37",
+    "logo": "https://logos.composio.dev/api/agent37",
+    "category": "ai agents",
+    "toolCount": 60,
+    "triggerCount": 0
+  },
+  {
+    "slug": "agentphone",
+    "name": "AgentPhone",
+    "logo": "https://logos.composio.dev/api/agentphone",
+    "category": "phone & sms",
+    "toolCount": 76,
+    "triggerCount": 0
   },
   {
     "slug": "agentql",
@@ -3741,6 +3760,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "cb_insights",
+    "name": "CB Insights",
+    "logo": "https://logos.composio.dev/api/cb_insights",
+    "category": "business intelligence",
+    "toolCount": 17,
+    "triggerCount": 0
+  },
+  {
     "slug": "cdr_platform",
     "name": "Cdr Platform",
     "logo": "https://logos.composio.dev/api/cdr_platform",
@@ -4103,7 +4130,7 @@
     "name": "Cloudflare Api Key",
     "logo": "https://www.cloudflare.com/img/logo-cloudflare.svg",
     "category": "security & identity tools",
-    "toolCount": 74,
+    "toolCount": 102,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -4850,6 +4877,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "dataforb2b",
+    "name": "DataForB2B",
+    "logo": "https://logos.composio.dev/api/dataforb2b",
+    "category": "ai sales tools",
+    "toolCount": 42,
+    "triggerCount": 0
+  },
+  {
     "slug": "dataforseo",
     "name": "DataForSEO",
     "logo": "https://logos.composio.dev/api/dataforseo",
@@ -5000,6 +5035,14 @@
     "logo": "https://logos.composio.dev/api/desktime",
     "category": "time tracking software",
     "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
+    "slug": "details_mcp",
+    "name": "Details MCP",
+    "logo": "https://logos.composio.dev/api/details_mcp",
+    "category": "model context protocol",
+    "toolCount": 4,
     "triggerCount": 0
   },
   {
@@ -7043,6 +7086,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "harmonic",
+    "name": "Harmonic",
+    "logo": "https://logos.composio.dev/api/harmonic",
+    "category": "sales & crm",
+    "toolCount": 76,
+    "triggerCount": 0
+  },
+  {
     "slug": "harness",
     "name": "Harness",
     "logo": "https://logos.composio.dev/api/harness",
@@ -7481,6 +7532,14 @@
     "logo": "https://logos.composio.dev/api/ibm_x_force_exchange",
     "category": "security & identity tools",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "icons8",
+    "name": "Icons8",
+    "logo": "https://logos.composio.dev/api/icons8",
+    "category": "images & design",
+    "toolCount": 5,
     "triggerCount": 0
   },
   {
@@ -9061,7 +9120,7 @@
     "name": "Metabase",
     "logo": "https://logos.composio.dev/api/metabase",
     "category": "business intelligence",
-    "toolCount": 194,
+    "toolCount": 195,
     "triggerCount": 0
   },
   {
@@ -9750,7 +9809,7 @@
     "name": "Northflank",
     "logo": "https://logos.composio.dev/api/northflank",
     "category": "developer tools",
-    "toolCount": 20,
+    "toolCount": 33,
     "triggerCount": 0
   },
   {
@@ -10162,8 +10221,11 @@
     "name": "Orgo",
     "logo": "https://logos.composio.dev/api/orgo",
     "category": "ai agents",
-    "toolCount": 11,
-    "triggerCount": 0
+    "toolCount": 34,
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "orshot",
@@ -10187,6 +10249,14 @@
     "logo": "https://logos.composio.dev/api/otter_ai_mcp",
     "category": "model context protocol",
     "toolCount": 3,
+    "triggerCount": 0
+  },
+  {
+    "slug": "outbound_dev",
+    "name": "Outbound",
+    "logo": "https://outbound.dev/icon.svg",
+    "category": "ai sales tools",
+    "toolCount": 119,
     "triggerCount": 0
   },
   {
@@ -10250,7 +10320,7 @@
     "name": "Parallel",
     "logo": "https://logos.composio.dev/api/parallel",
     "category": "web search & research",
-    "toolCount": 42,
+    "toolCount": 43,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -10591,6 +10661,14 @@
     }
   },
   {
+    "slug": "phrase",
+    "name": "Phrase",
+    "logo": "https://logos.composio.dev/api/phrase",
+    "category": "developer tools",
+    "toolCount": 302,
+    "triggerCount": 0
+  },
+  {
     "slug": "picnie",
     "name": "Picnie",
     "logo": "https://logos.composio.dev/api/picnie",
@@ -10676,6 +10754,14 @@
     "logo": "https://logos.composio.dev/api/pipeline_crm",
     "category": "crm",
     "toolCount": 15,
+    "triggerCount": 0
+  },
+  {
+    "slug": "pitchbook",
+    "name": "PitchBook",
+    "logo": "https://logos.composio.dev/api/pitchbook",
+    "category": "business intelligence",
+    "toolCount": 130,
     "triggerCount": 0
   },
   {
@@ -10796,7 +10882,10 @@
     "logo": "https://logos.composio.dev/api/ploid",
     "category": "ai agents",
     "toolCount": 45,
-    "triggerCount": 0
+    "triggerCount": 0,
+    "instant": {
+      "supported": true
+    }
   },
   {
     "slug": "pneumatic",
@@ -13557,6 +13646,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "timetopost",
+    "name": "TimeToPost",
+    "logo": "https://logos.composio.dev/api/timetopost",
+    "category": "social media marketing",
+    "toolCount": 92,
+    "triggerCount": 0
+  },
+  {
     "slug": "tinyfish",
     "name": "TinyFish",
     "logo": "https://logos.composio.dev/api/tinyfish",
@@ -14352,7 +14449,7 @@
     "name": "Whop",
     "logo": "https://logos.composio.dev/api/whop",
     "category": "ecommerce",
-    "toolCount": 44,
+    "toolCount": 46,
     "triggerCount": 0
   },
   {
