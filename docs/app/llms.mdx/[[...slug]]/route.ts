@@ -25,11 +25,12 @@ import { missingMarkdownResponse, withMarkdownMetadata } from '@/lib/markdown-re
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
+import { fetchDetailedTools } from '@/lib/toolkit-tools';
 import { getAllMetaTools, getMetaToolBySlug } from '@/lib/meta-tools-data';
 import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
-import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
+import { apiTriggerListSchema } from '@/lib/toolkit-schema';
 import { z } from 'zod';
 import {
   getKnowledgeByProductArea,
@@ -48,47 +49,6 @@ export const revalidate = false;
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 const API_FETCH_LIMIT = 1000; // Note: Toolkits with more items will be truncated
-
-// Fetch detailed tool info from Composio API
-async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
-  if (!API_KEY) {
-    return null;
-  }
-
-  try {
-    const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=${API_FETCH_LIMIT}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        next: { revalidate: 3600 },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[LLM Markdown] Failed to fetch tools for ${toolkitSlug}: ${response.status}`);
-      return null;
-    }
-
-    const parsed = apiToolListSchema.safeParse(await response.json());
-    if (!parsed.success) {
-      console.warn(`[LLM Markdown] Invalid API response format for toolkit ${toolkitSlug}`);
-      return null;
-    }
-
-    if (parsed.data.length >= API_FETCH_LIMIT) {
-      console.warn(
-        `[LLM Markdown] Toolkit ${toolkitSlug} has ${parsed.data.length}+ tools, results may be truncated`
-      );
-    }
-
-    return parsed.data;
-  } catch {
-    return null;
-  }
-}
 
 // Fetch detailed trigger info from Composio API
 async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | null> {
@@ -1450,7 +1410,7 @@ async function renderMarkdown(_req: Request, { params }: { params: Promise<{ slu
       if (toolkit) {
         // Fetch detailed tool/trigger info and FAQ content in parallel
         const [detailedTools, detailedTriggers, faqMarkdown] = await Promise.all([
-          fetchDetailedTools(rest[0]),
+          fetchDetailedTools(toolkit),
           fetchDetailedTriggers(rest[0]),
           readToolkitFaqMarkdown(rest[0]),
         ]);
@@ -1458,7 +1418,7 @@ async function renderMarkdown(_req: Request, { params }: { params: Promise<{ slu
         return new Response(
           toolkitToMarkdown(
             toolkit,
-            detailedTools !== null ? detailedTools : undefined,
+            detailedTools,
             detailedTriggers !== null ? detailedTriggers : undefined,
             faqMarkdown
           ),
