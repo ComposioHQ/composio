@@ -100,6 +100,8 @@ jq -e '.minimumUpgradeFrom | type == "string" and test("^(0|[1-9][0-9]*)\\.(0|[1
 jq -e '.companions | type == "array" and length > 0 and all(type == "string")' \
   <<<"$manifest" >/dev/null ||
   fail "'$manifest_entry' must list its companions"
+jq -e '.companions == (.companions | unique)' <<<"$manifest" >/dev/null ||
+  fail "'$manifest_entry' must list its companions sorted and without duplicates; the CLI refuses any other order"
 # jq on Windows writes CRLF line endings in text mode.
 manifest_companions="$(jq -r '.companions[]' <<<"$manifest" | tr -d '\r')"
 
