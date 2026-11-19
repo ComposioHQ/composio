@@ -1,6 +1,6 @@
-import { Effect, Option, Result } from 'effect';
-import { PipedStdinSilentError } from 'src/effects/read-stdin';
-import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
+import { Duration, Effect, Option, Result } from 'effect';
+import { resolveExplicitTextInput } from 'src/effects/resolve-optional-text-input';
+import { Stdin } from 'src/services/stdin';
 import {
   findFileUploadablePaths,
   schemaHasFileUploadable,
@@ -9,24 +9,38 @@ import {
 import { isPlainRecord, parseJsonRecord } from 'src/utils/parse-json';
 import { invalidArguments, ToolExecutionError } from './tools.execute.errors';
 
+/**
+ * How long `composio execute` waits for piped JSON to start arriving when it got no `-d`. An
+ * agent harness can hand the CLI a pipe it never writes to or closes; waiting for its end would
+ * hang the command with no output.
+ */
+export const PIPED_STDIN_SILENCE_TIMEOUT = Duration.seconds(1);
+
+/**
+ * The tool arguments: `-d` as `resolveExplicitTextInput` reads it, else JSON piped on stdin, else
+ * `{}` when stdin is a terminal (e.g. tools with no required args).
+ */
 export const resolveInput = (input: Option.Option<string>) =>
-  resolveOptionalTextInput(input, {
-    // Default to empty object when no data provided (e.g. tools with no required args)
-    missingValue: '{}',
-  }).pipe(
-    // Running the tool with `{}` could act without the arguments still on their way. A refinement,
-    // not `catchTag`: the stdin reader's plain `Error` absorbs this subclass in the error union.
-    Effect.catchIf(
-      (error): error is PipedStdinSilentError => error instanceof PipedStdinSilentError,
-      () =>
-        Effect.fail(
-          invalidArguments(
-            "No input arrived on stdin within 1 second. Pass the arguments with -d '{...}', or -d - to wait for stdin.",
-            '--data'
-          )
+  Effect.gen(function* () {
+    if (Option.isSome(input)) {
+      return (yield* resolveExplicitTextInput(input)) ?? '{}';
+    }
+    const stdin = yield* Stdin;
+    if (stdin.isTTY()) {
+      return '{}';
+    }
+    const piped = yield* stdin.readAllUnlessSilent(PIPED_STDIN_SILENCE_TIMEOUT);
+    if (Option.isNone(piped)) {
+      // Running the tool with `{}` could act without the arguments still on their way.
+      return yield* Effect.fail(
+        invalidArguments(
+          "No input arrived on stdin within 1 second. Pass the arguments with -d '{...}', or -d - to wait for stdin.",
+          '--data'
         )
-    )
-  );
+      );
+    }
+    return piped.value;
+  });
 
 export const parseArguments = (raw: string) =>
   Effect.fromResult(

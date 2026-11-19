@@ -13,7 +13,7 @@
 
 A command serializes its machine result before calling `output`. A command without a separate human renderer uses `force: true` when its data must remain visible on a terminal. Output consumers must follow that command's contract. `proxy` can return text or JSON, while listeners emit a stream rather than one JSON document.
 
-[resolveOptionalTextInput](../../../../ts/packages/cli/src/effects/resolve-optional-text-input.ts) handles a literal string, `@file`, explicit `-` for stdin, or implicit piped stdin when no value is supplied. A file or explicit value takes precedence over implicit stdin. The helper returns text or the configured missing-value fallback. The command validates supplied data with its own parser and schema before using it.
+[resolveExplicitTextInput](../../../../ts/packages/cli/src/effects/resolve-optional-text-input.ts) resolves an input flag: a literal string, `@file`, or `-` / `@-` to read stdin to end of input. With no flag it returns `undefined` and never reads stdin, so a command such as `proxy` or `listen` cannot wait on a pipe it was handed. `composio execute` alone also reads JSON piped without `-d` (`resolveInput` in `tools.execute.arguments.ts`) and fails when the pipe sends nothing within `PIPED_STDIN_SILENCE_TIMEOUT`. The command validates supplied data with its own parser and schema before using it.
 
 [Stdin.readAll](../../../../ts/packages/cli/src/services/stdin.ts) buffers size-limited input until end of input (EOF). It is not a reader for an unlimited event stream. A producer that never closes stdin keeps the command waiting. `TestLive({ stdin: { isTTY: false, data: '...' } })` supplies finite test input without consuming the test runner's stdin.
 
