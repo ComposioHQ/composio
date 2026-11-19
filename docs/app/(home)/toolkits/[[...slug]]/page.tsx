@@ -16,42 +16,26 @@ import type { Metadata } from 'next';
 import type { Tool, Trigger } from '@/types/toolkit';
 import type { FaqItem } from '@/components/toolkits/faq-section';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
+import { createComposioClientFromEnv, listToolkitTools, listToolkitTriggers } from '@/lib/composio-api';
 
-const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
-const API_KEY = process.env.COMPOSIO_API_KEY;
+// COMPOSIO_BASE_URL selects the API host; production by default.
+const client = process.env.COMPOSIO_API_KEY
+  ? createComposioClientFromEnv(process.env, { revalidate: 3600 })
+  : null;
 
 // Snapshot misses are resolved from production on demand.
 export const dynamicParams = true;
 
 // Fetch detailed tool info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no tools
-async function fetchDetailedTools(
-  toolkitSlug: string
-): Promise<Tool[] | null> {
-  if (!API_KEY) {
+async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
+  if (!client) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
     return null;
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=10000`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        next: { revalidate: 3600 },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[Toolkits] Failed to fetch tools for ${toolkitSlug}: ${response.status}`);
-      return null;
-    }
-
-    const parsed = apiToolListSchema.safeParse(await response.json());
-    return parsed.success ? parsed.data : [];
+    return apiToolListSchema.parse(await listToolkitTools(client, toolkitSlug));
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed tools for ${toolkitSlug}:`, error);
     return null;
@@ -60,40 +44,19 @@ async function fetchDetailedTools(
 
 // Fetch detailed trigger info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no triggers
-async function fetchDetailedTriggers(
-  toolkitSlug: string,
-  version?: string | null
-): Promise<Trigger[] | null> {
-  if (!API_KEY) {
+async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | null> {
+  if (!client) {
     console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed trigger fetch');
     return null;
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE}/triggers_types?toolkit_slugs=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=10000${version ? `&version=${encodeURIComponent(version)}` : ''}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        next: { revalidate: 3600 }, // Cache for 1 hour
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[Toolkits] Failed to fetch triggers for ${toolkitSlug}: ${response.status}`);
-      return null;
-    }
-
-    const parsed = apiTriggerListSchema.safeParse(await response.json());
-    return parsed.success ? parsed.data : [];
+    return apiTriggerListSchema.parse(await listToolkitTriggers(client, toolkitSlug));
   } catch (error) {
     console.error(`[Toolkits] Error fetching detailed triggers for ${toolkitSlug}:`, error);
     return null;
   }
 }
-
 
 async function readToolkitFaq(slug: string): Promise<FaqItem[] | null> {
   const filePath = join(process.cwd(), 'content/toolkits/faq', `${slug}.md`);
@@ -225,7 +188,7 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
       // Fetch detailed tool/trigger info and FAQ content in parallel
       const [detailedTools, detailedTriggers, faq] = await Promise.all([
         fetchDetailedTools(toolkit.slug),
-        fetchDetailedTriggers(toolkit.slug, toolkit.version),
+        fetchDetailedTriggers(toolkit.slug),
         readToolkitFaq(toolkit.slug),
       ]);
 
