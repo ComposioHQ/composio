@@ -5,6 +5,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, PlatformError, Schema } from 'effect';
+import semver from 'semver';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { APP_VERSION, IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
@@ -31,6 +32,10 @@ export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map
 
 export const RUN_COMPANION_RELEASE_TAG_FILENAME = 'release-tag.txt';
 
+export const RELEASE_MANIFEST_FILENAME = 'release-manifest.json';
+
+export const RELEASE_MANIFEST_SCHEMA_VERSION = 1;
+
 // Paths the removed `experimental_subAgent` helper used to ship. Release archives
 // keep them as zero-byte files because every stable CLI from 0.2.12 to 0.4.2
 // verifies a downloaded upgrade package against its own copy of this list, by
@@ -53,6 +58,131 @@ export const RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS: ReadonlyArray<stri
   'acp-adapters/codex/linux-arm64/codex-acp',
   'acp-adapters/codex/linux-x64/codex-acp',
 ];
+
+const isArchiveRelativePath = (value: string): boolean =>
+  !value.startsWith('/') &&
+  !value.includes('\\') &&
+  !/^[A-Za-z]:/.test(value) &&
+  value.split('/').every(segment => segment !== '' && segment !== '.' && segment !== '..');
+
+/** A path inside a release archive's package directory, safe to join onto an install directory. */
+export const ArchiveRelativePath = Schema.String.check(
+  Schema.makeFilter(isArchiveRelativePath, {
+    expected: 'a relative POSIX path with no empty, "." or ".." segments',
+  })
+).pipe(Schema.brand('ArchiveRelativePath'));
+export type ArchiveRelativePath = typeof ArchiveRelativePath.Type;
+
+const isSortedAndUnique = (values: ReadonlyArray<string>): boolean =>
+  values.every((value, index) => index === 0 || values[index - 1]! < value);
+
+/**
+ * What a release archive says it contains, written by packaging as
+ * `release-manifest.json` next to the executable. A client that reads it checks
+ * the download against `companions` instead of the companion names compiled
+ * into itself, so a later archive can drop a file without breaking upgrades.
+ *
+ * Adding a field keeps schema version 1, since decoding ignores unknown keys. A
+ * change an older reader would misread bumps the version, and a client refuses a
+ * version it does not know.
+ */
+export const ReleaseManifest = Schema.Struct({
+  schemaVersion: Schema.Literal(RELEASE_MANIFEST_SCHEMA_VERSION),
+  /** The earliest CLI version that may upgrade to this archive. */
+  minimumUpgradeFrom: Schema.String.check(
+    Schema.makeFilter(value => semver.valid(value) === value, { expected: 'a semver version' })
+  ),
+  companions: Schema.NonEmptyArray(ArchiveRelativePath).check(
+    Schema.makeFilter(isSortedAndUnique, { expected: 'sorted, unique paths' })
+  ),
+});
+export type ReleaseManifest = typeof ReleaseManifest.Type;
+
+const ReleaseManifestVersion = Schema.fromJsonString(
+  Schema.Struct({ schemaVersion: Schema.Unknown })
+);
+const ReleaseManifestFromJson = Schema.fromJsonString(ReleaseManifest);
+
+/** A release archive whose `release-manifest.json` cannot be read or trusted. */
+export class ReleaseManifestError extends Data.TaggedError('services/ReleaseManifestError')<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
+/**
+ * The companion files a release archive provides: the ones its manifest lists,
+ * or, for an archive from before manifests, the ones this CLI's own companion
+ * names reach.
+ */
+export type ArchiveCompanions = Data.TaggedEnum<{
+  Manifest: { readonly manifest: ReleaseManifest; readonly relativePaths: ReadonlyArray<string> };
+  CompiledNames: { readonly relativePaths: ReadonlyArray<string> };
+}>;
+export const ArchiveCompanions = Data.taggedEnum<ArchiveCompanions>();
+
+const readReleaseManifest = (
+  fs: FileSystem.FileSystem,
+  manifestPath: string
+): Effect.Effect<ReleaseManifest, ReleaseManifestError> =>
+  Effect.gen(function* () {
+    const text = yield* fs
+      .readFileString(manifestPath, 'utf8')
+      .pipe(
+        Effect.mapError(
+          cause =>
+            new ReleaseManifestError({ message: `Cannot read ${RELEASE_MANIFEST_FILENAME}`, cause })
+        )
+      );
+    const { schemaVersion } = yield* Schema.decodeUnknownEffect(ReleaseManifestVersion)(text).pipe(
+      Effect.mapError(
+        cause =>
+          new ReleaseManifestError({
+            message: `${RELEASE_MANIFEST_FILENAME} is not valid JSON`,
+            cause,
+          })
+      )
+    );
+    if (schemaVersion !== RELEASE_MANIFEST_SCHEMA_VERSION) {
+      return yield* new ReleaseManifestError({
+        message: `${RELEASE_MANIFEST_FILENAME} has schema version ${String(schemaVersion)}, which this CLI cannot read`,
+      });
+    }
+    return yield* Schema.decodeUnknownEffect(ReleaseManifestFromJson)(text).pipe(
+      Effect.mapError(
+        cause =>
+          new ReleaseManifestError({ message: `${RELEASE_MANIFEST_FILENAME} is invalid`, cause })
+      )
+    );
+  });
+
+/**
+ * Resolves what the release package extracted at `packageDir` provides. A
+ * manifest that is present but unreadable or invalid fails: the archive is
+ * broken, and guessing from compiled names could install a partial release.
+ */
+export const resolveArchiveCompanions = (
+  packageDir: string
+): Effect.Effect<ArchiveCompanions, ReleaseManifestError, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const manifestPath = path.join(packageDir, RELEASE_MANIFEST_FILENAME);
+    const hasManifest = yield* fs
+      .exists(manifestPath)
+      .pipe(
+        Effect.mapError(
+          cause =>
+            new ReleaseManifestError({ message: `Cannot read ${RELEASE_MANIFEST_FILENAME}`, cause })
+        )
+      );
+    if (!hasManifest) {
+      return ArchiveCompanions.CompiledNames({
+        relativePaths: yield* collectExpectedRunCompanionAssetRelativePaths(packageDir),
+      });
+    }
+    const manifest = yield* readReleaseManifest(fs, manifestPath);
+    return ArchiveCompanions.Manifest({ manifest, relativePaths: manifest.companions });
+  });
 
 export class RunCompanionRepairError extends Data.TaggedError('services/RunCompanionRepairError')<{
   readonly message: string;
@@ -245,6 +375,22 @@ export const resolveRunningCliVersion = (
   isReleaseBuild
     ? Effect.succeed(normalizeCliReleaseVersion(appVersion))
     : resolveInstalledCliVersion(execPath, appVersion);
+
+/**
+ * The running CLI's release version when it is known: compiled into a release
+ * build, or recorded in `release-tag.txt` next to the executable. A source
+ * build with no recorded tag has none, since its package version is a
+ * placeholder rather than a release.
+ */
+export const resolveRecordedRunningCliVersion = (
+  execPath: string,
+  isReleaseBuild = IS_RELEASE_BUILD
+): Effect.Effect<Option.Option<string>, never, FileSystem.FileSystem | Path.Path> =>
+  isReleaseBuild
+    ? Effect.succeed(Option.some(normalizeCliReleaseVersion(APP_VERSION)))
+    : Effect.map(readInstalledReleaseTag(execPath), releaseTag =>
+        Option.map(Option.fromNullishOr(releaseTag), normalizeCliReleaseVersion)
+      );
 
 export const resolveRunningCliReleaseTag = (
   execPath: string,
@@ -544,10 +690,20 @@ export const repairMissingInstalledRunCompanionModules = ({
         });
 
         const installDirectory = path.dirname(execPath);
-        const companionRelativePaths =
-          yield* collectExpectedRunCompanionAssetRelativePaths(packageDirectory);
+        const archiveCompanions = yield* resolveArchiveCompanions(packageDirectory).pipe(
+          Effect.mapError(
+            error =>
+              new RunCompanionRepairError({
+                message: `Release ${release.tag_name} has a broken ${RELEASE_MANIFEST_FILENAME} (${error.message}); cannot restore the CLI's bundled support files. Reinstall the CLI and try again.`,
+                cause: error,
+              })
+          )
+        );
+        const restoredRelativePaths = ArchiveCompanions.$is('Manifest')(archiveCompanions)
+          ? [...archiveCompanions.relativePaths, RELEASE_MANIFEST_FILENAME]
+          : archiveCompanions.relativePaths;
 
-        for (const relativePath of companionRelativePaths) {
+        for (const relativePath of restoredRelativePaths) {
           const sourcePath = path.join(packageDirectory, relativePath);
           const sourceExists = yield* fileExists(fs, sourcePath);
           if (!sourceExists) {

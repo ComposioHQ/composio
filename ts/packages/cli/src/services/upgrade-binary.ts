@@ -19,6 +19,7 @@ import { APP_VERSION } from '../constants';
 import { DEBUG_CONFIG, GITHUB_CONFIG, type GitHubConfig } from 'src/config';
 import { detectPlatform, type PlatformArch } from 'src/effects/detect-platform';
 import { CompareSemverError, semverComparator } from 'src/effects/compare-semver';
+import { ExpectedFailure } from 'src/effects/expected-failure';
 import { fetchLatestCliRelease, GitHubRelease } from 'src/effects/resolve-cli-release';
 import { parseChecksumsText, sha256Hex } from 'src/utils/checksums';
 import { atomicReplaceFile, type AtomicReplaceError } from 'src/utils/atomic-replace';
@@ -30,16 +31,38 @@ import { TerminalUI } from './terminal-ui';
 import { NodeOs } from './node-os';
 import { recordLatestStableRelease } from './update-check';
 import {
-  collectExpectedRunCompanionAssetRelativePaths,
+  ArchiveCompanions,
+  RELEASE_MANIFEST_FILENAME,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
+  resolveArchiveCompanions,
+  resolveRecordedRunningCliVersion,
   resolveRunningCliReleaseTag,
   writeInstalledReleaseTag,
+  type ReleaseManifest,
 } from './run-companion-modules';
 
 export class UpgradeBinaryError extends Data.TaggedError('services/UpgradeBinaryError')<{
   readonly cause?: unknown;
   readonly message?: string;
 }> {}
+
+/** The release refuses an upgrade from the running version; only a fresh install reaches it. */
+export class UpgradeBelowMinimumError extends Data.TaggedError(
+  'services/UpgradeBelowMinimumError'
+)<{
+  readonly message: string;
+  readonly currentVersion: string;
+  readonly minimumUpgradeFrom: string;
+}> {
+  get [ExpectedFailure]() {
+    return true;
+  }
+}
+
+const reinstallCommand = (platform: NodeJS.Platform) =>
+  platform === 'win32'
+    ? 'irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex'
+    : 'curl -fsSL https://composio.dev/install | sh';
 
 /**
  * CLI binary name constant
@@ -514,47 +537,89 @@ const mapAtomicReplaceError = (message: string) => (error: AtomicReplaceError) =
     message: `${message}: ${error.message}`,
   });
 
+/**
+ * Refuses an archive whose manifest sets a minimum version above the running
+ * one. A running version that is unknown (a source build) is not checked.
+ */
+const ensureUpgradeAllowedFrom = (
+  manifest: ReleaseManifest,
+  currentVersion: Option.Option<string>,
+  platform: NodeJS.Platform
+): Effect.Effect<void, UpgradeBelowMinimumError | UpgradeBinaryError> =>
+  Option.match(currentVersion, {
+    onNone: () =>
+      Effect.logDebug(
+        `Running version unknown; not checking the archive's minimum of ${manifest.minimumUpgradeFrom}`
+      ),
+    onSome: current =>
+      semverComparator(current, manifest.minimumUpgradeFrom).pipe(
+        Effect.mapError(
+          cause =>
+            new UpgradeBinaryError({
+              cause,
+              message: `Cannot compare the running version ${current} with the release's minimum ${manifest.minimumUpgradeFrom}`,
+            })
+        ),
+        Effect.flatMap(comparison =>
+          comparison < 0
+            ? Effect.fail(
+                new UpgradeBelowMinimumError({
+                  currentVersion: current,
+                  minimumUpgradeFrom: manifest.minimumUpgradeFrom,
+                  message: [
+                    `This release can only be installed over Composio CLI ${manifest.minimumUpgradeFrom} or newer, and this CLI is ${current}.`,
+                    'Reinstall the CLI to get it:',
+                    `  ${reinstallCommand(platform)}`,
+                  ].join('\n'),
+                })
+              )
+            : Effect.void
+        )
+      ),
+  });
+
 const replaceBinary = (
   ctx: Pick<UpgradeBinaryContext, 'fs' | 'path' | 'platform'>,
   sourcePath: string,
   targetPath: string,
   options: {
     releaseTag?: string;
-  } = {}
-): Effect.Effect<void, UpgradeBinaryError, Scope.Scope> =>
+    currentVersion: Option.Option<string>;
+  }
+): Effect.Effect<void, UpgradeBinaryError | UpgradeBelowMinimumError, Scope.Scope> =>
   Effect.gen(function* () {
     const { fs, path } = ctx;
     yield* Effect.logDebug(`Replacing binary: ${sourcePath} -> ${targetPath}`);
 
-    if (ctx.platform === 'win32') {
-      // Windows keeps the previous executable locked until its process has fully exited,
-      // which can be a moment after an upgrade that just ran returns.
-      yield* fs.remove(`${targetPath}.old`, { force: true }).pipe(
-        Effect.retry({ times: 10, schedule: Schedule.spaced('200 millis') }),
-        Effect.mapError(
-          cause =>
-            new UpgradeBinaryError({
-              cause,
-              message:
-                'Could not remove the previous executable backup. Close other Composio processes and retry.',
-            })
-        )
+    const sourceDirectory = path.dirname(sourcePath);
+    const targetDirectory = path.dirname(targetPath);
+    const archiveCompanions = yield* provideFsAndPath(
+      ctx,
+      resolveArchiveCompanions(sourceDirectory)
+    ).pipe(
+      Effect.mapError(
+        error =>
+          new UpgradeBinaryError({
+            cause: error.cause,
+            message: `Downloaded binary package is invalid: ${error.message}. Reinstall the CLI: ${reinstallCommand(ctx.platform)}`,
+          })
+      )
+    );
+    if (ArchiveCompanions.$is('Manifest')(archiveCompanions)) {
+      yield* ensureUpgradeAllowedFrom(
+        archiveCompanions.manifest,
+        options.currentVersion,
+        ctx.platform
       );
     }
 
-    const sourceDirectory = path.dirname(sourcePath);
-    const targetDirectory = path.dirname(targetPath);
-    const companionRelativePaths = yield* provideFsAndPath(
-      ctx,
-      collectExpectedRunCompanionAssetRelativePaths(sourceDirectory)
-    );
     const companionReplacements: Array<{
       readonly relativePath: string;
       readonly sourcePath: string;
       readonly targetPath: string;
     }> = [];
 
-    for (const relativePath of companionRelativePaths) {
+    for (const relativePath of archiveCompanions.relativePaths) {
       const sourceCompanion = path.join(sourceDirectory, relativePath);
       const sourceExists = yield* fs
         .exists(sourceCompanion)
@@ -574,6 +639,22 @@ const replaceBinary = (
         sourcePath: sourceCompanion,
         targetPath: path.join(targetDirectory, relativePath),
       });
+    }
+
+    if (ctx.platform === 'win32') {
+      // Windows keeps the previous executable locked until its process has fully exited,
+      // which can be a moment after an upgrade that just ran returns.
+      yield* fs.remove(`${targetPath}.old`, { force: true }).pipe(
+        Effect.retry({ times: 10, schedule: Schedule.spaced('200 millis') }),
+        Effect.mapError(
+          cause =>
+            new UpgradeBinaryError({
+              cause,
+              message:
+                'Could not remove the previous executable backup. Close other Composio processes and retry.',
+            })
+        )
+      );
     }
 
     const releaseTag = options.releaseTag;
@@ -615,6 +696,29 @@ const replaceBinary = (
         )
       );
     }
+
+    // The manifest goes in with the release it describes; an archive without one
+    // takes away the previous release's, which would describe other files.
+    const installedManifestPath = path.join(targetDirectory, RELEASE_MANIFEST_FILENAME);
+    yield* ArchiveCompanions.$is('Manifest')(archiveCompanions)
+      ? provideFsAndPath(
+          ctx,
+          atomicReplaceFile({
+            sourcePath: path.join(sourceDirectory, RELEASE_MANIFEST_FILENAME),
+            targetPath: installedManifestPath,
+          })
+        ).pipe(
+          Effect.mapError(mapAtomicReplaceError('Failed to update installed release manifest'))
+        )
+      : fs.remove(installedManifestPath, { force: true }).pipe(
+          Effect.mapError(
+            cause =>
+              new UpgradeBinaryError({
+                cause,
+                message: `Failed to remove the previous release manifest: ${installedManifestPath}`,
+              })
+          )
+        );
 
     if (releaseTag) {
       yield* provideFsAndPath(
@@ -663,6 +767,10 @@ const upgrade = (
     const prerelease = options.prerelease ?? false;
     const explicitTag = options.tag;
     const currentReleaseIdentifier = yield* resolveCurrentReleaseIdentifier(ctx, currentPath);
+    const currentVersion = yield* provideFsAndPath(
+      ctx,
+      resolveRecordedRunningCliVersion(currentPath)
+    );
     yield* Effect.logDebug(`Current executable path: ${currentPath}`);
     yield* Effect.logDebug(`Current release identifier: ${currentReleaseIdentifier}`);
 
@@ -673,6 +781,7 @@ const upgrade = (
       yield* ui.log.info(`New local version available (current: ${currentReleaseIdentifier})`);
       yield* replaceBinary(ctx, upgradeTarget, currentPath, {
         releaseTag: explicitTag,
+        currentVersion,
       });
       yield* ui.outro('Upgrade completed');
       return undefined;
@@ -735,6 +844,7 @@ const upgrade = (
         const extractedBinary = yield* extractBinary(ctx, { name, data }, tmpDir);
         yield* replaceBinary(ctx, extractedBinary.binaryPath, currentPath, {
           releaseTag: release.tag_name,
+          currentVersion,
         });
 
         yield* spinner.stop('Upgrade completed!');
