@@ -51,7 +51,7 @@ toolkit, OpenAPI, API index, or meta-tool generation.
 - Every docs call to the Composio API goes through `@composio/client` (v3.1),
   built in `lib/composio-api.ts`. The toolkit page, `/llms.mdx` and
   `/api/tools/[slug]` use `Composio.fromEnv`, so `COMPOSIO_BASE_URL` selects
-  the API host; the generators, `/api/toolkits/instant` and the snapshot-miss
+  the API host; the toolkit generator, `/api/toolkits/instant` and the snapshot-miss
   lookup always call production. Lists use its
   helpers, which page with `@composio/client/pagination`: toolkit pages and
   `/llms.mdx/toolkits/<slug>` at `TOOL_PAGE_SIZE`, `/api/toolkits/instant` at

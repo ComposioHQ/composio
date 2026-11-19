@@ -82,7 +82,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm-bun
 
       # Docs must reflect PRODUCTION. No base-URL override is set here: the
-      # generators default to the production API (docs/scripts/production-api.mjs).
+      # Toolkit and OpenAPI generators default to production (docs/scripts/production-api.mjs).
       # Previously this step pointed the fetch at STAGING, which published staging
       # hosts (and unreleased content) into the committed docs.
       # NOTE: requires COMPOSIO_DOCS_API_KEY to have PRODUCTION read access.
@@ -108,6 +108,8 @@ jobs:
         run: bun run generate:api-index
 
       - name: Generate meta tools reference
+        env:
+          COMPOSIO_META_TOOLS_SCHEMA_URL: ${{ vars.COMPOSIO_META_TOOLS_SCHEMA_URL }}
         run: bun run generate:meta-tools
 
       # The published KB makes claims about tool slugs, toolkits, and provider docs.
@@ -158,7 +160,7 @@ jobs:
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
             - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`, `docs/public/openapi-webhooks.json`) — latest v3.1 and v3.0 API specifications plus the webhook-events spec, fetched from production
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
-            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
+            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — generated from the bundled schema snapshot or the configured Platform export
           branch: docs/auto-update-data
           base: next
           add-paths: |

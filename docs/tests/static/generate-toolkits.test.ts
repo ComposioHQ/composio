@@ -25,7 +25,6 @@ import {
 import {
   generateIndexMdx,
   generateToolMdx,
-  transformTool,
 } from "../../scripts/generate-meta-tools";
 
 describe("transformToolkit", () => {
@@ -295,73 +294,23 @@ describe("authConfigFields", () => {
   });
 });
 
-// generate-meta-tools.ts's transformTool is a cheap, pure sibling transform
-// built on the same lenient zod parsing; a couple of cases here mirror the
-// coverage above without pulling in createSession/fetchMetaTools (network).
-describe("transformTool (generate-meta-tools.ts)", () => {
-  test("maps a representative full meta tool object end to end", () => {
-    const tool = transformTool({
-      slug: "COMPOSIO_SEARCH_TOOLS",
-      name: "composio_search_tools",
-      description: "Searches for tools",
-      tags: ["discovery", "search", 42],
-      toolkit: "meta",
-      input_parameters: { type: "object" },
-      output_parameters: { type: "object" },
-    });
-
-    expect(tool.slug).toBe("COMPOSIO_SEARCH_TOOLS");
-    expect(tool.name).toBe("composio_search_tools");
-    expect(tool.displayName).toBe("Composio Search Tools");
-    expect(tool.description).toBe("Searches for tools");
-    expect(tool.tags).toEqual(["discovery", "search"]);
-    expect(tool.toolkit).toBe("meta");
-    expect(tool.inputParameters).toEqual({ type: "object" });
-    expect(tool.responseSchema).toEqual({ type: "object" });
-  });
-
-  test("toolkit falls back to null when absent or non-string", () => {
-    expect(transformTool({ slug: "x", name: "x" }).toolkit).toBeNull();
-    expect(transformTool({ slug: "x", name: "x", toolkit: "" }).toolkit).toBeNull();
-    expect(transformTool({ slug: "x", name: "x", toolkit: 7 }).toolkit).toBeNull();
-  });
-
-  test("displayName falls back to the slug when name is empty", () => {
-    const tool = transformTool({ slug: "COMPOSIO_X", name: "" });
-    expect(tool.displayName).toBe("COMPOSIO_X");
-  });
-
-  test("malformed/empty input objects do not throw", () => {
-    expect(() => transformTool({})).not.toThrow();
-    expect(() => transformTool(null)).not.toThrow();
-    expect(() => transformTool(undefined)).not.toThrow();
-
-    const tool = transformTool({});
-    expect(tool.slug).toBe("");
-    expect(tool.name).toBe("");
-    expect(tool.displayName).toBe("");
-    expect(tool.tags).toEqual([]);
-    expect(tool.toolkit).toBeNull();
-    expect(tool.inputParameters).toEqual({});
-    expect(tool.responseSchema).toEqual({});
-  });
-
+describe("generated meta-tool MDX", () => {
   test("encodes table delimiters in generated index descriptions", () => {
-    const tool = transformTool({
+    const tool = {
       slug: "COMPOSIO_X",
-      name: "composio_x",
+      displayName: "Composio X",
       description: String.raw`Compare \| and | values`,
-    });
+    };
 
     expect(generateIndexMdx([tool])).toContain(String.raw`Compare \&#124; and &#124; values`);
   });
 
   test("serializes generated frontmatter descriptions as YAML strings", () => {
-    const tool = transformTool({
+    const tool = {
       slug: "COMPOSIO_X",
-      name: "composio_x",
+      displayName: "Composio X",
       description: 'Use "quotes" at C:\\tools',
-    });
+    };
 
     expect(generateToolMdx(tool)).toContain('description: "Use \\"quotes\\" at C:\\\\tools"');
   });

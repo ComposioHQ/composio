@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -9,44 +9,77 @@ import { MetaToolDetail } from '../../components/meta-tools/meta-tool-detail';
 import { getMetaToolBySlug } from '../../lib/meta-tools-data';
 
 describe('proxy execute meta-tool reference', () => {
-  test('generation discovers opt-in tools and preserves unrestricted JSON', async () => {
+  const exportUrl = 'https://backend.composio.dev/meta-tools.json';
+  const tool = {
+    slug: 'COMPOSIO_PROXY_EXECUTE',
+    name: 'proxy_execute',
+    displayName: 'Proxy Execute',
+    description: 'Read from the snapshot',
+    tags: [],
+    toolkit: null,
+    inputParameters: { type: 'object', properties: { body: { description: 'Any JSON' } } },
+    responseSchema: { type: 'object', properties: {} },
+  };
+
+  test.each([
+    ['checked-in snapshot', ''],
+    ['read-only export', exportUrl],
+    ['invalid export', `${exportUrl}?empty`],
+  ])('generation handles the %s', async (_name, source) => {
     const directory = await mkdtemp(join(tmpdir(), 'composio-meta-tools-'));
     const transport = join(directory, 'transport.ts');
-    await writeFile(transport, `
-      let enabled = false;
-      globalThis.fetch = async (_url, options) => {
-        if (options?.method === 'POST') {
-          enabled = JSON.parse(options.body).proxy_execute?.enable === true;
-          return Response.json({ session_id: 'test-session', tool_router_tools: [] });
-        }
-        // v3.1 pages session tools in an { items, next_cursor } envelope.
-        return Response.json({ items: enabled ? [{
-          slug: 'COMPOSIO_PROXY_EXECUTE', name: 'proxy_execute',
-          input_parameters: { type: 'object', properties: { body: { description: 'Any JSON' } } },
-          output_parameters: { type: 'object', properties: {} },
-        }] : [], next_cursor: null });
-      };
-    `);
+    const snapshotPath = join(directory, 'public/data/meta-tools.json');
+    const snapshot = JSON.stringify([tool]);
+    const exportedTool = { ...tool, description: 'Read from the export' };
+    const invalidExport = source.endsWith('?empty');
 
     try {
+      await mkdir(join(directory, 'public/data'), { recursive: true });
+      await writeFile(snapshotPath, snapshot);
+      await writeFile(transport, `
+        globalThis.fetch = async (input, init) => {
+          const request = new Request(input, init);
+          const source = process.env.COMPOSIO_META_TOOLS_SCHEMA_URL;
+          if (!source || request.url !== source || request.method !== 'GET' ||
+              request.headers.has('x-api-key') || request.headers.has('authorization')) {
+            throw new Error('Unexpected request from the meta-tool generator');
+          }
+          return Response.json(${JSON.stringify(invalidExport ? [] : [exportedTool])});
+        };
+      `);
       const child = Bun.spawn([
         process.execPath, '--preload', transport, resolve('scripts/generate-meta-tools.ts'),
       ], {
         cwd: directory,
-        env: { ...process.env, COMPOSIO_API_KEY: 'test-key', COMPOSIO_API_BASE: '' },
+        env: {
+          ...process.env,
+          COMPOSIO_API_KEY: source ? 'test-key' : '',
+          COMPOSIO_META_TOOLS_SCHEMA_URL: source,
+        },
         stdout: 'pipe',
         stderr: 'pipe',
       });
       const [exitCode, stdout, stderr] = await Promise.all([
         child.exited, new Response(child.stdout).text(), new Response(child.stderr).text(),
       ]);
+      if (invalidExport) {
+        expect(exitCode).toBe(1);
+        expect(stderr).toContain('ZodError');
+        expect(await readFile(snapshotPath, 'utf8')).toBe(snapshot);
+        return;
+      }
+
       expect(exitCode, `${stdout}\n${stderr}`).toBe(0);
       expect(await readFile(join(directory, 'content/toolkits/meta-tools/index.mdx'), 'utf8'))
         .toContain('/toolkits/meta-tools/proxy_execute');
       expect(await readFile(join(directory, 'content/toolkits/meta-tools/proxy_execute.mdx'), 'utf8'))
         .toContain('<MetaToolDetailServer slug="COMPOSIO_PROXY_EXECUTE" />');
-      const tools = await Bun.file(join(directory, 'public/data/meta-tools.json')).json();
-      expect(tools[0].inputParameters.properties.body).toEqual({ description: 'Any JSON' });
+      const saved = await readFile(snapshotPath, 'utf8');
+      if (source) {
+        expect(JSON.parse(saved)).toEqual([exportedTool]);
+      } else {
+        expect(saved).toBe(snapshot);
+      }
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
