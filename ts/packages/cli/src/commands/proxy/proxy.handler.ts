@@ -1,6 +1,6 @@
 import { Effect, Result, Option } from 'effect';
 import type { SessionProxyExecuteParams } from '@composio/client/resources/tool-router/session';
-import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
+import { resolveExplicitTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { gateToolExecution } from 'src/services/tool-permissions';
 import {
@@ -71,8 +71,6 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
   }
   return { name, value: headerValue };
 };
-
-const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
 
 export const parseProxyBody = (raw: string): unknown =>
   Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
@@ -195,7 +193,9 @@ export const runProxy = (params: ProxyParams) =>
         };
       }
     );
-    const rawBody = yield* resolveBodyInput(data);
+    // Only `-d -` reads stdin: a proxied GET has no body, and reading a pipe the caller left open
+    // would hang the request before it is sent.
+    const rawBody = yield* resolveExplicitTextInput(data);
     const parsedBody = rawBody === undefined ? undefined : parseProxyBody(rawBody);
 
     const result = yield* ui.withSpinner(

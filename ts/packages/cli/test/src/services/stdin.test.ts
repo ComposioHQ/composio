@@ -54,6 +54,17 @@ describe('readStdinToEnd', () => {
     expect(await settledValue(read)).toBe('{"owner":"composio"}');
   });
 
+  it('[Given] the first byte arrives after the silence timeout [Then] resolves undefined and leaves the data unread', async () => {
+    const input = new PassThrough();
+    const read = readStdinToEnd(input, SILENCE_TIMEOUT_MS);
+
+    await vi.advanceTimersByTimeAsync(SILENCE_TIMEOUT_MS);
+    input.end('{"owner":"x"}');
+
+    expect(await settledValue(read)).toBeUndefined();
+    expect(input.read()?.toString()).toBe('{"owner":"x"}');
+  });
+
   it('[Given] no silence timeout [Then] waits for the end of input however late it arrives', async () => {
     const input = new PassThrough();
     const read = readStdinToEnd(input);

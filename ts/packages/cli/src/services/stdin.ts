@@ -85,19 +85,23 @@ export const readStdinToEnd = (
 
 const toStdinError = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
 
-export const StdinLive = Layer.succeed(
-  Stdin,
+/** A `Stdin` that reads `input`: `process.stdin` in `StdinLive`, a `PassThrough` in tests. */
+export const makeStreamStdin = (input: NodeJS.ReadableStream, isTTY: () => boolean): Stdin =>
   Stdin.of({
-    isTTY: () => !!process.stdin.isTTY,
+    isTTY,
     readAll: () =>
       Effect.tryPromise({
-        try: () => readStdinToEnd(process.stdin).then(text => text ?? ''),
+        try: () => readStdinToEnd(input).then(text => text ?? ''),
         catch: toStdinError,
       }),
     readAllUnlessSilent: silenceTimeout =>
       Effect.tryPromise({
-        try: () => readStdinToEnd(process.stdin, Duration.toMillis(silenceTimeout)),
+        try: () => readStdinToEnd(input, Duration.toMillis(silenceTimeout)),
         catch: toStdinError,
       }).pipe(Effect.map(Option.fromUndefinedOr)),
-  })
+  });
+
+export const StdinLive = Layer.succeed(
+  Stdin,
+  makeStreamStdin(process.stdin, () => !!process.stdin.isTTY)
 );

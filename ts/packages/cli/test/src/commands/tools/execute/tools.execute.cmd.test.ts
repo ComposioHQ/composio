@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { PassThrough } from 'node:stream';
 import { describe, expect, it, layer } from '@effect/vitest';
 import { vi, beforeEach, afterEach } from 'vitest';
 import { Config, ConfigProvider, DateTime, Effect, Exit, Option, Schema } from 'effect';
@@ -2870,26 +2871,51 @@ describe('CLI: composio execute', () => {
     );
   });
 
-  layer(
-    TestLive({
-      baseConfigProvider: testConfigProvider,
-      fixture: 'global-test-user-id',
-      stdin: { isTTY: false, data: '', silent: true },
-    })
-  )('[Given] stdin is a pipe that never sends anything [Then] runs without stdin input', it => {
-    it.effect('executes with empty arguments instead of waiting for stdin', () =>
-      Effect.gen(function* () {
-        yield* cli(['execute', 'GITHUB_GET_REPOS']);
-        const lines = yield* MockConsole.getLines({ stripAnsi: true });
-        const output = parseLastJson(lines);
+  describe('[Given] no -d and a stdin pipe that sends nothing within 1 second', () => {
+    const silentPipe = new PassThrough();
+    const slowPipe = new PassThrough();
+    const executedToolSlugs: string[] = [];
+    const recordExecutions = { onExecute: (slug: string) => void executedToolSlugs.push(slug) };
 
-        expect(output.successful).toBe(true);
-        expect(output.data.arguments).toEqual({});
-        expect(lines.join('\n')).toContain(
-          'Ignored stdin: nothing arrived on it within 1 second. Pass -d - to wait for input on stdin.'
-        );
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: false, data: '', stream: silentPipe },
+        toolsExecutor: recordExecutions,
       })
-    );
+    )('[When] the pipe stays open and silent', it => {
+      it.effect('[Then] fails without running the tool', () =>
+        Effect.gen(function* () {
+          const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(Effect.flip);
+
+          expectInvalidValueMessage(failure, 'No input arrived on stdin within 1 second.');
+          expect(executedToolSlugs).toEqual([]);
+        })
+      );
+    });
+
+    layer(
+      TestLive({
+        baseConfigProvider: testConfigProvider,
+        fixture: 'global-test-user-id',
+        stdin: { isTTY: false, data: '', stream: slowPipe },
+        toolsExecutor: recordExecutions,
+      })
+    )('[When] the JSON arrives after the timeout', it => {
+      it.effect('[Then] fails instead of running the tool with empty arguments', () =>
+        Effect.gen(function* () {
+          const lateWrite = setTimeout(() => slowPipe.end('{"owner":"x"}'), 1500);
+          const failure = yield* cli(['execute', 'GITHUB_GET_REPOS']).pipe(
+            Effect.flip,
+            Effect.ensuring(Effect.sync(() => clearTimeout(lateWrite)))
+          );
+
+          expectInvalidValueMessage(failure, 'No input arrived on stdin within 1 second.');
+          expect(executedToolSlugs).toEqual([]);
+        })
+      );
+    });
   });
 
   layer(

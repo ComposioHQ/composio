@@ -1,4 +1,5 @@
 import { Effect, Option, Result } from 'effect';
+import { PipedStdinSilentError } from 'src/effects/read-stdin';
 import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
 import {
   findFileUploadablePaths,
@@ -12,7 +13,20 @@ export const resolveInput = (input: Option.Option<string>) =>
   resolveOptionalTextInput(input, {
     // Default to empty object when no data provided (e.g. tools with no required args)
     missingValue: '{}',
-  });
+  }).pipe(
+    // Running the tool with `{}` could act without the arguments still on their way. A refinement,
+    // not `catchTag`: the stdin reader's plain `Error` absorbs this subclass in the error union.
+    Effect.catchIf(
+      (error): error is PipedStdinSilentError => error instanceof PipedStdinSilentError,
+      () =>
+        Effect.fail(
+          invalidArguments(
+            "No input arrived on stdin within 1 second. Pass the arguments with -d '{...}', or -d - to wait for stdin.",
+            '--data'
+          )
+        )
+    )
+  );
 
 export const parseArguments = (raw: string) =>
   Effect.fromResult(

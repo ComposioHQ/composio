@@ -72,7 +72,7 @@ import type {
   SessionSearchParams,
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
-import { Stdin } from 'src/services/stdin';
+import { makeStreamStdin, Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import type { CommandRunnerShape } from 'src/services/command-runner';
@@ -185,8 +185,11 @@ export interface TestLiveInput {
   stdin?: {
     isTTY: boolean;
     data: string;
-    /** Simulates a pipe that never sends data or closes, like an agent harness can leave open. */
-    silent?: boolean;
+    /**
+     * Reads this stream with the real stdin reader instead of returning `data`: a `PassThrough`
+     * the test writes to (or leaves open, like an agent harness can) when timing matters.
+     */
+    stream?: NodeJS.ReadableStream;
   };
 
   /**
@@ -490,14 +493,13 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const StdinTest = Layer.succeed(
       Stdin,
-      Stdin.of({
-        isTTY: () => input?.stdin?.isTTY ?? true,
-        readAll: () => Effect.succeed(input?.stdin?.data ?? ''),
-        readAllUnlessSilent: () =>
-          Effect.succeed(
-            input?.stdin?.silent === true ? Option.none() : Option.some(input?.stdin?.data ?? '')
-          ),
-      })
+      input?.stdin?.stream === undefined
+        ? Stdin.of({
+            isTTY: () => input?.stdin?.isTTY ?? true,
+            readAll: () => Effect.succeed(input?.stdin?.data ?? ''),
+            readAllUnlessSilent: () => Effect.succeed(Option.some(input?.stdin?.data ?? '')),
+          })
+        : makeStreamStdin(input.stdin.stream, () => input.stdin?.isTTY ?? true)
     );
 
     // --- Tool Router mock (ComposioClientSingleton) ---
