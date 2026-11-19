@@ -155,8 +155,10 @@ until publication is approved. This does not mount anything at the existing
 `docs.composio.dev/mcp` redirect or add Cloudflare UI to docs.
 
 The source-backed sitemap implementation is already on `next` in commit
-`945771297`, but deployed filesystem reads silently lost its metadata. This
-change bundles the generated manifest into the server code. A 2026-11-19
+`945771297`, but Vercel's isolated docs root generated no dates without source
+history. The build script now fetches metadata for the exact deployed commit
+when the Git checkout is unavailable, and bundles the generated manifest into
+server code. An empty Vercel manifest fails the build. A 2026-11-19
 production curl found 2,503 URLs and zero dates. The local generator produced
 dates for 241 authored pages. Verify the preview's
 `/sitemap.xml` includes the quickstart's real source date. Generated toolkit,

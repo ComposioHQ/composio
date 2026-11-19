@@ -52,6 +52,9 @@ for (const pathname of ['/docs', '/examples', '/toolkits', '/toolkits/managed-au
 }
 
 const manifest = buildContentFreshness(root, [...pages.values()], explicitSources);
+if (process.env.VERCEL && Object.keys(manifest.pages).length === 0) {
+  throw new Error('No source freshness generated for Vercel; check the docs source paths and Git history.');
+}
 const output = join(root, '.generated/content-freshness.json');
 mkdirSync(dirname(output), { recursive: true });
 writeFileSync(output, `${JSON.stringify(manifest, null, 2)}\n`);
