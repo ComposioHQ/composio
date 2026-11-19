@@ -194,12 +194,13 @@ export const runProxy = (params: ProxyParams) =>
         };
       }
     );
-    // Only `-d -` reads stdin: a proxied GET has no body, and reading a pipe the caller left open
-    // would hang the request before it is sent.
+    // Only `-d -` reads stdin: reading a pipe the caller left open would hang the request before
+    // it is sent, and agents run with such pipes.
     const rawBody = yield* resolveExplicitTextInput(data);
     if (rawBody === undefined && normalizedMethod !== 'GET' && !(yield* Stdin).isTTY()) {
       // A body piped in without `-d` used to be sent; say why it no longer is, without reading
-      // stdin, which an agent harness may hold open.
+      // stdin, which an agent harness may hold open. A GET stays quiet: it is the bodiless read
+      // agents run with such a pipe, and a warning on every one would be noise.
       yield* warnOnStderr(
         'Sending the request without a body: composio proxy reads stdin only with -d -. Pass -d - to send piped input as the body.'
       );

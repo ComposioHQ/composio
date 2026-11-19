@@ -102,7 +102,7 @@ describe('CLI: composio proxy', () => {
         })
     );
 
-    // GET is the only method that cannot carry a body, so every other one warns.
+    // A bodiless GET is the read agents run with a held-open pipe, so only the other methods warn.
     it.live.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
       '[When] a %s is sent without -d [Then] it warns that piped input is not the body, without reading it',
       method =>
