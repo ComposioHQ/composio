@@ -31,6 +31,10 @@ repository root:
 - `results.json`: timestamps, endpoints, timings, observed baseline retrieval mode,
   and full responses for reviewing or repeating the run.
 
+Failed HTTP responses retain their body text in `raw`. Successful JSON responses
+retain the parsed body even if schema validation fails; invalid JSON retains the
+original text. Transport failures without a received body use `raw: null`.
+
 The runner reuses the existing KB ranking evaluator. A hit means at least one
 expected page appears in the first five unique pages. URL fragments, query
 strings, trailing slashes, and repeated Cloudflare chunks do not count as extra

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { parseArgs } from 'node:util';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { evaluateKbSearchRankings } from '../lib/knowledge/evaluation';
@@ -55,7 +55,7 @@ async function main() {
     output: { type: 'string', default: '../.artifacts/docs-search-eval' },
   } });
   const cloudflare = values.cloudflare ?? process.env.DOCS_AI_SEARCH_URL;
-  const cases = casesSchema.parse(await Bun.file(new URL('../evals/search-comparison/cases.json', import.meta.url)).json());
+  const cases = casesSchema.parse(JSON.parse(await readFile(new URL('../evals/search-comparison/cases.json', import.meta.url), 'utf8')));
   const providers = cloudflare ? ['current', 'cloudflare'] as const : ['current'] as const;
   const runs = [];
   let errors = 0;
@@ -66,6 +66,7 @@ async function main() {
         ? new URL(`/api/knowledge-search?q=${encodeURIComponent(row.query)}`, values['base-url'])
         : new URL(cloudflare!);
       const started = performance.now();
+      let raw: unknown = null;
       try {
         const response = await fetch(url, {
           signal: AbortSignal.timeout(45_000),
@@ -78,13 +79,15 @@ async function main() {
             }),
           } : {}),
         });
+        const body = await response.text();
+        raw = body;
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const raw: unknown = await response.json();
+        raw = JSON.parse(body);
         const hits = parseResults(provider, raw);
         rows.push({ id: row.id, ms: Math.round(performance.now() - started), hits, raw, error: null });
       } catch (error) {
         errors++;
-        rows.push({ id: row.id, ms: Math.round(performance.now() - started), hits: [], raw: null, error: String(error) });
+        rows.push({ id: row.id, ms: Math.round(performance.now() - started), hits: [], raw, error: String(error) });
       }
       console.error(`${provider}: ${row.id} (${rows.at(-1)!.error ?? 'ok'})`);
     }
@@ -130,8 +133,8 @@ async function main() {
     }
   }
   await mkdir(values.output!, { recursive: true });
-  await Bun.write(join(values.output!, 'results.json'), JSON.stringify(report, null, 2));
-  await Bun.write(join(values.output!, 'report.md'), lines.join('\n'));
+  await writeFile(join(values.output!, 'results.json'), JSON.stringify(report, null, 2));
+  await writeFile(join(values.output!, 'report.md'), lines.join('\n'));
   console.log(lines.slice(0, lines.indexOf('## ' + cases[0].id)).join('\n'));
   console.log(`Details: ${join(values.output!, 'report.md')}`);
   console.log(`Raw responses: ${join(values.output!, 'results.json')}`);
