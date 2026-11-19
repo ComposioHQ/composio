@@ -10,7 +10,8 @@ import {
 import { TerminalUI } from 'src/services/terminal-ui';
 import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { actingUser } from 'src/commands/surface';
+import { actingUser, warnOnStderr } from 'src/commands/surface';
+import { Stdin } from 'src/services/stdin';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -48,6 +49,9 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'DELETE',
   'PATCH',
 ];
+
+/** Methods whose request usually carries a body, so a missing `-d` is worth a warning. */
+const PROXY_METHODS_WITH_BODY: ReadonlyArray<ProxyMethod> = ['POST', 'PUT', 'PATCH'];
 
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
@@ -196,6 +200,17 @@ export const runProxy = (params: ProxyParams) =>
     // Only `-d -` reads stdin: a proxied GET has no body, and reading a pipe the caller left open
     // would hang the request before it is sent.
     const rawBody = yield* resolveExplicitTextInput(data);
+    if (
+      rawBody === undefined &&
+      PROXY_METHODS_WITH_BODY.includes(normalizedMethod) &&
+      !(yield* Stdin).isTTY()
+    ) {
+      // A body piped in without `-d` used to be sent; say why it no longer is, without reading
+      // stdin, which an agent harness may hold open.
+      yield* warnOnStderr(
+        'Sending the request without a body: composio proxy reads stdin only with -d -. Pass -d - to send piped input as the body.'
+      );
+    }
     const parsedBody = rawBody === undefined ? undefined : parseProxyBody(rawBody);
 
     const result = yield* ui.withSpinner(
