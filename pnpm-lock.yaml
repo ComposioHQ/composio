@@ -28,8 +28,8 @@ catalogs:
       specifier: ^5.20261110.1
       version: 5.20261110.1
     '@composio/client':
-      specifier: 2.1.35
-      version: 2.1.35
+      specifier: 2.1.36
+      version: 2.1.36
     '@copilotkit/aimock':
       specifier: 1.47.0
       version: 1.47.0
@@ -295,7 +295,7 @@ importers:
     devDependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.35(effect@4.1.3)
+        version: 2.1.36(effect@4.1.3)
       '@e2e-tests/utils':
         specifier: workspace:*
         version: link:../../_utils
@@ -1114,7 +1114,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.35(effect@4.1.3)
+        version: 2.1.36(effect@4.1.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1362,7 +1362,7 @@ importers:
         version: link:../cli-keyring
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.35(effect@4.1.3)
+        version: 2.1.36(effect@4.1.3)
       '@composio/core':
         specifier: workspace:*
         version: link:../core
@@ -1468,7 +1468,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.35(effect@4.1.3)
+        version: 2.1.36(effect@4.1.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -1882,7 +1882,7 @@ importers:
     dependencies:
       '@composio/client':
         specifier: 'catalog:'
-        version: 2.1.35(effect@4.1.3)
+        version: 2.1.36(effect@4.1.3)
       '@composio/json-schema-to-zod':
         specifier: workspace:*
         version: link:../json-schema-to-zod
@@ -2483,8 +2483,8 @@ packages:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
 
-  '@composio/client@2.1.35':
-    resolution: {integrity: sha512-SYp7r8StoSxN8Vh5BcAJW7rSlKqyHw8jFqURdd4YVOhJJZnGVkeavnca/+O5UOq4oC+6wTxZSXSleAbiUxkiWw==}
+  '@composio/client@2.1.36':
+    resolution: {integrity: sha512-wb9Z5jUvgVWmAh95RI2pzvdOLj9EjsjBttbYGsS8uhsY2n2qLXe5paeCw77lqUu7gMjMx0hUQMgytBMky7FSWA==}
     engines: {node: '>=22'}
     peerDependencies:
       effect: '*'
@@ -7457,7 +7457,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@composio/client@2.1.35(effect@4.1.3)':
+  '@composio/client@2.1.36(effect@4.1.3)':
     optionalDependencies:
       effect: 4.1.3
 

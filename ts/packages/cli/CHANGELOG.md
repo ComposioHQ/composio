@@ -4,6 +4,8 @@
 
 ### Patch Changes
 
+- Update @composio/client to 2.1.36 to include the latest API changes.
+
 - Update @composio/client to 2.1.35 to include the latest API changes.
 
 - `composio listen --stream` shows control characters, including embedded tabs and line breaks,
