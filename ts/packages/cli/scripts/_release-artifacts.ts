@@ -68,14 +68,15 @@ export const archiveCompanionEntries = (
 
 /**
  * The earliest CLI version a manifest-aware client may upgrade from to an archive
- * built today. It starts at the oldest published release, so no client is refused.
+ * built today. It starts at the lowest semver version, so no build is refused,
+ * including prerelease builds such as the `0.0.0-beta.0` CI fixtures.
  *
  * Raise it when an archive drops a path that some client at or above it still
  * requires. Clients that predate manifests never read it, so it does not make
  * them accept a smaller archive: the legacy placeholders stay while it is at or
  * below 0.4.2, the last release that requires them.
  */
-export const MINIMUM_UPGRADE_FROM = '0.1.26';
+export const MINIMUM_UPGRADE_FROM = '0.0.0-0';
 
 /**
  * The `release-manifest.json` every archive carries: the live companions, never

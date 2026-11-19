@@ -170,4 +170,11 @@ describe('MINIMUM_UPGRADE_FROM', () => {
 
     expect(semver.gt(MINIMUM_UPGRADE_FROM, '0.4.2') || keepsPlaceholders).toBe(true);
   });
+
+  it.each(['0.0.0-beta.0', '0.1.26', '0.6.2'])(
+    'lets a %s client upgrade, since no release has dropped a required path yet',
+    version => {
+      expect(semver.gte(version, MINIMUM_UPGRADE_FROM)).toBe(true);
+    }
+  );
 });
