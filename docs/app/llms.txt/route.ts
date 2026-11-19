@@ -41,6 +41,9 @@ If unclear, distinguish application integration from connecting apps to the codi
 - [B2B agents](https://docs.composio.dev/docs/b2b-agents.md): Tenant/member connection ownership and authorization.
 - [Token custody](https://docs.composio.dev/docs/security/token-custody.md): Credential storage, redaction, VPC, self-hosting, and customer-managed keys.
 - [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
+- [Per-action permissions](https://docs.composio.dev/docs/governance/action-permissions.md): Restrict which tools a session can run.
+- [Approvals](https://docs.composio.dev/docs/governance/approvals.md): Ask the user before your agent runs the tools you choose.
+- [Firewall](https://docs.composio.dev/docs/firewall.md): Block tool calls and results you don't want your agent to act on.
 - [Configure sessions](https://docs.composio.dev/docs/configuring-sessions.md): Select toolkits, auth configs, and connected accounts for a user.
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose a framework provider.
 - [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
@@ -57,7 +60,6 @@ ${providerGuides}
 - [TypeScript session creation and reuse](https://docs.composio.dev/reference/sdk-reference/typescript/sessions.md): Look up the exact \`sessions.create()\` and \`sessions.use()\` signatures.
 - [TypeScript Session methods and results](https://docs.composio.dev/reference/sdk-reference/typescript/session.md): Look up \`tools()\`, \`search()\`, \`execute()\`, \`update()\`, and returned properties.
 - [Python Session methods and results](https://docs.composio.dev/reference/sdk-reference/python/session.md): Look up Python argument names, return types, and examples.
-- [Session configuration examples](https://docs.composio.dev/docs/configuring-sessions.md): Find language-specific create options and update behavior.
 
 Fetch these Markdown pages directly for exact call shapes; search-result summaries may omit code. Use the installed package's version-matched reference when it differs from the current website.
 

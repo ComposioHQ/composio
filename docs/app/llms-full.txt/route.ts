@@ -127,6 +127,7 @@ async function getTextForPages(pages: PageLike[]) {
         return await getLLMText(page, {
           includeFooter: false,
           includeGuardrails: false,
+          includeIndexPointer: false,
         });
       } catch {
         return `# ${page.data.title} (${page.url})\n\n${page.data.description || ''}`;
