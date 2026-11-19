@@ -102,14 +102,15 @@ describe('CLI: composio proxy', () => {
         })
     );
 
-    it.live(
-      '[When] a POST is sent without -d [Then] it warns that piped input is not the body, without reading it',
-      () =>
+    // GET is the only method that cannot carry a body, so every other one warns.
+    it.live.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
+      '[When] a %s is sent without -d [Then] it warns that piped input is not the body, without reading it',
+      method =>
         Effect.gen(function* () {
           const piped = new PassThrough();
           piped.write('{"meant":"as body"}');
 
-          const { body, output } = yield* proxyBodyOver(piped, ['-X', 'POST']);
+          const { body, output } = yield* proxyBodyOver(piped, ['-X', method]);
 
           expect(body).toBeUndefined();
           expect(piped.readableLength).toBeGreaterThan(0);

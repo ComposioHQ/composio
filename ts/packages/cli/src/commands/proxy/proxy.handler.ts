@@ -50,9 +50,6 @@ const SUPPORTED_PROXY_METHODS: ReadonlyArray<ProxyMethod> = [
   'PATCH',
 ];
 
-/** Methods whose request usually carries a body, so a missing `-d` is worth a warning. */
-const PROXY_METHODS_WITH_BODY: ReadonlyArray<ProxyMethod> = ['POST', 'PUT', 'PATCH'];
-
 export const normalizeProxyMethod = (value: string): ProxyMethod => {
   const normalized = value.trim().toUpperCase();
   const supported = SUPPORTED_PROXY_METHODS.find(method => method === normalized);
@@ -200,11 +197,7 @@ export const runProxy = (params: ProxyParams) =>
     // Only `-d -` reads stdin: a proxied GET has no body, and reading a pipe the caller left open
     // would hang the request before it is sent.
     const rawBody = yield* resolveExplicitTextInput(data);
-    if (
-      rawBody === undefined &&
-      PROXY_METHODS_WITH_BODY.includes(normalizedMethod) &&
-      !(yield* Stdin).isTTY()
-    ) {
+    if (rawBody === undefined && normalizedMethod !== 'GET' && !(yield* Stdin).isTTY()) {
       // A body piped in without `-d` used to be sent; say why it no longer is, without reading
       // stdin, which an agent harness may hold open.
       yield* warnOnStderr(
