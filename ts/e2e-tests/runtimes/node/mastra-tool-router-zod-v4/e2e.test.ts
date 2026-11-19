@@ -71,6 +71,12 @@ function searchRecord(payload: { toolCallId: string; isError?: boolean; result: 
   };
 }
 
+/** Text of an MCP tool result, or its JSON when the result is structured. */
+function toolResultText(result: unknown) {
+  const envelope = mcpTextResultSchema.safeParse(result).data;
+  return envelope ? envelope.content.map(part => part.text).join('') : JSON.stringify(result);
+}
+
 declare module 'bun' {
   interface Env {
     COMPOSIO_API_KEY: string;
@@ -125,57 +131,41 @@ e2e(import.meta.url, {
           try {
             const tools = await mcpClient.listTools();
             expect(Object.keys(tools).length).toBeGreaterThan(0);
-            const openai = createOpenAI({
-              apiKey: Bun.env.OPENAI_API_KEY,
-              fetch: (async (url: RequestInfo | URL, init?: RequestInit) => {
-                const response = await fetch(url, init);
-                const request = JSON.parse(String(init?.body ?? '{}'));
-                const body = await response
-                  .clone()
-                  .json()
-                  .catch(() => ({}));
-                console.error(
-                  'OpenAI exchange',
-                  JSON.stringify({
-                    id: body.id,
-                    requestId: response.headers.get('x-request-id'),
-                    model: request.model,
-                    finishReasons: body.choices?.map(
-                      (choice: { finish_reason: string }) => choice.finish_reason
-                    ),
-                    requestKeys: Object.keys(request),
-                    max_output_tokens: request.max_output_tokens,
-                    previous_response_id: request.previous_response_id,
-                    store: request.store,
-                    reasoning: request.reasoning,
-                    inputItems: request.input?.length,
-                    status: response.status,
-                    responseStatus: body.status,
-                    incomplete_details: body.incomplete_details,
-                    error: body.error,
-                    outputTypes: body.output?.map((item: { type: string }) => item.type),
-                    usage: body.usage,
-                  })
-                );
-                return response;
-              }) as typeof fetch,
-            });
+            const openai = createOpenAI({ apiKey: Bun.env.OPENAI_API_KEY });
 
             const hackernewsAgent = new Agent({
               id: 'test',
               name: 'test',
               instructions: `You're a helpful Hackernews agent, able to finding information about users.`,
-              model: openai('gpt-5.1'),
+              model: openai('gpt-5.5'),
               tools,
             });
 
             const result = await hackernewsAgent.generate(
-              'Look up user "pg", and tell me their karma score.',
+              'Look up the HackerNews user "pg" with HACKERNEWS_GET_USER, then return the exact karma value from that tool result.',
               { structuredOutput: { schema: KARMA_SCHEMA }, stopWhen: stepCountIs(10) }
             );
 
+            // The karma must come from a HACKERNEWS_GET_USER execution, not from the model's memory.
+            const lookupCallIds = new Set(
+              result.toolCalls
+                .filter(({ payload }) => payload.toolName === EXECUTE_TOOL)
+                .filter(({ payload }) =>
+                  executeArgsSchema
+                    .safeParse(payload.args)
+                    .data?.tools.some(
+                      ({ tool_slug, arguments: args }) =>
+                        tool_slug === 'HACKERNEWS_GET_USER' && args.username === 'pg'
+                    )
+                )
+                .map(({ payload }) => payload.toolCallId)
+            );
+            const lookupResults = result.toolResults
+              .filter(({ payload }) => lookupCallIds.has(payload.toolCallId))
+              .map(({ payload }) => toolResultText(payload.result));
+
             const parsed = KARMA_SCHEMA.safeParse(result.object);
-            if (!parsed.success) {
+            if (!parsed.success || lookupResults.length === 0) {
               const diagnostics = {
                 finishReason: result.finishReason,
                 toolCalls: result.toolCalls.map(({ payload }) => payload.toolName),
@@ -185,6 +175,7 @@ e2e(import.meta.url, {
                 executions: result.toolCalls
                   .filter(({ payload }) => payload.toolName === EXECUTE_TOOL)
                   .map(({ payload }) => executeArgsSchema.safeParse(payload.args).data?.tools),
+                lookupResults: lookupResults.map(text => text.slice(0, 500)),
                 steps: result.steps.map(step => ({
                   finishReason: step.finishReason,
                   usage: step.usage,
@@ -192,12 +183,13 @@ e2e(import.meta.url, {
                 })),
                 warnings: result.warnings,
               };
-              console.error('Tool Router search diagnostics', JSON.stringify(diagnostics, null, 2));
-              throw parsed.error;
+              console.error('Agent diagnostics', JSON.stringify(diagnostics, null, 2));
             }
 
             expect(result.error).toBeUndefined();
-            expect(parsed.data.karma).toBeGreaterThanOrEqual(0);
+            const { karma } = KARMA_SCHEMA.parse(result.object);
+            expect(karma).toBeGreaterThan(150_000);
+            expect(lookupResults.join('\n')).toContain(String(karma));
           } finally {
             await mcpClient.disconnect();
           }

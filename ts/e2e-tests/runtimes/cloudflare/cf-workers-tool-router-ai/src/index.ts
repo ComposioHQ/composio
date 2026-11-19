@@ -138,7 +138,7 @@ app.get('/test/agent', async c => {
   const openai = createOpenAI({ apiKey: c.env.OPENAI_API_KEY });
 
   const result = await generateText({
-    model: openai('gpt-5.1'),
+    model: openai('gpt-5.5'),
     prompt: `Look up the HackerNews user "pg" with HACKERNEWS_GET_USER, then return the exact karma value from that tool result.`,
     output: Output.object({
       schema: z.object({
@@ -149,22 +149,22 @@ app.get('/test/agent', async c => {
     tools,
   });
 
-  const responseBodySchema = z.object({ incomplete_details: z.unknown() });
-  console.error(
-    'Agent step diagnostics',
-    JSON.stringify(
-      result.steps.map(step => ({
-        finishReason: step.finishReason,
-        responseId: step.response.id,
-        modelId: step.response.modelId,
-        incompleteDetails: responseBodySchema.safeParse(step.response.body).data
-          ?.incomplete_details,
-        usage: step.usage,
-        toolCalls: step.toolCalls.map(({ toolName, input }) => ({ toolName, input })),
-        text: step.text,
-      }))
-    )
-  );
+  if (result.finishReason !== 'stop') {
+    const responseBodySchema = z.object({ incomplete_details: z.unknown() });
+    console.error(
+      'Agent step diagnostics',
+      JSON.stringify(
+        result.steps.map(step => ({
+          finishReason: step.finishReason,
+          responseId: step.response.id,
+          incompleteDetails: responseBodySchema.safeParse(step.response.body).data
+            ?.incomplete_details,
+          usage: step.usage,
+          toolCalls: step.toolCalls.map(({ toolName, input }) => ({ toolName, input })),
+        }))
+      )
+    );
+  }
 
   const toolCalls = result.steps.flatMap(step =>
     step.toolCalls.map(toolCall => ({ toolName: toolCall.toolName }))
