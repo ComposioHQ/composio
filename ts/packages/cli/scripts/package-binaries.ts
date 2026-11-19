@@ -22,12 +22,17 @@ import { teardown } from './_shared';
 import { $ } from 'bun';
 import { readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { collectExpectedRunCompanionAssetRelativePaths } from '../src/services/run-companion-modules';
+import {
+  collectExpectedRunCompanionAssetRelativePaths,
+  RELEASE_MANIFEST_FILENAME,
+} from '../src/services/run-companion-modules';
 import {
   archiveCompanionEntries,
   archiveExecutableName,
+  buildReleaseManifest,
   compiledBinaryFileName,
   RELEASE_TARGETS,
+  serializeReleaseManifest,
 } from './_release-artifacts';
 
 const BINARIES_DIR = './dist/binaries';
@@ -68,6 +73,9 @@ export function packageBinaries() {
 
     // See `archiveCompanionEntries` for why the legacy paths are present but empty.
     const companionEntries = archiveCompanionEntries(liveCompanionRelativePaths);
+    const releaseManifest = serializeReleaseManifest(
+      buildReleaseManifest(liveCompanionRelativePaths)
+    );
 
     for (const binary of binaries) {
       const binaryPath = path.join(BINARIES_DIR, compiledBinaryFileName(binary));
@@ -92,6 +100,7 @@ export function packageBinaries() {
           }
           await $`cp ${path.join(COMPANIONS_DIR, relativePath)} ${destinationPath}`.quiet();
         }
+        await writeFile(path.join(nestedDir, RELEASE_MANIFEST_FILENAME), releaseManifest, 'utf8');
         if (RELEASE_TAG) {
           await writeFile(path.join(nestedDir, 'release-tag.txt'), `${RELEASE_TAG}\n`, 'utf8');
         }

@@ -1,7 +1,16 @@
+import semver from 'semver';
 import { describe, expect, it } from 'vitest';
 
-import { RUN_COMPANION_MODULE_FILENAMES } from '../../../src/services/run-companion-modules';
-import { archiveCompanionEntries } from '../../../scripts/_release-artifacts';
+import {
+  RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS,
+  RUN_COMPANION_MODULE_FILENAMES,
+} from '../../../src/services/run-companion-modules';
+import {
+  archiveCompanionEntries,
+  buildReleaseManifest,
+  MINIMUM_UPGRADE_FROM,
+  serializeReleaseManifest,
+} from '../../../scripts/_release-artifacts';
 
 /**
  * Everything `collectExpectedRunCompanionAssetRelativePaths` yields for a fully
@@ -108,5 +117,57 @@ describe('upgrade from already-released clients', () => {
 
   it.each(cases)('a $range client finds every path it requires on $host', ({ required }) => {
     expect(entryPaths).toEqual(expect.arrayContaining([...required]));
+  });
+});
+
+describe('buildReleaseManifest', () => {
+  it('lists exactly the live companions under schema version 1', () => {
+    expect(buildReleaseManifest(LIVE_COMPANION_RELATIVE_PATHS)).toEqual({
+      schemaVersion: 1,
+      minimumUpgradeFrom: MINIMUM_UPGRADE_FROM,
+      companions: [
+        'generation-runtime.mjs',
+        'run-helpers-runtime.mjs',
+        'services/generation-runtime.mjs',
+        'services/run-helpers-runtime.mjs',
+      ],
+    });
+  });
+
+  it('serializes as two-space JSON with a trailing newline', () => {
+    expect(serializeReleaseManifest(buildReleaseManifest(['run-helpers-runtime.mjs']))).toBe(
+      [
+        '{',
+        '  "schemaVersion": 1,',
+        `  "minimumUpgradeFrom": "${MINIMUM_UPGRADE_FROM}",`,
+        '  "companions": [',
+        '    "run-helpers-runtime.mjs"',
+        '  ]',
+        '}',
+        '',
+      ].join('\n')
+    );
+  });
+
+  it('refuses a companion path the CLI would refuse to install', () => {
+    expect(() => buildReleaseManifest(['../run-helpers-runtime.mjs'])).toThrow();
+  });
+});
+
+/**
+ * Clients up to 0.4.2 never read the manifest and refuse an archive missing any
+ * placeholder, so the placeholders may only go once the declared minimum has
+ * left those clients behind.
+ */
+describe('MINIMUM_UPGRADE_FROM', () => {
+  it('keeps every legacy placeholder in the archive while clients up to 0.4.2 may upgrade', () => {
+    const entryPaths = archiveCompanionEntries(LIVE_COMPANION_RELATIVE_PATHS).map(
+      entry => entry.relativePath
+    );
+    const keepsPlaceholders = RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS.every(relativePath =>
+      entryPaths.includes(relativePath)
+    );
+
+    expect(semver.gt(MINIMUM_UPGRADE_FROM, '0.4.2') || keepsPlaceholders).toBe(true);
   });
 });

@@ -5,7 +5,12 @@
  * under Node.
  */
 
-import { RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS } from '../src/services/run-companion-modules';
+import { Schema } from 'effect';
+import {
+  RELEASE_MANIFEST_SCHEMA_VERSION,
+  ReleaseManifest,
+  RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS,
+} from '../src/services/run-companion-modules';
 
 /**
  * Every published platform: the Bun cross-compilation target and the artifact it produces.
@@ -60,3 +65,29 @@ export const archiveCompanionEntries = (
     kind: 'placeholder' as const,
   })),
 ];
+
+/**
+ * The earliest CLI version a manifest-aware client may upgrade from to an archive
+ * built today. It starts at the oldest published release, so no client is refused.
+ *
+ * Raise it when an archive drops a path that some client at or above it still
+ * requires. Clients that predate manifests never read it, so it does not make
+ * them accept a smaller archive: the legacy placeholders stay while it is at or
+ * below 0.4.2, the last release that requires them.
+ */
+export const MINIMUM_UPGRADE_FROM = '0.1.26';
+
+/**
+ * The `release-manifest.json` every archive carries: the live companions, never
+ * the legacy placeholders, which no current client needs. Decoded on the way out
+ * so packaging cannot write a manifest the CLI would refuse.
+ */
+export const buildReleaseManifest = (liveRelativePaths: ReadonlyArray<string>): ReleaseManifest =>
+  Schema.decodeUnknownSync(ReleaseManifest)({
+    schemaVersion: RELEASE_MANIFEST_SCHEMA_VERSION,
+    minimumUpgradeFrom: MINIMUM_UPGRADE_FROM,
+    companions: [...liveRelativePaths].sort(),
+  });
+
+export const serializeReleaseManifest = (manifest: ReleaseManifest): string =>
+  `${JSON.stringify(manifest, null, 2)}\n`;
