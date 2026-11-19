@@ -1,4 +1,4 @@
-import { afterEach, expect, mock, test } from 'bun:test';
+import { afterEach, expect, mock, spyOn, test } from 'bun:test';
 import { getToolkitBySlug } from '../../lib/toolkit-data';
 import { fetchDetailedTools } from '../../lib/toolkit-tools';
 
@@ -6,9 +6,30 @@ const originalFetch = globalThis.fetch;
 const originalKey = process.env.COMPOSIO_API_KEY;
 
 afterEach(() => {
+  mock.restore();
   globalThis.fetch = originalFetch;
   if (originalKey === undefined) delete process.env.COMPOSIO_API_KEY;
   else process.env.COMPOSIO_API_KEY = originalKey;
+});
+
+test('warns with the toolkit and reason when detail fetching fails', async () => {
+  const tableau = (await getToolkitBySlug('tableau'))!;
+  process.env.COMPOSIO_API_KEY = 'test-key';
+  const warn = spyOn(console, 'warn').mockImplementation(() => {});
+  const failures = [
+    { fetch: async () => new Response(null, { status: 429 }), reason: '429' },
+    { fetch: async () => Response.json({ error: 'invalid list' }), reason: 'Invalid tool response' },
+    { fetch: async () => { throw new Error('Connection reset'); }, reason: 'Connection reset' },
+  ];
+
+  for (const failure of failures) {
+    warn.mockClear();
+    globalThis.fetch = mock(failure.fetch);
+    expect(await fetchDetailedTools(tableau)).toEqual(tableau.tools);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain('tableau');
+    expect(String(warn.mock.calls[0]?.[0])).toContain(failure.reason);
+  }
 });
 
 test('an older detail response cannot shrink the refreshed Tableau catalog', async () => {

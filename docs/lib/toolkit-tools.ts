@@ -17,15 +17,23 @@ export async function fetchDetailedTools(toolkit: Toolkit): Promise<Tool[]> {
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
       next: { revalidate: 3600 },
     });
-    if (!response.ok) return toolkit.tools;
+    if (!response.ok) {
+      console.warn(`[Toolkits] Failed to fetch tools for ${toolkit.slug}: HTTP ${response.status}`);
+      return toolkit.tools;
+    }
     const parsed = apiToolListSchema.safeParse(await response.json());
-    if (!parsed.success) return toolkit.tools;
+    if (!parsed.success) {
+      console.warn(`[Toolkits] Invalid tool response for ${toolkit.slug}; using catalog summaries`);
+      return toolkit.tools;
+    }
     const details = new Map(parsed.data.map(tool => [tool.slug, tool]));
     // Accept new releases (and snapshot misses) when the response covers the
     // catalog. A stale or truncated response can only enrich existing tools.
     if (toolkit.tools.every(tool => details.has(tool.slug))) return parsed.data;
     return toolkit.tools.map(tool => details.get(tool.slug) ?? tool);
-  } catch {
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : 'Unknown fetch error';
+    console.warn(`[Toolkits] Error fetching tools for ${toolkit.slug}: ${reason}`);
     return toolkit.tools;
   }
 }
