@@ -248,6 +248,7 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
+          { type: 'page', url: '/docs/security/byoc', label: 'Private deployments' },
           { type: 'folder', path: 'poc-to-prod' },
         ],
       },
