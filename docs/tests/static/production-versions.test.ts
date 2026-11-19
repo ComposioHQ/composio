@@ -85,7 +85,7 @@ describe("Toolkit version source - production only", () => {
     const versions = await fetchProductionToolkitVersions("test-key", fetcher);
 
     expect(requests).toEqual([
-      "https://backend.composio.dev/api/v3/toolkits/changelog",
+      "https://backend.composio.dev/api/v3.1/toolkits/changelog",
     ]);
     expect(versions.get("gmail")).toBe("20260702_01");
   });

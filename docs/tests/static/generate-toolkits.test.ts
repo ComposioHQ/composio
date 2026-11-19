@@ -17,7 +17,6 @@ import { describe, test, expect } from "bun:test";
 import {
   authConfigFields,
   parseNamedItems,
-  parseToolkitsPage,
   shouldPublishToolkit,
   transformAuthConfigField,
   transformAuthConfigDetail,
@@ -365,14 +364,6 @@ describe("transformTool (generate-meta-tools.ts)", () => {
     });
 
     expect(generateToolMdx(tool)).toContain('description: "Use \\"quotes\\" at C:\\\\tools"');
-  });
-});
-
-describe("parseToolkitsPage", () => {
-  test("rejects malformed page envelopes instead of returning an empty page", () => {
-    expect(() => parseToolkitsPage({ error: "rate limited" })).toThrow();
-    expect(() => parseToolkitsPage({ items: null })).toThrow();
-    expect(() => parseToolkitsPage("not a page")).toThrow();
   });
 });
 

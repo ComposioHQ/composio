@@ -11,13 +11,22 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { fetchWithRetry } from './fetch-with-retry';
+import type { Composio } from '@composio/client';
+import {
+  API_PAGE_LIMIT,
+  createComposioClient,
+  listToolkits,
+  listToolkitTools,
+  listToolkitTriggers,
+} from '../lib/composio-api';
 import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
 import { applyToolkitVersions, fetchProductionToolkitVersions } from './toolkit-versions';
 import { isPublicToolkitSlug } from '../lib/public-toolkit-policy';
 import { z } from 'zod';
 import { instantSchema, type Instant } from '../lib/instant';
 
-const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
+// Rejects a non-production override before any request; the client always targets production.
+requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 const OUTPUT_DIR = join(process.cwd(), 'public/data');
@@ -120,15 +129,6 @@ const categoryEntrySchema = z.union([
   z.object({ name: z.string() }).transform(entry => entry.name),
 ]);
 
-// A paged toolkits response: { items, next_cursor } envelope or a bare array.
-const toolkitsPageSchema = z.union([
-  z.object({
-    items: z.array(z.unknown()),
-    next_cursor: z.string().optional().catch(undefined),
-  }),
-  z.array(z.unknown()).transform(items => ({ items, next_cursor: undefined })),
-]);
-
 const slugItemSchema = z.object({ slug: z.string() });
 
 // Tools/triggers list entries share the slug/name/description shape.
@@ -195,97 +195,79 @@ const authConfigDetailsResponseSchema = z
   .object({ auth_config_details: z.array(z.unknown()).catch([]) })
   .catch({ auth_config_details: [] });
 
-// The backend silently caps `limit` at 1000 per page and defaults to usage
-// ordering, so a single request returns only the top-1000 toolkits — about half
-// the catalog. Request the cap and follow `next_cursor` until exhausted.
-// MAX_PAGES is a runaway guard well above the real catalog (~2.1k → 3 pages).
-const TOOLKITS_PAGE_LIMIT = 1000;
-const TOOLKITS_MAX_PAGES = 12;
-
-export function parseToolkitsPage(value: unknown) {
-  return toolkitsPageSchema.parse(value);
-}
-
 export function parseNamedItems(value: unknown) {
   return namedItemListSchema.parse(value);
+}
+
+// The backend caps `limit` at 1000 per page and defaults to usage ordering, so
+// a single request returns only the first 1000 toolkits, tools or triggers.
+// Every list request follows `next_cursor` until exhausted.
+let client: Composio | undefined;
+
+/** The production client; fetchWithRetry owns retries, so the client makes none. */
+function api(): Composio {
+  client ??= createComposioClient(API_KEY!, {
+    maxRetries: 0,
+    timeout: 10 * 60_000,
+    fetch: (input, init) => fetchWithRetry(String(input), init),
+  });
+  return client;
 }
 
 async function fetchToolkits(): Promise<unknown[]> {
   console.log('Fetching toolkits from API...');
 
-  const items: unknown[] = [];
   // Pages can overlap when the catalog shifts between cursor fetches; keep the
   // first occurrence so API-provided ordering stays stable.
   const seen = new Set<string>();
-  let cursor: string | undefined;
+  return (await listToolkits(api(), { pageSize: API_PAGE_LIMIT })).filter(item => {
+    const parsedSlug = slugItemSchema.safeParse(item);
+    if (!parsedSlug.success) return true;
+    const slug = parsedSlug.data.slug.toLowerCase();
+    if (seen.has(slug)) return false;
+    seen.add(slug);
+    return true;
+  });
+}
 
-  for (let page = 0; page < TOOLKITS_MAX_PAGES; page++) {
-    const params = new URLSearchParams({ limit: String(TOOLKITS_PAGE_LIMIT) });
-    if (cursor) params.set('cursor', cursor);
+// A failed toolkit publishes no tools or triggers rather than stopping the sync.
+async function fetchNamedItems(
+  list: () => Promise<unknown[]>,
+  label: string
+): Promise<ReturnType<typeof parseNamedItems>> {
+  try {
+    return parseNamedItems(await list());
+  } catch (error) {
+    console.warn(`  Failed to fetch ${label}: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
 
-    const response = await fetchWithRetry(`${API_BASE}/toolkits?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY!,
-      },
-    });
+function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
+  return fetchNamedItems(() => listToolkitTools(api(), slug, { pageSize: API_PAGE_LIMIT }), `tools for ${slug}`);
+}
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch toolkits: ${response.status} ${response.statusText}`);
-    }
+function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
+  return fetchNamedItems(
+    () => listToolkitTriggers(api(), slug, { pageSize: API_PAGE_LIMIT }),
+    `triggers for ${slug}`
+  );
+}
 
-    const pageData = parseToolkitsPage(await response.json());
-    for (const item of pageData.items) {
-      const parsedSlug = slugItemSchema.safeParse(item);
-      const slug = parsedSlug.success ? parsedSlug.data.slug.toLowerCase() : undefined;
-      if (slug) {
-        if (seen.has(slug)) continue;
-        seen.add(slug);
-      }
-      items.push(item);
-    }
-
-    cursor = pageData.next_cursor;
-    if (!cursor) return items;
+async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {
+  let response: unknown;
+  try {
+    response = await api().toolkits.retrieve(slug);
+  } catch {
+    return [];
   }
 
-  // Failing beats silently publishing a truncated catalog — that is the exact
-  // bug this pagination loop exists to prevent.
-  throw new Error(
-    `Toolkit catalog exceeds ${TOOLKITS_MAX_PAGES} pages of ${TOOLKITS_PAGE_LIMIT}; raise TOOLKITS_MAX_PAGES`
-  );
-}
+  const data = authConfigDetailsResponseSchema.parse(response);
 
-async function fetchToolsForToolkit(slug: string): Promise<Tool[]> {
-  const response = await fetchWithRetry(
-    `${API_BASE}/tools?toolkit_slug=${slug}&toolkit_versions=latest&include_pricing=true&limit=1000`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY!,
-      },
-    }
-  );
-
-  if (!response.ok) return [];
-
-  return parseNamedItems(await response.json());
-}
-
-async function fetchTriggersForToolkit(slug: string): Promise<Trigger[]> {
-  const response = await fetchWithRetry(
-    `${API_BASE}/triggers_types?toolkit_slugs=${slug}&toolkit_versions=latest&limit=1000`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY!,
-      },
-    }
-  );
-
-  if (!response.ok) return [];
-
-  return parseNamedItems(await response.json());
+  return data.auth_config_details.flatMap(item => {
+    const detail = transformAuthConfigDetail(item);
+    return detail ? [detail] : [];
+  });
 }
 
 export function transformAuthConfigField(value: unknown, required: boolean): AuthConfigField {
@@ -332,24 +314,6 @@ export function transformAuthConfigDetail(value: unknown): AuthConfigDetail | nu
       },
     },
   };
-}
-
-async function fetchAuthConfigDetails(slug: string): Promise<AuthConfigDetail[]> {
-  const response = await fetchWithRetry(`${API_BASE}/toolkits/${slug}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-  });
-
-  if (!response.ok) return [];
-
-  const data = authConfigDetailsResponseSchema.parse(await response.json());
-
-  return data.auth_config_details.flatMap(item => {
-    const detail = transformAuthConfigDetail(item);
-    return detail ? [detail] : [];
-  });
 }
 
 export function transformToolkit(raw: unknown): Toolkit {

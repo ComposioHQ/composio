@@ -19,11 +19,12 @@ describe('proxy execute meta-tool reference', () => {
           enabled = JSON.parse(options.body).proxy_execute?.enable === true;
           return Response.json({ session_id: 'test-session', tool_router_tools: [] });
         }
-        return Response.json(enabled ? [{
+        // v3.1 pages session tools in an { items, next_cursor } envelope.
+        return Response.json({ items: enabled ? [{
           slug: 'COMPOSIO_PROXY_EXECUTE', name: 'proxy_execute',
           input_parameters: { type: 'object', properties: { body: { description: 'Any JSON' } } },
           output_parameters: { type: 'object', properties: {} },
-        }] : []);
+        }] : [], next_cursor: null });
       };
     `);
 

@@ -18,13 +18,18 @@
 
 import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
+import type { Composio } from '@composio/client';
+import { paginate } from '@composio/client/pagination';
 import { fetchWithRetry } from './fetch-with-retry';
+import { createComposioClient } from '../lib/composio-api';
 import { META_TOOL_OVERRIDES } from '../lib/meta-tool-overrides';
 import { encodeMarkdownTableCell, encodeYamlString } from '../lib/markdown-escaping';
 import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
 import { z } from 'zod';
 
-const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
+// Rejects a non-production override before any request; the client always targets production.
+requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
+const META_TOOL_PAGE_SIZE = 100;
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 const DATA_DIR = join(process.cwd(), 'public/data');
@@ -78,33 +83,41 @@ const rawMetaToolSchema = z.object({
   output_parameters: recordSchema,
 });
 
+let client: Composio | undefined;
+
+/** The production client; fetchWithRetry owns retries, so the client makes none. */
+function api(): Composio {
+  client ??= createComposioClient(API_KEY!, {
+    maxRetries: 0,
+    timeout: 10 * 60_000,
+    fetch: (input, init) => fetchWithRetry(String(input), init),
+  });
+  return client;
+}
+
 async function createSession(): Promise<string> {
   console.log('Creating session...');
 
-  const response = await fetchWithRetry(`${API_BASE}/tool_router/session`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
+  // `config` predates both OpenAPI specs and is sent as it always was.
+  const body = {
+    user_id: 'default',
+    config: {
+      autoManageConnections: true,
+      recipesEnabled: true,
+      enableWaitForConnections: true,
     },
-    body: JSON.stringify({
-      user_id: 'default',
-      config: {
-        autoManageConnections: true,
-        recipesEnabled: true,
-        enableWaitForConnections: true,
-      },
-      // Opt-in meta tools are listed only in sessions that enable them.
-      proxy_execute: { enable: true },
-    }),
-  });
+    // Opt-in meta tools are listed only in sessions that enable them.
+    proxy_execute: { enable: true },
+  };
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Failed to create session: ${response.status} ${response.statusText}\n${body}`);
+  let response: unknown;
+  try {
+    response = await api().toolRouter.session.create(body);
+  } catch (error) {
+    throw new Error(`Failed to create session: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const data = sessionResponseSchema.parse(await response.json());
+  const data = sessionResponseSchema.parse(response);
   const sessionId = data.session_id;
 
   if (!sessionId) {
@@ -119,20 +132,16 @@ async function createSession(): Promise<string> {
 async function fetchMetaTools(sessionId: string): Promise<unknown[]> {
   console.log('Fetching meta tools with schemas...');
 
-  const response = await fetchWithRetry(`${API_BASE}/tool_router/session/${sessionId}/tools`, {
-    headers: {
-      'x-api-key': API_KEY!,
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(
-      `Failed to fetch meta tools: ${response.status} ${response.statusText}\n${body}`
-    );
+  let items: unknown[];
+  try {
+    items = await paginate(({ cursor }) =>
+      api().toolRouter.session.tools(sessionId, { limit: META_TOOL_PAGE_SIZE, cursor })
+    ).toArray();
+  } catch (error) {
+    throw new Error(`Failed to fetch meta tools: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const parsed = metaToolListSchema.safeParse(await response.json());
+  const parsed = metaToolListSchema.safeParse(items);
   if (!parsed.success) {
     throw new Error('Expected array of tools in response');
   }
