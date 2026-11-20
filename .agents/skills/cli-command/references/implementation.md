@@ -117,10 +117,11 @@ enqueued envelope. When the CLI can identify the chat it runs in, it also adds
 (`src/services/agent-session.ts`), which reads the hosts' session variables and not the host
 markers: session variables from both hosts with no plugin hook export send neither property, and
 a Codex marked only by `CODEX_SANDBOX` gets `agent_host_env: 'codex'` and neither property. The
-ID is a UUID v5 derived from the host and the host's own session ID, which is never sent. The
-host property is not named `agent_host`: common properties are spread last, so that name would
-overwrite the setup target on the setup and plugin lifecycle events. Setup-related events and
-their extra properties:
+ID is a UUID v5 derived from the host and the host's session ID using a fixed public namespace.
+The CLI sends only the derived ID. Anyone with the original host and session ID can compute the
+same value and match it to the analytics events. The host property is named `agent_session_host`
+because common properties are spread last and `agent_host` would overwrite the setup target on
+setup and plugin lifecycle events. Setup-related events and their extra properties:
 
 - `CLI_SETUP_HOST_DETECTED`: `host_config_dir_present` and `host_binary_in_known_paths` only when
   `available` is `false` (probed by `src/services/agent-host-env.ts`).
