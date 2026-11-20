@@ -43,6 +43,7 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/production-readiness')).toBe('platform');
     expect(classifyDocsProduct('/docs')).toBeNull();
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
+    expect(classifyDocsProduct('/docs/oauth-mcp-troubleshooting')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
@@ -83,6 +84,11 @@ describe('Docs product navigation', () => {
     expect(docsProductDestination('/docs/using-composio-skill', 'for-you')).toBe(
       '/docs/using-composio-skill',
     );
+    for (const product of ['for-you', 'platform'] as const) {
+      expect(docsProductDestination('/docs/oauth-mcp-troubleshooting', product)).toBe(
+        '/docs/oauth-mcp-troubleshooting',
+      );
+    }
     expect(docsProductDestination('/docs/security/overview', 'for-you')).toBe(
       '/docs/agent-plugins',
     );
@@ -98,6 +104,30 @@ describe('Docs product navigation', () => {
     expect(shouldAnimateDocsProductSwitch(true, false)).toBe(true);
     expect(shouldAnimateDocsProductSwitch(false, false)).toBe(false);
     expect(shouldAnimateDocsProductSwitch(true, true)).toBe(false);
+  });
+
+  test('nests the connection guide in a collapsed Troubleshooting folder for both products', () => {
+    for (const product of ['for-you', 'platform'] as const) {
+      const tree = buildProductPageTree(source.pageTree, product);
+      const folder = tree.children.find(node =>
+        node.type === 'folder' && node.$ref?.folder === 'troubleshooting'
+      );
+      expect(folder).toMatchObject({
+        type: 'folder',
+        name: 'Troubleshooting',
+        defaultOpen: false,
+      });
+      if (folder?.type !== 'folder') throw new Error('Troubleshooting folder is missing');
+      expect(folder.children.map(node => node.type === 'page' ? node.url : null)).toEqual(
+        ['/docs/oauth-mcp-troubleshooting'],
+      );
+      expect(tree.children.some(node =>
+        node.type === 'page' && node.url === '/docs/oauth-mcp-troubleshooting'
+      )).toBe(false);
+      expect(pageTreeUrls(tree).filter(url =>
+        url === '/docs/oauth-mcp-troubleshooting'
+      )).toHaveLength(1);
+    }
   });
 
   test('fades the outgoing product snapshot while revealing the incoming product', async () => {
@@ -173,6 +203,8 @@ describe('Docs product navigation', () => {
 
     expect(forYouUrls).toContain('/docs/using-composio-skill');
     expect(platformUrls).toContain('/docs/using-composio-skill');
+    expect(forYouUrls).toContain('/docs/oauth-mcp-troubleshooting');
+    expect(platformUrls).toContain('/docs/oauth-mcp-troubleshooting');
 
     const securityUrls = [
       '/docs/security/overview',
