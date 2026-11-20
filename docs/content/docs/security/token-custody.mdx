@@ -147,7 +147,7 @@ If your organization has an active customer-managed keyring, retrieve its public
 
 ## Application authorization and retained data
 
-Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/configuring-sessions), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs.
+Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/configuring-sessions), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs. [Per-action permissions](/docs/governance/action-permissions) shows where that session policy is enforced.
 
 Credential redaction and payload retention are separate controls. Tool arguments and results are stored in execution logs by default. A project's [Zero Data Retention](/docs/security/zero-data-retention) setting stops storage of new call payloads for covered calls while retaining audit metadata. It does not prevent processing during execution, delete existing logs, or govern your own logs and model provider. See [data retention](/docs/security/data-retention) for file storage, Workbench processing, and retention details.
 

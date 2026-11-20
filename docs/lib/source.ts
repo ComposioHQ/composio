@@ -634,10 +634,11 @@ export interface LLMPage {
 
 export async function getLLMText(
   page: LLMPage,
-  options?: { includeFooter?: boolean; includeGuardrails?: boolean }
+  options?: { includeFooter?: boolean; includeGuardrails?: boolean; includeIndexPointer?: boolean }
 ) {
   const includeFooter = options?.includeFooter ?? true;
   const includeGuardrails = options?.includeGuardrails ?? true;
+  const includeIndexPointer = options?.includeIndexPointer ?? true;
   if (typeof page.data.getText !== 'function') {
     return `# ${page.data.title} (${page.url})
 
@@ -709,8 +710,16 @@ ${page.data.description || ''}`;
 
   const guardrails = includeGuardrails && !isLegacy ? getGuardrails(page.data.llmGuardrails) : '';
 
+  // Agents fetching a single .md page often get truncated output, so the
+  // index pointer at the bottom never reaches them. Point them at llms.txt on
+  // the first line instead. llms-full.txt already contains every page and
+  // opts out.
+  const indexPointer = includeIndexPointer
+    ? '> Documentation index: https://docs.composio.dev/llms.txt. Fetch it to find every page.\n'
+    : '';
+
   return `# ${page.data.title} (${page.url})
-${topNote}
+${indexPointer}${topNote}
 ${cleanContent}${footer}${guardrails}`;
 }
 
