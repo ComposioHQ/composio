@@ -2,6 +2,8 @@
 
 Neutral decision records and long-running docs plans. Add every new decision record here.
 
+- [Sessions page split proposals](sessions-page-split.md) - three alternatives awaiting Brendan's choice. No structural move is approved.
+
 Read these when a docs change touches an existing architecture, generated-data pipeline, or documented product pattern:
 
 - `examples.md` - cookbook/examples restructuring plan.
