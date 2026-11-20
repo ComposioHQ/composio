@@ -238,7 +238,7 @@ An empty file says "a hook is recording, and the chat was not compacted yet". No
 - The CLI only reads. It never creates, changes, or deletes the file or its directories, so removing the files of old chats is up to the writer.
 - The count is read per command. Each `composio` command reads the file when it runs, and nothing is cached between commands, so the first command after a compaction reports the new count. A long-running command such as `composio listen` keeps the count it first read for its API requests.
 - The count is sent as the number `agent_compaction_count` on telemetry events and as the header `x-cli-agent-compaction-count` (a decimal string) on the requests that carry the agent session headers.
-- A file that is missing, unreadable, larger than 64 KiB, not a regular file, or that holds a NUL character, as a UTF-16 file does, gives no count. The command runs exactly as it would without it and prints nothing about it.
+- A file that is missing, unreadable, larger than 64 KiB, or that holds a NUL character, as a UTF-16 file does, gives no count. The session path must name a regular file, with no symbolic link at the file name. The command runs exactly as it would without the file and prints nothing about it.
 - When telemetry is disabled (`COMPOSIO_CLI_TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED`, or `CI`), the CLI does not read the file and sends no count.
 
 ## Caching

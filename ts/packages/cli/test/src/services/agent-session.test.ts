@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@effect/vitest';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
+import * as ByteSize from 'effect/ByteSize';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Array as Arr, ConfigProvider, Effect, Layer, Option, PlatformError, pipe } from 'effect';
@@ -140,13 +141,14 @@ const EMPTY_HOME = tempy.temporaryDirectory();
 type Surroundings = {
   /** The home directory the resolver is given. No test reads the real one. */
   readonly home?: string;
-  /** A file whose read fails, the way a file this user may not read does. */
+  /** A file whose metadata lookup is denied. */
   readonly unreadable?: string;
   /**
    * The type every lookup reports in place of the real one. A real FIFO would hang a
    * resolver that opened it, and the suite with it.
    */
   readonly reportedType?: FileSystem.File.Type;
+  readonly reportedSize?: ByteSize.ByteSize;
 };
 
 /**
@@ -156,31 +158,31 @@ type Surroundings = {
  */
 const recordingFileSystem = (
   touched: Array<string>,
-  { unreadable, reportedType }: Pick<Surroundings, 'unreadable' | 'reportedType'>
+  { unreadable, reportedType, reportedSize }: Omit<Surroundings, 'home'>
 ) =>
   Layer.effect(
     FileSystem.FileSystem,
     Effect.map(FileSystem.FileSystem, fs =>
       FileSystem.FileSystem.of({
         ...fs,
-        stat: path => {
-          touched.push(path);
-          return fs
-            .stat(path)
-            .pipe(Effect.map(info => ({ ...info, type: reportedType ?? info.type })));
-        },
-        readFileString: (path, encoding) => {
+        lstat: path => {
           touched.push(path);
           return path === unreadable
             ? Effect.fail(
                 PlatformError.systemError({
                   _tag: 'PermissionDenied',
                   module: 'FileSystem',
-                  method: 'readFileString',
+                  method: 'lstat',
                   pathOrDescriptor: path,
                 })
               )
-            : fs.readFileString(path, encoding);
+            : fs.lstat(path).pipe(
+                Effect.map(info => ({
+                  ...info,
+                  type: reportedType ?? info.type,
+                  size: reportedSize ?? info.size,
+                }))
+              );
         },
       })
     )
@@ -394,6 +396,42 @@ describe('resolveAgentSession compaction count', () => {
       // Its size was looked up; its contents were not read.
       expect(touched).toStrictEqual([file]);
     })
+  );
+
+  it.effect(
+    '[Given] a file larger than the initial size check [Then] the session has no count',
+    () =>
+      Effect.gen(function* () {
+        const home = tempy.temporaryDirectory();
+        const file = compactionFile(home, 'claude', CLAUDE_SESSION);
+        yield* writeFile(file, `${'x\n'.repeat(32 * 1024)}x`);
+
+        const actual = yield* resolveWith(IN_CLAUDE_CODE, {
+          home,
+          reportedSize: ByteSize.bytes(1),
+        });
+
+        expect(actual).toStrictEqual(WITHOUT_COUNT);
+      })
+  );
+
+  it.effect('[Given] a symlink at the file path [Then] the session has no count', () =>
+    inTestFileSystem(
+      Effect.scoped(
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
+          const home = yield* fs.makeTempDirectoryScoped();
+          const file = compactionFile(home, 'claude', CLAUDE_SESSION);
+          const target = path.join(home, 'two-lines.txt');
+          yield* fs.writeFileString(target, 'auto\nmanual\n');
+          yield* fs.makeDirectory(path.dirname(file), { recursive: true });
+          yield* fs.symlink(target, file);
+
+          expect(yield* resolveWith(IN_CLAUDE_CODE, { home })).toStrictEqual(WITHOUT_COUNT);
+        })
+      )
+    )
   );
 
   it.effect('[Given] a directory at the file path [Then] the session has no count', () =>

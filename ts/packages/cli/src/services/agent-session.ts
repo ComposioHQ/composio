@@ -1,4 +1,5 @@
-import * as ByteSize from 'effect/ByteSize';
+// eslint-disable-next-line no-restricted-imports -- FileSystem.open cannot request a nonblocking read, which keeps the compaction reader from waiting on a special file.
+import { constants, open } from 'node:fs/promises';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Effect, Option } from 'effect';
@@ -89,8 +90,7 @@ export const deriveAgentSessionId = ({ host, hostSessionId }: HostSession): stri
 const AGENT_COMPACTIONS_DIR = 'agent-compactions';
 // A host session ID that is safe as a file name: no path separator, and never `.` or `..`.
 const FILE_SAFE_SESSION_ID = /^[A-Za-z0-9_-]{1,128}$/;
-// A larger file is ignored, not read. One short line per compaction stays far below this.
-const MAX_COMPACTION_FILE_SIZE = ByteSize.kibibytes(64);
+const MAX_COMPACTION_FILE_SIZE = 64 * 1024;
 
 /**
  * How many compactions the host's plugin hook recorded for a chat: the lines that are not
@@ -99,8 +99,8 @@ const MAX_COMPACTION_FILE_SIZE = ByteSize.kibibytes(64);
  * (the contract is in the README, under "Agent compaction state"). The directory is under the
  * home directory whatever `COMPOSIO_CACHE_DIR` says, because a hook cannot know that variable.
  *
- * None when the hook wrote no file, and for anything else that is not a readable regular file
- * of at most 64 KiB, so a command never fails on this file and never reads an unbounded one.
+ * None when the hook wrote no readable regular file of at most 64 KiB. The read stays bounded
+ * if the hook appends to the file after the size check.
  * None too for contents with a NUL character: the file is UTF-8 by contract, and a UTF-16 one,
  * which reads that way, would count its line breaks twice.
  */
@@ -119,15 +119,46 @@ const readCompactionCount = ({ host, hostSessionId }: HostSession) =>
       host,
       hostSessionId
     );
-    const info = yield* fs.stat(file);
+    const info = yield* fs.lstat(file);
     if (info.type !== 'File' || info.size > MAX_COMPACTION_FILE_SIZE) {
       return Option.none<number>();
     }
-    const contents = yield* fs.readFileString(file);
-    if (contents.includes('\0')) {
-      return Option.none<number>();
-    }
-    return Option.some(contents.split('\n').filter(line => line.trim() !== '').length);
+    // Windows has no POSIX no-follow flag. Checking the descriptor's identity also rejects
+    // a replacement since lstat on that platform.
+    const noFollow = os.platform === 'win32' ? 0 : (constants.O_NOFOLLOW ?? 0);
+    const flags = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | noFollow;
+    return yield* Effect.acquireUseRelease(
+      Effect.tryPromise(() => open(file, flags)),
+      handle =>
+        Effect.gen(function* () {
+          const opened = yield* Effect.tryPromise(() => handle.stat({ bigint: true }));
+          if (
+            !opened.isFile() ||
+            opened.dev !== info.dev ||
+            !Option.contains(info.ino, opened.ino) ||
+            opened.size > MAX_COMPACTION_FILE_SIZE
+          ) {
+            return Option.none<number>();
+          }
+
+          // The extra byte distinguishes a file at the limit from a file that grew past it.
+          const bytes = new Uint8Array(MAX_COMPACTION_FILE_SIZE + 1);
+          let length = 0;
+          while (length < bytes.length) {
+            const { bytesRead } = yield* Effect.tryPromise(() =>
+              handle.read(bytes, length, bytes.length - length, length)
+            );
+            if (bytesRead === 0) break;
+            length += bytesRead;
+          }
+          if (length > MAX_COMPACTION_FILE_SIZE) return Option.none<number>();
+
+          const contents = new TextDecoder().decode(bytes.subarray(0, length));
+          if (contents.includes('\0')) return Option.none<number>();
+          return Option.some(contents.split('\n').filter(line => line.trim() !== '').length);
+        }),
+      handle => Effect.ignore(Effect.tryPromise(() => handle.close()))
+    );
   }).pipe(Effect.catchCause(() => Effect.succeed(Option.none<number>())));
 
 /**
