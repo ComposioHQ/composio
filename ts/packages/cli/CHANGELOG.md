@@ -224,8 +224,8 @@
   to the Composio Dashboard, and `proxy()` calls made by a `composio run`
   script. No request the CLI itself addresses to another service carries them.
   A redirect issued by the Composio API is followed with them, as with
-  `x-cli-session-id`. The host's own session ID is never sent, and the
-  telemetry switches above remove both headers.
+  `x-cli-session-id`. Builds without a PostHog project key also send these
+  headers. The telemetry switches above remove both headers.
 
 ### Patch Changes
 
