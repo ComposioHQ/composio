@@ -1034,7 +1034,7 @@ export class ToolRouterSession<
     }
     const obj = item as Record<string, unknown>;
     return {
-      tool_slug: String(obj.tool_slug ?? ''),
+      tool_slug: typeof obj.tool_slug === 'string' ? obj.tool_slug : '',
       arguments: (obj.arguments as Record<string, unknown> | undefined) ?? {},
     };
   }

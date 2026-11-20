@@ -26,7 +26,7 @@ function ok(label: string) {
 }
 function fail(label: string, err: unknown) {
   failed++;
-  console.error(`  ✗ ${label}: ${err instanceof Error ? err.message : err}`);
+  console.error(`  ✗ ${label}: ${err instanceof Error ? err.message : String(err)}`);
 }
 
 // ── Shared in-memory user store ──────────────────────────────────
@@ -229,8 +229,8 @@ async function main() {
     });
     if (result.error) throw new Error(`Execute error: ${result.error}`);
     if (result.data?.formatted !== true) throw new Error(`Not formatted: ${JSON.stringify(result.data)}`);
-    if (result.data?.html_body !== "Line 1<br>Line 2") throw new Error(`HTML mismatch: ${result.data?.html_body}`);
-    if (result.data?.user_id !== userId) throw new Error(`UserId mismatch: ${result.data?.user_id}`);
+    if (result.data?.html_body !== "Line 1<br>Line 2") throw new Error(`HTML mismatch: ${JSON.stringify(result.data?.html_body)}`);
+    if (result.data?.user_id !== userId) throw new Error(`UserId mismatch: ${JSON.stringify(result.data?.user_id)}`);
     ok("Extension: execute by original slug (FORMAT_GMAIL_EMAIL) + session context");
   } catch (err) {
     fail("Extension: execute by original slug", err);

@@ -414,7 +414,9 @@ describe('CLI: composio execute transport', () => {
 
       expect(Exit.isFailure(exit)).toBe(true);
       expect(
-        world.dashboardRequests.map(request => requestJson(request)?.tool_slug).sort()
+        world.dashboardRequests
+          .map(request => requestJson(request)?.tool_slug)
+          .sort((a, b) => String(a).localeCompare(String(b)))
       ).toEqual(['GITHUB_CREATE_ISSUE', 'GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_SEND_EMAIL']);
       expect(world.toolRouterCalls).toEqual([]);
       expect(lastJson(lines).results).toEqual([

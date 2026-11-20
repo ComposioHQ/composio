@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Toolkits } from '../../src/models/Toolkits';
 import ComposioClient from '@composio/client';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ComposioAuthConfigNotFoundError } from '../../src/errors/AuthConfigErrors';
 import {
   ComposioToolkitFetchError,
@@ -13,9 +12,11 @@ import { APIError } from '@composio/client';
 import type { ToolkitListParams } from '../../src/types/toolkit.types';
 
 // Mock dependencies
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -117,7 +118,7 @@ describe('Toolkits', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(toolkits).toBeInstanceOf(Toolkits);
-      expect(telemetry.instrument).toHaveBeenCalledWith(toolkits, 'Toolkits');
+      expect(instrument).toHaveBeenCalledWith(toolkits, 'Toolkits');
     });
   });
 

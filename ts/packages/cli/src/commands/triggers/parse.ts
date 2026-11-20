@@ -1,10 +1,7 @@
 import type { TriggerListenEvent } from './types';
 
 const toStringOrDefault = (value: unknown, defaultValue: string): string => {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  const str = String(value);
+  const str = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
   return str.length > 0 ? str : defaultValue;
 };
 

@@ -46,4 +46,4 @@ async function main() {
   console.log(result);
 }
 
-main();
+await main();

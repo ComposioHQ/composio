@@ -1,3 +1,4 @@
+import { Formatter } from 'effect';
 import process from 'node:process';
 import path from 'node:path';
 import { $ } from 'bun';
@@ -120,7 +121,10 @@ const fetchPage = (params: {
 
     const response = yield* Effect.tryPromise({
       try: () => fetch(url, { headers: params.headers }),
-      catch: cause => new ToolkitFetchError({ message: `GET ${url.pathname} failed: ${cause}` }),
+      catch: cause =>
+        new ToolkitFetchError({
+          message: `GET ${url.pathname} failed: ${Formatter.format(cause)}`,
+        }),
     });
 
     if (!response.ok) {
@@ -131,7 +135,7 @@ const fetchPage = (params: {
         try: () => response.text(),
         catch: cause =>
           new ToolkitFetchError({
-            message: `GET ${url.pathname} returned ${response.status}, and reading the error body failed: ${cause}`,
+            message: `GET ${url.pathname} returned ${response.status}, and reading the error body failed: ${Formatter.format(cause)}`,
           }),
       });
       return yield* new ToolkitFetchError({
@@ -141,11 +145,15 @@ const fetchPage = (params: {
 
     const payload = yield* Effect.tryPromise({
       try: () => response.json(),
-      catch: cause => new ToolkitFetchError({ message: `Response was not JSON: ${cause}` }),
+      catch: cause =>
+        new ToolkitFetchError({ message: `Response was not JSON: ${Formatter.format(cause)}` }),
     });
 
     return yield* Schema.decodeUnknownEffect(ToolkitsPage)(payload).pipe(
-      Effect.mapError(cause => new ToolkitFetchError({ message: `Unexpected response: ${cause}` }))
+      Effect.mapError(
+        cause =>
+          new ToolkitFetchError({ message: `Unexpected response: ${Formatter.format(cause)}` })
+      )
     );
   });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@effect/vitest';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptSources } from 'src/generation/typescript/generate';
+import { patchCompilerHostWithVirtualFiles } from 'src/generation/typescript/virtual-compiler-host';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import path from 'path';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';
@@ -9,7 +10,29 @@ import { TOOLS_GITHUB } from 'test/__mocks__/tools-github';
 import { TRIGGER_TYPES_GITHUB } from 'test/__mocks__/trigger-types-github';
 import { TRIGGER_TYPES_GMAIL } from 'test/__mocks__/trigger-types-gmail';
 import { TOOLS_GMAIL } from 'test/__mocks__/tools-gmail';
-import { Effect } from 'effect';
+import { Effect, Path } from 'effect';
+import ts from 'typescript';
+
+it.effect('calls fallback compiler-host methods with their original receiver', () =>
+  Effect.gen(function* () {
+    const paths = yield* Path.Path;
+    const host = ts.createCompilerHost({});
+    const filename = 'fallback.ts';
+    const target = ts.ScriptTarget.ES2022;
+    const source = ts.createSourceFile(filename, 'export {};', target);
+    host.fileExists = function (this: ts.CompilerHost, name) {
+      return this === host && name === filename;
+    };
+    host.getSourceFile = function (this: ts.CompilerHost, name) {
+      return this.fileExists(name) ? source : undefined;
+    };
+
+    patchCompilerHostWithVirtualFiles(host, new Map(), paths);
+
+    expect(host.fileExists(filename)).toBe(true);
+    expect(host.getSourceFile(filename, target)).toBe(source);
+  }).pipe(Effect.provide(BunPath.layer))
+);
 
 describe('generateTypeScriptSources', () => {
   describe('with multiple emitted files', () => {

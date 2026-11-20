@@ -135,7 +135,7 @@ export const loopDriver = (
     const transcript = await runAgent({
       adapter,
       maxTurns: MAX_TURNS,
-      hear: person.hear,
+      hear: person.hear.bind(person),
       execute: async command => {
         const result = await rig.run(command, {
           cwd: journey.cwd,

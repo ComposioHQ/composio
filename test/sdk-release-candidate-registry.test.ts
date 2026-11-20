@@ -13,6 +13,7 @@ import { run, withoutReleaseTokens } from '../scripts/sdk-release/runtime';
 import type { ReleaseBatch } from '../scripts/sdk-release/source';
 import { batch } from './sdk-release-controller-fixture';
 import {
+  fetchInputUrl,
   json,
   makeExecutable,
   readText,
@@ -36,7 +37,10 @@ const exec = (cwd: string, executable: string, args: ReadonlyArray<string>) =>
 const pack = async (root: string, file: string, manifest: Record<string, unknown>) => {
   const staging = await directories.create();
   await writeText(`${staging}/package/package.json`, JSON.stringify(manifest));
-  await writeText(`${staging}/package/index.js`, `export const version = '${manifest.version}';\n`);
+  await writeText(
+    `${staging}/package/index.js`,
+    `export const version = '${String(manifest.version)}';\n`
+  );
   await exec(staging, 'tar', ['-czf', `${root}/${file}`, 'package']);
   return new Uint8Array(await Bun.file(`${root}/${file}`).arrayBuffer());
 };
@@ -80,7 +84,7 @@ const fakeUpstream = (
 ) => {
   const requests: string[] = [];
   const fetcher: Fetch = async input => {
-    const url = new URL(String(input));
+    const url = new URL(fetchInputUrl(input));
     requests.push(url.pathname);
     const name = decodeURIComponent(url.pathname).slice(1);
     const versions = Object.values(tarballs).filter(({ manifest }) => manifest.name === name);
@@ -94,7 +98,7 @@ const fakeUpstream = (
             {
               ...manifest,
               dist: {
-                tarball: `${tarballOrigin()}/${name}/-/${name.split('/').at(-1)}-${manifest.version}.tgz`,
+                tarball: `${tarballOrigin()}/${name}/-/${name.split('/').at(-1)}-${String(manifest.version)}.tgz`,
                 integrity: sha512(bytes),
               },
             },
@@ -114,7 +118,7 @@ describe('candidate registry', () => {
     const upstream = fakeUpstream({}, () => UPSTREAM);
     const leftPad = { name: 'left-pad', 'dist-tags': { latest: '1.3.0' }, versions: {} };
     const fetcher: Fetch = async (input, init) =>
-      new URL(String(input)).pathname === '/left-pad'
+      new URL(fetchInputUrl(input)).pathname === '/left-pad'
         ? json(leftPad)
         : upstream.fetcher(input, init);
     const responses = await runRelease(

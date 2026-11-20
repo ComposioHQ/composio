@@ -1,5 +1,5 @@
 import { BATCH_PATH, type ReleaseBatch } from '../scripts/sdk-release/source';
-import type { Fetch } from './sdk-release-harness';
+import { readJsonRequestBody, fetchInputUrl, type Fetch } from './sdk-release-harness';
 
 export const base = 'a'.repeat(40);
 export const head = 'b'.repeat(40);
@@ -118,13 +118,13 @@ export function fakeController(options: ControllerOptions = {}) {
     conclusion,
   });
   const fetcher: Fetch = async (input, init) => {
-    const url = new URL(String(input));
+    const url = new URL(fetchInputUrl(input));
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '') + url.search;
     const method = init?.method ?? 'GET';
     const response = (data: unknown, status = 200) =>
       new Response(JSON.stringify(data), { status });
     if (method !== 'GET') {
-      writes.push({ method, path, body: JSON.parse(String(init?.body)) });
+      writes.push({ method, path, body: await readJsonRequestBody(init?.body) });
       if (/^\/git\/(blobs|trees|commits)$/.test(path)) return response({ sha: 'e'.repeat(40) });
       if (path.startsWith('/git/refs')) return response({ ref: 'refs/heads/sdk-release/batch-8' });
       if (path === '/pulls') return response({ ...pull(), state: 'open', merged: false });

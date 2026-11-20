@@ -6,6 +6,12 @@ import { ReleaseServices, readFile } from '../scripts/sdk-release/runtime';
 
 export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
+export const fetchInputUrl = (input: Parameters<Fetch>[0]): string =>
+  input instanceof Request ? input.url : input.toString();
+
+export const readJsonRequestBody = (body: RequestInit['body']): Promise<unknown> =>
+  new Response(body).json();
+
 // Retries back off for a millisecond, so a test of a failing request does not wait seconds.
 const TestServices = Layer.provideMerge(GitHub.layer('token', { baseDelayMs: 1 }), ReleaseServices);
 type TestServices = Layer.Success<typeof TestServices>;
