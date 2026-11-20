@@ -10,6 +10,15 @@ tags:
 ---
 # YouTube
 
+## Preserve YouTube video status fields when changing privacy
+
+`YOUTUBE_UPDATE_VIDEO` sends the YouTube `status` part as a replacement. A call
+that changes only `privacy_status` can therefore clear unspecified status fields,
+including `embeddable` and `publicStatsViewable`. Until the hosted tool performs
+a read-modify-write of the existing status, do not use a partial status update
+when those fields must be preserved; read the current status, merge the intended
+privacy change, and update the complete status through a path that supports it.
+
 
 ## `YOUTUBE_UPLOAD_VIDEO` with `videoFilePath` is SDK-oriented and expects a full file path
 
