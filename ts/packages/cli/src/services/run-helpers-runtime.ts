@@ -178,7 +178,7 @@ const previewDebugValue = (value: unknown): string => {
     }
     return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
   }
-  return truncateDebugText(Formatter.format(value));
+  return truncateDebugText(value);
 };
 
 const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {

@@ -9,7 +9,6 @@ const composio = new Composio({
 });
 
 const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
-  // toolkit slug too
   modifySchema: ({ toolSlug, schema }) => {
     if (toolSlug === 'HACKERNEWS_GET_USER') {
       schema = {
@@ -38,13 +37,11 @@ console.log(tools);
  */
 const vercel = new Composio({
   apiKey: process.env.COMPOSIO_API_KEY,
-  // calling this provider now no? or what? or toolProvider or toolManager?
   provider: new VercelProvider(),
 });
 
 const agenticTools = await vercel.tools.get(
   'default',
-  // what is the type error i am getting here?
   { tools: ['HACKERNEWS_GET_USER'] },
   {
     afterExecute: ({ result }) => {
