@@ -1,0 +1,51 @@
+---
+title: 'CLI 0.6.0 to 0.6.3: retryable exit code 75, experimental Windows x64, and no more stdin hangs'
+description: 'Scripts and agents can retry on exit code 75, the CLI runs natively on Windows x64, and execute and proxy no longer wait on an idle stdin pipe.'
+date: '2026-11-20'
+---
+
+Four stable CLI releases, 0.6.0 through 0.6.3, make the CLI easier to script and to run from agent harnesses. Failed requests that are safe to send again now exit 75, Windows x64 binaries are available as an experiment, and `composio execute` and `composio proxy` no longer hang when the caller leaves stdin open.
+
+### Release versions
+
+| SDK            | Version |
+| -------------- | ------- |
+| CLI `composio` | `0.6.0` |
+| CLI `composio` | `0.6.1` |
+| CLI `composio` | `0.6.2` |
+| CLI `composio` | `0.6.3` |
+
+### What's new
+
+- **Exit code 75 for retryable failures.** `composio` exits 75 (`EX_TEMPFAIL`) instead of 1 when a failed request is safe to send again as it is: a 429, or a timeout, connection failure, 408, or 5xx on an idempotent request. stderr says to run the same command again. Scripts and agents can retry on 75 without parsing text.
+- **Retry advice from `composio execute`.** A failed `composio execute` adds a `retry` field to its `{ "successful": false }` result, set to `"safe"` or `"check-first"`. `"check-first"` means the tool may already have run before the request failed, so repeating it could act twice. Check the outcome before you run it again.
+- **Experimental Windows x64 binaries.** Install the standalone CLI on Windows without WSL:
+
+  ```powershell
+  irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+  ```
+
+  Windows support is experimental: each CLI release is built and checked on Windows, but a failed Windows check does not block the release, so a release can ship without the Windows archive. `composio upgrade` on Windows retries a busy executable rename for up to two seconds.
+- **Consistent developer project and acting user.** Developer commands resolve the selected project and the acting user the same way. `composio dev connected-accounts link` now uses the developer project, while root `composio link` keeps its consumer-project behavior. Commands reject shared flags they cannot honor.
+- **Bounded login polling.** `composio login --poll` accepts `--timeout <seconds>`. If the login is still pending when the wait ends, the CLI prints the authorization URL and the command to resume polling.
+- **Safer terminal output.** `composio listen --stream`, `composio dev listen`, `composio execute`, `composio proxy`, and error messages show control characters from events, responses, and API errors as visible escapes. Printed JSON decodes to the same values.
+- **Upgrades use a release manifest.** Release archives include a `release-manifest.json` that lists their support files, and `composio upgrade` installs exactly what it lists. A release can name the oldest CLI version that may upgrade to it. An older CLI refuses the upgrade before changing anything and prints the install command to run instead.
+
+### Bug fixes
+
+- **No hang when stdin stays open.** Agent harnesses often run commands with a stdin pipe they never write to or close, and `composio proxy` and `composio execute` used to wait for it with no output.
+  - `composio proxy` reads a request body from stdin only with `-d -` (or `-d @-`). Without `-d` it sends the request without reading stdin. A non-`GET` request without `-d` from a piped stdin warns on stderr that it is sent without a body.
+  - `composio execute` still reads piped JSON arguments without `-d`. If nothing arrives within 1 second, it fails with `No input arrived on stdin within 1 second` and exit code 1, without running the tool. Pass the arguments with `-d '{...}'`, or `-d -` to wait for stdin as long as it takes.
+
+### Migration notes
+
+<Callout type="warn">
+  Retryable failures now exit 75 where they used to exit 1, and interrupted commands no longer exit
+  as if they succeeded. Check how your scripts handle exit codes.
+</Callout>
+
+- **Retryable failures.** If a script treats every non-zero exit as final, handle 75 as "run the same command again" and read `retry` before repeating an execution.
+- **Interrupted commands.** Commands interrupted by SIGINT, SIGTERM, or SIGHUP exit 130, 143, or 129. Subscribed listeners stop cleanly on Ctrl+C or SIGTERM, and `composio run` forwards the signal to its child process group.
+- **Developer account linking.** `composio dev connected-accounts link` needs a resolvable developer project and acting user. Initialize the working directory or select a project explicitly when needed.
+- **Several accounts for a toolkit.** If a toolkit has several accounts and none has the `default` alias, pass `--account <id|alias>` or assign a default alias instead of relying on the newest account.
+- **Piped input without `-d`.** Pipe the arguments to `composio execute` promptly, or pass `-d -` if the first byte may take longer than 1 second. For `composio proxy`, pass `-d -` to send piped input as the request body.
