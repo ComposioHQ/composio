@@ -50,3 +50,10 @@ jobs:
             {
               "text": "⚠️ Staging Apollo no longer matches the CLI's client schemas.\n*Run:* ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
+
+  report-failure:
+    needs: contract
+    if: failure() && github.event_name == 'schedule'
+    permissions:
+      issues: write
+    uses: ./.github/workflows/report-workflow-failure.yml

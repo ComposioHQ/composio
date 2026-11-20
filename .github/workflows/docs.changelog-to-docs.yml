@@ -124,3 +124,10 @@ jobs:
           PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
           AUTHOR: ${{ github.actor }}
         run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"
+
+  report-failure:
+    needs: suggest-docs-updates
+    if: failure() && github.event_name == 'push'
+    permissions:
+      issues: write
+    uses: ./.github/workflows/report-workflow-failure.yml
