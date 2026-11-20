@@ -56,3 +56,29 @@ test('uses released notes even after the prior release was rolled on next', () =
   );
   expect(updated.match(/- Previously shipped\./g)).toHaveLength(1);
 });
+
+test('files only new notes when a stable release comes from a stale branch', () => {
+  const firstNote = '- First fix.\n  More detail.';
+  const secondNote = '- Second fix.';
+  const thirdNote = '- Third fix.';
+  const firstHistory = `\n## 0.6.0\n\n${firstNote}\n\n[Compare with 0.5.0](https://example.com/compare)\n${history}`;
+  const first = { tag: '@composio/cli@0.6.0', markdown: `${header}\n${firstNote}\n${history}` };
+  const second = {
+    tag: '@composio/cli@0.6.1',
+    markdown: `${header}\n${secondNote}\n${firstHistory}`,
+  };
+  const third = {
+    tag: '@composio/cli@0.6.2',
+    markdown: `${header}\n${thirdNote}\n\n${secondNote}\n\n${firstNote}\n${history}`,
+  };
+  const current = `${header}\n- Still pending.\n\n${thirdNote}\n\n${secondNote}\n\n${firstNote}\n${firstHistory}`;
+  const rolledThroughSecond = rollChangelog(current, [first, second], repository);
+  const updated = rollChangelog(rolledThroughSecond, [second, third], repository);
+
+  expect(updated).toStartWith(
+    header + '\n- Still pending.\n\n## 0.6.2\n\n' + thirdNote + '\n\n[Compare'
+  );
+  expect(updated.match(/- First fix\./g)).toHaveLength(1);
+  expect(updated.match(/- Second fix\./g)).toHaveLength(1);
+  expect(rollChangelog(current, [first, second, third], repository)).toBe(updated);
+});

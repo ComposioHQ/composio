@@ -68,21 +68,31 @@ export function rollChangelog(
   if (!current.startsWith(header + '\n')) {
     throw new Error('CLI changelog is missing its Unreleased section');
   }
+  if (releases.length < 2) return current;
+
   let { history } = splitChangelog(current);
   let pending = pendingNotes(current);
+  // Version sections contain both notes and standalone text such as compare links.
+  const previouslyShipped = new Set(
+    history
+      .split(/(?=^#{2,3} |^- |^\n\S)/m)
+      .filter(block => block.startsWith('- '))
+      .map(block => block.trimEnd())
+  );
 
   for (let index = 1; index < releases.length; index++) {
     const previous = releases[index - 1];
     const release = releases[index];
     const version = release.tag.slice(tagPrefix.length);
-    const shipped = withoutNotes(pendingNotes(release.markdown), pendingNotes(previous.markdown));
-    pending = withoutNotes(pending, shipped);
+    for (const { text } of pendingNotes(previous.markdown)) previouslyShipped.add(text);
+    const releaseNotes = pendingNotes(release.markdown);
+    const shipped = releaseNotes.filter(({ text }) => !previouslyShipped.has(text));
+    pending = withoutNotes(pending, releaseNotes);
     const notes = renderNotes(shipped);
     const compare = `[Compare with ${previous.tag.slice(tagPrefix.length)}](https://github.com/${repository}/compare/${encodeURIComponent(previous.tag)}...${encodeURIComponent(release.tag)})`;
     history = [`## ${version}`, notes, compare, history].filter(Boolean).join('\n\n');
   }
 
-  if (releases.length < 2) return current;
   return [header, renderNotes(pending), history].filter(Boolean).join('\n\n');
 }
 
