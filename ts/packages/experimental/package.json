@@ -82,7 +82,7 @@
   "devDependencies": {
     "@composio/core": "workspace:*",
     "@earendil-works/pi-coding-agent": "^1.5.2",
-    "eve": "^0.81.1",
+    "eve": "^1.0.1",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
