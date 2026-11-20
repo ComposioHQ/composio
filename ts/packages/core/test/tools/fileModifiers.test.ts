@@ -3,6 +3,7 @@ import { FileToolModifier } from '#file_tool_modifier';
 import ComposioClient from '@composio/client';
 import { Tool } from '../../src/types/tool.types';
 import {
+  ComposioFileDownloadError,
   ComposioFileUploadAbortedError,
   ComposioFileUploadError,
 } from '../../src/errors/FileModifierErrors';
@@ -1328,33 +1329,37 @@ describe('FileToolModifier', () => {
       });
     });
 
-    it('should handle download failure gracefully', async () => {
-      vi.mocked(fileUtils.downloadFileFromS3).mockRejectedValue(new Error('Download failed'));
+    it.each([new Error('Download failed'), new ComposioFileDownloadError('Download failed')])(
+      'should handle download failure gracefully (%s)',
+      async error => {
+        vi.mocked(fileUtils.downloadFileFromS3).mockRejectedValue(error);
 
-      const result = {
-        data: {
-          file: {
-            s3url: 'https://s3.example.com/file.txt',
-            mimetype: 'text/plain',
+        const result = {
+          data: {
+            file: {
+              s3url: 'https://s3.example.com/file.txt',
+              mimetype: 'text/plain',
+            },
           },
-        },
-        error: null,
-        successful: true,
-      };
+          error: null,
+          successful: true,
+        };
 
-      const modifiedResult = await fileToolModifier.fileDownloadModifier(mockTool, {
-        toolSlug: 'test-tool',
-        toolkitSlug: 'test-toolkit',
-        result,
-      });
+        const modifiedResult = await fileToolModifier.fileDownloadModifier(mockTool, {
+          toolSlug: 'test-tool',
+          toolkitSlug: 'test-toolkit',
+          result,
+        });
 
-      expect(modifiedResult.data.file).toEqual({
-        uri: '',
-        file_downloaded: false,
-        s3url: 'https://s3.example.com/file.txt',
-        mimeType: 'text/plain',
-      });
-    });
+        expect(modifiedResult.successful).toBe(true);
+        expect(modifiedResult.data.file).toEqual({
+          uri: '',
+          file_downloaded: false,
+          s3url: 'https://s3.example.com/file.txt',
+          mimeType: 'text/plain',
+        });
+      }
+    );
 
     it('should skip fields without s3url', async () => {
       const result = {
