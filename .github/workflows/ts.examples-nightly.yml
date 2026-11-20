@@ -68,3 +68,10 @@ jobs:
       - name: ${{ matrix.provider }} tool-router example
         if: ${{ env.OPENAI_API_KEY != '' }}
         run: bun ts/examples/${{ matrix.provider }}/src/tool-router.ts
+
+  report-failure:
+    needs: examples-staging
+    if: failure() && github.event_name == 'schedule'
+    permissions:
+      issues: write
+    uses: ./.github/workflows/report-workflow-failure.yml

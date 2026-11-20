@@ -177,3 +177,10 @@ jobs:
       - name: Fail on unhealthy endpoints
         if: steps.check.outputs.has_failures == 'true'
         run: exit 1
+
+  report-failure:
+    needs: health-check
+    if: failure() && github.event_name == 'schedule'
+    permissions:
+      issues: write
+    uses: ./.github/workflows/report-workflow-failure.yml

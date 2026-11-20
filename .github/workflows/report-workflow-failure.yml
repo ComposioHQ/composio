@@ -1,0 +1,36 @@
+name: Report workflow failure
+
+on:
+  workflow_call:
+
+permissions:
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: workflow-failure-issue-${{ github.workflow }}
+      cancel-in-progress: false
+    steps:
+      - name: Open or update failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title="CI failure: ${GITHUB_WORKFLOW}"
+          issues="repos/${GITHUB_REPOSITORY}/issues"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}"
+          body=$(printf 'The **%s** workflow failed.\n\n[View the failed run](%s)\n' "$GITHUB_WORKFLOW" "$run_url")
+
+          # List recent issues directly, since search can lag after a new issue.
+          existing=$(gh api --method GET --paginate --slurp "$issues" \
+            -f state=open -f 'creator=github-actions[bot]' -F per_page=100 | \
+            jq -r --arg title "$title" 'first(.[][] | select(.title == $title and .pull_request == null)) | .number // empty')
+
+          if [[ -n "$existing" ]]; then
+            gh api --method PATCH "$issues/$existing" -f body="$body" --jq .html_url
+          else
+            gh api --method POST "$issues" -f title="$title" -f body="$body" --jq .html_url
+          fi

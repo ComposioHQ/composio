@@ -188,3 +188,10 @@ jobs:
           path: .artifacts/examples-parity/
           retention-days: 14
           if-no-files-found: ignore
+
+  report-failure:
+    needs: examples-live
+    if: failure() && github.event_name == 'schedule'
+    permissions:
+      issues: write
+    uses: ./.github/workflows/report-workflow-failure.yml
