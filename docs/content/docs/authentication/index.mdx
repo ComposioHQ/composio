@@ -6,7 +6,7 @@ keywords: [connect link, oauth, auth config, in-chat auth, dynamic auth, token c
 
 Composio organizes everything around your **users**. A user is whoever your agent acts on behalf of: a person in your app, identified by a [`userID`](/docs/how-composio-works) you choose. Authentication is always per user. Each user connects their own accounts, their Gmail, their GitHub, their Slack, and Composio stores and refreshes those credentials against that `userID`.
 
-This is the core idea: your agent runs the same tools for many people, and every tool call runs as a specific user against that user's connected accounts. User A's agent never touches user B's data. You pass the `userID` when you create a session, and Composio handles the auth from there.
+Your agent runs the same tools for many people, and Composio scopes execution to the identity and connected accounts you supply. Your trusted backend must authenticate the caller, authorize their access, and resolve the correct tenant, member, and connected account before creating or restoring a session. A caller-supplied `userID` is not proof of identity. See [B2B connection ownership](/docs/b2b-agents#choose-the-connection-owner) for member-owned and workspace-owned models.
 
 Because connections are stored under the `userID`, use a stable identifier, like your database ID, never one that can change.
 
