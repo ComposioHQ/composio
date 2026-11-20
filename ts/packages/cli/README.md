@@ -63,7 +63,7 @@ Use `composio execute <slug> --get-schema` to print a tool's input schema as JSO
 
 ### Creating development triggers
 
-For a project with 2FA enabled, pass the user who owns the connected account:
+For a project with connection user binding enabled, pass the user who owns the connected account:
 
 ```bash
 composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE --connected-account-id ca_123 --user-id user_123

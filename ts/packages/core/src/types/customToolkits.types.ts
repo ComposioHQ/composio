@@ -98,7 +98,7 @@ export const CustomToolkitUpdateParamsSchema = z
     apiKeyField: CustomToolkitApiKeyFieldSchema.optional(),
     /**
      * The user the toolkit is private to. Required to update a private toolkit
-     * when the project has 2FA enabled.
+     * when the project has connection user binding enabled.
      */
     userId: z.string().min(1).optional(),
   })
