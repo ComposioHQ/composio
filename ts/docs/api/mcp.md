@@ -76,7 +76,7 @@ const server = await composio.mcp.create('personal-mcp-server', {
     {
       toolkit: 'github',
       authConfigId: 'ac_xyz',
-      allowedTools: ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
+      allowedTools: ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_LIST_REPOS'],
     },
     {
       toolkit: 'slack',
@@ -145,7 +145,7 @@ Retrieves detailed information about a specific MCP server/config.
 const server = await composio.mcp.get('mcp_12345');
 
 console.log(server.name); // "My Personal MCP Server"
-console.log(server.allowedTools); // ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+console.log(server.allowedTools); // ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"]
 console.log(server.toolkits); // ["github", "slack"]
 console.log(server.serverInstanceCount); // 3
 
@@ -183,7 +183,7 @@ const serverWithNewTools = await composio.mcp.update('mcp_12345', {
     {
       toolkit: 'github',
       authConfigId: 'auth_abc123',
-      allowedTools: ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
+      allowedTools: ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_LIST_REPOS'],
     },
     {
       toolkit: 'slack',
@@ -351,7 +351,7 @@ Be specific about allowed tools to maintain security:
 // Specific tools (recommended)
 {
   toolkit: "github",
-  allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_REPOS"]
+  allowedTools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_REPOS"]
 }
 
 // Avoid allowing all tools unless necessary

@@ -650,7 +650,7 @@ def get_issue_info(input: GetIssueInfoInput, ctx) -> dict:
 
 session = composio.create(
     user_id="default",
-    experimental={"custom_tools": [get_issue_info]},
+    experimental={"local_tools": [get_issue_info]},
 )
 ```
   </Tab>
@@ -682,7 +682,7 @@ const getIssueInfo = experimental_createTool("GET_ISSUE_INFO", {
 });
 
 const session = await composio.create("default", {
-  experimental: { customTools: [getIssueInfo] },
+  experimental: { localTools: [getIssueInfo] },
 });
 ```
   </Tab>

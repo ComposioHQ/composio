@@ -18,7 +18,7 @@ Manual tool execution now requires explicit version specification. The `tools.ex
 ```python
 # Raises ToolVersionRequiredError
 result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     arguments={"owner": "composio", "repo": "composio", "title": "Bug report"},
     user_id="user-123",
 )
@@ -28,7 +28,7 @@ result = composio.tools.execute(
 ```typescript
 // @noErrors
 // Throws ComposioToolVersionRequiredError
-const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
+const result = await composio.tools.execute("GITHUB_CREATE_AN_ISSUE", {
     userId: "user-123",
     arguments: { owner: "composio", repo: "composio", title: "Bug report" }
 });
@@ -146,7 +146,7 @@ During migration, you can temporarily skip version checks (not recommended for p
   <Tab value="Python">
 ```python
 result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     arguments={"owner": "composio", "repo": "composio", "title": "Bug report"},
     user_id="user-123",
     dangerously_skip_version_check=True,
@@ -156,7 +156,7 @@ result = composio.tools.execute(
   <Tab value="TypeScript">
 ```typescript
 // @noErrors
-const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
+const result = await composio.tools.execute("GITHUB_CREATE_AN_ISSUE", {
     userId: "user-123",
     arguments: { owner: "composio", repo: "composio", title: "Bug report" },
     dangerouslySkipVersionCheck: true

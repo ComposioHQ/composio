@@ -844,7 +844,7 @@ export class Tools<
    * );
    *
    * // Access tool properties
-   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_AN_ISSUE');
    * console.log({
    *   slug: githubTool.slug,
    *   name: githubTool.name,
@@ -1544,7 +1544,7 @@ export class Tools<
    *
    * @example
    * ```typescript
-   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_AN_ISSUE', {
    *   text: 'Open an issue in composiohq/composio titled "Docs typo" describing the broken link',
    *   version: '20250909_00',
    * });

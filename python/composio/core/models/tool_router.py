@@ -913,7 +913,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                        Example: {'tags': {'enable': ['readOnlyHint'], 'disable': ['destructiveHint']}}
                      Example: {
                          'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],
-                         'github': {'enable': ['GITHUB_CREATE_ISSUE']},
+                         'github': {'enable': ['GITHUB_CREATE_AN_ISSUE']},
                          'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
                          'linear': {'tags': ['readOnlyHint']}
                      }
@@ -1063,7 +1063,7 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
                 user_id='user_123',
                 tools={
                     'gmail': ['GMAIL_SEND_EMAIL', 'GMAIL_SEARCH'],  # List shorthand
-                    'github': {'enable': ['GITHUB_CREATE_ISSUE']},  # Explicit enable
+                    'github': {'enable': ['GITHUB_CREATE_AN_ISSUE']},  # Explicit enable
                     'slack': {'disable': ['SLACK_DELETE_MESSAGE']},  # Explicit disable
                 }
             )
