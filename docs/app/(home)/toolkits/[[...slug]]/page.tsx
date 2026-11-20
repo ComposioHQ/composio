@@ -11,52 +11,18 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getAllToolkits, getToolkitBySlug } from '@/lib/toolkit-data';
 import { resolveToolkit } from '@/lib/toolkit-resolution';
+import { fetchDetailedTools } from '@/lib/toolkit-tools';
 import { parseToolkitFaq } from '@/lib/toolkit-faq';
 import type { Metadata } from 'next';
-import type { Tool, Trigger } from '@/types/toolkit';
+import type { Trigger } from '@/types/toolkit';
 import type { FaqItem } from '@/components/toolkits/faq-section';
-import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
+import { apiTriggerListSchema } from '@/lib/toolkit-schema';
 
 const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
 const API_KEY = process.env.COMPOSIO_API_KEY;
 
 // Snapshot misses are resolved from production on demand.
 export const dynamicParams = true;
-
-// Fetch detailed tool info from Composio API (server-side only)
-// Returns null on failure, empty array if toolkit has no tools
-async function fetchDetailedTools(
-  toolkitSlug: string
-): Promise<Tool[] | null> {
-  if (!API_KEY) {
-    console.warn('[Toolkits] COMPOSIO_API_KEY not set, skipping detailed tool fetch');
-    return null;
-  }
-
-  try {
-    const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=10000`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        next: { revalidate: 3600 },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[Toolkits] Failed to fetch tools for ${toolkitSlug}: ${response.status}`);
-      return null;
-    }
-
-    const parsed = apiToolListSchema.safeParse(await response.json());
-    return parsed.success ? parsed.data : [];
-  } catch (error) {
-    console.error(`[Toolkits] Error fetching detailed tools for ${toolkitSlug}:`, error);
-    return null;
-  }
-}
 
 // Fetch detailed trigger info from Composio API (server-side only)
 // Returns null on failure, empty array if toolkit has no triggers
@@ -223,14 +189,12 @@ export default async function ToolkitsPage({ params }: { params: Promise<{ slug?
 
     if (toolkit) {
       // Fetch detailed tool/trigger info and FAQ content in parallel
-      const [detailedTools, detailedTriggers, faq] = await Promise.all([
-        fetchDetailedTools(toolkit.slug),
+      const [tools, detailedTriggers, faq] = await Promise.all([
+        fetchDetailedTools(toolkit),
         fetchDetailedTriggers(toolkit.slug, toolkit.version),
         readToolkitFaq(toolkit.slug),
       ]);
 
-      // Use detailed data if fetch succeeded, otherwise fall back to static data
-      const tools = detailedTools !== null ? detailedTools : toolkit.tools;
       const triggers = detailedTriggers !== null ? detailedTriggers : toolkit.triggers;
 
       return (
