@@ -133,7 +133,7 @@ def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorCall
 | Name | Type | Description |
 |------|------|-------------|
 | `timeout?` | `float` | The timeout to wait for the subscription to be established. |
-| `on_subscription_error?` | `SubscriptionErrorCallback \| None` | Optional callback invoked when the channel subscription fails: with the raw Pusher payload for asynchronous `pusher:subscription_error` events (for example a later permission rejection), or with `{"error": ...}` for failures raised while establishing the subscription (for example an auth rejection — pysher performs channel auth synchronously). Establish-time failures also make `subscribe()` raise the underlying error promptly instead of waiting out the timeout. Exceptions raised inside the callback are contained and logged, never rethrown. |
+| `on_subscription_error?` | `SubscriptionErrorCallback \| None` | Optional callback invoked when the channel subscription fails: with the raw Pusher payload for asynchronous `pusher:subscription_error` events (for example a later permission rejection), or with `{"error": ...}` for failures raised while establishing the subscription (for example an auth rejection — pysher performs channel auth synchronously). Establish-time failures also make `subscribe()` raise the underlying error promptly instead of waiting out the timeout. Exceptions raised inside the callback are contained and logged, never rethrown. The callback must be a regular function; an `async def` callback raises `ValidationError`. |
 
 **Returns**
 
@@ -249,4 +249,4 @@ async def webhook(request: Request):
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1160)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1206)
