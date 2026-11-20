@@ -13,7 +13,7 @@ Proxy execute is a building block, not just a fallback. Use it to build experien
 For the complete connection-to-request flow in your own backend, follow [Managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). It covers per-user OAuth, connection status, and account-specific proxy requests without an agent framework.
 
 <Callout title="Use a scoped API key">
-Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has **Proxy execute** enabled. Session tool execution alone does not cover `session.proxyExecute()` or proxy calls made from that session's sandbox. Default full-access keys already include this permission.
+For `session.proxyExecute()`, authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has **Session tool execution → Write only** or **Proxy execute (Legacy) → Write only**. Either permission grants the session proxy route. The direct `/tools/execute/proxy` route requires **Proxy execute (Legacy)**. Default full-access keys already cover both routes.
 </Callout>
 
 ## When to use it

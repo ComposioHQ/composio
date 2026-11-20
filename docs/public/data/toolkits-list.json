@@ -84,7 +84,7 @@
     "name": "Twitter",
     "logo": "https://logos.composio.dev/api/twitter",
     "category": "social media accounts",
-    "toolCount": 84,
+    "toolCount": 85,
     "triggerCount": 0
   },
   {
@@ -738,7 +738,7 @@
     "name": "Zendesk",
     "logo": "https://logos.composio.dev/api/zendesk",
     "category": "crm",
-    "toolCount": 481,
+    "toolCount": 484,
     "triggerCount": 2
   },
   {
@@ -840,7 +840,7 @@
     "name": "Zoom",
     "logo": "https://logos.composio.dev/api/zoom",
     "category": "video conferencing",
-    "toolCount": 109,
+    "toolCount": 111,
     "triggerCount": 11
   },
   {
@@ -1504,7 +1504,7 @@
     "name": "Kommo",
     "logo": "https://logos.composio.dev/api/kommo",
     "category": "crm",
-    "toolCount": 53,
+    "toolCount": 62,
     "triggerCount": 0
   },
   {
@@ -1696,7 +1696,7 @@
     "name": "Cloudflare",
     "logo": "https://logos.composio.dev/api/cloudflare",
     "category": "security & identity tools",
-    "toolCount": 170,
+    "toolCount": 171,
     "triggerCount": 0
   },
   {
@@ -2812,6 +2812,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "azure_blob_storage",
+    "name": "Azure Blob Storage",
+    "logo": "https://logos.composio.dev/api/azure_blob_storage",
+    "category": "file management & storage",
+    "toolCount": 57,
+    "triggerCount": 0
+  },
+  {
+    "slug": "azure_devops",
+    "name": "Azure DevOps",
+    "logo": "https://logos.composio.dev/api/azure_devops",
+    "category": "developer tools",
+    "toolCount": 795,
+    "triggerCount": 0
+  },
+  {
     "slug": "azure_monitor_activity_log",
     "name": "Azure Monitor Activity Log",
     "logo": "https://logos.composio.dev/api/azure_monitor_activity_log",
@@ -3211,7 +3227,7 @@
     "name": "Botdog",
     "logo": "https://logos.composio.dev/api/botdog",
     "category": "sales & crm",
-    "toolCount": 12,
+    "toolCount": 14,
     "triggerCount": 0
   },
   {
@@ -4130,7 +4146,7 @@
     "name": "Cloudflare Api Key",
     "logo": "https://www.cloudflare.com/img/logo-cloudflare.svg",
     "category": "security & identity tools",
-    "toolCount": 102,
+    "toolCount": 103,
     "triggerCount": 0,
     "instant": {
       "supported": true
@@ -4419,7 +4435,7 @@
     "name": "Constant Contact",
     "logo": "https://logos.composio.dev/api/constant_contact",
     "category": "marketing",
-    "toolCount": 93,
+    "toolCount": 95,
     "triggerCount": 0
   },
   {
@@ -8353,6 +8369,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "lark",
+    "name": "Lark",
+    "logo": "https://logos.composio.dev/api/lark",
+    "category": "productivity",
+    "toolCount": 451,
+    "triggerCount": 0
+  },
+  {
     "slug": "layerre",
     "name": "Layerre",
     "logo": "https://logos.composio.dev/api/layerre",
@@ -8939,6 +8963,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "many_chat",
+    "name": "ManyChat",
+    "logo": "https://logos.composio.dev/api/many_chat",
+    "category": "marketing automation",
+    "toolCount": 34,
+    "triggerCount": 0
+  },
+  {
     "slug": "manyreach",
     "name": "ManyReach",
     "logo": "https://logos.composio.dev/api/manyreach",
@@ -9022,6 +9054,22 @@
     "logo": "https://logos.composio.dev/api/maxio",
     "category": "commerce",
     "toolCount": 177,
+    "triggerCount": 0
+  },
+  {
+    "slug": "meetgeek",
+    "name": "MeetGeek",
+    "logo": "https://logos.composio.dev/api/meetgeek",
+    "category": "productivity",
+    "toolCount": 12,
+    "triggerCount": 0
+  },
+  {
+    "slug": "meister_task",
+    "name": "MeisterTask",
+    "logo": "https://logos.composio.dev/api/meistertask",
+    "category": "project management",
+    "toolCount": 100,
     "triggerCount": 0
   },
   {
@@ -11402,7 +11450,7 @@
     "name": "QuickBooks",
     "logo": "https://logos.composio.dev/api/quickbooks",
     "category": "accounting",
-    "toolCount": 114,
+    "toolCount": 119,
     "triggerCount": 0
   },
   {
@@ -11910,6 +11958,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "roblox",
+    "name": "Roblox",
+    "logo": "https://logos.composio.dev/api/roblox",
+    "category": "gaming",
+    "toolCount": 347,
+    "triggerCount": 0
+  },
+  {
     "slug": "roboflow",
     "name": "Roboflow",
     "logo": "https://logos.composio.dev/api/roboflow",
@@ -12091,6 +12147,14 @@
     "logo": "https://logos.composio.dev/api/saucelabs",
     "category": "developer tools",
     "toolCount": 6,
+    "triggerCount": 0
+  },
+  {
+    "slug": "savvycal",
+    "name": "SavvyCal",
+    "logo": "https://logos.composio.dev/api/savvycal",
+    "category": "scheduling & booking",
+    "toolCount": 22,
     "triggerCount": 0
   },
   {
@@ -12691,7 +12755,7 @@
     "name": "Simplero",
     "logo": "https://logos.composio.dev/api/simplero",
     "category": "marketing automation",
-    "toolCount": 19,
+    "toolCount": 36,
     "triggerCount": 0
   },
   {
@@ -14015,6 +14079,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "unsplash",
+    "name": "Unsplash",
+    "logo": "https://logos.composio.dev/api/unsplash",
+    "category": "images & design",
+    "toolCount": 29,
+    "triggerCount": 0
+  },
+  {
     "slug": "unstructured",
     "name": "Unstructured",
     "logo": "https://logos.composio.dev/api/unstructured",
@@ -14795,6 +14867,14 @@
     "triggerCount": 0
   },
   {
+    "slug": "zoho_bookings",
+    "name": "Zoho Bookings",
+    "logo": "https://logos.composio.dev/api/zoho_bookings",
+    "category": "scheduling & booking",
+    "toolCount": 27,
+    "triggerCount": 0
+  },
+  {
     "slug": "zoho_calendar",
     "name": "Zoho Calendar",
     "logo": "https://logos.composio.dev/api/zoho_calendar",
@@ -14819,6 +14899,22 @@
     "triggerCount": 0
   },
   {
+    "slug": "zoho_creator",
+    "name": "Zoho Creator",
+    "logo": "https://logos.composio.dev/api/zoho_creator",
+    "category": "app builder",
+    "toolCount": 25,
+    "triggerCount": 0
+  },
+  {
+    "slug": "zoho_forms",
+    "name": "Zoho Forms",
+    "logo": "https://logos.composio.dev/api/zoho_forms",
+    "category": "forms & surveys",
+    "toolCount": 11,
+    "triggerCount": 0
+  },
+  {
     "slug": "zoho_people",
     "name": "Zoho People",
     "logo": "https://logos.composio.dev/api/zoho_people",
@@ -14840,6 +14936,14 @@
     "logo": "https://logos.composio.dev/api/zoho_recruit",
     "category": "hr talent & recruitment",
     "toolCount": 62,
+    "triggerCount": 0
+  },
+  {
+    "slug": "zoho_sheet",
+    "name": "Zoho Sheet",
+    "logo": "https://logos.composio.dev/api/zoho_sheet",
+    "category": "spreadsheets",
+    "toolCount": 127,
     "triggerCount": 0
   },
   {

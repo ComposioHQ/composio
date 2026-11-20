@@ -75,7 +75,7 @@ session = composio.create(
     session_preset=SESSION_PRESET_DIRECT_TOOLS,
     toolkits=["hackernews"],
     tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
-    experimental={"custom_toolkits": [research]},
+    experimental={"local_toolkits": [research]},
 )
 try:
     tools = session.tools()
@@ -134,7 +134,7 @@ const session = await composio.create('custom-tools-demo', {
   sessionPreset: SessionPreset.DIRECT_TOOLS,
   toolkits: ['hackernews'],
   tools: { hackernews: { enable: ['HACKERNEWS_GET_USER'] } },
-  experimental: { customToolkits: [research] },
+  experimental: { localToolkits: [research] },
 });
 try {
   const tools = await session.tools();

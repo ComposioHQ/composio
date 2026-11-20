@@ -249,7 +249,7 @@ export class MCP {
    * const server = await composio.experimental.mcp.get("mcp_12345");
    *
    * console.log(server.name); // "My Personal MCP Server"
-   * console.log(server.allowedTools); // ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+   * console.log(server.allowedTools); // ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"]
    * console.log(server.toolkits); // ["github", "slack"]
    * console.log(server.serverInstanceCount); // 3
    *
@@ -343,7 +343,7 @@ export class MCP {
    *     {
    *       toolkit: "github",
    *       authConfigId: "auth_abc123",
-   *       allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_REPOS"]
+   *       allowedTools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_REPOS"]
    *     },
    *     {
    *       toolkit: "slack",

@@ -283,7 +283,7 @@ curl -s "https://backend.composio.dev/api/v3.1/trigger_instances/active?connecte
 curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GMAIL_NEW_GMAIL_MESSAGE/upsert \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"user_id": "user_123", "connected_account_id": "ca_new_own_app_account", "trigger_config": {}, "type": "poll", "polling_interval": 15}' \
+  -d '{"user_id": "user_123", "connected_account_id": "ca_new_own_app_account", "trigger_config": {}, "type": "poll", "polling_interval": 2}' \
   | jq '{trigger_id, type, polling_interval}'
 
 # After your event filters use the new trigger_id, disable the old instance

@@ -278,7 +278,7 @@ importers:
         version: 1.4.4
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -398,7 +398,7 @@ importers:
         version: 4.13.18
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
@@ -794,7 +794,7 @@ importers:
         version: 4.13.18
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 'catalog:'
@@ -822,7 +822,7 @@ importers:
         version: link:../../packages/core
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -920,22 +920,22 @@ importers:
         version: link:../../packages/providers/langchain
       '@langchain/core':
         specifier: ^1.3.6
-        version: 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+        version: 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       '@langchain/langgraph':
         specifier: ^1.7.3
-        version: 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)
+        version: 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)
       '@langchain/openai':
         specifier: ^1.8.2
-        version: 1.8.2(@aws-sdk/credential-provider-node@3.972.97)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)
+        version: 1.8.2(@aws-sdk/credential-provider-node@3.972.87)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.10
       langchain:
         specifier: ^1.6.3
-        version: 1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+        version: 1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
     devDependencies:
       '@types/bun':
         specifier: 'catalog:'
@@ -1084,13 +1084,13 @@ importers:
         version: 1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7)
       '@openai/agents':
         specifier: ^0.21.0
-        version: 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
+        version: 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.10
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -1155,16 +1155,16 @@ importers:
         version: link:../../packages/providers/vercel
       '@langchain/anthropic':
         specifier: ^1.6.2
-        version: 1.6.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))
+        version: 1.6.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
       '@langchain/mcp-adapters':
         specifier: ^2.0.2
-        version: 2.0.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(zod@4.6.7))
+        version: 2.0.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7))
       '@langchain/openai':
         specifier: ^1.8.2
-        version: 1.8.2(@aws-sdk/credential-provider-node@3.972.97)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)
+        version: 1.8.2(@aws-sdk/credential-provider-node@3.972.87)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)
       '@openai/agents':
         specifier: ^0.21.0
-        version: 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
+        version: 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       ai:
         specifier: 'catalog:'
         version: 7.0.166(zod@4.6.7)
@@ -1173,13 +1173,13 @@ importers:
         version: 18.0.10
       langchain:
         specifier: ^1.6.3
-        version: 1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
+        version: 1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       ora:
-        specifier: ^9.4.1
-        version: 9.4.1
+        specifier: ^10.0.0
+        version: 10.0.0
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -1235,7 +1235,7 @@ importers:
         version: 18.0.10
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -1481,7 +1481,7 @@ importers:
         version: 2.0.0
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@7.30.2)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@7.30.2)(ws@8.22.2)(zod@4.6.7)
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
@@ -1549,7 +1549,7 @@ importers:
         version: link:../core
       '@earendil-works/pi-coding-agent':
         specifier: ^1.5.2
-        version: 1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(supports-color@10.2.2)(ws@8.23.0)(zod@4.6.7)
+        version: 1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(ws@8.22.2)(zod@4.6.7)
       eve:
         specifier: ^0.81.1
         version: 0.81.1(@opentelemetry/api@1.10.0)(ai@7.0.166(zod@4.6.7))
@@ -1608,7 +1608,7 @@ importers:
         version: 5.0.81(zod@4.6.7)
       '@langchain/core':
         specifier: ^1.3.6
-        version: 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7))(ws@8.23.0)
+        version: 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -1731,7 +1731,7 @@ importers:
         version: link:../../core
       '@langchain/core':
         specifier: ^1.3.6
-        version: 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7))(ws@8.23.0)
+        version: 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.7(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2))
@@ -1796,7 +1796,7 @@ importers:
         version: link:../../core
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.7(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2))
@@ -1814,7 +1814,7 @@ importers:
         version: link:../../core
       '@openai/agents':
         specifier: ^0.21.0
-        version: 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
+        version: 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       tsdown:
         specifier: 'catalog:'
         version: 0.23.7(@arethetypeswrong/core@0.18.5)(publint@0.3.25)(tsx@4.23.15)(typescript@7.0.2)(unrun@0.2.27(@emnapi/core@2.0.0-beta.2)(@emnapi/runtime@2.0.0-beta.2))
@@ -1895,7 +1895,7 @@ importers:
         version: 2.0.0
       openai:
         specifier: 'catalog:'
-        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@7.30.2)(ws@8.22.2)(zod@4.6.7)
+        version: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@7.30.2)(ws@8.22.2)(zod@4.6.7)
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
@@ -2256,8 +2256,8 @@ packages:
     resolution: {integrity: sha512-96bcp9Pe/Xd60OEwncZ+kAQTQSu+fJnpUGz1qE6ghF5jnETmrk8XMU86mIP3lolvnCgR61XbZ+Ht6hdBjiQOmQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-node@3.972.97':
-    resolution: {integrity: sha512-E4a0IXXJVsIdo/K9roX4JAEfI0JJr7KTPymkbKgETRDqEcLygE4ZlLTe24+7Qkh8Dl5YpnPd+Tt0DOPJDFXIwA==}
+  '@aws-sdk/credential-provider-node@3.972.87':
+    resolution: {integrity: sha512-TKj2C0x4IMPSSOAlmeryX8fCPvvPS2pFJz2ikV9IGqyh6Ehsg4leMalCTVfV2rvMTrlGAe7X7nK0HZ3P0KZR9g==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/credential-provider-process@3.972.84':
@@ -2272,16 +2272,16 @@ packages:
     resolution: {integrity: sha512-duLeE3xlf0viHeH+1RM4z5duR3b32BCZTWVMu+MbxFPjQBxy7hmIGEqt5hekuFPRuXoyhMovjNl+PNNsb5oiGQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/eventstream-handler-node@3.972.42':
-    resolution: {integrity: sha512-YVB1wrpE1WF8NvMpaRyhwm9XBYl3HTbPNEIgybi0b0XpmBrJ7Y3Y/drbxh9qAVMbR+0hcwM63GPWzhOVRuerfg==}
+  '@aws-sdk/eventstream-handler-node@3.972.37':
+    resolution: {integrity: sha512-vU0v4d6anhLqBCpPq7Q7hD2Av3/5qOR5O30Ze8ALLysgB3iMQTPHQ/P2aTgfrY2ZjnVJUCi7NiTSNqa1mDF+5w==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/middleware-eventstream@3.972.38':
-    resolution: {integrity: sha512-4K6FDz2BxH3rve8Hw/8uApWXKCuKKMeYKzY23PoiGqUBWaA23eAy+GzW9aoG3Cm7HqgYzqkljl3ECJRJCxGs7g==}
+  '@aws-sdk/middleware-eventstream@3.972.32':
+    resolution: {integrity: sha512-D3ayeW/K2lTQI8+SyzDvAKfM3N4SFJjfgqeHbS3DOZmmQebZyve6WUyJiqOKqeOxmIcFxTzpSdsijnRF035J3g==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/middleware-websocket@3.972.66':
-    resolution: {integrity: sha512-feGNDB15ZgqX4DTsUykkgj7d8hzfzx03v80EIyRA1FTbsbAJQKxYB50kRbrrpE5WeFaWhgk+p5YHlsoyXrI2/g==}
+  '@aws-sdk/middleware-websocket@3.972.57':
+    resolution: {integrity: sha512-mPNUOedufUwZXISOEySSP7l7owyY0Ypp1ajsd1GsB4E5Vpaf8NtfmmNygyPPeGPsRZ1sOcS90aAhQ03yPy/pFg==}
     engines: {node: '>= 14.0.0'}
 
   '@aws-sdk/nested-clients@3.998.3':
@@ -4436,6 +4436,10 @@ packages:
     resolution: {integrity: sha512-Bq3SmSpyFHaWjPk8If9yc6svM8c56dB5BAtW4Qbw5jHTwwXXcTLoRMkpDJp6VL0XzlWaCHTXrkFURMYmD0sLqg==}
     engines: {node: '>=12'}
 
+  ansi-regex@6.6.0:
+    resolution: {integrity: sha512-XZ5apbzreCbXSKwPjJstu8R0zOi247w3XYwWxtwBXgpZrCyc1Ka7p9/xY0A9/diMewmHbEKz+FIraWaEWjlN5g==}
+    engines: {node: '>=12'}
+
   ansi-styles@4.3.0:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
@@ -4478,10 +4482,6 @@ packages:
 
   brace-expansion@5.0.12:
     resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
-    engines: {node: 20 || >=22}
-
-  brace-expansion@5.0.13:
-    resolution: {integrity: sha512-Vh3dmFbc4wZeox7M9I/0L9GfFd83Su4+yCck/OF9Gi/P/dAHn0RT7X4K9R7gMNMhDck3DvhR6QXsnQdjjgwNvQ==}
     engines: {node: 20 || >=22}
 
   buffer-crc32@0.2.13:
@@ -4534,6 +4534,10 @@ packages:
 
   chalk@6.0.0:
     resolution: {integrity: sha512-2uNTXIuTTxk7ciZgAU1BQcgnchcG0xXnrs6jzkQfj9SsRa9M2s5zE8WT96hS6KmG4MzWHSrvH43DF1m4XRkrFg==}
+    engines: {node: '>=22'}
+
+  chalk@6.0.1:
+    resolution: {integrity: sha512-/Ce6KNm3vIbWdMlNna6RVIZ/ICQxnJxCicet5LBKK9ZffBkqzDw0xh9EiKSljdRtiIQ1S1z4YgcscUUGzNCWrA==}
     engines: {node: '>=22'}
 
   change-case@5.4.4:
@@ -5008,6 +5012,10 @@ packages:
     resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
     engines: {node: '>=18'}
 
+  get-east-asian-width@1.7.0:
+    resolution: {integrity: sha512-XjH1AECxf0giL2V1aU8vKyRR2ppRUb5c0EvT7zuJTokQ74bNo52zOtghqdWIqrhUD79fo3x0WfKZdOqxF6LG1Q==}
+    engines: {node: '>=18'}
+
   get-intrinsic@1.3.0:
     resolution: {integrity: sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==}
     engines: {node: '>= 0.4'}
@@ -5040,8 +5048,8 @@ packages:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
 
-  graceful-fs@4.2.12:
-    resolution: {integrity: sha512-iuyGF2E4oafQfPsRrG2wtY2ILupMhvtdrhzrxB+0VcjsPpSPttpfYdjnGFGsTi5MaJFjI1jOKHPQ6UTbTj9TAw==}
+  graceful-fs@4.2.11:
+    resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
   gray-matter@4.0.3:
     resolution: {integrity: sha512-5v6yZd4JK3eMI3FqqCouswVqwugaA9r4dNZB1wwcmrD02QkV5H0y7XBQW8QwQqEaZY1pM9aqORSORhJRdNK44Q==}
@@ -5745,9 +5753,9 @@ packages:
     peerDependencies:
       typescript: ^5.x
 
-  ora@9.4.1:
-    resolution: {integrity: sha512-6VlU9MLXbjVQD04AZCMX28hVtA5bUoadvUqO76MUCVA0ilwJbMiHsITRPfyVm6p/BC0Av/BXMujx39WCe1LEqw==}
-    engines: {node: '>=20'}
+  ora@10.0.0:
+    resolution: {integrity: sha512-jlxvSlLi1aKgPUnRf8NMjwyor1CM4K+faxuycHYTvygjjtkM596tQBXGEp/PQAVqzftrCBMRJlw6+RAJS5nOtQ==}
+    engines: {node: '>=22'}
 
   oxlint-plugin-eslint@1.94.0:
     resolution: {integrity: sha512-H7wS6QlHsNO0MwmQAcpjcArx9ruaM5pnRn2LKeXVcYmLV6vj/sebxNLKfSCsvIlYGzk/mBCQTk3ujOp2yn9i0g==}
@@ -6194,8 +6202,8 @@ packages:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
     engines: {node: '>=8'}
 
-  string-width@8.2.2:
-    resolution: {integrity: sha512-GaPUh5gfdrYzqeVNZvUfT23vYYxXzKYidUcnMtJg/3rxRV63EFZy3k6xfKlmfeJD0176lnUV/Usr3XcwSvFzpg==}
+  string-width@8.3.0:
+    resolution: {integrity: sha512-ZbmZM0JCihQN91dWnxoipT2KOEyHqEyfRXUyjuRhW8b/xnqPDoq4gWEVApTVa9db2wN8mmoikgFBbjh71+cGeQ==}
     engines: {node: '>=20'}
 
   strip-ansi@6.0.1:
@@ -6708,18 +6716,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.23.0:
-    resolution: {integrity: sha512-wCkmX8QMOrKjgO8HW2WyDbTSGeqkocxgDzS9iR79rEAexty6/2qzilx3Ag8Tqf9ykop3irLKle0MtVn5qjVnoQ==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   wsl-utils@1.0.0:
     resolution: {integrity: sha512-Hl0ZOAs672vg+06kfujwRhoS6/jehvULrlFkuF2dRu6pHgA8U06h3xqNIqNNU1LTXPcedxByAR4GS6pwQK0mgA==}
     engines: {node: '>=20'}
@@ -6761,6 +6757,10 @@ packages:
 
   yoctocolors@2.1.2:
     resolution: {integrity: sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==}
+    engines: {node: '>=18'}
+
+  yoctocolors@2.2.0:
+    resolution: {integrity: sha512-xYqdZFUK/VYazNl/oCDYN+3WloWQwMfZxBoiNt6qNyk+xfOdi598muWE42rNZFp1kNOiqW936q5RhUdnpqElSg==}
     engines: {node: '>=18'}
 
   youch-core@0.3.3:
@@ -7158,10 +7158,10 @@ snapshots:
   '@aws-sdk/client-bedrock-runtime@3.1127.0':
     dependencies:
       '@aws-sdk/core': 3.981.0
-      '@aws-sdk/credential-provider-node': 3.972.97
-      '@aws-sdk/eventstream-handler-node': 3.972.42
-      '@aws-sdk/middleware-eventstream': 3.972.38
-      '@aws-sdk/middleware-websocket': 3.972.66
+      '@aws-sdk/credential-provider-node': 3.972.87
+      '@aws-sdk/eventstream-handler-node': 3.972.37
+      '@aws-sdk/middleware-eventstream': 3.972.32
+      '@aws-sdk/middleware-websocket': 3.972.57
       '@aws-sdk/token-providers': 3.1127.0
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.41.0
@@ -7224,7 +7224,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.9.1
 
-  '@aws-sdk/credential-provider-node@3.972.97':
+  '@aws-sdk/credential-provider-node@3.972.87':
     dependencies:
       '@aws-sdk/credential-provider-env': 3.972.84
       '@aws-sdk/credential-provider-http': 3.972.86
@@ -7265,21 +7265,21 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.9.1
 
-  '@aws-sdk/eventstream-handler-node@3.972.42':
+  '@aws-sdk/eventstream-handler-node@3.972.37':
     dependencies:
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.41.0
       '@smithy/types': 4.20.0
       tslib: 2.9.1
 
-  '@aws-sdk/middleware-eventstream@3.972.38':
+  '@aws-sdk/middleware-eventstream@3.972.32':
     dependencies:
       '@aws-sdk/types': 3.975.1
       '@smithy/core': 3.41.0
       '@smithy/types': 4.20.0
       tslib: 2.9.1
 
-  '@aws-sdk/middleware-websocket@3.972.66':
+  '@aws-sdk/middleware-websocket@3.972.57':
     dependencies:
       '@aws-sdk/core': 3.981.0
       '@aws-sdk/types': 3.975.1
@@ -7559,9 +7559,9 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@earendil-works/pi-agent-core@1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7)':
+  '@earendil-works/pi-agent-core@1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7)':
     dependencies:
-      '@earendil-works/pi-ai': 1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(supports-color@10.2.2)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7)
+      '@earendil-works/pi-ai': 1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7)
       '@earendil-works/pi-schema': 1.5.2
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -7576,7 +7576,7 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(supports-color@10.2.2)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7)':
+  '@earendil-works/pi-ai@1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 0.129.0(zod@4.6.7)
       '@aws-sdk/client-bedrock-runtime': 3.1127.0
@@ -7584,9 +7584,9 @@ snapshots:
       '@earendil-works/pi-telemetry': 1.5.2
       '@google/genai': 2.21.0(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))
       '@smithy/node-http-handler': 4.12.1
-      http-proxy-agent: 9.1.0(supports-color@10.2.2)
-      https-proxy-agent: 9.1.0(supports-color@10.2.2)
-      openai: 7.19.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7)
+      http-proxy-agent: 9.1.0
+      https-proxy-agent: 9.1.0
+      openai: 7.19.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7)
       partial-json: 0.1.7
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -7605,10 +7605,10 @@ snapshots:
     dependencies:
       quickjs-wasi: 3.6.2
 
-  '@earendil-works/pi-coding-agent@1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(supports-color@10.2.2)(ws@8.23.0)(zod@4.6.7)':
+  '@earendil-works/pi-coding-agent@1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(ws@8.22.2)(zod@4.6.7)':
     dependencies:
-      '@earendil-works/pi-agent-core': 1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7)
-      '@earendil-works/pi-ai': 1.5.2(@aws-sdk/credential-provider-node@3.972.97)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(supports-color@10.2.2)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7)
+      '@earendil-works/pi-agent-core': 1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7)
+      '@earendil-works/pi-ai': 1.5.2(@aws-sdk/credential-provider-node@3.972.87)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7))(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7)
       '@earendil-works/pi-codemode': 1.5.2
       '@earendil-works/pi-mcp': 1.5.2
       '@earendil-works/pi-tui': 1.5.2
@@ -7886,7 +7886,7 @@ snapshots:
       google-auth-library: 10.9.1
       p-retry: 4.6.2
       protobufjs: 7.6.5
-      ws: 8.23.0
+      ws: 8.22.2
     optionalDependencies:
       '@modelcontextprotocol/sdk': 1.32.2(@cfworker/json-schema@4.1.6)(zod@4.6.7)
     transitivePeerDependencies:
@@ -8039,18 +8039,18 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@langchain/anthropic@1.6.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))':
+  '@langchain/anthropic@1.6.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
     dependencies:
       '@anthropic-ai/sdk': 1.7.0(zod@4.6.7)
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       zod: 4.6.7
 
-  '@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)':
+  '@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)':
     dependencies:
       '@cfworker/json-schema': 4.1.6
       '@standard-schema/spec': 1.1.0
       js-tiktoken: 1.0.21
-      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       mustache: 4.2.0
       p-queue: 6.6.2
       zod: 4.6.7
@@ -8061,75 +8061,27 @@ snapshots:
       - openai
       - ws
 
-  '@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)':
+  '@langchain/langgraph-checkpoint@1.2.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
     dependencies:
-      '@cfworker/json-schema': 4.1.6
-      '@standard-schema/spec': 1.1.0
-      js-tiktoken: 1.0.21
-      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      mustache: 4.2.0
-      p-queue: 6.6.2
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-      - '@opentelemetry/exporter-trace-otlp-proto'
-      - '@opentelemetry/sdk-trace-base'
-      - openai
-      - ws
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
 
-  '@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7))(ws@8.23.0)':
+  '@langchain/langgraph-checkpoint@1.2.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
     dependencies:
-      '@cfworker/json-schema': 4.1.6
-      '@standard-schema/spec': 1.1.0
-      js-tiktoken: 1.0.21
-      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7))(ws@8.23.0)
-      mustache: 4.2.0
-      p-queue: 6.6.2
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-      - '@opentelemetry/exporter-trace-otlp-proto'
-      - '@opentelemetry/sdk-trace-base'
-      - openai
-      - ws
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
 
-  '@langchain/langgraph-checkpoint@1.2.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
+  '@langchain/langgraph-sdk@1.15.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
     dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
-
-  '@langchain/langgraph-checkpoint@1.2.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-
-  '@langchain/langgraph-checkpoint@1.2.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
-
-  '@langchain/langgraph-checkpoint@1.2.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-
-  '@langchain/langgraph-sdk@1.15.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       '@langchain/protocol': 0.0.21
       '@types/json-schema': 7.0.15
       p-queue: 9.3.3
       p-retry: 7.1.1
 
-  '@langchain/langgraph-sdk@1.15.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))':
+  '@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)':
     dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      '@langchain/protocol': 0.0.21
-      '@types/json-schema': 7.0.15
-      p-queue: 9.3.3
-      p-retry: 7.1.1
-
-  '@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
-      '@langchain/langgraph-checkpoint': 1.2.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
-      '@langchain/langgraph-sdk': 1.15.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      '@langchain/langgraph-checkpoint': 1.2.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
+      '@langchain/langgraph-sdk': 1.15.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
       '@langchain/protocol': 0.0.21
       '@standard-schema/spec': 1.1.0
       zod: 4.6.7
@@ -8137,45 +8089,19 @@ snapshots:
       - react
       - react-dom
 
-  '@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(zod@4.6.7)':
+  '@langchain/mcp-adapters@2.0.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7))':
     dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      '@langchain/langgraph-checkpoint': 1.2.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))
-      '@langchain/langgraph-sdk': 1.15.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))
-      '@langchain/protocol': 0.0.21
-      '@standard-schema/spec': 1.1.0
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - react
-      - react-dom
-
-  '@langchain/mcp-adapters@2.0.2(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(@langchain/langgraph@1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(zod@4.6.7))':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      '@langchain/langgraph': 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(zod@4.6.7)
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      '@langchain/langgraph': 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)
       '@modelcontextprotocol/client': 2.4.0
       '@modelcontextprotocol/core': 2.4.0
       zod: 4.6.7
 
-  '@langchain/openai@1.8.2(@aws-sdk/credential-provider-node@3.972.97)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)':
+  '@langchain/openai@1.8.2(@aws-sdk/credential-provider-node@3.972.87)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)':
     dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       js-tiktoken: 1.0.21
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
-      - '@smithy/hash-node'
-      - '@smithy/signature-v4'
-      - google-auth-library
-      - undici
-      - ws
-
-  '@langchain/openai@1.8.2(@aws-sdk/credential-provider-node@3.972.97)(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)':
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      js-tiktoken: 1.0.21
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
+      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       zod: 4.6.7
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -8655,11 +8581,11 @@ snapshots:
 
   '@noble/hashes@2.4.0': {}
 
-  '@openai/agents-core@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)':
+  '@openai/agents-core@0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
     optionalDependencies:
       '@modelcontextprotocol/client': 2.4.0
       zod: 4.6.7
@@ -8672,11 +8598,11 @@ snapshots:
       - undici
       - ws
 
-  '@openai/agents-core@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7)':
+  '@openai/agents-core@0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       debug: 4.4.3(supports-color@10.2.2)
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7)
+      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7)
     optionalDependencies:
       '@modelcontextprotocol/client': 2.4.0
       zod: 4.6.7
@@ -8689,13 +8615,10 @@ snapshots:
       - undici
       - ws
 
-  '@openai/agents-core@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)':
+  '@openai/agents-openai@0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)':
     dependencies:
-      '@standard-schema/spec': 1.1.0
-      debug: 4.4.3(supports-color@10.2.2)
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
-    optionalDependencies:
-      '@modelcontextprotocol/client': 2.4.0
+      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       zod: 4.6.7
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -8706,23 +8629,9 @@ snapshots:
       - undici
       - ws
 
-  '@openai/agents-openai@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)':
+  '@openai/agents-realtime@0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(zod@4.6.7)':
     dependencies:
-      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
-      - '@smithy/hash-node'
-      - '@smithy/signature-v4'
-      - google-auth-library
-      - supports-color
-      - undici
-      - ws
-
-  '@openai/agents-realtime@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(zod@4.6.7)':
-    dependencies:
-      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7)
+      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7)
       '@types/ws': 8.18.2
       ws: 8.22.0
       zod: 4.6.7
@@ -8736,30 +8645,12 @@ snapshots:
       - undici
       - utf-8-validate
 
-  '@openai/agents@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)':
+  '@openai/agents@0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)':
     dependencies:
-      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
-      '@openai/agents-openai': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
-      '@openai/agents-realtime': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(zod@4.6.7)
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
-      - '@smithy/hash-node'
-      - '@smithy/signature-v4'
-      - bufferutil
-      - google-auth-library
-      - supports-color
-      - undici
-      - utf-8-validate
-      - ws
-
-  '@openai/agents@0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)':
-    dependencies:
-      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
-      '@openai/agents-openai': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
-      '@openai/agents-realtime': 0.21.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(zod@4.6.7)
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
+      '@openai/agents-core': 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(supports-color@10.2.2)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+      '@openai/agents-openai': 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+      '@openai/agents-realtime': 0.21.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(zod@4.6.7)
+      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       zod: 4.6.7
     transitivePeerDependencies:
       - '@aws-sdk/credential-provider-node'
@@ -9509,6 +9400,8 @@ snapshots:
 
   ansi-regex@6.2.2: {}
 
+  ansi-regex@6.6.0: {}
+
   ansi-styles@4.3.0:
     dependencies:
       color-convert: 2.0.1
@@ -9553,10 +9446,6 @@ snapshots:
     dependencies:
       balanced-match: 4.0.4
 
-  brace-expansion@5.0.13:
-    dependencies:
-      balanced-match: 4.0.4
-
   buffer-crc32@0.2.13: {}
 
   buffer-equal-constant-time@1.0.1: {}
@@ -9598,6 +9487,8 @@ snapshots:
   chalk@5.6.2: {}
 
   chalk@6.0.0: {}
+
+  chalk@6.0.1: {}
 
   change-case@5.4.4: {}
 
@@ -10090,6 +9981,8 @@ snapshots:
 
   get-east-asian-width@1.6.0: {}
 
+  get-east-asian-width@1.7.0: {}
+
   get-intrinsic@1.3.0:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -10136,7 +10029,7 @@ snapshots:
 
   gopd@1.2.0: {}
 
-  graceful-fs@4.2.12: {}
+  graceful-fs@4.2.11: {}
 
   gray-matter@4.0.3:
     dependencies:
@@ -10196,7 +10089,7 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@9.1.0(supports-color@10.2.2):
+  http-proxy-agent@9.1.0:
     dependencies:
       agent-base: 9.0.0
       debug: 4.4.3(supports-color@10.2.2)
@@ -10212,7 +10105,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@9.1.0(supports-color@10.2.2):
+  https-proxy-agent@9.1.0:
     dependencies:
       agent-base: 9.0.0
       debug: 4.4.3(supports-color@10.2.2)
@@ -10348,12 +10241,12 @@ snapshots:
 
   kleur@4.1.5: {}
 
-  langchain@1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2):
+  langchain@1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2):
     dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
-      '@langchain/langgraph': 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)
-      '@langchain/langgraph-checkpoint': 1.2.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
-      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
+      '@langchain/langgraph': 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))(zod@4.6.7)
+      '@langchain/langgraph-checkpoint': 1.2.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2))
+      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2)
       zod: 4.6.7
     transitivePeerDependencies:
       - '@opentelemetry/api'
@@ -10364,45 +10257,13 @@ snapshots:
       - react-dom
       - ws
 
-  langchain@1.6.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0):
-    dependencies:
-      '@langchain/core': 1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      '@langchain/langgraph': 1.7.3(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))(zod@4.6.7)
-      '@langchain/langgraph-checkpoint': 1.2.0(@langchain/core@1.3.6(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0))
-      langsmith: 0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0)
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-      - '@opentelemetry/exporter-trace-otlp-proto'
-      - '@opentelemetry/sdk-trace-base'
-      - openai
-      - react
-      - react-dom
-      - ws
-
-  langsmith@0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2):
+  langsmith@0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.22.2):
     dependencies:
       p-queue: 6.6.2
     optionalDependencies:
       '@opentelemetry/api': 1.10.0
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
+      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
       ws: 8.22.2
-
-  langsmith@0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7))(ws@8.23.0):
-    dependencies:
-      p-queue: 6.6.2
-    optionalDependencies:
-      '@opentelemetry/api': 1.10.0
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7)
-      ws: 8.23.0
-
-  langsmith@0.11.0(@opentelemetry/api@1.10.0)(openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7))(ws@8.23.0):
-    dependencies:
-      p-queue: 6.6.2
-    optionalDependencies:
-      '@opentelemetry/api': 1.10.0
-      openai: 7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7)
-      ws: 8.23.0
 
   launch-editor@2.14.2:
     dependencies:
@@ -10472,7 +10333,7 @@ snapshots:
   log-symbols@7.0.1:
     dependencies:
       is-unicode-supported: 2.1.0
-      yoctocolors: 2.1.2
+      yoctocolors: 2.2.0
 
   long@5.3.2: {}
 
@@ -10866,11 +10727,11 @@ snapshots:
   minimatch@11.0.3:
     dependencies:
       '@isaacs/nonrecursive-glob-match': 1.1.0
-      brace-expansion: 5.0.13
+      brace-expansion: 5.0.12
 
   minimatch@5.1.9:
     dependencies:
-      brace-expansion: 5.0.13
+      brace-expansion: 5.0.12
 
   mri@1.2.0: {}
 
@@ -10970,44 +10831,35 @@ snapshots:
       ws: 8.22.2
       zod: 4.6.7
 
-  openai@7.19.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.23.0)(zod@4.6.7):
+  openai@7.19.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(undici@8.12.4)(ws@8.22.2)(zod@4.6.7):
     optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.97
+      '@aws-sdk/credential-provider-node': 3.972.87
       '@smithy/signature-v4': 5.7.5
       undici: 8.12.4
-      ws: 8.23.0
+      ws: 8.22.2
       zod: 4.6.7
 
-  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7):
+  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.0)(zod@4.6.7):
     optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.97
+      '@aws-sdk/credential-provider-node': 3.972.87
       '@smithy/signature-v4': 5.7.5
       google-auth-library: 10.9.1
       undici: 6.29.1
       ws: 8.22.0
       zod: 4.6.7
 
-  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7):
+  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.22.2)(zod@4.6.7):
     optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.97
+      '@aws-sdk/credential-provider-node': 3.972.87
       '@smithy/signature-v4': 5.7.5
       google-auth-library: 10.9.1
       undici: 6.29.1
       ws: 8.22.2
       zod: 4.6.7
 
-  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@6.29.1)(ws@8.23.0)(zod@4.6.7):
+  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.87)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@7.30.2)(ws@8.22.2)(zod@4.6.7):
     optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.97
-      '@smithy/signature-v4': 5.7.5
-      google-auth-library: 10.9.1
-      undici: 6.29.1
-      ws: 8.23.0
-      zod: 4.6.7
-
-  openai@7.55.0(@aws-sdk/credential-provider-node@3.972.97)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@7.30.2)(ws@8.22.2)(zod@4.6.7):
-    optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.97
+      '@aws-sdk/credential-provider-node': 3.972.87
       '@smithy/signature-v4': 5.7.5
       google-auth-library: 10.9.1
       undici: 7.30.2
@@ -11024,16 +10876,16 @@ snapshots:
       typescript: '@typescript/typescript6@6.0.2'
       yargs-parser: 21.1.1
 
-  ora@9.4.1:
+  ora@10.0.0:
     dependencies:
-      chalk: 5.6.2
+      chalk: 6.0.1
       cli-cursor: 5.0.0
       cli-spinners: 3.4.0
       is-interactive: 2.0.0
       is-unicode-supported: 2.1.0
       log-symbols: 7.0.1
       stdin-discarder: 0.3.2
-      string-width: 8.2.2
+      string-width: 8.3.0
 
   oxlint-plugin-eslint@1.94.0: {}
 
@@ -11161,7 +11013,7 @@ snapshots:
 
   proper-lockfile@4.1.2:
     dependencies:
-      graceful-fs: 4.2.12
+      graceful-fs: 4.2.11
       retry: 0.12.0
       signal-exit: 3.0.7
 
@@ -11558,9 +11410,9 @@ snapshots:
       is-fullwidth-code-point: 3.0.0
       strip-ansi: 6.0.1
 
-  string-width@8.2.2:
+  string-width@8.3.0:
     dependencies:
-      get-east-asian-width: 1.6.0
+      get-east-asian-width: 1.7.0
       strip-ansi: 7.2.0
 
   strip-ansi@6.0.1:
@@ -11569,7 +11421,7 @@ snapshots:
 
   strip-ansi@7.2.0:
     dependencies:
-      ansi-regex: 6.2.2
+      ansi-regex: 6.6.0
 
   strip-bom-string@1.0.0: {}
 
@@ -12012,8 +11864,6 @@ snapshots:
 
   ws@8.22.2: {}
 
-  ws@8.23.0: {}
-
   wsl-utils@1.0.0:
     dependencies:
       is-wsl: 3.1.1
@@ -12049,6 +11899,8 @@ snapshots:
       fd-slicer: 1.1.0
 
   yoctocolors@2.1.2: {}
+
+  yoctocolors@2.2.0: {}
 
   youch-core@0.3.3:
     dependencies:

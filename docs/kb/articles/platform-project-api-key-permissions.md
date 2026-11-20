@@ -21,4 +21,4 @@ Create a correctly scoped Project API key or use an appropriate full-access Proj
 
 ## Session tool execution requires write access
 
-Set **Session tool execution** to Write to search and execute tools through a session or its MCP server. This permission allows the key to invoke any tool exposed by the session-linked MCP server. It does not cover session proxy requests; those need **Proxy execute**.
+Set **Session tool execution** to Write to search and execute tools through a session or its MCP server, including session proxy requests. **Proxy execute (Legacy)** with Write access also grants the session proxy route. Either permission is sufficient for that route. The direct `/tools/execute/proxy` route requires **Proxy execute (Legacy)**.

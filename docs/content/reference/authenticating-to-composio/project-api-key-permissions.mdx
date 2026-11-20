@@ -143,13 +143,14 @@ The Session config read routes below are experimental and require Session config
 
 ## Session tool execution
 
-Search and execute tools through sessions and session-linked MCP servers. Session proxy execution is not included; grant [Proxy execute](#proxy-execute-legacy) for that.
+Search and execute tools through sessions and session-linked MCP servers, including session proxy requests. The session proxy route also accepts [Proxy execute](#proxy-execute-legacy) with Write only access. Either permission grants that route.
 
 | Access | Method | Route                                            |
 | ------ | ------ | ------------------------------------------------ |
 | Write  | `POST` | `/tool_router/session/{session_id}/execute`      |
 | Write  | `POST` | `/tool_router/session/{session_id}/execute_meta` |
 | Write  | `POST` | `/tool_router/session/{session_id}/search`       |
+| Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
 
 For [session-linked MCP access](/docs/sessions-via-mcp), use `session.mcp.url` and `session.mcp.headers` unchanged. `POST` requests require Session tool execution with Write only access. The transport does not support `GET` (SSE) or `DELETE`; granting additional permissions does not enable those methods.
 
@@ -252,7 +253,7 @@ Execute predefined Composio tools.
 
 Execute raw proxy requests against connected accounts.
 
-Proxy execute is separate from tool execution and from Session tool execution. It is the only permission that grants the session proxy route below, whether the call comes from `session.proxyExecute()` or from code running in that session's sandbox. Grant it only when your application needs to call a connected account API through the raw proxy path.
+Proxy execute grants the direct and session proxy routes below. The session proxy route also accepts **Session tool execution → Write only**. The direct `/tools/execute/proxy` route requires **Proxy execute**. Grant this permission when your application needs direct proxy access or session proxy access without session tool execution.
 
 | Access | Method | Route                                             |
 | ------ | ------ | ------------------------------------------------- |

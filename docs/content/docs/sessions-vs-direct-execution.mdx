@@ -83,12 +83,12 @@ The agent discovers app tools through `COMPOSIO_SEARCH_TOOLS`:
 User: "Create a GitHub issue for the login bug"
 
 > Agent calls COMPOSIO_SEARCH_TOOLS({ query: "create github issue" })
-  Returns: GITHUB_CREATE_ISSUE schema + connection status
+  Returns: GITHUB_CREATE_AN_ISSUE schema + connection status
 
 > Agent calls COMPOSIO_MANAGE_CONNECTIONS({ toolkits: ["github"] })
   Returns: confirms connected (or auth link if not)
 
-> Agent calls COMPOSIO_MULTI_EXECUTE_TOOL({ tool: "GITHUB_CREATE_ISSUE", args: {...} })
+> Agent calls COMPOSIO_MULTI_EXECUTE_TOOL({ tool: "GITHUB_CREATE_AN_ISSUE", args: {...} })
   Returns: issue details
 
 Agent: "Created issue #42 on your-org/your-repo"
@@ -160,7 +160,7 @@ composio = Composio(
 # Fetch specific tools
 tools = composio.tools.get(
     user_id="user_123",
-    tools=["GITHUB_CREATE_ISSUE", "GITHUB_LIST_ISSUES"]
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_ISSUES"]
 )
 
 # Or by toolkit
@@ -172,7 +172,7 @@ tools = composio.tools.get(
 
 # Execute without an LLM
 result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     user_id="user_123",
     arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
     dangerously_skip_version_check=True,  # required when running "latest"; or pin via version=...
@@ -192,7 +192,7 @@ const composio = new Composio({
 
 // Fetch specific tools
 const tools = await composio.tools.get("user_123", {
-  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_ISSUES"],
+  tools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_ISSUES"],
 });
 
 // Or by toolkit
@@ -202,7 +202,7 @@ const allTools = await composio.tools.get("user_123", {
 });
 
 // Execute without an LLM
-const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
+const result = await composio.tools.execute("GITHUB_CREATE_AN_ISSUE", {
   userId: "user_123",
   arguments: { owner: "my-org", repo: "my-repo", title: "Fix login bug" },
   dangerouslySkipVersionCheck: true, // required when running "latest"; or pin via version
@@ -212,7 +212,7 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 <Tab value="API">
 ```bash
 # Fetch specific tools
-curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_ISSUE,GITHUB_LIST_ISSUES&toolkit_versions=latest" \
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_AN_ISSUE,GITHUB_LIST_ISSUES&toolkit_versions=latest" \
   -H "x-api-key: $COMPOSIO_API_KEY"
 
 # Or by toolkit
@@ -220,7 +220,7 @@ curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=github&lim
   -H "x-api-key: $COMPOSIO_API_KEY"
 
 # Execute without an LLM
-curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_ISSUE \
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_AN_ISSUE \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
