@@ -72,7 +72,10 @@ async function expectStatus(status: number, run: () => Promise<unknown>): Promis
   try {
     result = await run();
   } catch (error) {
-    assert(statusOf(error) === status, `expected ${status}, got ${statusOf(error) ?? error}`);
+    assert(
+      statusOf(error) === status,
+      `expected ${status}, got ${statusOf(error) ?? (error instanceof Error ? error.message : String(error))}`
+    );
     return;
   }
   throw new Error(`expected ${status}, but the call succeeded with ${JSON.stringify(result)}`);

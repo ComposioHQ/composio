@@ -6,6 +6,7 @@ import {
   verifyPublishedProviders,
 } from '../scripts/sdk-release/consumers';
 import {
+  fetchInputUrl,
   makeExecutable,
   readText,
   resolvePath,
@@ -139,7 +140,7 @@ describe('candidate core with published providers', () => {
       process.env.PATH = `${bin}:${previous}`;
       await expect(
         runRelease(verifyPublishedProviders(cwd, candidates, '1.0.0', work), async input =>
-          String(input).includes('/composio-brandnew/')
+          fetchInputUrl(input).includes('/composio-brandnew/')
             ? new Response('{}', { status: 404 })
             : new Response('{}')
         )

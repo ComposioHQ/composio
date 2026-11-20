@@ -76,7 +76,7 @@ export const NO_DIRECTORY_PROJECT_NOTICE =
  */
 export const runRecordingRepositoryScopes = (
   args: ReadonlyArray<string>,
-  layer: Layer.Layer<TerminalUI> | undefined = undefined
+  layer?: Layer.Layer<TerminalUI>
 ) =>
   Effect.gen(function* () {
     const recorder = recordRepositoryScopes();

@@ -32,7 +32,7 @@ async function level1() {
 
 async function main() {
   try {
-    const composio = new Composio({
+    new Composio({
       apiKey: 'test-api-key',
     });
 

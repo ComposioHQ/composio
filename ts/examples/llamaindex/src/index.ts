@@ -62,7 +62,7 @@ async function main() {
       tools,
     });
 
-    const stream = await hackernewsAgent.runStream('Summarize the front page of hackernews');
+    const stream = hackernewsAgent.runStream('Summarize the front page of hackernews');
 
     for await (const event of stream) {
       if (agentStreamEvent.include(event)) {

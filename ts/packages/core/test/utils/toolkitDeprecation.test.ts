@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import logger from '../../src/utils/logger';
 import {
   _resetToolkitDeprecationWarningsForTests,
@@ -194,10 +194,13 @@ describe('createToolkitDeprecationFetch', () => {
   const response = (headers: Record<string, string> = {}): Response =>
     new Response('{"ok":true}', { status: 200, headers });
 
+  let warnSpy: MockInstance<typeof logger.warn>;
+  let debugSpy: MockInstance<typeof logger.debug>;
+
   beforeEach(() => {
     _resetToolkitDeprecationWarningsForTests();
-    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    vi.spyOn(logger, 'debug').mockImplementation(() => undefined);
+    warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    debugSpy = vi.spyOn(logger, 'debug').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -213,10 +216,8 @@ describe('createToolkitDeprecationFetch', () => {
     const second = await wrapped('https://backend.composio.test/api/v3/toolkits/gmail');
 
     expect(base).toHaveBeenCalledTimes(2);
-    expect(logger.warn).toHaveBeenCalledTimes(1);
-    expect(String(vi.mocked(logger.warn).mock.calls[0]?.[0])).toContain(
-      'GMAIL version 20250114_00'
-    );
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]?.[0]).toContain('GMAIL version 20250114_00');
     expect(await first.json()).toEqual({ ok: true });
     expect(await second.json()).toEqual({ ok: true });
   });
@@ -226,7 +227,7 @@ describe('createToolkitDeprecationFetch', () => {
       response({ 'Composio-Deprecated-Toolkits': BARE_ITEM })
     );
     await wrapped('https://backend.composio.test/api/v3/toolkits/strava');
-    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
   it('warns for a second toolkit version even after the first was deduped', async () => {
@@ -234,13 +235,13 @@ describe('createToolkitDeprecationFetch', () => {
       response({ [TOOLKIT_DEPRECATION_HEADER]: `${FULL_ITEM}, ${BARE_ITEM}` })
     );
     await wrapped('https://backend.composio.test/a');
-    expect(logger.warn).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledTimes(2);
 
     const next = createToolkitDeprecationFetch(async () =>
       response({ [TOOLKIT_DEPRECATION_HEADER]: '"GMAIL";version="20250201_00"' })
     );
     await next('https://backend.composio.test/b');
-    expect(logger.warn).toHaveBeenCalledTimes(3);
+    expect(warnSpy).toHaveBeenCalledTimes(3);
   });
 
   it('does nothing without the header and swallows a malformed value', async () => {
@@ -250,7 +251,7 @@ describe('createToolkitDeprecationFetch', () => {
     );
     expect(await (await plain('https://backend.composio.test/a')).json()).toEqual({ ok: true });
     expect(await (await garbage('https://backend.composio.test/b')).json()).toEqual({ ok: true });
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('warns again after the test reset helper clears the record', async () => {
@@ -260,7 +261,7 @@ describe('createToolkitDeprecationFetch', () => {
     await wrapped('https://backend.composio.test/a');
     _resetToolkitDeprecationWarningsForTests();
     await wrapped('https://backend.composio.test/a');
-    expect(logger.warn).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledTimes(2);
   });
 
   it('resolves the global fetch per call when no base fetch is given', async () => {
@@ -271,7 +272,7 @@ describe('createToolkitDeprecationFetch', () => {
       const result = await wrapped('https://backend.composio.test/a', { method: 'GET' });
       expect(stub).toHaveBeenCalledWith('https://backend.composio.test/a', { method: 'GET' });
       expect(result.status).toBe(200);
-      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -283,7 +284,7 @@ describe('createToolkitDeprecationFetch', () => {
       throw failure;
     });
     await expect(wrapped('https://backend.composio.test/a')).rejects.toBe(failure);
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('ignores a header longer than 2048 characters and still returns the body', async () => {
@@ -293,7 +294,7 @@ describe('createToolkitDeprecationFetch', () => {
     );
     const result = await wrapped('https://backend.composio.test/a');
     expect(await result.json()).toEqual({ ok: true });
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('ignores a header carrying a control character and still returns the body', async () => {
@@ -302,7 +303,7 @@ describe('createToolkitDeprecationFetch', () => {
     );
     const result = await wrapped('https://backend.composio.test/a');
     expect(await result.json()).toEqual({ ok: true });
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('stops recording new versions after 1024 keys without evicting the old ones', async () => {
@@ -316,13 +317,13 @@ describe('createToolkitDeprecationFetch', () => {
     };
 
     for (let next = 1; next <= 1024; next++) await send(next);
-    expect(logger.warn).toHaveBeenCalledTimes(1024);
+    expect(warnSpy).toHaveBeenCalledTimes(1024);
 
     await send(1025);
-    expect(logger.warn).toHaveBeenCalledTimes(1024);
+    expect(warnSpy).toHaveBeenCalledTimes(1024);
 
     for (let next = 1; next <= 1024; next++) await send(next);
-    expect(logger.warn).toHaveBeenCalledTimes(1024);
+    expect(warnSpy).toHaveBeenCalledTimes(1024);
   });
 
   it('still resolves when the logger sink throws from both warn and debug', async () => {
@@ -355,7 +356,7 @@ describe('createToolkitDeprecationFetch', () => {
     const wrapped = createToolkitDeprecationFetch(async () => broken);
     const result = await wrapped('https://backend.composio.test/a');
     expect(result).toBe(broken);
-    expect(logger.debug).toHaveBeenCalledTimes(1);
-    expect(logger.warn).not.toHaveBeenCalled();
+    expect(debugSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,7 @@ import * as BunPath from '@effect/platform-bun/BunPath';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
-import { DateTime, Effect, Layer, Option, Schema } from 'effect';
+import { Formatter, DateTime, Effect, Layer, Option, Schema } from 'effect';
 import { setupCacheDir } from 'src/effects/setup-cache-dir';
 import { writeFileAtomic } from 'src/effects/write-file-atomic';
 import { JSONTransformSchema } from 'src/models/utils/json-transform-schema';
@@ -70,7 +70,7 @@ export const readKnownToolkitSlugs: Effect.Effect<Option.Option<KnownToolkitSlug
 ).pipe(
   Effect.asSome,
   Effect.catch(error =>
-    Effect.logDebug(`No usable ${KNOWN_TOOLKIT_SLUGS_FILE}: ${error}`).pipe(
+    Effect.logDebug(`No usable ${KNOWN_TOOLKIT_SLUGS_FILE}: ${Formatter.format(error)}`).pipe(
       Effect.as(Option.none<KnownToolkitSlugs>())
     )
   ),
@@ -100,6 +100,8 @@ export const writeKnownToolkitSlugs = (
     yield* writeFileAtomic(filePath, content);
     yield* Effect.logDebug(`Recorded ${slugs.length} toolkit slugs in ${filePath}`);
   }).pipe(
-    Effect.catch(error => Effect.logDebug(`Failed to record known toolkit slugs: ${error}`)),
+    Effect.catch(error =>
+      Effect.logDebug(`Failed to record known toolkit slugs: ${Formatter.format(error)}`)
+    ),
     provideFileSystem
   );

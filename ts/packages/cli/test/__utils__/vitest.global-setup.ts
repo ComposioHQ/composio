@@ -4,7 +4,7 @@ import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 // which imports the `bun` builtin at module scope and crashes Node's ESM resolver (vitest runs
 // under Node, not Bun).
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Effect, FileSystem, Layer, Option, References } from 'effect';
+import { Formatter, Effect, FileSystem, Layer, Option, References } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/process';
 import path from 'node:path';
 
@@ -74,7 +74,7 @@ function setupFixturesTypeScript(fixturePaths: string[]) {
           );
         }).pipe(
           Effect.catch(error =>
-            Effect.logError(`Failed to setup fixture ${fixtureDirName}: ${error}`)
+            Effect.logError(`Failed to setup fixture ${fixtureDirName}: ${Formatter.format(error)}`)
           )
         );
       }),
@@ -150,7 +150,7 @@ function setupFixturesPython(fixturePaths: string[]) {
           );
         }).pipe(
           Effect.catch(error =>
-            Effect.logError(`Failed to setup fixture ${fixtureDirName}: ${error}`)
+            Effect.logError(`Failed to setup fixture ${fixtureDirName}: ${Formatter.format(error)}`)
           )
         );
       }),

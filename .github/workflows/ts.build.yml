@@ -61,8 +61,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Linting
-        run: pnpm lint
-
+      # Type-aware lint resolves workspace imports through built declarations.
       - name: Run Build
         run: pnpm run build:packages
+
+      - name: Run Linting
+        run: pnpm lint

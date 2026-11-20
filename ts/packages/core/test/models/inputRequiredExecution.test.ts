@@ -181,7 +181,7 @@ describe('execution that requires user input', () => {
     expect(JSON.parse(serialized)).not.toHaveProperty('requestState');
 
     expect(Object.keys(error)).not.toContain('requestState');
-    expect({ ...error }).not.toHaveProperty('requestState');
+    expect(Object.keys(error)).not.toContain('requestState');
 
     error.prettyPrint(true);
     ComposioError.handle(error, { includeStack: true });

@@ -1,5 +1,5 @@
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Cache, Effect, Option, Schema, Layer, Array as Arr } from 'effect';
+import { Formatter, Cache, Effect, Option, Schema, Layer, Array as Arr } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
@@ -87,7 +87,7 @@ function createCachedEffect<T, E, R>(
       return Option.some(cacheFilter ? yield* cacheFilter(cached) : cached);
     }).pipe(
       Effect.catch(error =>
-        Effect.logWarning(`Ignoring cache ${cacheFilePath}: ${error}`).pipe(
+        Effect.logWarning(`Ignoring cache ${cacheFilePath}: ${Formatter.format(error)}`).pipe(
           Effect.as(Option.none<T>())
         )
       )
@@ -102,7 +102,7 @@ function createCachedEffect<T, E, R>(
     encoder(result).pipe(
       Effect.flatMap(content => writeFileAtomic(cacheFilePath, content)),
       Effect.catch(error =>
-        Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${error}`)
+        Effect.logWarning(`Failed to write to cache ${cacheFilePath}: ${Formatter.format(error)}`)
       )
     );
 
@@ -115,9 +115,9 @@ function createCachedEffect<T, E, R>(
     const cacheFilePath = yield* setupCacheDir.pipe(
       Effect.map(cacheDir => Option.some(path.join(cacheDir, cacheFileName))),
       Effect.catch(error =>
-        Effect.logWarning(`Cache unavailable for ${cacheFileName}: ${error}`).pipe(
-          Effect.as(Option.none<string>())
-        )
+        Effect.logWarning(
+          `Cache unavailable for ${cacheFileName}: ${Formatter.format(error)}`
+        ).pipe(Effect.as(Option.none<string>()))
       )
     );
 

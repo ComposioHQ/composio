@@ -53,11 +53,12 @@ jobs:
       - name: Validate Changesets
         run: pnpm validate:changesets
 
-      - name: Run Linting
-        run: pnpm lint
-
+      # Type-aware lint resolves workspace imports through built declarations.
       - name: Run Build
         run: pnpm run build:packages
+
+      - name: Run Linting
+        run: pnpm lint
 
       - name: Create Release Pull Request & Publish packages
         id: changesets

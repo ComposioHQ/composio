@@ -9,9 +9,6 @@ import {
   ToolRouterToolsParam,
   ToolRouterConfigManageConnectionsSchema,
   ToolRouterCreateSessionConfigSchema,
-  ToolRouterToolkitsParamSchema,
-  ToolRouterToolkitsDisabledConfigSchema,
-  ToolRouterToolkitsEnabledConfigSchema,
   ToolRouterUpdateSessionConfigSchema,
   ToolRouterUpdateManageConnectionsConfig,
   ToolRouterUpdateManageConnectionsSchema,
@@ -41,7 +38,7 @@ const requireApprovalParam = <T extends string>(
   requireApproval !== undefined ? { require_approval: requireApproval } : {};
 
 export const transformToolRouterToolsParams = (
-  params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
+  params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools>
 ): Record<string, SessionToolsEntry> | undefined => {
   if (!params) {
     return undefined;
@@ -104,7 +101,7 @@ export const transformToolRouterTagsParams = (
 };
 
 export const transformToolRouterManageConnectionsParams = (
-  params?: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
+  params?: z.infer<typeof ToolRouterConfigManageConnectionsSchema>
 ): NonNullable<SessionCreateParams['manage_connections']> => {
   if (params === undefined) {
     // Default case when params is undefined
@@ -137,7 +134,7 @@ export const transformToolRouterManageConnectionsParams = (
 
 export const resolveToolRouterSandboxConfig = (
   config: Pick<ParsedCreateSessionConfig, 'sandbox' | 'workbench'>
-): ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench'] => {
+): ParsedCreateSessionConfig['sandbox'] => {
   if (config.sandbox !== undefined && config.workbench !== undefined) {
     throw new ValidationError(
       'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.'
@@ -186,7 +183,7 @@ export const resolveLocalToolsOptions = (
 };
 
 export const transformToolRouterSandboxParams = (
-  params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
+  params?: ParsedCreateSessionConfig['sandbox']
 ): NonNullable<SessionCreateParams['workbench']> | undefined => {
   if (!params) {
     return undefined;

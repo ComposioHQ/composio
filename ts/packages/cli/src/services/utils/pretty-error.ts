@@ -1,3 +1,4 @@
+import { Formatter } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, S_BAR_H, unicodeOr } from '@clack/prompts';
 
@@ -5,11 +6,15 @@ const S_CORNER_TOP_LEFT = unicodeOr('╭', '+');
 const S_CORNER_BOTTOM_LEFT = unicodeOr('╰', '+');
 
 export function renderPrettyError(errorLines: Array<[key: string, value: unknown]>): string {
-  return Array.from(renderPrettyErrorGen(errorLines)).join('\n');
+  const lines = errorLines.map(([key, value]): [string, string] => [
+    key,
+    typeof value === 'string' ? value : Formatter.format(value),
+  ]);
+  return Array.from(renderPrettyErrorGen(lines)).join('\n');
 }
 
 function* renderPrettyErrorGen(
-  errorLines: Array<[key: string, value: unknown]>
+  errorLines: Array<[key: string, value: string]>
 ): Generator<string, void, unknown> {
   if (errorLines.length === 0) {
     yield '';

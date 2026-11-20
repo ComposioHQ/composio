@@ -3,7 +3,7 @@ import { ConfigProvider, Console, Effect } from 'effect';
 import { NpmCli, publishNpm, type Distribution } from '../scripts/sdk-release/registry';
 import { CommandError, sha256Hex } from '../scripts/sdk-release/runtime';
 import { batch } from './sdk-release-controller-fixture';
-import { runRelease, type Fetch } from './sdk-release-harness';
+import { fetchInputUrl, runRelease, type Fetch } from './sdk-release-harness';
 
 const ID_TOKEN_REQUEST_URL = 'https://token.actions.example.test/oidc?api-version=2.0';
 const ID_TOKEN_REQUEST_TOKEN = 'actions-request-secret';
@@ -36,7 +36,7 @@ interface Sent {
 const fakeRegistry = (refused: ReadonlySet<string>) => {
   const sent: Sent[] = [];
   const fetch: Fetch = async (input, init) => {
-    const url = String(input);
+    const url = fetchInputUrl(input);
     const method = init?.method ?? 'GET';
     sent.push({ method, url, authorization: new Headers(init?.headers).get('authorization') });
     if (url.startsWith('https://token.actions.example.test/'))

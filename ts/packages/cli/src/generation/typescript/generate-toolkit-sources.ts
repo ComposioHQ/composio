@@ -306,16 +306,13 @@ function generateTypeScriptToolkitSource(_banner: string) {
           )
       );
 
+      const toolValueName = toolValueDeclaration.name as string;
       file.add(
         ts
-          .moduleExport(
-            ts
-              .constDeclaration(toolValueDeclaration.name as string)
-              .setValue(toolValueDeclaration.value)
-          )
+          .moduleExport(ts.constDeclaration(toolValueName).setValue(toolValueDeclaration.value))
           .setDocComment(
             ts.docComment(
-              `Map of Composio's ${toolValueDeclaration.name} toolkit.${version ? `\n@toolkit-version: ${version}` : ''}`
+              `Map of Composio's ${toolValueName} toolkit.${version ? `\n@toolkit-version: ${version}` : ''}`
             )
           )
       );

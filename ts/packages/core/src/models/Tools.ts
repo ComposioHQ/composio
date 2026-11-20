@@ -344,7 +344,7 @@ export class Tools<
     error: z.ZodError,
     droppedSides: Array<'inputParameters' | 'outputParameters'>
   ): void {
-    const slug = String((tool as { slug?: unknown }).slug ?? '');
+    const slug = typeof tool.slug === 'string' ? tool.slug : '';
     if (slug && this.warnedMalformedToolParametersSlugs.has(slug)) return;
     if (slug) this.warnedMalformedToolParametersSlugs.add(slug);
     const inputFailed = droppedSides.includes('inputParameters');

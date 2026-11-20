@@ -19,10 +19,9 @@ export class RootHelpContext extends Context.Service<
 >()('commands/RootHelpContext') {}
 
 /** Keep a short root overview; the framework generates every usage, flag, and subcommand. */
-export const helpFormatter = () => {
+export const helpFormatter = (): CliOutput.Formatter => {
   const formatter = CliOutput.defaultFormatter();
-  return {
-    ...formatter,
+  return Object.assign({}, formatter, {
     formatVersion: (_name: string, version: string) => version,
     formatHelpDoc: (doc: Parameters<typeof formatter.formatHelpDoc>[0]) => {
       const text = formatter.formatHelpDoc(doc);
@@ -30,7 +29,7 @@ export const helpFormatter = () => {
         ? `${text}\n\nUse \`composio <command> --help\` for command details.\nDocumentation: https://docs.composio.dev`
         : text;
     },
-  } satisfies CliOutput.Formatter;
+  });
 };
 
 export const showCommandHelp = (parts: ReadonlyArray<string> = []) =>
@@ -44,10 +43,12 @@ export const showCommandHelp = (parts: ReadonlyArray<string> = []) =>
       version,
       builtIns,
     }).pipe(
-      Effect.provideService(Console.Console, {
-        ...console,
-        log: (...args) => console.info(...args),
-      })
+      Effect.provideService(
+        Console.Console,
+        Object.assign({}, console, {
+          log: (...args: ReadonlyArray<unknown>) => console.info(...args),
+        })
+      )
     );
   });
 

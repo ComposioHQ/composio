@@ -41,6 +41,6 @@ export function escapeStringContent(content: string, quoteStyle: QuoteStyle): st
       return '`' + content.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$') + '`';
 
     default:
-      throw new Error(`Unsupported quote style: ${quoteStyle}`);
+      throw new Error(`Unsupported quote style: ${String(quoteStyle)}`);
   }
 }
