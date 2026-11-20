@@ -2,7 +2,7 @@ name: Issue Triage
 
 on:
   issues:
-    # Maintainers can add `triage` to classify, or `support` to forward directly.
+    # New issues are triaged once. Maintainers can add `triage` to reclassify, or `support` to forward directly.
     types: [opened, reopened, edited, labeled]
   workflow_dispatch:
     inputs:
@@ -20,7 +20,7 @@ jobs:
     outputs:
       allowed: ${{ steps.authorize.outputs.allowed }}
     steps:
-      - name: Require a maintainer to initiate triage
+      - name: Allow new issues, and require a maintainer for everything else
         id: authorize
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -28,6 +28,12 @@ jobs:
             if (context.payload.action === "labeled" &&
                 !["triage", "support"].includes(context.payload.label?.name)) {
               core.setOutput("allowed", "false");
+              return;
+            }
+            // A new issue is triaged once for anyone: the classifier has no tools and apply only posts fixed text.
+            // Edits, reopens, labels, and dispatches still need a maintainer, so a reporter cannot re-run it.
+            if (context.eventName === "issues" && context.payload.action === "opened") {
+              core.setOutput("allowed", "true");
               return;
             }
             let allowed = false;
@@ -51,17 +57,23 @@ jobs:
     timeout-minutes: 5
     permissions:
       issues: read
+      # Exchanged for a short-lived OpenRouter token below; this job stores no model API key.
+      id-token: write
     outputs:
       structured_output: ${{ steps.classify.outputs.structured_output }}
       issue_number: ${{ steps.classify.outputs.issue_number }}
 
     steps:
       # A single tool-free API call: issue text never reaches a local agent.
-      - name: Classify issue with Claude Sonnet
+      - name: Classify issue with Jev on OpenRouter
         id: classify
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # The OpenRouter workload identity policy that trusts this repository's GitHub OIDC tokens, and the
+          # audience that policy expects. Both are repository variables, not secrets.
+          OPENROUTER_FEDERATION_POLICY_ID: ${{ vars.OPENROUTER_FEDERATION_POLICY_ID }}
+          OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE: ${{ vars.OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE }}
+          OPENROUTER_MODEL: typesafe/jev-router
           ISSUE_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.issue_number || github.event.issue.number }}
         with:
           script: |
@@ -81,7 +93,7 @@ jobs:
             const explicitTriage = context.eventName === "workflow_dispatch" ||
               (context.payload.action === "labeled" && context.payload.label?.name === "triage");
             if (labels.includes("support") && !explicitTriage) {
-              // A maintainer's explicit routing decision needs no model or API key.
+              // A maintainer's explicit routing decision needs no model or token.
               core.setOutput("structured_output", JSON.stringify({
                 category: "other",
                 is_bug: labels.includes("bug"),
@@ -96,8 +108,15 @@ jobs:
               core.info("The support label has been removed; skipping forwarding.");
               return;
             }
-            if (!process.env.ANTHROPIC_API_KEY) {
-              throw new Error("ANTHROPIC_API_KEY is not configured");
+            const federationPolicyId = process.env.OPENROUTER_FEDERATION_POLICY_ID;
+            const audience = process.env.OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE;
+            const model = process.env.OPENROUTER_MODEL;
+            for (const [name, value] of Object.entries({
+              OPENROUTER_FEDERATION_POLICY_ID: federationPolicyId,
+              OPENROUTER_WORKLOAD_IDENTITY_AUDIENCE: audience,
+              OPENROUTER_MODEL: model,
+            })) {
+              if (!value) throw new Error(`${name} is not configured`);
             }
 
             const schema = {
@@ -141,46 +160,78 @@ jobs:
             Choose py only when the issue is primarily about Python SDK code in this repository.
             Choose ts only when the issue is primarily about TypeScript SDK code or TS packages other than the CLI in this repository.
             Choose docs only when the issue is primarily about documentation.
-            Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug. If the broken existing integration/tool does not identify an SDK, CLI, docs, or Python code defect in this repository, choose support so it is forwarded to Plain.
+            Never choose tool-request for a broken existing integration or tool. Those are bugs, not tool requests, even if the title/body mentions a tool name or toolkit slug. If the broken existing integration/tool does not identify an SDK, CLI, docs, or Python code defect in this repository, choose support so the reporter is pointed to the dashboard Support page.
             Set is_bug to true when the issue is primarily reporting broken behavior, a defect, an error, a regression, or unexpected behavior, including support-routed hosted integration/tool bugs.
             Set is_bug to false for feature requests, questions, maintenance, cleanup, and true new-tool requests.
             Set should_comment to true when the issue appears incorrect, non-actionable, missing the information needed to reproduce or investigate, or when category is support.
             Set should_comment to false otherwise.
             `;
 
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
+            // Workload identity federation (RFC 8693): GitHub's OIDC token for this run is exchanged for an
+            // OpenRouter access token that expires within 15 minutes.
+            const subjectToken = await core.getIDToken(audience);
+            const exchange = await fetch("https://openrouter.ai/api/v1/oauth/token", {
+              method: "POST",
+              redirect: "error",
+              signal: AbortSignal.timeout(30_000),
+              headers: {
+                "content-type": "application/x-www-form-urlencoded",
+                "accept": "application/json",
+              },
+              body: new URLSearchParams({
+                grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+                subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+                subject_token: subjectToken,
+                federation_policy_id: federationPolicyId,
+              }).toString(),
+            });
+            if (!exchange.ok) {
+              throw new Error(`OpenRouter token exchange failed with HTTP ${exchange.status}`);
+            }
+            const accessToken = (await exchange.json())?.access_token;
+            if (typeof accessToken !== "string" || !accessToken) {
+              throw new Error("OpenRouter token exchange returned no access token");
+            }
+            core.setSecret(accessToken);
+
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
               method: "POST",
               redirect: "error",
               signal: AbortSignal.timeout(60_000),
               headers: {
-                "x-api-key": process.env.ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
+                "authorization": `Bearer ${accessToken}`,
                 "content-type": "application/json",
               },
               body: JSON.stringify({
-                model: "claude-sonnet-5-5",
-                max_tokens: 2048,
-                system,
-                messages: [{
-                  role: "user",
-                  content: JSON.stringify({ title: issue.title || "", body: issue.body || "" }),
-                }],
-                output_config: { format: { type: "json_schema", schema } },
+                model,
+                max_tokens: 4096,
+                messages: [
+                  { role: "system", content: system },
+                  { role: "user", content: JSON.stringify({ title: issue.title || "", body: issue.body || "" }) },
+                ],
+                response_format: {
+                  type: "json_schema",
+                  json_schema: { name: "issue_triage", strict: true, schema },
+                },
+                // Jev routes each request to a model; only accept one that enforces the schema.
+                provider: { require_parameters: true },
               }),
             });
             if (!response.ok) {
-              throw new Error(`Claude API request failed with HTTP ${response.status}`);
+              throw new Error(`OpenRouter request failed with HTTP ${response.status}`);
             }
             const result = await response.json();
-            if (result.stop_reason !== "end_turn" || result.content?.length !== 1 || result.content[0].type !== "text") {
-              throw new Error("Claude did not return a complete classification");
+            const choice = result.choices?.length === 1 ? result.choices[0] : undefined;
+            if (choice?.finish_reason !== "stop" || typeof choice.message?.content !== "string" ||
+                choice.message.tool_calls?.length) {
+              throw new Error("The model did not return a complete classification");
             }
-            const parsed = JSON.parse(result.content[0].text);
+            const parsed = JSON.parse(choice.message.content);
             if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) ||
                 Object.keys(parsed).length !== schema.required.length ||
                 !schema.required.every(key => Object.hasOwn(parsed, key) && typeof parsed[key] === schema.properties[key].type) ||
                 !schema.properties.category.enum.includes(parsed.category)) {
-              throw new Error("Claude returned an invalid classification");
+              throw new Error("The model returned an invalid classification");
             }
             core.setOutput("structured_output", JSON.stringify(parsed));
             core.setOutput("issue_number", String(issue_number));
@@ -236,6 +287,7 @@ jobs:
               issue_number,
             });
 
+            const SUPPORT_URL = "https://dashboard.composio.dev/~/org/support";
             const labels = [];
             const assignees = [];
             const suppressToolRequestHandling = isBug && category === "tool-request";
@@ -312,7 +364,7 @@ jobs:
                 owner,
                 repo,
                 issue_number,
-                body: "🤖 Automated Claude triage note: this issue is missing details needed to investigate it. Please add the steps to reproduce, the expected and actual behavior, your environment (package or CLI version, runtime, OS), and any relevant logs or screenshots. Claude cannot reply back in a conversation.",
+                body: "🤖 Automated triage note: this issue is missing details needed to investigate it. Please add the steps to reproduce, the expected and actual behavior, your environment (package or CLI version, runtime, OS), and any relevant logs or screenshots. This bot cannot reply back in a conversation.",
               });
             }
 
@@ -463,7 +515,43 @@ jobs:
               return thread;
             }
 
-            if (isSupport) {
+            // Account, billing, usage and hosted-product issues need the reporter's org, so they go through the dashboard.
+            const redirectMarker = "<!-- composio-support-redirected -->";
+            const forwardMarker = "<!-- composio-support-forwarded -->";
+            const botComments = isSupport
+              ? (await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number }))
+                  .filter(comment => comment.user?.login === "github-actions[bot]")
+              : [];
+            // Redirect once: if the reporter reopens, the next maintainer triage forwards it instead of closing it again.
+            const alreadyRedirected = botComments.some(comment => comment.body?.includes(redirectMarker));
+            const redirectToDashboard = category === "support" && !alreadyRedirected && issue.state === "open";
+            if (redirectToDashboard) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: [
+                  redirectMarker,
+                  "🤖 beep boop — this looks like a support request rather than a bug in this repository's SDKs, CLI, or docs.",
+                  "",
+                  `Please open a ticket from the Support page in your Composio dashboard: ${SUPPORT_URL}. Tickets filed there are tied to your account, so the team can look at your connections and logs and reply to you directly.`,
+                  "",
+                  "I've tagged this as `support` and closed it here.",
+                  "",
+                  "If you think I got this wrong, reopen the issue and a maintainer will take a look.",
+                ].join("\n"),
+              });
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: "closed",
+              });
+            }
+
+            // An edit to an issue that was redirected and is still closed must not create a Plain thread.
+            if (isSupport && !redirectToDashboard && !(alreadyRedirected && issue.state === "closed")) {
               if (!process.env.PLAIN_API_KEY) throw new Error("PLAIN_API_KEY is not configured; support forwarding cannot complete.");
               for (let attempt = 1; ; attempt++) {
                 try {
@@ -476,14 +564,12 @@ jobs:
                   await new Promise(resolve => setTimeout(resolve, attempt * 1000));
                 }
               }
-              const marker = "<!-- composio-support-forwarded -->";
-              const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
-              if (!comments.some(comment => comment.user?.login === "github-actions[bot]" && comment.body?.includes(marker))) {
+              if (!botComments.some(comment => comment.body?.includes(forwardMarker))) {
                 await github.rest.issues.createComment({
                   owner,
                   repo,
                   issue_number,
-                  body: `${marker}\nThis issue requires coordination with another team or repository. It is labeled \`support\` and has been forwarded to Plain for triage.`,
+                  body: `${forwardMarker}\nThis issue requires coordination with another team or repository. It is labeled \`support\` and has been forwarded to Plain for triage.`,
                 });
               }
             }
