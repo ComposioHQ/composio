@@ -16,10 +16,8 @@
 //        prints the redirect URL to authorize it (one browser visit per toolkit)
 //   node scripts/examples-provision.mjs --gc [--dry-run]
 //        DESTRUCTIVE. Deletes resources example runs leak into the project:
-//        connected accounts that never became ACTIVE, surplus serpapi demo
-//        accounts, and MCP configs named `examples-<label>-<unix-seconds>`,
-//        which is the name every example gives the configs it creates.
-//        Configs from runs predating that convention are not matched.
+//        connected accounts that never became ACTIVE and surplus serpapi demo
+//        accounts.
 //        Connected accounts are only ever deleted when they are bound to an
 //        `examples-<slug>` auth config, which only this script creates. An
 //        account the examples did not create is never touched, whatever user
@@ -123,10 +121,7 @@ function request(method, path, body) {
   });
 }
 
-// Two pagination shapes are in play. Most v3.1 collections (auth_configs,
-// connected_accounts) return `next_cursor`; /mcp/servers never does and reports
-// current_page/total_pages instead. Follow whichever the response actually
-// offers, otherwise the MCP cleanup silently stops after one page.
+// Follow cursor or page-number pagination according to the collection response.
 const MAX_PAGES = 50;
 
 async function listAll(path, key = 'items') {
@@ -222,18 +217,6 @@ if (GC) {
   ];
   for (const account of doomedAccounts) {
     await gcDelete('connected account', `/api/v3.1/connected_accounts/${account.id}`, account);
-  }
-
-  // Example runs name their MCP configs `examples-<label>-<unix-seconds>`.
-  // Both halves are load-bearing. The reserved `examples-` prefix is what proves
-  // an example created it, and the trailing timestamp keeps a hand-made
-  // `examples-scratch` out of the delete set. Matching a bare trailing digit run
-  // instead would also claim names like `release-1754923456`. Seconds, not
-  // milliseconds: the API caps MCP names at 30 characters.
-  const EXAMPLE_MCP_NAME = /^examples-[a-z0-9-]+-\d{10}$/;
-  const mcpServers = await listAll('/api/v3.1/mcp/servers');
-  for (const server of mcpServers.filter(s => EXAMPLE_MCP_NAME.test(s.name ?? '') && stale(s))) {
-    await gcDelete('mcp config', `/api/v3.1/mcp/${server.id}`, server);
   }
 }
 
