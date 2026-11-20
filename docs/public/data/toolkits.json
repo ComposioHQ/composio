@@ -77806,6 +77806,9 @@
       "OAUTH2",
       "API_KEY"
     ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
+    ],
     "toolCount": 101,
     "triggerCount": 0,
     "version": "20261116_00",
