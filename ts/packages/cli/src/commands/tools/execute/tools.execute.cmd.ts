@@ -30,7 +30,7 @@ const file = Flag.String('file').pipe(
 );
 const accountOption = Flag.String('account').pipe(
   Flag.withDescription(
-    'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id.'
+    'Connected account selector for the inferred toolkit. Matches alias, word_id, or connected account id. Pass instant_account to run on the Composio instant account instead.'
   ),
   Flag.atLeast(0),
   Flag.map(Array.head)
