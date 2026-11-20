@@ -47,6 +47,7 @@
         "@anthropic-ai/sdk": "^0.115.0",
         "@composio/anthropic": "0.11.8",
         "@composio/claude-agent-sdk": "0.13.1",
+        "@composio/client": "2.1.33",
         "@composio/core": "0.30.0",
         "@composio/google": "0.13.0",
         "@composio/langchain": "0.11.3",

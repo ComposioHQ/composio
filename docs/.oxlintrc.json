@@ -67,6 +67,10 @@
       {
         "selector": "TemplateElement[value.raw=/dashboard\\.composio\\.dev\\u002F(?!~\\u002F(project|org)([\\u002F?#]|$)|login([\\u002F?#]|$))/]",
         "message": "Composio dashboard links with a path must be go-links (/~/project/... or /~/org/...) or /login so they resolve inside the user workspace."
+      },
+      {
+        "selector": "CallExpression[callee.name=/^(fetch|fetcher|fetchWithRetry)$/] :matches(TemplateElement[value.raw=/\\/api\\/v3/], Literal[value=/\\/api\\/v3/], Identifier[name=/^(PRODUCTION_API_V3_URL|PRODUCTION_API_V31_URL|API_BASE)$/])",
+        "message": "Call the Composio API through @composio/client: createComposioClient and the list helpers in lib/composio-api.ts. They page every list, so no single response exceeds the 2 MB Next.js data-cache entry limit, which keeps serving a stale copy."
       }
     ]
   },

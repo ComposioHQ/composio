@@ -48,24 +48,43 @@ toolkit, OpenAPI, API index, or meta-tool generation.
   to a value other than `0`, then deploy again.
 - The guaranteed code rollback is to revert the toolkit route integration and
   deploy the reverted revision.
-
-## Verification
-
-A local workflow test cannot prove GitHub App installation permissions. The
-required proof is a `workflow_dispatch` run at the exact reviewed head that
-passes the token step and reaches `Generate toolkits data`.
-
-Run `32797593048` at commit `3716bda` passed both the token step and
-`Generate toolkits data`. This proves the installation accepted the token
-request at that exact head. The hosted runtime contains a `COMPOSIO_API_KEY`
-environment variable name, but its production scope has not been verified.
-Production fallback behavior therefore remains unverified until a deployed
-snapshot-miss toolkit page returns 200 with the expected toolkit data.
-
-For future changes:
-
+- Every docs catalog read (toolkits, tools, trigger types, and the toolkit
+  changelog) goes through `@composio/client` (v3.1), built in
+  `lib/composio-api.ts`. `scripts/fetch-openapi.mjs` and `app/api/proxy` keep
+  raw `fetch`: the first downloads OpenAPI documents, and the second forwards
+  arbitrary playground requests. The toolkit page, `/llms.mdx` and
+  `/api/tools/[slug]` use `Composio.fromEnv`, so `COMPOSIO_BASE_URL` selects
+  the API host; the toolkit generator, `/api/toolkits/instant` and the snapshot-miss
+  lookup always call production. Lists use its
+  helpers, which page with `@composio/client/pagination`: toolkit pages and
+  `/llms.mdx/toolkits/<slug>` at `TOOL_PAGE_SIZE`, `/api/toolkits/instant` at
+  `TOOLKIT_PAGE_SIZE`, and `generate:toolkits` at the API's per-endpoint cap
+  (1000 tools or toolkits, 50 trigger types). Live traversals during a page
+  render abort after `LIVE_TRAVERSAL_TIMEOUT_MS` and fall back to the snapshot.
+  A failed traversal fails `generate:toolkits` instead of publishing an empty
+  list. In
+  Next.js each page is its own Data Cache entry. Next.js does not cache an
+  entry over 2 MiB, and keeps serving the previous entry; an entry holds the body
+  base64-encoded, so a response must stay under about 1.5 MiB. The limit is
+  fixed in Next.js and lifted only by a custom `cacheHandler`. A single
+  unpaginated request froze `tableau.md` at 10 of 436 tools after the toolkit
+  grew, and the snapshot stopped `microsoft_365` at 1000 of 1208 tools. oxlint
+  rejects a raw `fetch`, `fetcher` or `fetchWithRetry` call to `/api/v3*`.
+- Dropping response fields does not replace paging. The API has no field
+  selection and the Data Cache stores response bodies as received. Even reduced
+  to the fields the pages render, `microsoft_365` measured 2.25 MB.
 - Run `bun run lint:links` from `docs/` after editing this record.
 - Dispatch `Docs - Update Data` at the exact reviewed head after changing token
   permissions.
 - After deployment, verify one snapshot-backed slug and one valid production
   slug absent from the committed snapshot both return 200.
+- `Docs - Toolkit Parity` runs `bun run check:toolkit-parity` every six hours.
+  For the toolkits with the most tools, ranked by production count and by
+  snapshot count, it fails when a deployed `.md` page
+  lists a tool count matching neither production nor the snapshot, when the
+  snapshot stops at the 1000-item page cap below production, when
+  `/api/toolkits/instant` differs from production, or when a production
+  `/tools` or `/toolkits` page would make a cache entry over
+  `PAGE_BYTES_BUDGET` (85% of 2 MiB). A failure opens one
+  `docs-toolkit-parity` issue, posts it to Slack, and the next clean run
+  closes it.

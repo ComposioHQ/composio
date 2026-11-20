@@ -125,12 +125,11 @@ describe('fetchToolkitFromProduction', () => {
       ],
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(fetcher.mock.calls[0]?.[0]).toBe('https://backend.composio.dev/api/v3/toolkits/github');
-    expect(fetcher.mock.calls[0]?.[1]).toEqual({
-      headers: { 'Content-Type': 'application/json', 'x-api-key': 'test-key' },
-      next: { revalidate: 3600 },
-      signal: expect.any(AbortSignal),
-    });
+    expect(fetcher.mock.calls[0]?.[0]).toBe('https://backend.composio.dev/api/v3.1/toolkits/github');
+    const init = fetcher.mock.calls[0]?.[1] as (RequestInit & { next?: unknown }) | undefined;
+    expect(new Headers(init?.headers).get('x-api-key')).toBe('test-key');
+    expect(init?.next).toEqual({ revalidate: 3600 });
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
   test('matches the committed snapshot key set and metadata defaults', async () => {
@@ -293,13 +292,17 @@ describe('fetchToolkitFromProduction', () => {
     useApiKey();
     const controller = new AbortController();
     const timeout = spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
-    const fetcher = mock(async () => Response.json(productionPayload));
-    globalThis.fetch = fetcher;
+    spyOn(console, 'warn').mockImplementation(() => {});
+    let sent: AbortSignal | null | undefined;
+    globalThis.fetch = mock(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      sent = init?.signal;
+      controller.abort();
+      return Response.json(productionPayload);
+    });
 
-    await fetchToolkitFromProduction('github');
-
+    expect(await fetchToolkitFromProduction('timeout-bound')).toBeNull();
     expect(timeout).toHaveBeenCalledWith(15_000);
-    expect(fetcher.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    expect(sent?.aborted).toBe(true);
   });
 
   test('requires an API key and warns without fetching', async () => {
@@ -333,7 +336,7 @@ describe('fetchToolkitFromProduction', () => {
     globalThis.fetch = fetcher;
 
     await fetchToolkitFromProduction('github');
-    expect(fetcher.mock.calls[0]?.[0]).toBe('https://backend.composio.dev/api/v3/toolkits/github');
+    expect(fetcher.mock.calls[0]?.[0]).toBe('https://backend.composio.dev/api/v3.1/toolkits/github');
   });
 
   test('negative-caches a 404 for 60 seconds, then retries', async () => {
