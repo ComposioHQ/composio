@@ -62,7 +62,8 @@ const scalarSchema: fc.Arbitrary<SchemaRecord> = fc
       enumValues: fc.uniqueArray(scalarValue, {
         minLength: 1,
         maxLength: 4,
-        comparator: 'SameValue',
+        // Draft 7 treats 0 and -0 as the same enum value.
+        comparator: 'SameValueZero',
       }),
       constValue: scalarValue,
       minLength: fc.option(fc.integer({ min: 0, max: 4 }), { nil: undefined }),
