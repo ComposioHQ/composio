@@ -53,7 +53,7 @@
     "cli"
   ],
   "author": "Alberto Schiabel <alberto.schiabel@gmail.com> (https://github.com/jkomyno)",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@effect/language-service": "catalog:",
     "@effect/vitest": "catalog:",
