@@ -119,7 +119,10 @@ markers: session variables from both hosts with no plugin hook export send neith
 a Codex marked only by `CODEX_SANDBOX` gets `agent_host_env: 'codex'` and neither property. The
 ID is a UUID v5 derived from the host and the host's session ID using a fixed public namespace.
 The CLI sends only the derived ID. Anyone with the original host and session ID can compute the
-same value and match it to the analytics events. The host property is named `agent_session_host`
+same value and match it to the analytics events. When the host's plugin hook keeps a compaction
+file for the chat, the session also carries the nonblank line count as `agent_compaction_count`.
+The file contract is under "Agent compaction state" in the CLI README. The host property is named
+`agent_session_host`
 because common properties are spread last and `agent_host` would overwrite the setup target on
 setup and plugin lifecycle events. Setup-related events and their extra properties:
 
