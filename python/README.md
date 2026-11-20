@@ -193,6 +193,20 @@ subscription.wait_forever()
 
 `subscribe()` streams events over a WebSocket for local development. In production, register a webhook URL and parse deliveries with `composio.triggers.parse()`. See [setting up triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers).
 
+## Telemetry
+
+The SDK sends anonymous usage and error telemetry by default. Turn it off with the `COMPOSIO_DISABLE_TELEMETRY` environment variable or the `allow_tracking` option:
+
+```bash
+export COMPOSIO_DISABLE_TELEMETRY=true
+```
+
+```python
+composio = Composio(allow_tracking=False)
+```
+
+Unset, blank, `0`, `false`, `no`, and `off` (any casing) leave telemetry on; any other value turns it off. The variable wins over `allow_tracking=True`.
+
 ## Development
 
 This package lives in the [Composio SDK monorepo](https://github.com/ComposioHQ/composio) under `python/`. See the [contribution guidelines](https://github.com/ComposioHQ/composio/blob/next/CONTRIBUTING.md) to get set up.

@@ -435,6 +435,76 @@ describe('TelemetryTransport', () => {
     await transport.flush();
   });
 
+  describe('COMPOSIO_DISABLE_TELEMETRY', () => {
+    class TestClass {
+      async ok() {
+        return 'ok';
+      }
+      async fail() {
+        throw new Error('fail!');
+      }
+    }
+
+    const runInstrumentedCalls = async () => {
+      sendMetricSpy.mockClear();
+      sendErrorLogSpy.mockClear();
+      const instrumented = transport.instrument(new TestClass());
+      await instrumented.ok();
+      await expect(instrumented.fail()).rejects.toThrow('fail!');
+      await transport.sendMetric([createPayload()]);
+      await transport.sendErrorTelemetry(createPayload());
+      await transport.flush();
+    };
+
+    beforeEach(() => {
+      vi.stubEnv('NODE_ENV', 'development');
+    });
+
+    it.each(['true', 'TRUE', '1', 'yes', 'on', ' true '])(
+      'should send nothing when set to %j, even after setup enabled tracking',
+      async value => {
+        vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', value);
+
+        await runInstrumentedCalls();
+
+        expect(sendMetricSpy).not.toHaveBeenCalled();
+        expect(sendErrorLogSpy).not.toHaveBeenCalled();
+      }
+    );
+
+    it.each(['', '   ', '0', 'false', 'FALSE', 'no', 'off'])(
+      'should keep sending when set to %j',
+      async value => {
+        vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', value);
+
+        await runInstrumentedCalls();
+
+        expect(sendMetricSpy).toHaveBeenCalled();
+        expect(sendErrorLogSpy).toHaveBeenCalled();
+      }
+    );
+
+    it('should not send SDK_INITIALIZED when set before setup', async () => {
+      vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'true');
+      sendMetricSpy.mockClear();
+
+      const disabledTransport = new TelemetryTransport();
+      disabledTransport.setup(metadata);
+      await disabledTransport.flush();
+
+      expect(sendMetricSpy).not.toHaveBeenCalled();
+    });
+
+    it('should keep honoring TELEMETRY_DISABLED=true', async () => {
+      vi.stubEnv('TELEMETRY_DISABLED', 'true');
+
+      await runInstrumentedCalls();
+
+      expect(sendMetricSpy).not.toHaveBeenCalled();
+      expect(sendErrorLogSpy).not.toHaveBeenCalled();
+    });
+  });
+
   it('should flush pending telemetry when flush is called', async () => {
     class TestClass {
       async foo(a: number) {
