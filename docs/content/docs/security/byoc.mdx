@@ -1,0 +1,86 @@
+---
+title: Bring your own cloud (BYOC)
+description: Composio-operated deployment in your AWS account, with local execution and storage, private access, and customer-approved releases.
+keywords: [BYOC, bring your own cloud, managed VPC, private VPC, AWS, enterprise, deployment]
+---
+
+Composio BYOC, also called a **Composio-managed VPC**, runs Composio's application services in your AWS account. Composio operates the deployment. Your applications and agents call a private endpoint, provider requests originate from your environment, and credentials and operational data use storage in your account.
+
+This reference architecture covers commercial AWS regions. [Contact Composio](https://composio.dev/contact?utm_source=docs) to agree on the region, feature scope, network access, retention, and operational permissions before deployment.
+
+## Deployment and storage
+
+The reference stack uses Amazon EKS with AWS Fargate for the API, authentication, coordinator, execution runtime, workers, and local catalog. Fargate pods run in private subnets. RDS PostgreSQL and ElastiCache Redis use isolated subnets; S3 stores files, large results, polling artifacts, and worklists. Regional AWS APIs are accessed through VPC endpoints.
+
+Connection setup, revocation, and request-time token refresh run on the local services. PostgreSQL stores encrypted provider credentials, projects, connections, logs, and durable worker state. Provider tokens are never cached in plaintext in Redis. The runtime resolves credentials locally and uses them to authenticate provider calls. Encryption at rest does not prevent the runtime from using plaintext credentials during execution.
+
+Configure your SDK or MCP client to use the endpoint supplied for your deployment. Your backend still authenticates the signed-in user and scopes sessions to that user's identifier, allowed tools, and connected accounts. Separate Composio projects can isolate business units or downstream customers within the installation.
+
+## Private access, OAuth, and webhooks
+
+An internal Application Load Balancer provides private HTTPS ingress for applications, agents, administrators, and OAuth callbacks. Application APIs are not exposed to the internet. The deployment runner also uses the private EKS API endpoint.
+
+You create your own OAuth apps, register the deployment's callback URLs and scopes, and obtain provider administrator consent where required. A private callback works when the user's browser can resolve and reach it through your network or VPN, subject to the provider's rules. The local service exchanges the authorization code and stores encrypted tokens. OAuth app ownership and [credential custody](/docs/security/token-custody#oauth-app-ownership-and-token-custody) are separate decisions.
+
+If you enable webhook Triggers, provider servers need a reachable public HTTPS endpoint that you control, such as Amazon API Gateway. This gateway routes only approved webhook paths to the internal load balancer through a VPC link. Browser access to an OAuth callback does not establish provider access to this webhook ingress.
+
+## External dependencies and data flows
+
+BYOC requires outbound connections. The reference deployment contacts provider APIs over HTTPS on port `443`, Temporal Cloud over gRPC with TLS on port `7233`, and Composio registry and license endpoints. Composio and your team agree on allowed destinations and features. BYOC is not an air-gapped deployment or a guarantee of zero outbound data.
+
+### Temporal Cloud
+
+Triggers and background work use Temporal Cloud through Composio's existing account. You don't need a separate Temporal account or contract. Composio manages a dedicated namespace, its region, history retention, authentication, billing, and support. Workers in your cluster connect outbound with namespace-restricted credentials; Temporal does not initiate connections into your VPC. Composio coordinates networking with you, including AWS PrivateLink where required.
+
+Workers execute polling and webhook Triggers, credential keep-alive, and bulk revocation in your account. Credentials, webhook bodies, polling data, and refresh callback bodies stay on local service and storage paths in these flows. Workflow inputs, activity results, error messages, and stack traces are encrypted before leaving your environment with keys retained there. Temporal cannot decrypt these payloads.
+
+Temporal can read searchable operational metadata, limited to non-sensitive identifiers and values such as due times, trigger or callback IDs, retries, counts, progress, and outcomes. For your security review, Composio provides the data flows, readable metadata, encryption and key custody details, namespace controls, and history retention settings.
+
+If Temporal is unreachable, background work is delayed. Synchronous tool calls can continue while local dependencies and required credentials remain available. Delayed scheduled refresh can eventually affect those calls.
+
+### Search, models, and telemetry
+
+The release includes a local tool catalog and signed toolkit bundles, which the runtime verifies before loading. Catalog updates arrive through releases. Semantic search needs an LLM and an embedding model; both can be open-source models deployed in your cloud. Running them there keeps search queries in your environment. Your agent or model still receives any results your application supplies.
+
+Logs, metrics, and traces go to the sink you choose. Replicated, used to distribute releases, reports license and instance status to Composio, such as installed version and component health. You can disable this reporting. The vector store's vendor usage reporting is turned off. Diagnostic exports require your approval.
+
+## Operational responsibility and access
+
+| Composio operates | You control or provide |
+| --- | --- |
+| Application services, stack credentials, application keys, and deployment pipelines | The AWS account, account policies, network, approved IAM permissions, and release approvers |
+| Redundancy, failover, maintenance safeguards, backups, and restore testing agreed for your workload | Availability and recovery requirements, DNS, certificates, service quotas, and access to private systems |
+| Local authentication services and token refresh | OAuth apps, client credentials, scopes, and provider consent |
+| Temporal Cloud namespace and background workers | Approved external connections, telemetry sink, support access, and diagnostic exports |
+
+Composio manages stack credentials and application keys; you manage OAuth client credentials and certificates you issue. Rotation schedules are agreed with you. Runtime and support permissions determine who can access plaintext. BYOC does not by itself establish that Composio cannot access plaintext, grant compliance, or implement a separate customer-managed-key architecture.
+
+### Customer-approved releases
+
+CloudFormation bootstraps the pipeline, IAM roles, versioned S3 configuration and state, and registry credential secret. Each environment has its own pipeline. A pinned release identifies the chart, service and catalog images, migration images, and infrastructure revision. Preview and your approval precede infrastructure changes, migrations, and Helm rollout. Helm is an internal step in this managed pipeline.
+
+A requester role starts and observes the named pipeline and maintains its scoped registry credential. A separate apply role changes approved resources. STS supplies temporary credentials under a trust policy naming Composio and the installation's external ID. Application releases cannot widen bootstrap permissions or remove the approval gate; those changes require a separate reviewed update.
+
+If you decline a release, the pipeline stops and the installed release keeps running. Composio provides written notice and a replacement for testing before retiring a release. Planned feature removals and breaking API changes include advance notice and migration steps. Critical security fixes use expedited approval. Composio does not upgrade, shut down, or uninstall your deployment without your approval. Support access and diagnostic exports are separately approved.
+
+A failed apply, migration, or rollout requires investigation. An application rollback is a new deployment and needs compatibility review for database and infrastructure changes. Composio and your team set recovery objectives and restore procedures before production.
+
+## Prerequisites and feature scope
+
+Provide a dedicated AWS sub-account in the chosen region. Work with Composio on connectivity, DNS, certificates, service quotas, permitted AWS services, deployment permissions, and release approvers. Set up your OAuth apps and reachable callbacks, and a webhook gateway if needed. Agree on model hosting for semantic search and outbound access for Temporal Cloud and other dependencies.
+
+| Capability | Scope |
+| --- | --- |
+| API, SDK, and core execution | Included. The base request path, connections, revocation, storage, and local logs run without Temporal. |
+| Sessions, MCP, and semantic search | Included. Semantic search requires an LLM and an embedding model. |
+| Triggers and background workflows | Included with Temporal Cloud: polling and webhook Triggers, credential keep-alive, and bulk revocation. |
+| Enterprise MCP Gateway and SSO | Deployed separately. Core session MCP transport does not include the Gateway identity layer, SSO, or SCIM. |
+| Sandbox and custom integration tooling | Workbench execution and self-service custom toolkit or OpenAPI tooling are not included. Composio can build custom connectors under your agreement and shares their code before deployment and with each new version. |
+
+## Credential redaction and retention
+
+Local storage, OAuth app ownership, API redaction, and retention answer different questions. [Token custody and credential isolation](/docs/security/token-custody) explains server-side credential use and default API redaction. Each project can suppress tool request and response bodies in logs while retaining operational metadata. Agree on data-store, backup, diagnostic, and Temporal history retention for your deployment; see [Data retention and handling](/docs/security/data-retention) and [Zero Data Retention](/docs/security/zero-data-retention) for the documented controls and their limits.
+
+## Existing customer-operated installations
+
+The previous customer-operated Helm deployment approach is no longer offered to new customers. The [Helm troubleshooting guide](/kb/guide/platform-self-hosted-helm) remains available for existing installations. Its manual configuration instructions do not describe the managed BYOC deployment process.

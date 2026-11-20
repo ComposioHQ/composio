@@ -41,6 +41,7 @@
     "security/overview",
     "security/vendor-security-review",
     "security/token-custody",
+    "security/byoc",
     "security/data-retention",
     "security/zero-data-retention",
     "security/audit-logs",

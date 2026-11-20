@@ -45,6 +45,7 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
+    expect(classifyDocsProduct('/docs/security/byoc')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
@@ -181,6 +182,7 @@ describe('Docs product navigation', () => {
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
       '/docs/security/token-custody',
+      '/docs/security/byoc',
       '/docs/security/audit-logs',
       '/docs/security/outbound-ips',
     ];
@@ -188,6 +190,16 @@ describe('Docs product navigation', () => {
       node => node.type === 'separator' && node.name === 'Security and Compliance',
     );
     expect(securityStart).toBeGreaterThan(-1);
+    const shipStart = platformTree.children.findIndex(
+      node => node.type === 'separator' && node.name === 'Ship',
+    );
+    expect(shipStart).toBeGreaterThan(-1);
+    expect(platformTree.children.slice(shipStart + 1, securityStart)).toMatchObject([
+      { type: 'page', url: '/docs/production-readiness' },
+      { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
+      { type: 'page', url: '/docs/security/byoc', name: 'Private deployments' },
+      { type: 'folder', $ref: { folder: 'poc-to-prod' } },
+    ]);
     const securityPages = platformTree.children.slice(
       securityStart + 1,
       platformTree.children.findIndex(
@@ -209,7 +221,9 @@ describe('Docs product navigation', () => {
       type: 'page', url: 'https://trust.composio.dev', external: true,
     }));
     for (const url of securityUrls) {
-      expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
+      expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(
+        url === '/docs/security/byoc' ? 2 : 1,
+      );
       expect(forYouUrls).not.toContain(url);
     }
     expect(source.getPage(['security', 'vendor-security-review'])?.url).toBe(

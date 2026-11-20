@@ -248,6 +248,7 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
+          { type: 'page', url: '/docs/security/byoc', label: 'Private deployments' },
           { type: 'folder', path: 'poc-to-prod' },
         ],
       },
@@ -280,6 +281,7 @@ export const DOCS_PRODUCTS = {
             label: 'Security controls',
             links: [
               { url: '/docs/security/token-custody' },
+              { url: '/docs/security/byoc' },
               { url: '/docs/security/audit-logs' },
               { url: '/docs/security/outbound-ips' },
             ],
