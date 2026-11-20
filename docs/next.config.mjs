@@ -41,10 +41,9 @@ const config = {
   // manifest data, so relying on automatic tracing would make those bundles
   // fragile if their path construction changes.
   outputFileTracingIncludes: {
-    '/sitemap.xml': ['./.generated/content-freshness.json'],
     '/reference/**': [...OPENAPI_SPEC_FILES],
     '/reference/v3/**': [...OPENAPI_SPEC_FILES],
-    '/llms.mdx/**': [...OPENAPI_SPEC_FILES, './.generated/content-freshness.json'],
+    '/llms.mdx/**': [...OPENAPI_SPEC_FILES],
     '/llms-full.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],

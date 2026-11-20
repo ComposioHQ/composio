@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { z } from 'zod';
+import persistedFreshness from '../.generated/content-freshness.json';
 
 export const contentFreshnessSchema = z.object({
   version: z.literal(1),
@@ -21,5 +21,7 @@ export function createPageLastUpdatedReader(manifestPath: string) {
   };
 }
 
-export const getPageLastUpdated: (pathname: string) => Promise<string | null> =
-  createPageLastUpdatedReader(join(process.cwd(), '.generated/content-freshness.json'));
+// Bundle the artifact so deployed routes do not depend on a runtime filesystem path.
+const persistedManifest = contentFreshnessSchema.parse(persistedFreshness);
+export const getPageLastUpdated = async (pathname: string): Promise<string | null> =>
+  Object.hasOwn(persistedManifest.pages, pathname) ? persistedManifest.pages[pathname] ?? null : null;

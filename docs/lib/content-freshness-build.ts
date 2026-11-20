@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { isAbsolute, resolve } from 'node:path';
+import { isAbsolute, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import type { ContentFreshnessManifest } from './content-freshness';
 
@@ -30,8 +30,9 @@ export function getExplicitLastUpdated(raw: string): string | undefined {
 
 function getSourceHistory(root: string): Map<string, string | null> {
   const history = new Map<string, string | null>();
+  const historyRoot = process.env.DOCS_FRESHNESS_HISTORY_ROOT;
   const git = (...args: string[]) => execFileSync('git', ['-c', 'core.quotepath=false', ...args], {
-    cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+    cwd: historyRoot ?? root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
   try {
@@ -39,11 +40,11 @@ function getSourceHistory(root: string): Map<string, string | null> {
     const shallowPath = git('rev-parse', '--git-path', 'shallow');
     let boundaries = new Set<string>();
     try {
-      boundaries = new Set(readFileSync(resolve(root, shallowPath), 'utf8').trim().split('\n'));
+      boundaries = new Set(readFileSync(resolve(historyRoot ?? root, shallowPath), 'utf8').trim().split('\n'));
     } catch {
       // A complete repository has no shallow file.
     }
-    const log = git('log', '--format=%x1e%H%x00%cI', '--name-only', '--no-renames', '--', '.');
+    const log = git('log', '--format=%x1e%H%x00%cI', '--name-only', '--no-renames', '--', historyRoot ? 'docs' : '.');
     for (const record of log.split('\x1e')) {
       const [header, ...files] = record.trim().split('\n');
       if (!header) continue;
@@ -51,14 +52,15 @@ function getSourceHistory(root: string): Map<string, string | null> {
       const date = timestamp ? normalizeLastUpdated(timestamp) : null;
       for (const file of files) {
         if (!file) continue;
-        const absolutePath = resolve(repository, file);
+        const absolutePath = historyRoot ? resolve(root, relative('docs', file)) : resolve(repository, file);
         if (!history.has(absolutePath)) {
           // Git presents every file as added at a shallow boundary; that is not evidence.
           history.set(absolutePath, hash && boundaries.has(hash) ? null : date);
         }
       }
     }
-  } catch {
+  } catch (error) {
+    if (historyRoot) throw new Error('Cannot read fetched docs source history', { cause: error });
     // Source archives and deployments without Git must not invent modification dates.
   }
   return history;

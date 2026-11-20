@@ -1,10 +1,17 @@
 import { TOOLKIT_COUNT_LABEL } from '@/lib/toolkit-count';
 import { PROVIDERS } from '@/lib/providers';
+import { z } from 'zod';
 
 export const revalidate = false;
 
 /** Curated routing map; the exhaustive catalog lives at /llms-index.txt. */
 export function GET() {
+  const mcpUrl = process.env.DOCS_SEARCH_MCP_URL;
+  const searchDiscovery = mcpUrl ? `
+## Search the documentation
+
+- [Documentation search MCP](${z.url({ protocol: /^https$/ }).parse(mcpUrl)}): Add this URL as a remote MCP server in your client. Use its read-only \`search\` tool to find Composio documentation. Fetch the cited Markdown pages for complete examples.
+` : '';
   // Keep the concise map focused; all adapters remain on the providers page.
   const providerGuides = PROVIDERS['ai-sdks']
     .filter(provider => provider.name === 'OpenAI' || provider.name === 'Anthropic')
@@ -15,6 +22,7 @@ export function GET() {
 > Connect users to ${TOOLKIT_COUNT_LABEL} apps. Use Composio for auth with your own tools, or add tool discovery and execution to an agent.
 
 Use Composio Platform when users or tenants connect accounts to your application. Use Composio For You for personal automation with your own accounts. Use the current session SDK. REST v3.1 is current; REST v3.0 is legacy.
+${searchDiscovery}
 
 ## Before you implement
 
