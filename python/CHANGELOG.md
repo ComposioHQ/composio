@@ -1,5 +1,16 @@
 # @composio/python-sdk
 
+## 0.34.0
+
+### Minor Changes
+
+- 7a1e7db: Choose which Composio-managed app an auth config uses. `composio.toolkits.get(slug)` returns `composioManagedAuth` in TypeScript, one entry per managed app with `managedAppId` and `isDefault`. Pass that id as `managedAppId` (TypeScript) or `managed_app_id` (Python) to `composio.authConfigs.create` / `composio.auth_configs.create`; omit it for the toolkit's default app. Auth config create, get and list responses return `managedAppId` in TypeScript (`null` when the auth config isn't on a managed app).
+
+### Patch Changes
+
+- dbcecde: Update the API client dependencies to 2.1.36 to include the latest API changes.
+- e9390bb: Require CrewAI 1.15.42 or later so installing the CrewAI provider does not install the vulnerable ChromaDB dependency by default.
+
 ## 0.33.0
 
 ### Minor Changes
