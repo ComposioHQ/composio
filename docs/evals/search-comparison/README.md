@@ -129,3 +129,63 @@ may be useful alternatives despite missing the preselected URLs.
 This supports continuing the migration experiment, with a clear FAQ/KB coverage
 check. It does not establish Ask AI answer quality. The three manual checks above
 remain **pending**; no provider configuration was changed or tuned during this run.
+
+## Morning rerun (2026-11-20)
+
+Completed at `2026-11-20T09:01:29.985Z` using runner commit `7de271eae`. The 12 questions
+and accepted URLs are identical to the first run. No provider configuration was
+changed for this rerun. Current KB search again reported `keyword` mode. The
+baseline remains `/api/knowledge-search`, not the exact navigation ⌘K ranking or
+generated Ask AI answers.
+
+| Measure | Current Nov 19 | Current Nov 20 | Cloudflare Nov 19 | Cloudflare Nov 20 |
+| --- | --- | --- | --- | --- |
+| Expected page in top five | 3/12 | 3/12 | 6/12 | 8/12 |
+| Exact-name cases | 3/3 | 3/3 | 2/3 | 2/3 |
+| Median request time | 2532 ms | 2443 ms | 2423 ms | 1525 ms |
+| Request errors | 0 | 0 | 0 | 0 |
+
+These are single sequential samples per query. Cache, network, site content, and
+index state can change between runs; this does not isolate the effect of indexing
+or establish a latency improvement.
+
+| Case | Current expected-page rank | Cloudflare expected-page rank |
+| --- | --- | --- |
+| session-tools | 1 | 4 |
+| create-session | — | — |
+| auth-concepts | — | — |
+| custom-oauth | — | — |
+| choose-account | — | 3 |
+| claude-connect | — | 1 |
+| session-mcp | 4 | 6 (outside top five) |
+| triggers | — | 1 |
+| snowflake-setting | 1 | 2 |
+| slack-permissions | — | 2 |
+| highlevel-setup | — | 1 |
+| github-setup | — | 5 |
+
+The overnight result includes four new Cloudflare hits: Snowflake, Slack,
+HighLevel Location, and GitHub. Inspecting the saved chunks confirms that the
+Snowflake KB article contains `OAUTH_ISSUE_REFRESH_TOKENS`, and the HighLevel and
+GitHub toolkit pages contain their OAuth setup FAQs and callback instructions.
+Those pages and passages are now retrievable.
+
+Two earlier Cloudflare hits fell outside the top five: `custom-oauth` and
+`session-mcp`. The latter expected page is now rank 6. `create-session` and
+`auth-concepts` still miss the preselected URLs. Useful alternatives may appear,
+but accepted URLs were not expanded after seeing these results.
+
+**Indexing completeness remains unknown.** This run only queries the public
+search endpoint; it does not inspect Cloudflare crawl jobs, item counts, failures,
+or pending items. Returned FAQ passages demonstrate their availability, not that
+the entire site has finished indexing.
+
+The retrieval result supports continuing the simplification experiment, while
+reviewing the SDK/auth misses before a migration. The three manual answer checks
+remain **pending**: this run did not test generation, follow-up handling, or
+citation accuracy.
+
+The linked excerpts and raw responses from this run are saved locally in
+`.artifacts/docs-search-eval-2026-11-20/report.md` and
+`.artifacts/docs-search-eval-2026-11-20/results.json` at the repository root.
+The first-run snapshot above and its separate local artifacts were preserved.
