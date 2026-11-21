@@ -1,6 +1,5 @@
 import { Effect, Option } from 'effect';
 import { CommandSurface } from 'src/commands/surface';
-import { retryAdviceFor } from 'src/effects/retry-advice';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
 import {
@@ -30,6 +29,8 @@ import { invalidArguments, ReportedToolExecutionError } from './tools.execute.er
 import {
   emitExecuteFailureTelemetry,
   handleExecutionError,
+  inspectExecuteFailure,
+  inspectFailedResponse,
   printExecuteRetryAdvice,
 } from './tools.execute.failure';
 import {
@@ -254,17 +255,21 @@ const runExecuteWithSpinner = (params: {
                   );
                 }
                 yield* spinner.error();
-                const summary = yield* handleExecutionError(params.ui, error, {
+                const scope = {
                   toolSlug: params.slug,
-                  args: params.args,
                   surface: params.surface,
+                  projectScope: toolkitProjectScope(params.resolvedProject),
+                };
+                const failure = yield* inspectExecuteFailure(error, scope);
+                const summary = yield* handleExecutionError(params.ui, failure, {
+                  ...scope,
+                  args: params.args,
                   projectMode: params.projectMode,
                   stage: 'execution',
-                  projectScope: toolkitProjectScope(params.resolvedProject),
                 });
                 // Whether the request can be sent again as it is: `"retry": "safe"` (exit 75) or
                 // `"retry": "check-first"` when it may have run before it failed.
-                const retry = Option.getOrUndefined(retryAdviceFor(error));
+                const retry = Option.getOrUndefined(failure.retry);
                 if (retry !== undefined) {
                   yield* printExecuteRetryAdvice(params.ui, retry, params.surface);
                 }
@@ -311,14 +316,18 @@ const runExecuteWithSpinner = (params: {
             : '';
           yield* spinner.error(`Execution failed${logId}`);
 
-          const summary = yield* handleExecutionError(params.ui, result.error ?? result, {
+          const scope = {
             toolSlug: params.slug,
-            args: params.args,
             surface: params.surface,
+            projectScope: toolkitProjectScope(params.resolvedProject),
+          };
+          const failure = yield* inspectFailedResponse(result, scope);
+          const summary = yield* handleExecutionError(params.ui, failure, {
+            ...scope,
+            args: params.args,
             projectMode: params.projectMode,
             stage: 'execution',
             logId: result.logId,
-            projectScope: toolkitProjectScope(params.resolvedProject),
           });
           yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* new ReportedToolExecutionError({
