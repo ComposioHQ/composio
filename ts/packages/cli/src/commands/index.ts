@@ -22,7 +22,7 @@ import { artifactsCmd } from './artifacts/artifacts.cmd';
 import { installCmd } from './install/install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { buildDevCommand } from './dev.cmd';
-import { ExecuteInvocationArgs } from './tools/execute/tools.execute.parallel';
+import { ExecuteInvocationArgs } from './tools/execute/tools.execute.parallel-argv';
 import {
   buildHelpCommand,
   RootHelpMarker,
