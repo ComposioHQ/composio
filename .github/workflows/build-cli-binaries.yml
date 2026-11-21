@@ -8,6 +8,7 @@ on:
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
+      - '.github/workflows/cli.unix.yml'
       - '.github/workflows/cli.windows.yml'
       - '.github/workflows/cli.test-installation.yml'
       - 'install.ps1'
@@ -87,98 +88,12 @@ jobs:
           fi
 
   build:
-    name: Build ${{ matrix.artifact }}
+    name: macOS and Linux
     needs: prepare
     if: needs.prepare.result == 'success'
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      # Never publish a partial platform set: with fail-fast disabled, the build job's
-      # result is `success` only when EVERY matrix leg passes, so a single failure makes
-      # `needs.build.result != 'success'` and the release job is skipped. It also surfaces
-      # all platform failures at once instead of cancelling siblings on the first error.
-      fail-fast: false
-      matrix:
-        include:
-          - target: bun-linux-x64
-            artifact: composio-linux-x64
-            runner: ubuntu-latest
-          - target: bun-linux-arm64
-            artifact: composio-linux-aarch64
-            runner: ubuntu-latest
-          - target: bun-darwin-x64
-            artifact: composio-darwin-x64
-            runner: macos-15-intel
-          - target: bun-darwin-arm64
-            artifact: composio-darwin-aarch64
-            runner: macos-15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-
-      - name: Setup Node.js, pnpm, Bun
-        uses: ./.github/actions/setup-node-pnpm-bun
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build packages
-        run: pnpm build:packages
-
-      - name: Cross-compile CLI binary
-        working-directory: ts/packages/cli
-        env:
-          COMPOSIO_POSTHOG_PROJECT_API_KEY: ${{ vars.COMPOSIO_POSTHOG_PROJECT_API_KEY }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
-        run: pnpm build:binary:cross --target ${{ matrix.target }}
-
-      - name: Verify binary
-        working-directory: ts/packages/cli
-        run: |
-          ls -la dist/binaries/${{ matrix.artifact }}
-          file dist/binaries/${{ matrix.artifact }}
-
-      - name: Verify binary version
-        if: matrix.target == 'bun-linux-x64'
-        working-directory: ts/packages/cli
-        run: |
-          expected_version='${{ needs.prepare.outputs.release_tag }}'
-          test "$(./dist/binaries/${{ matrix.artifact }} --version)" = "${expected_version#@composio/cli@}"
-
-      - name: Test binary
-        if: matrix.target == 'bun-linux-x64'
-        working-directory: ts/packages/cli
-        env:
-          COMPOSIO_USER_API_KEY: test-dummy-api-key-for-ci
-        run: |
-          ./dist/binaries/${{ matrix.artifact }} --version
-          ./dist/binaries/${{ matrix.artifact }} --help | head -5
-
-      - name: Create archive
-        working-directory: ts/packages/cli
-        env:
-          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
-        run: pnpm build:binary:package
-
-      - name: Verify release metadata in archive
-        working-directory: ts/packages/cli
-        run: unzip -p dist/binaries/${{ matrix.artifact }}.zip ${{ matrix.artifact }}/release-tag.txt | grep -Fx '${{ needs.prepare.outputs.release_tag }}'
-
-      - name: Verify companion layout in archive
-        working-directory: ts/packages/cli
-        env:
-          ARCHIVE: dist/binaries/${{ matrix.artifact }}.zip
-          ARTIFACT: ${{ matrix.artifact }}
-        run: bash "${{ github.workspace }}/.github/scripts/cli-release/verify-archive-companions.sh"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ${{ matrix.artifact }}
-          path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
-          retention-days: 7
+    uses: ./.github/workflows/cli.unix.yml
+    with:
+      release_tag: ${{ needs.prepare.outputs.release_tag }}
 
   windows:
     name: Windows x64
