@@ -1,267 +1,52 @@
 ---
 title: Migrate webhook triggers from v1 to v2
-description: Recreate your v1 webhook triggers on v2 before v1 is switched off
+description: What's changing for each toolkit and how to move your v1 webhook triggers to v2
 keywords: [triggers, webhook triggers, v2, migration, trigger slugs, signature verification]
 written: "November 2026"
 ---
 
 Composio is retiring v1 webhook triggers. On `{{sunset_date}}`, v1 trigger instances stop receiving events. To keep events flowing, recreate each affected trigger on v2 before then.
 
-v2 webhook triggers verify the provider's signature on every incoming event, so nobody else can send spoofed events to your triggers. See [Custom OAuth webhooks](/docs/setting-up-triggers/custom-oauth-webhooks) for how this works.
+v2 webhook triggers verify the provider's signature on every incoming event, so nobody else can send spoofed events to your triggers.
 
-## Who needs to migrate
+## Who's affected
 
-You need to migrate if you have webhook triggers on any of these toolkits:
+| Toolkit | What changes | What you do |
+|---|---|---|
+| [GitHub](#github) | Triggers move to v2. Slugs stay the same. | Delete each trigger and recreate it with the same slug |
+| [Outlook](#outlook) | Triggers move to v2. Slugs stay the same, except old `OUTLOOK_OUTLOOK_*` slugs become `OUTLOOK_*`. | Recreate each trigger with the single-prefix slug |
+| [Slack and Slackbot](#slack-and-slackbot) | New slugs. Several message triggers merge into one. | Create the new trigger and set its config |
+| [Jira](#jira) | New slugs. Triggers filter by project ID instead of project key. | Create the new trigger with the project ID |
+| [Linear](#linear) | New slugs. Webhook triggers cover public teams only. | Create the public-team trigger, or the polling trigger for private teams |
+| [Trello](#trello) | New slugs. Some triggers merge into one. | Create the new trigger |
+| [Google Calendar and Google Super](#google-calendar-and-google-super) | New slug | Create the event sync trigger |
 
-| Toolkit | What to do |
-|---|---|
-| GitHub | Recreate with the **same slug** |
-| Outlook | Recreate with the **same slug**. Rename `OUTLOOK_OUTLOOK_*` slugs to `OUTLOOK_*` |
-| Slack, Slackbot | Switch to a **new slug** |
-| Jira | Switch to a **new slug** |
-| Linear | Switch to a **new slug** |
-| Trello | Switch to a **new slug** |
-| Google Calendar, Google Super | Switch to a **new slug** |
+Polling triggers aren't affected, and neither are webhook triggers on other toolkits.
 
-Polling triggers aren't affected, and neither are webhook triggers on other toolkits. For the exact replacements, see [Old and new trigger slugs](#old-and-new-trigger-slugs).
+If you use Composio-managed OAuth, the v2 webhook endpoint is already set up for you. If you use your own OAuth app, check the new trigger type's `requires_webhook_endpoint_setup` flag. Where it's `true`, as for Slack, Slackbot, and Linear, set up the app's [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) before you create v2 triggers. Where it's `false`, as for GitHub, Composio registers the webhook when you create the trigger, so there's nothing to set up first.
 
-If you use Composio-managed OAuth, the v2 webhook endpoint is already set up for you. If you use your own OAuth app, set up its [webhook endpoint](/docs/setting-up-triggers/custom-oauth-webhooks) before you create the v2 triggers.
+## What to do
 
-## Migration steps
+1. **Find your v1 triggers.** [List your active triggers](/docs/setting-up-triggers/managing-triggers#listing-active-triggers) and look for the v1 slugs in the tables below. Include disabled triggers so you don't miss any. For each one, note its trigger ID, slug, connected account, config, `egress_url`, and whether it's disabled (`disabled_at` is set).
+2. **Create the v2 trigger by its new slug.** For each v1 trigger, [create a trigger](/docs/setting-up-triggers/creating-triggers) with the v2 slug from the tables below, on the same connected account. The config can differ from the old trigger's, so check what the new trigger type asks for. Don't recreate triggers by copying slugs from your trigger list: the list returns the old v1 slugs, and creating one of those gives you another v1 trigger. Two settings aren't carried over automatically:
+   - **Delivery URL.** If the v1 trigger has an `egress_url`, pass the same `egress_url` when you create its replacement. Otherwise the new trigger delivers to your project's webhook URL.
+   - **Paused state.** New triggers start enabled. If the v1 trigger was disabled, [disable](/docs/setting-up-triggers/managing-triggers#enable--disable-triggers) its replacement right after you create it. A paused trigger receives no events, so step 4 doesn't apply to it.
+3. **Update your event handler.** v2 events arrive at the same [subscription or webhook URL](/docs/setting-up-triggers/subscribing-to-events) in the same envelope. Three things inside it can change:
+   - **Trigger ID.** Every v2 trigger has a new ID. Update any stored trigger IDs or filters on them.
+   - **Trigger slug.** For toolkits that switch slugs, events carry the new slug in `metadata.trigger_slug`. Handle the new slug, or both slugs while you migrate.
+   - **Payload.** A new slug can send its event data in a different shape. Check the new trigger type's payload and update your parsing.
+4. **Confirm an event arrives.** Cause a matching event in the provider, such as posting a Slack message or pushing a commit. Check that your handler receives it from the v2 trigger. If nothing arrives, see [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
+5. **Delete the v1 trigger.** Once v2 events arrive, [delete](/docs/setting-up-triggers/managing-triggers#deleting-triggers) the v1 trigger so you don't receive the same event twice.
 
-1. [List your triggers](#1-list-your-triggers)
-2. [Create the v2 triggers by slug](#2-create-the-v2-triggers-by-slug)
-3. [Update your event handler](#3-update-your-event-handler)
-4. [Confirm an event arrives](#4-confirm-an-event-arrives)
-5. [Delete the v1 triggers](#5-delete-the-v1-triggers)
+<Callout type="warn">
+**GitHub and Outlook triggers whose slug doesn't change:** delete the v1 trigger first, then create the v2 trigger right away. Creating a trigger with the same slug, connected account, and config returns the existing v1 trigger instead of creating a new one. Events that happen between the delete and the create aren't delivered.
+</Callout>
 
-### 1. List your triggers
-
-Find the trigger instances that use a v1 slug from the [slug table](#old-and-new-trigger-slugs). Include disabled instances so you don't miss any. Note each instance's `id`, `trigger_name`, `connected_account_id`, and `trigger_config`.
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-# Add every v1 slug from the table below that you use.
-v1_slugs = ["GITHUB_COMMIT_EVENT", "SLACK_RECEIVE_MESSAGE", "JIRA_NEW_ISSUE_TRIGGER"]
-
-cursor = None
-while True:
-    page = composio.triggers.list_active(
-        trigger_names=v1_slugs,
-        show_disabled=True,
-        cursor=cursor,
-    )
-    for trigger in page.items:
-        print(trigger.id, trigger.trigger_name, trigger.connected_account_id, trigger.trigger_config)
-    if not page.next_cursor:
-        break
-    cursor = page.next_cursor
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio();
-
-// Add every v1 slug from the table below that you use.
-const v1Slugs = ['GITHUB_COMMIT_EVENT', 'SLACK_RECEIVE_MESSAGE', 'JIRA_NEW_ISSUE_TRIGGER'];
-
-let cursor: string | undefined;
-do {
-  const page = await composio.triggers.listActive({
-    triggerNames: v1Slugs,
-    showDisabled: true,
-    cursor,
-  });
-  for (const trigger of page.items) {
-    console.log(trigger.id, trigger.triggerName, trigger.connectedAccountId, trigger.triggerConfig);
-  }
-  cursor = page.nextCursor ?? undefined;
-} while (cursor);
-```
-  </Tab>
-  <Tab value="API">
-```bash
-RESPONSE=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/trigger_instances/active?trigger_names=GITHUB_COMMIT_EVENT,SLACK_RECEIVE_MESSAGE,JIRA_NEW_ISSUE_TRIGGER&show_disabled=true" \
-  -H "x-api-key: $COMPOSIO_API_KEY")
-echo "$RESPONSE" | jq -r '.items[] | "\(.id) \(.trigger_name) \(.connected_account_id) \(.trigger_config)"'
-NEXT_CURSOR=$(echo "$RESPONSE" | jq -r '.next_cursor // empty')
-
-# Repeat with the same filters while the response supplies a cursor.
-if [ -n "$NEXT_CURSOR" ]; then
-  curl -X GET "https://backend.composio.dev/api/v3.1/trigger_instances/active?trigger_names=GITHUB_COMMIT_EVENT,SLACK_RECEIVE_MESSAGE,JIRA_NEW_ISSUE_TRIGGER&show_disabled=true&cursor=$NEXT_CURSOR" \
-    -H "x-api-key: $COMPOSIO_API_KEY"
-fi
-```
-  </Tab>
-</Tabs>
-
-Use this list to see what to migrate. Don't recreate triggers by looping over it and passing each `trigger_name` back to create. See [Why create by slug](#why-create-by-slug).
-
-### 2. Create the v2 triggers by slug
-
-For each v1 trigger, create its replacement by naming the v2 slug from the [slug table](#old-and-new-trigger-slugs). Pass the same connected account. Trigger configs can differ between the old and new slug, so [inspect the new trigger type](/docs/setting-up-triggers/creating-triggers#inspect-the-trigger-type) and pass the config it asks for.
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-# Replaces a v1 SLACK_RECEIVE_MESSAGE trigger on the same connected account.
-# The SDK overload omits the supported user_id + connected_account_id combination.
-trigger = composio.triggers.create(  # type: ignore[call-overload]
-    slug="SLACK_CHANNEL_MESSAGE_RECEIVED",
-    user_id="user-id-123435",
-    connected_account_id="ca_def456",
-    trigger_config={"channel_id": "C0123456789"},
-)
-print(f"v2 trigger created: {trigger.trigger_id}")
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio();
-
-// Replaces a v1 SLACK_RECEIVE_MESSAGE trigger on the same connected account.
-const trigger = await composio.triggers.create('user-id-123435', 'SLACK_CHANNEL_MESSAGE_RECEIVED', {
-  connectedAccountId: 'ca_def456',
-  triggerConfig: { channel_id: 'C0123456789' },
-});
-console.log(`v2 trigger created: ${trigger.triggerId}`);
-```
-  </Tab>
-  <Tab value="API">
-```bash
-curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/SLACK_CHANNEL_MESSAGE_RECEIVED/upsert \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "user-id-123435", "connected_account_id": "ca_def456", "trigger_config": {"channel_id": "C0123456789"}}'
-```
-  </Tab>
-</Tabs>
-
-#### GitHub and Outlook: delete the v1 trigger first
-
-If the v2 slug is the same as the v1 slug, delete the v1 instance before you create the new one. Creating a trigger with the same slug, connected account, and config returns the existing v1 instance instead of creating a v2 one. Events that happen between the delete and the create aren't delivered, so run the two calls back to back.
-
-Recreating a trigger that's already on v2 is harmless. If you can't tell which of your GitHub and Outlook triggers are on v1, recreate all of them.
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-composio.triggers.delete(trigger_id="ti_abcd123")  # the v1 instance
-
-# The SDK overload omits the supported user_id + connected_account_id combination.
-trigger = composio.triggers.create(  # type: ignore[call-overload]
-    slug="GITHUB_COMMIT_EVENT",
-    user_id="user-id-123435",
-    connected_account_id="ca_def456",
-    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
-)
-print(f"v2 trigger created: {trigger.trigger_id}")
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio();
-
-await composio.triggers.delete('ti_abcd123'); // the v1 instance
-
-const trigger = await composio.triggers.create('user-id-123435', 'GITHUB_COMMIT_EVENT', {
-  connectedAccountId: 'ca_def456',
-  triggerConfig: { owner: 'your-repo-owner', repo: 'your-repo-name' },
-});
-console.log(`v2 trigger created: ${trigger.triggerId}`);
-```
-  </Tab>
-  <Tab value="API">
-```bash
-# Delete the v1 instance
-curl -X DELETE https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
-  -H "x-api-key: $COMPOSIO_API_KEY"
-
-# Create the v2 instance with the same slug
-curl -X POST https://backend.composio.dev/api/v3.1/trigger_instances/GITHUB_COMMIT_EVENT/upsert \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "user-id-123435", "connected_account_id": "ca_def456", "trigger_config": {"owner": "your-repo-owner", "repo": "your-repo-name"}}'
-```
-  </Tab>
-</Tabs>
-
-An Outlook trigger with an `OUTLOOK_OUTLOOK_*` slug has a different slug from its replacement, so you can create the `OUTLOOK_*` trigger first and delete the old one after.
-
-### 3. Update your event handler
-
-The event envelope doesn't change: v2 events arrive at the same [subscription or webhook URL](/docs/setting-up-triggers/subscribing-to-events) in the same format. Some details inside it do change, so update your handler where it relies on them:
-
-- **Trigger ID.** Each v2 instance has a new ID. Update any stored trigger IDs or `trigger_id` filters.
-- **Trigger slug.** For toolkits that switch slugs, `metadata.trigger_slug` carries the new slug. Route on the new slug, or on both slugs while you migrate.
-- **Payload.** A new slug can have a different `data` schema from the old one. Check the trigger type's payload schema and update your parsing.
-
-### 4. Confirm an event arrives
-
-Cause a matching event in the provider, such as posting a Slack message or pushing a commit. Check that your handler receives it with the v2 trigger's ID and slug. If nothing arrives, follow [Troubleshooting triggers](/docs/setting-up-triggers/troubleshooting).
-
-### 5. Delete the v1 triggers
-
-Once v2 events are arriving, delete the v1 instance so your handler doesn't get the same event twice.
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-  <Tab value="Python">
-```python
-from composio import Composio
-
-composio = Composio()
-
-composio.triggers.delete(trigger_id="ti_abcd123")  # the v1 instance
-```
-  </Tab>
-  <Tab value="TypeScript">
-```typescript
-import { Composio } from '@composio/core';
-
-const composio = new Composio();
-
-await composio.triggers.delete('ti_abcd123'); // the v1 instance
-```
-  </Tab>
-  <Tab value="API">
-```bash
-curl -X DELETE https://backend.composio.dev/api/v3.1/trigger_instances/manage/ti_abcd123 \
-  -H "x-api-key: $COMPOSIO_API_KEY"
-```
-  </Tab>
-</Tabs>
-
-## Why create by slug
-
-Create each v2 trigger by naming its v2 slug. Don't loop over the list from step 1 and recreate each `trigger_name` it returns:
-
-- **The list returns v1 slugs.** Creating a deprecated slug such as `SLACK_RECEIVE_MESSAGE` creates another v1 trigger.
-- **Creating returns an existing match.** If a trigger with the same slug, connected account, and config exists, you get that instance back instead of a new one.
-
-## Old and new trigger slugs
+## What's changing for each toolkit
 
 ### GitHub
 
-These slugs stay the same. Recreate each instance as described in [GitHub and Outlook](#github-and-outlook-delete-the-v1-trigger-first).
+Slugs don't change, but each trigger has to be recreated to move to v2. Recreating a trigger that's already on v2 is harmless, so if you can't tell which of your GitHub triggers are on v1, recreate all of them.
 
 | v1 slug | v2 slug |
 |---|---|
@@ -273,6 +58,8 @@ These slugs stay the same. Recreate each instance as described in [GitHub and Ou
 
 ### Outlook
 
+Outlook slugs now have a single `OUTLOOK_` prefix. If your trigger uses an old `OUTLOOK_OUTLOOK_*` slug, create the `OUTLOOK_*` trigger, confirm it, then delete the old one. If it already uses the `OUTLOOK_*` slug, delete it and recreate it, as with GitHub.
+
 | v1 slug | v2 slug |
 |---|---|
 | `OUTLOOK_OUTLOOK_MESSAGE_TRIGGER` or `OUTLOOK_MESSAGE_TRIGGER` | `OUTLOOK_MESSAGE_TRIGGER` |
@@ -283,23 +70,23 @@ These slugs stay the same. Recreate each instance as described in [GitHub and Ou
 
 ### Slack and Slackbot
 
-Slackbot uses the same mapping with a `SLACKBOT_` prefix. For example, `SLACKBOT_RECEIVE_MESSAGE` becomes `SLACKBOT_CHANNEL_MESSAGE_RECEIVED`. Several v1 message triggers merge into `SLACK_CHANNEL_MESSAGE_RECEIVED`. Set its config to receive the same messages.
+The separate v1 message triggers merge into `SLACK_CHANNEL_MESSAGE_RECEIVED`. Set its config to receive the same messages as before. Slackbot follows the same mapping with a `SLACKBOT_` prefix. For example, `SLACKBOT_RECEIVE_MESSAGE` becomes `SLACKBOT_CHANNEL_MESSAGE_RECEIVED`.
 
-| v1 slug | v2 slug | v2 config |
+| v1 slug | v2 slug | Set in the v2 config |
 |---|---|---|
-| `SLACK_RECEIVE_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | |
-| `SLACK_RECEIVE_BOT_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `is_bot_message: true` |
-| `SLACK_RECEIVE_GROUP_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `channel_type: "group"` |
-| `SLACK_RECEIVE_MPIM_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `channel_type: "mpim"` |
-| `SLACK_RECEIVE_THREAD_REPLY` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `is_thread_reply: true` |
-| `SLACK_RECEIVE_DIRECT_MESSAGE` | `SLACK_DIRECT_MESSAGE_RECEIVED` | |
-| `SLACK_REACTION_ADDED` | `SLACK_MESSAGE_REACTION_ADDED` | |
-| `SLACK_REACTION_REMOVED` | `SLACK_MESSAGE_REACTION_REMOVED` | |
+| `SLACK_RECEIVE_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | Nothing extra |
+| `SLACK_RECEIVE_BOT_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `is_bot_message` to `true` |
+| `SLACK_RECEIVE_GROUP_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `channel_type` to `group` |
+| `SLACK_RECEIVE_MPIM_MESSAGE` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `channel_type` to `mpim` |
+| `SLACK_RECEIVE_THREAD_REPLY` | `SLACK_CHANNEL_MESSAGE_RECEIVED` | `is_thread_reply` to `true` |
+| `SLACK_RECEIVE_DIRECT_MESSAGE` | `SLACK_DIRECT_MESSAGE_RECEIVED` | Nothing extra |
+| `SLACK_REACTION_ADDED` | `SLACK_MESSAGE_REACTION_ADDED` | Nothing extra |
+| `SLACK_REACTION_REMOVED` | `SLACK_MESSAGE_REACTION_REMOVED` | Nothing extra |
 | `SLACK_CHANNEL_CREATED` | No v2 replacement | |
 
 ### Jira
 
-The v2 Jira triggers filter by project ID, not project key. Check the new config before you create them.
+The v2 Jira triggers filter by project ID instead of project key, so set the project ID when you create them.
 
 | v1 slug | v2 slug |
 |---|---|
@@ -309,7 +96,7 @@ The v2 Jira triggers filter by project ID, not project key. Check the new config
 
 ### Linear
 
-v2 Linear webhook triggers cover public teams. For private teams, use the polling triggers.
+v2 Linear webhook triggers work for public teams only. For a private team, use the matching polling trigger instead.
 
 | v1 slug | v2 slug (public teams) | Polling slug (private teams) |
 |---|---|---|
@@ -319,19 +106,23 @@ v2 Linear webhook triggers cover public teams. For private teams, use the pollin
 
 ### Trello
 
+The updated-card and archived-card triggers merge into `TRELLO_CARD_UPDATED`, which watches the whole board.
+
 | v1 slug | v2 slug |
 |---|---|
 | `TRELLO_NEW_CARD_TRIGGER` | `TRELLO_CARD_CREATED` |
 | `TRELLO_NEW_BOARD_TRIGGER` | `TRELLO_BOARD_ADDED_TO_WORKSPACE` |
-| `TRELLO_UPDATED_CARD_TRIGGER` | `TRELLO_CARD_UPDATED`. It watches the whole board, so filter on the card ID in your handler. |
+| `TRELLO_UPDATED_CARD_TRIGGER` | `TRELLO_CARD_UPDATED`. To follow one card, filter on its card ID in your handler. |
 | `TRELLO_ARCHIVED_CARD_TRIGGER` | `TRELLO_CARD_UPDATED`. Archived cards arrive with `card.closed` set to `true`. |
 | `TRELLO_NEW_ACTIVITY_TRIGGER` | No v2 replacement. Trello doesn't send the event this trigger matches, so it doesn't receive events. Delete it. |
 
 ### Google Calendar and Google Super
+
+The event change trigger is replaced by the event sync trigger. Google Super's event sync trigger receives events by polling.
 
 | v1 slug | v2 slug |
 |---|---|
 | `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` | `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` |
 | `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_CHANGE_TRIGGER` | `GOOGLESUPER_GOOGLE_CALENDAR_EVENT_SYNC_TRIGGER` |
 
-If you only need one kind of change, Google Calendar also has `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CREATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_UPDATED_TRIGGER`, and `GOOGLECALENDAR_EVENT_CANCELED_DELETED_TRIGGER`. The Google Super triggers receive events by polling.
+If you only need one kind of change, Google Calendar also has `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_CREATED_TRIGGER`, `GOOGLECALENDAR_GOOGLE_CALENDAR_EVENT_UPDATED_TRIGGER`, and `GOOGLECALENDAR_EVENT_CANCELED_DELETED_TRIGGER`.
