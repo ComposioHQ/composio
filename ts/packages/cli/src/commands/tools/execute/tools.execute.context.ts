@@ -8,7 +8,6 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
-import { TerminalUI } from 'src/services/terminal-ui';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
 import { injectSingleFileArgument, parseArguments, resolveInput } from './tools.execute.arguments';
@@ -27,8 +26,6 @@ export type RunToolsExecuteParams = {
   skipToolParamsCheck: boolean;
   skipChecks: boolean;
 };
-
-export type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data' | 'file'>;
 
 export type PreparedExecuteCall = {
   readonly slug: string;
@@ -53,16 +50,6 @@ export const toolkitProjectScope = (resolvedProject: ToolkitProjectScope): Toolk
   orgId: resolvedProject.orgId,
   projectId: resolvedProject.projectId,
 });
-
-type ResolvedSchemaContext = {
-  readonly ui: TerminalUI;
-  readonly resolvedProject: {
-    readonly orgId: string;
-    readonly projectId: string;
-    readonly projectType: 'CONSUMER' | 'DEVELOPER';
-    readonly consumerUserId?: string;
-  };
-};
 
 export const prepareExecuteCall = (
   params: Pick<RunToolsExecuteParams, 'slug' | 'data' | 'file' | 'account' | 'surface'>,
@@ -159,19 +146,10 @@ export const prepareExecuteCall = (
     } satisfies PreparedExecuteCall;
   });
 
-export const resolveSchemaContext = (
+export const resolveExecuteSchemaProject = (
   params: Pick<RunToolsExecuteParams, 'projectName' | 'surface' | 'projectMode'>
 ) =>
-  Effect.gen(function* () {
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName:
-        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    });
-    const ui = yield* TerminalUI;
-
-    return {
-      ui,
-      resolvedProject,
-    } satisfies ResolvedSchemaContext;
+  resolveCommandProject({
+    mode: params.projectMode,
+    projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
   });

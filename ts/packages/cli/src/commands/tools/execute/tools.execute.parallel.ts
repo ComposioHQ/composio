@@ -12,9 +12,9 @@ import {
 } from './tools.execute.call';
 import {
   prepareExecuteCall,
-  resolveSchemaContext,
+  resolveExecuteSchemaProject,
   toolkitProjectScope,
-  type SharedRunToolsExecuteParams,
+  type RunToolsExecuteParams,
 } from './tools.execute.context';
 import { ReportedToolExecutionError, ToolExecutionError } from './tools.execute.errors';
 import { inspectExecuteFailure } from './tools.execute.failure';
@@ -37,7 +37,10 @@ export type ParallelExecuteSpec = {
  * One `--parallel` batch: its tools in argv order, the batch-wide flags `effect/cli` parsed, and
  * the acting user and project the raw-argv adapter (`tools.execute.parallel-argv.ts`) resolved.
  */
-export type ParallelExecuteParams = SharedRunToolsExecuteParams & {
+export type ParallelExecuteParams = Omit<
+  RunToolsExecuteParams,
+  'slug' | 'data' | 'file' | 'account'
+> & {
   readonly userId: Option.Option<string>;
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
@@ -60,18 +63,18 @@ const runParallelSchemaFetch = (params: ParallelExecuteParams) =>
   Effect.gen(function* () {
     const entries = yield* Effect.forEach(
       params.specs,
-      spec => resolveSchemaContext(params).pipe(Effect.map(context => ({ spec, context }))),
+      spec => resolveExecuteSchemaProject(params).pipe(Effect.map(project => ({ spec, project }))),
       { concurrency: 'unbounded' }
     );
 
-    const ui = entries[0]?.context.ui;
+    const ui = yield* TerminalUI;
     const results = yield* Effect.forEach(
       entries,
-      ({ context, spec }) =>
+      ({ project, spec }) =>
         Effect.gen(function* () {
           const definition = yield* getOrFetchToolInputDefinition(spec.slug, {
-            orgId: context.resolvedProject.orgId,
-            projectId: context.resolvedProject.projectId,
+            orgId: project.orgId,
+            projectId: project.projectId,
           });
           return {
             slug: spec.slug,
@@ -88,7 +91,7 @@ const runParallelSchemaFetch = (params: ParallelExecuteParams) =>
             inspectExecuteFailure(error, {
               toolSlug: spec.slug,
               surface: params.surface,
-              projectScope: toolkitProjectScope(context.resolvedProject),
+              projectScope: toolkitProjectScope(project),
             }).pipe(
               Effect.map(
                 failure =>
@@ -104,38 +107,36 @@ const runParallelSchemaFetch = (params: ParallelExecuteParams) =>
       { concurrency: 'unbounded' }
     );
 
-    if (ui) {
-      for (const result of results) {
-        if (!result.successful) {
-          yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(result.error)}`);
-          continue;
-        }
-
-        yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
+    for (const result of results) {
+      if (!result.successful) {
+        yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(result.error)}`);
+        continue;
       }
 
-      const successful = results.every(result => result.successful);
-      yield* ui.log.message(
-        `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
-      );
-      yield* writeExecuteStdout(
-        ui,
-        JSON.stringify(
-          {
-            successful,
-            parallel: true,
-            results,
-          },
-          ciRedactReplacer,
-          2
-        )
-      );
-      if (!successful) {
-        return yield* new ReportedToolExecutionError({
-          reason: 'parallel_failed',
-          message: 'One or more parallel tool executions failed.',
-        });
-      }
+      yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
+    }
+
+    const successful = results.every(result => result.successful);
+    yield* ui.log.message(
+      `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
+    );
+    yield* writeExecuteStdout(
+      ui,
+      JSON.stringify(
+        {
+          successful,
+          parallel: true,
+          results,
+        },
+        ciRedactReplacer,
+        2
+      )
+    );
+    if (!successful) {
+      return yield* new ReportedToolExecutionError({
+        reason: 'parallel_failed',
+        message: 'One or more parallel tool executions failed.',
+      });
     }
   });
 
@@ -155,7 +156,7 @@ const runParallelBatch = (params: ParallelExecuteParams) =>
       { concurrency: 'unbounded' }
     );
 
-    const ui = calls.length > 0 ? yield* TerminalUI : undefined;
+    const ui = yield* TerminalUI;
     const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
     const results = yield* Effect.forEach(
       calls,
@@ -223,59 +224,53 @@ const runParallelBatch = (params: ParallelExecuteParams) =>
       { concurrency: 'unbounded' }
     );
 
-    if (ui) {
-      for (const result of results) {
-        if (!result.successful) {
-          const logId =
-            'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
-              ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
-              : '';
-          yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(`${result.error}${logId}`)}`);
-          continue;
-        }
+    for (const result of results) {
+      if (!result.successful) {
+        const logId =
+          'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
+            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
+            : '';
+        yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(`${result.error}${logId}`)}`);
+        continue;
+      }
 
-        if ('dryRun' in result) {
-          yield* ui.log.step(`[${result.slug}] Dry run successful`);
-          continue;
-        }
+      if ('dryRun' in result) {
+        yield* ui.log.step(`[${result.slug}] Dry run successful`);
+        continue;
+      }
 
-        if ('storedInFile' in result && result.storedInFile) {
-          yield* ui.log.step(
-            `[${result.slug}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
-          );
-          continue;
-        }
-
+      if ('storedInFile' in result && result.storedInFile) {
         yield* ui.log.step(
-          `[${result.slug}] Execution successful${executionSuccessSuffix(result)}`
+          `[${result.slug}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
         );
-        if ('data' in result) {
-          yield* ui.note(
-            escapeTerminalLines(serializeExecuteOutput(result)),
-            `Response: ${result.slug}`
-          );
-        }
+        continue;
+      }
+
+      yield* ui.log.step(`[${result.slug}] Execution successful${executionSuccessSuffix(result)}`);
+      if ('data' in result) {
+        yield* ui.note(
+          escapeTerminalLines(serializeExecuteOutput(result)),
+          `Response: ${result.slug}`
+        );
       }
     }
 
     const successful = results.every(result => result.successful);
-    if (ui) {
-      yield* ui.log.message(
-        `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
-      );
-      yield* writeExecuteStdout(
-        ui,
-        JSON.stringify(
-          {
-            successful,
-            parallel: true,
-            results,
-          },
-          ciRedactReplacer,
-          2
-        )
-      );
-    }
+    yield* ui.log.message(
+      `Parallel execute completed: ${results.filter(result => result.successful).length}/${results.length} successful`
+    );
+    yield* writeExecuteStdout(
+      ui,
+      JSON.stringify(
+        {
+          successful,
+          parallel: true,
+          results,
+        },
+        ciRedactReplacer,
+        2
+      )
+    );
 
     if (!successful) {
       return yield* new ReportedToolExecutionError({

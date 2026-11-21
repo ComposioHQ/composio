@@ -17,8 +17,6 @@ export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(
 /** What `--parallel` takes from argv itself; `effect/cli` supplies the batch-wide booleans. */
 export type ParallelExecuteArgv = {
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
-  /** An `--account` before the first tool slug: the default of every tool after it. */
-  readonly account: Option.Option<string>;
   readonly userId: Option.Option<string>;
   readonly projectName: Option.Option<string>;
 };
@@ -181,7 +179,7 @@ export const parseParallelExecuteArgs = (
       );
     }
 
-    return { specs, account, userId, projectName } satisfies ParallelExecuteArgv;
+    return { specs, userId, projectName } satisfies ParallelExecuteArgv;
   });
 
 // Flags that can precede the command name and take the next token as their value
@@ -214,7 +212,6 @@ export const readParallelExecuteArgv = (tree: CommandTree) =>
     const surface = yield* CommandSurface;
     return {
       specs: parsed.specs,
-      account: parsed.account,
       userId: Option.orElse(parsed.userId, () => surface.userId),
       projectName: Option.orElse(parsed.projectName, () => surface.projectName),
     } satisfies ParallelExecuteArgv;
