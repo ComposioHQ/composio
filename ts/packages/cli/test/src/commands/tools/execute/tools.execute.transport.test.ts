@@ -441,8 +441,73 @@ describe('CLI: composio execute transport', () => {
       expect(lastJson(parallelRun.lines)).toMatchObject({
         successful: false,
         parallel: true,
-        results: [{ slug, successful: false, error: expect.any(String) }],
+        results: [{ slug, successful: false, error: `Tool "${slug}" not found` }],
       });
+    })
+  );
+
+  it.effect('validates each parallel item unless tool parameter checks are skipped', () =>
+    Effect.gen(function* () {
+      const slug = 'GMAIL_SEND_EMAIL';
+      const input: TestLiveInput = {
+        toolkitsData: {
+          tools: [
+            {
+              slug,
+              name: 'Send Email',
+              description: 'Send an email',
+              tags: [],
+              available_versions: ['20260101_00'],
+              input_parameters: {
+                type: 'object',
+                required: ['recipient'],
+                properties: { recipient: { type: 'string' } },
+              },
+              output_parameters: { type: 'object', properties: {} },
+            },
+          ],
+        },
+      };
+      const checked = makeWorld({ input });
+      const skipped = makeWorld({ input });
+      const args = [
+        slug,
+        '-d',
+        '{"recipient":42}',
+        slug,
+        '-d',
+        '{"recipient":"alice@example.test"}',
+      ];
+
+      const checkedRun = yield* checked.run(['execute', '--parallel', ...args]);
+      expect(exitCodeOf(checkedRun.exit)).toBe(1);
+      expect(lastJson(checkedRun.lines).results).toMatchObject([
+        {
+          slug,
+          successful: false,
+          error: 'recipient: Instance type "number" is invalid. Expected "string".',
+        },
+        { slug, successful: true },
+      ]);
+      expect(checked.dashboardRequests.map(request => requestJson(request)?.arguments)).toEqual([
+        { recipient: 'alice@example.test' },
+      ]);
+
+      const skippedRun = yield* skipped.run([
+        'execute',
+        '--parallel',
+        '--skip-tool-params-check',
+        ...args,
+      ]);
+      expect(exitCodeOf(skippedRun.exit)).toBe(0);
+      expect(lastJson(skippedRun.lines).results).toMatchObject([
+        { slug, successful: true },
+        { slug, successful: true },
+      ]);
+      expect(skipped.dashboardRequests.map(request => requestJson(request)?.arguments)).toEqual(
+        expect.arrayContaining([{ recipient: 42 }, { recipient: 'alice@example.test' }])
+      );
+      expect(skipped.dashboardRequests).toHaveLength(2);
     })
   );
 

@@ -18,7 +18,7 @@ import {
 } from './tools.execute.call';
 import {
   prepareExecuteCall,
-  resolveSchemaContext,
+  resolveExecuteSchemaProject,
   toolkitProjectScope,
   type PreparedExecuteCall,
   type RunToolsExecuteParams,
@@ -279,10 +279,11 @@ const runExecuteWithSpinner = (
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     if (params.getSchema) {
-      const context = yield* resolveSchemaContext(params);
+      const resolvedProject = yield* resolveExecuteSchemaProject(params);
+      const ui = yield* TerminalUI;
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
-        orgId: context.resolvedProject.orgId,
-        projectId: context.resolvedProject.projectId,
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
       }).pipe(
         Effect.tapError(error =>
           emitExecuteFailureTelemetry({
@@ -292,11 +293,11 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'schema_fetch',
-            projectScope: toolkitProjectScope(context.resolvedProject),
+            projectScope: toolkitProjectScope(resolvedProject),
           })
         )
       );
-      yield* emitCachedSchema(context.ui, params.slug, definition);
+      yield* emitCachedSchema(ui, params.slug, definition);
       return;
     }
 
