@@ -1,7 +1,6 @@
 import { Effect, Option } from 'effect';
 import { actingUser, CommandSurface } from 'src/commands/surface';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
-import { mapComposioError } from 'src/services/composio-error-overrides';
 import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
@@ -21,6 +20,7 @@ import {
   type SharedRunToolsExecuteParams,
 } from './tools.execute.context';
 import { ReportedToolExecutionError, ToolExecutionError } from './tools.execute.errors';
+import { inspectExecuteFailure } from './tools.execute.failure';
 import {
   ciRedactReplacer,
   describeStoredOutputSize,
@@ -141,20 +141,19 @@ const runParallelSchemaFetch = (params: ParallelExecuteParams) =>
           >;
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
-              Effect.map(toolkit => {
-                const mapped = mapComposioError({
-                  error,
-                  toolkit,
-                  toolSlug: spec.slug,
-                  tree: params.surface,
-                });
-                return {
-                  slug: spec.slug,
-                  successful: false,
-                  error: mapped.message,
-                } satisfies Extract<ParallelExecuteResult, { readonly successful: false }>;
-              })
+            inspectExecuteFailure(error, {
+              toolSlug: spec.slug,
+              surface: params.surface,
+              projectScope: toolkitProjectScope(context.resolvedProject),
+            }).pipe(
+              Effect.map(
+                failure =>
+                  ({
+                    slug: spec.slug,
+                    successful: false,
+                    error: failure.mapped.message,
+                  }) satisfies Extract<ParallelExecuteResult, { readonly successful: false }>
+              )
             )
           )
         ),
@@ -298,20 +297,19 @@ const runParallelBatch = (params: ParallelExecuteParams) =>
           };
         }).pipe(
           Effect.catch(error =>
-            toolkitFromToolSlug(spec.slug, toolkitProjectScope(context.resolvedProject)).pipe(
-              Effect.map(toolkit => {
-                const mapped = mapComposioError({
-                  error,
-                  toolkit,
-                  toolSlug: spec.slug,
-                  tree: params.surface,
-                });
-                return {
-                  slug: spec.slug,
-                  successful: false,
-                  error: mapped.message,
-                } satisfies ParallelExecuteResult;
-              })
+            inspectExecuteFailure(error, {
+              toolSlug: spec.slug,
+              surface: params.surface,
+              projectScope: toolkitProjectScope(context.resolvedProject),
+            }).pipe(
+              Effect.map(
+                failure =>
+                  ({
+                    slug: spec.slug,
+                    successful: false,
+                    error: failure.mapped.message,
+                  }) satisfies ParallelExecuteResult
+              )
             )
           )
         ),
