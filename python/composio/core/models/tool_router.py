@@ -42,6 +42,7 @@ from composio.core.models.custom_tool_types import (
     InlineCustomToolsWirePayload,
     LocalTool,
 )
+from composio.core.models.session_webhooks import SessionWebhooks
 from composio.core.models.tool_router_constants import (
     PRELOAD_TOOLS_ALL,
     SESSION_PRESET_DIRECT_TOOLS,
@@ -682,6 +683,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         self._auto_upload_download_files = bool(
             dangerously_allow_auto_upload_download_files
         )
+        self.webhooks = SessionWebhooks()
+        """Read the events Composio sends to the project's session webhook
+        URL, for session hooks with a ``webhook`` handler."""
 
     def _mcp_destination_rejection(self, url: str) -> t.Optional[MCPDestinationError]:
         """The error describing why ``url`` must not receive the session
