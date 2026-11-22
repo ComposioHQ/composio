@@ -145,9 +145,12 @@ class SessionWebhookBeforeExecuteEvent(te.TypedDict):
     type: t.Literal["composio.session_hook.before_execute"]
     timestamp: str
     metadata: SessionWebhookMetadata
-    data: t.Union[
-        SessionWebhookToolCallBeforeExecuteData,
-        SessionWebhookProxyCallBeforeExecuteData,
+    data: te.Annotated[
+        t.Union[
+            SessionWebhookToolCallBeforeExecuteData,
+            SessionWebhookProxyCallBeforeExecuteData,
+        ],
+        pydantic.Field(discriminator="type"),
     ]
 
 
@@ -159,9 +162,12 @@ class SessionWebhookAfterExecuteEvent(te.TypedDict):
     type: t.Literal["composio.session_hook.after_execute"]
     timestamp: str
     metadata: SessionWebhookMetadata
-    data: t.Union[
-        SessionWebhookToolCallAfterExecuteData,
-        SessionWebhookProxyCallAfterExecuteData,
+    data: te.Annotated[
+        t.Union[
+            SessionWebhookToolCallAfterExecuteData,
+            SessionWebhookProxyCallAfterExecuteData,
+        ],
+        pydantic.Field(discriminator="type"),
     ]
 
 

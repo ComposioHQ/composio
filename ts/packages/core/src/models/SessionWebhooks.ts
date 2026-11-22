@@ -58,7 +58,7 @@ export class SessionWebhooks {
    *
    * @example
    * ```ts
-   * import { Composio, SessionWebhookBeforeExecuteResponse } from '@composio/core';
+   * import { Composio, type SessionWebhookBeforeExecuteResponse } from '@composio/core';
    *
    * const composio = new Composio();
    *
@@ -139,10 +139,14 @@ export class SessionWebhooks {
 
     const event = SessionWebhookEventSchema.safeParse(json);
     if (!event.success) {
+      // Name the fields, never their values: the event carries the call's data.
+      const fields = [...new Set(event.error.issues.map(issue => issue.path.join('.')))].sort();
+      const isAnotherPayload = fields.includes('') || fields.includes('type');
       throw new ComposioWebhookPayloadError(
-        `Payload is not a session webhook event. Expected a '${SessionWebhookEventTypes.BEFORE_EXECUTE}' ` +
-          `or '${SessionWebhookEventTypes.AFTER_EXECUTE}' event.`,
-        { cause: event.error }
+        isAnotherPayload
+          ? `Payload is not a session webhook event. Expected a '${SessionWebhookEventTypes.BEFORE_EXECUTE}' ` +
+              `or '${SessionWebhookEventTypes.AFTER_EXECUTE}' event.`
+          : `Session webhook event has missing or invalid fields: ${fields.join(', ')}`
       );
     }
     return event.data;

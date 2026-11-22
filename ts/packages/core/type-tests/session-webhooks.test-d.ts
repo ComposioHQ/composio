@@ -6,6 +6,8 @@ import { Composio } from '../src';
 import type {
   SessionWebhookAfterExecuteResponse,
   SessionWebhookBeforeExecuteResponse,
+  SessionWebhookHttpRequest,
+  SessionWebhookToolCall,
 } from '../src';
 
 declare const composio: Composio;
@@ -19,10 +21,12 @@ async function sessionWebhook(): Promise<void> {
 
   if (hook.type === 'composio.session_hook.before_execute') {
     if (hook.data.type === 'tool_execute') {
-      const args: Record<string, unknown> = hook.data.tool_call.arguments;
+      const call: SessionWebhookToolCall = hook.data.tool_call;
+      const args: Record<string, unknown> = call.arguments;
       void args;
     } else {
-      const endpoint: string = hook.data.http_request.endpoint;
+      const request: SessionWebhookHttpRequest = hook.data.http_request;
+      const endpoint: string = request.endpoint;
       void endpoint;
     }
   } else if (hook.data.type === 'tool_execute') {

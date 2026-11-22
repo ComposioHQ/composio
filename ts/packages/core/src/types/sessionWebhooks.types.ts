@@ -32,6 +32,9 @@ const SessionWebhookMetadataSchema = z
   })
   .passthrough();
 
+/** Where an event came from. `hook_id` is the hook's id on the session. */
+export type SessionWebhookMetadata = z.infer<typeof SessionWebhookMetadataSchema>;
+
 const SessionWebhookToolCallSchema = z
   .object({
     /** Slug of the toolkit (for example `gmail`) */
@@ -47,6 +50,9 @@ const SessionWebhookToolCallSchema = z
   })
   .passthrough();
 
+/** A tool call. */
+export type SessionWebhookToolCall = z.infer<typeof SessionWebhookToolCallSchema>;
+
 const SessionWebhookToolResponseSchema = z
   .object({
     /** The data the tool returned */
@@ -55,6 +61,9 @@ const SessionWebhookToolResponseSchema = z
     error: z.string().nullable(),
   })
   .passthrough();
+
+/** What a tool call returned. */
+export type SessionWebhookToolResponse = z.infer<typeof SessionWebhookToolResponseSchema>;
 
 const SessionWebhookHttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']);
 
@@ -85,6 +94,9 @@ const SessionWebhookHttpRequestSchema = z
   })
   .passthrough();
 
+/** A proxy call: an HTTP request to a toolkit's API. */
+export type SessionWebhookHttpRequest = z.infer<typeof SessionWebhookHttpRequestSchema>;
+
 const SessionWebhookHttpResponseSchema = z
   .object({
     /** HTTP status the app's API returned */
@@ -105,6 +117,9 @@ const SessionWebhookHttpResponseSchema = z
       .optional(),
   })
   .passthrough();
+
+/** What a proxy call returned. */
+export type SessionWebhookHttpResponse = z.infer<typeof SessionWebhookHttpResponseSchema>;
 
 const sessionWebhookEnvelopeFields = {
   /** Unique event ID (`msg_<uuid>`). Also sent as the `webhook-id` header. */

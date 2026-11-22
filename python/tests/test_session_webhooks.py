@@ -219,5 +219,6 @@ def test_names_invalid_fields_without_their_values(webhooks: SessionWebhooks) ->
     with pytest.raises(exceptions.WebhookPayloadError) as error:
         webhooks.parse(body=body, headers=headers, verify_secret=SECRET)
 
-    assert "arguments" in str(error.value)
+    assert "data.tool_execute.tool_call.arguments" in str(error.value)
+    assert "http_request" not in str(error.value)
     assert "a secret the agent typed" not in str(error.value)

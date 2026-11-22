@@ -193,6 +193,24 @@ describe('SessionWebhooks.parse', () => {
     ).rejects.toThrow(/'webhook-timestamp', 'webhook-signature'/);
   });
 
+  it('names an invalid field without its value', async () => {
+    const payload = {
+      ...beforeToolCall,
+      data: {
+        type: 'tool_execute',
+        tool_call: { ...toolCall, arguments: 'a secret the agent typed' },
+      },
+    };
+
+    const error = await webhooks
+      .parse(signedRequest(payload), { verifySecret: secret })
+      .catch((thrown: unknown) => thrown);
+
+    expect(error).toBeInstanceOf(ComposioWebhookPayloadError);
+    expect(String(error)).toContain('data.tool_call.arguments');
+    expect(JSON.stringify(error)).not.toContain('a secret the agent typed');
+  });
+
   it('rejects a signed payload that is not a session webhook event', async () => {
     const triggerEvent = {
       id: webhookId,
@@ -204,6 +222,6 @@ describe('SessionWebhooks.parse', () => {
 
     await expect(
       webhooks.parse(signedRequest(triggerEvent), { verifySecret: secret })
-    ).rejects.toThrow(ComposioWebhookPayloadError);
+    ).rejects.toThrow(/not a session webhook event/);
   });
 });
