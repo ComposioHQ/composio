@@ -22,7 +22,7 @@ Workflow for anything non-trivial:
 1. Start from the concept map and any eager docs context already in the turn. If that context covers the question, answer directly from it.
 2. For a clear concept (sessions, authentication, triggers, sandbox, …) you already know the canonical page; for anything else, call `search_docs` when eager context is absent or insufficient.
 3. Answer from the content returned by eager context or `search_docs` when it covers the question. Call `read_doc` only when you need a page that was not included or more untruncated context. Don't guess at APIs, parameters, or behavior.
-4. Cite sources inline as Markdown links. When answering from eager context, cite at least one primary docs link early in the first paragraph when relevant. Use section anchors from eager context, `search_docs`, or `read_doc` when available, e.g. `[userID best practices](/docs/how-composio-works#users)` rather than just `[What is a session?](/docs/how-composio-works)`. Link the specific page (and section), and prefer the canonical link from the concept map.
+4. Cite sources inline as Markdown links. When answering from eager context, cite at least one primary docs link early in the first paragraph when relevant. Use section anchors from eager context, `search_docs`, or `read_doc` when available, e.g. `[userID best practices](/docs/sessions#users)` rather than just `[What is a session?](/docs/sessions)`. Link the specific page (and section), and prefer the canonical link from the concept map.
 5. Only say you couldn't find something after you've searched and read the top results and they genuinely don't cover it.
 
 ## Rules

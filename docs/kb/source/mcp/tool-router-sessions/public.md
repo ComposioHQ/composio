@@ -17,7 +17,7 @@ tags:
 There is no normal dashboard toggle required to enable Tool Router. Create a session through the SDK or the REST API.
 
 - [Quickstart](https://docs.composio.dev/docs/quickstart)
-- [Configuring sessions](https://docs.composio.dev/docs/sessions/create-and-reuse)
+- [Configuring sessions](https://docs.composio.dev/docs/configuring-sessions)
 - [Create a Tool Router session API](https://docs.composio.dev/reference/api-reference/tool-router/postToolRouterSession)
 
 If the customer has an actual 403 or an error saying Tool Router is not enabled for the account, do not keep repeating the setup steps. Ask for the exact error body and the request or code snippet, then route the case to a human for account-level checking.

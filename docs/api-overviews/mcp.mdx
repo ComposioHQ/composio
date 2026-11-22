@@ -6,4 +6,4 @@ The MCP API is the standalone, hosted [Model Context Protocol](https://modelcont
 
 These endpoints create, list, update, and delete MCP servers, including custom servers spanning multiple apps, generate per-user MCP URLs, and manage per-user server instances and their connected accounts.
 
-Sessions replace this. A single `composio.create(...)` gives you the same MCP URL pattern, keyed by `user_id`, while handling tool discovery, authentication, context, and versioning for you. Your existing tools, auth configs (`ac_…`), and connected accounts carry over with no re-authentication. To pin a session to a fixed tool list the way a server did, use the direct-tools preset described in [Restrict tool access](/docs/sessions/tool-access).
+Sessions replace this. A single `composio.create(...)` gives you the same MCP URL pattern, keyed by `user_id`, while handling tool discovery, authentication, context, and versioning for you. Your existing tools, auth configs (`ac_…`), and connected accounts carry over with no re-authentication. To pin a session to a fixed tool list the way a server did, use the [direct-tools preset](/docs/sessions/loading-tools#direct-tools-preset).

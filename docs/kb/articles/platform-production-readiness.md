@@ -41,7 +41,7 @@ sensitive or deterministic workflow, prefer an explicit allowlist of exact
 tool slugs. For a broader read-only agent, filter on `readOnlyHint` and disable
 `destructiveHint`, then inspect the resulting tool set before rollout.
 
-- [Configure session tool access](https://docs.composio.dev/docs/sessions/create-and-reuse)
+- [Configure session tool access](https://docs.composio.dev/docs/sessions/tool-access)
 - [Create read-only and restricted sessions](../session-tool-policies/public.md)
 
 ## Reuse a stored session until the user or configuration changes

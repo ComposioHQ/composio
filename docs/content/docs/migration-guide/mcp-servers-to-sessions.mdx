@@ -320,7 +320,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_
 - **Multiple toolkits on one endpoint** — where you ran several single-toolkit servers, one session
   spans them all (`toolkits=["gmail", "slack", "github"]`). Fewer moving parts.
 - **Reuse one session — don't create one per request** — sessions persist and are reusable. Create a
-  session once and keep using it across calls; see [Restrict tool access](/docs/sessions/tool-access).
+  session once and keep using it across calls; see [Create and reuse](/docs/sessions/create-and-reuse#how-sessions-behave).
 - **Sharing one account across users** — sessions support **shared connections**
   (`account_type:"SHARED"` + an allow/deny ACL), pinned per session. See
   [Shared connections](/docs/extending-sessions/shared-connections).
