@@ -106,15 +106,16 @@ def test_returns_a_verified_before_execute_tool_call_as_sent(
     assert hook == BEFORE_TOOL_CALL
 
 
-def test_returns_a_verified_after_execute_proxy_call_from_a_request_object(
+def test_returns_a_verified_after_execute_proxy_call_from_raw_bytes(
     webhooks: SessionWebhooks,
 ) -> None:
     body, headers = signed(AFTER_PROXY_CALL)
-    request = MagicMock(spec=["get_data", "headers"])
-    request.get_data.return_value = body.encode()
-    request.headers = {name.title(): value for name, value in headers.items()}
 
-    hook = webhooks.parse(request, verify_secret=SECRET)
+    hook = webhooks.parse(
+        body=body.encode(),
+        headers={name.title(): value for name, value in headers.items()},
+        verify_secret=SECRET,
+    )
 
     assert hook == AFTER_PROXY_CALL
 

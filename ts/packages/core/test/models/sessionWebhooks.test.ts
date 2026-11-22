@@ -62,17 +62,16 @@ const now = () => String(Math.floor(Date.now() / 1000));
 const sign = (timestamp: string, body: string, withSecret = secret) =>
   `v1,${createHmac('sha256', withSecret).update(`${webhookId}.${timestamp}.${body}`).digest('base64')}`;
 
-const signedRequest = (payload: unknown, timestamp = now()) => {
+const signed = (payload: unknown, timestamp = now()) => {
   const body = JSON.stringify(payload);
-  return new Request('https://example.com/composio/session-webhook', {
-    method: 'POST',
+  return {
+    body,
     headers: {
       'webhook-id': webhookId,
       'webhook-timestamp': timestamp,
       'webhook-signature': sign(timestamp, body),
     },
-    body,
-  });
+  };
 };
 
 describe('SessionWebhooks.parse', () => {
@@ -84,26 +83,19 @@ describe('SessionWebhooks.parse', () => {
   });
 
   it('returns a verified before_execute tool call as Composio sent it', async () => {
-    const hook = await webhooks.parse(signedRequest(beforeToolCall), { verifySecret: secret });
+    const hook = await webhooks.parse({ ...signed(beforeToolCall), verifySecret: secret });
 
     expect(hook).toEqual(beforeToolCall);
   });
 
-  it('returns a verified after_execute proxy call from an Express-style request', async () => {
-    const timestamp = now();
-    const body = JSON.stringify(afterProxyCall);
+  it('returns a verified after_execute proxy call from raw bytes and a Headers object', async () => {
+    const { body, headers } = signed(afterProxyCall);
 
-    const hook = await webhooks.parse(
-      {
-        body: new TextEncoder().encode(body),
-        headers: {
-          'Webhook-Id': webhookId,
-          'Webhook-Timestamp': timestamp,
-          'Webhook-Signature': sign(timestamp, body),
-        },
-      },
-      { verifySecret: secret }
-    );
+    const hook = await webhooks.parse({
+      body: new TextEncoder().encode(body),
+      headers: new Headers(headers),
+      verifySecret: secret,
+    });
 
     expect(hook).toEqual(afterProxyCall);
   });
@@ -114,7 +106,7 @@ describe('SessionWebhooks.parse', () => {
       data: { ...beforeToolCall.data, tool_call: { ...toolCall, added_later: true } },
     };
 
-    const hook = await webhooks.parse(signedRequest(payload), { verifySecret: secret });
+    const hook = await webhooks.parse({ ...signed(payload), verifySecret: secret });
 
     expect(hook).toEqual(payload);
   });
@@ -123,24 +115,22 @@ describe('SessionWebhooks.parse', () => {
     const timestamp = now();
     const body = JSON.stringify(beforeToolCall);
 
-    const hook = await webhooks.parse(
-      {
-        body,
-        headers: {
-          'webhook-id': webhookId,
-          'webhook-timestamp': timestamp,
-          'webhook-signature': `${sign(timestamp, body, 'an-older-secret')} ${sign(timestamp, body)}`,
-        },
+    const hook = await webhooks.parse({
+      body,
+      headers: {
+        'webhook-id': webhookId,
+        'webhook-timestamp': timestamp,
+        'webhook-signature': `${sign(timestamp, body, 'an-older-secret')} ${sign(timestamp, body)}`,
       },
-      { verifySecret: secret }
-    );
+      verifySecret: secret,
+    });
 
     expect(hook.metadata.hook_id).toBe('check_outgoing_email');
   });
 
   it('rejects a request signed with a different secret', async () => {
     await expect(
-      webhooks.parse(signedRequest(beforeToolCall), { verifySecret: 'some-other-secret' })
+      webhooks.parse({ ...signed(beforeToolCall), verifySecret: 'some-other-secret' })
     ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
   });
 
@@ -150,17 +140,15 @@ describe('SessionWebhooks.parse', () => {
     const tampered = JSON.stringify({ ...beforeToolCall, metadata: { ...metadata, user_id: 'x' } });
 
     await expect(
-      webhooks.parse(
-        {
-          body: tampered,
-          headers: {
-            'webhook-id': webhookId,
-            'webhook-timestamp': timestamp,
-            'webhook-signature': signature,
-          },
+      webhooks.parse({
+        body: tampered,
+        headers: {
+          'webhook-id': webhookId,
+          'webhook-timestamp': timestamp,
+          'webhook-signature': signature,
         },
-        { verifySecret: secret }
-      )
+        verifySecret: secret,
+      })
     ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
   });
 
@@ -168,10 +156,11 @@ describe('SessionWebhooks.parse', () => {
     const tenMinutesAgo = String(Math.floor(Date.now() / 1000) - 600);
 
     await expect(
-      webhooks.parse(signedRequest(beforeToolCall, tenMinutesAgo), { verifySecret: secret })
+      webhooks.parse({ ...signed(beforeToolCall, tenMinutesAgo), verifySecret: secret })
     ).rejects.toThrow(ComposioWebhookSignatureVerificationError);
 
-    const hook = await webhooks.parse(signedRequest(beforeToolCall, tenMinutesAgo), {
+    const hook = await webhooks.parse({
+      ...signed(beforeToolCall, tenMinutesAgo),
       verifySecret: secret,
       tolerance: 0,
     });
@@ -179,17 +168,18 @@ describe('SessionWebhooks.parse', () => {
   });
 
   it('refuses an empty secret instead of skipping verification', async () => {
-    await expect(
-      webhooks.parse(signedRequest(beforeToolCall), { verifySecret: '' })
-    ).rejects.toThrow(ValidationError);
+    await expect(webhooks.parse({ ...signed(beforeToolCall), verifySecret: '' })).rejects.toThrow(
+      ValidationError
+    );
   });
 
   it('names the signature headers that are missing', async () => {
     await expect(
-      webhooks.parse(
-        { body: JSON.stringify(beforeToolCall), headers: { 'webhook-id': webhookId } },
-        { verifySecret: secret }
-      )
+      webhooks.parse({
+        body: JSON.stringify(beforeToolCall),
+        headers: { 'webhook-id': webhookId },
+        verifySecret: secret,
+      })
     ).rejects.toThrow(/'webhook-timestamp', 'webhook-signature'/);
   });
 
@@ -203,7 +193,7 @@ describe('SessionWebhooks.parse', () => {
     };
 
     const error = await webhooks
-      .parse(signedRequest(payload), { verifySecret: secret })
+      .parse({ ...signed(payload), verifySecret: secret })
       .catch((thrown: unknown) => thrown);
 
     expect(error).toBeInstanceOf(ComposioWebhookPayloadError);
@@ -220,8 +210,8 @@ describe('SessionWebhooks.parse', () => {
       data: {},
     };
 
-    await expect(
-      webhooks.parse(signedRequest(triggerEvent), { verifySecret: secret })
-    ).rejects.toThrow(/not a session webhook event/);
+    await expect(webhooks.parse({ ...signed(triggerEvent), verifySecret: secret })).rejects.toThrow(
+      /not a session webhook event/
+    );
   });
 });

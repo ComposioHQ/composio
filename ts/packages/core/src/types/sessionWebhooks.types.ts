@@ -193,13 +193,16 @@ export const SessionWebhookEventSchema = z.discriminatedUnion('type', [
 export type SessionWebhookEvent = z.infer<typeof SessionWebhookEventSchema>;
 
 /**
- * Options for `composio.sessions.webhooks.parse()`.
+ * Parameters of `composio.sessions.webhooks.parse()`.
  */
-export type ParseSessionWebhookOptions = {
+export type ParseSessionWebhookParams = {
+  /** The raw, unparsed request body. The signature covers its exact bytes. */
+  body: string | Uint8Array;
+  /** The request headers. Names are matched case-insensitively. */
+  headers: Headers | Record<string, string | string[] | undefined>;
   /**
    * The project's session webhook secret, shown once in the dashboard when the
-   * session webhook URL is saved or its secret is rotated. Required: the
-   * request signature is always verified.
+   * session webhook URL is saved or its secret is rotated.
    */
   verifySecret: string;
   /**

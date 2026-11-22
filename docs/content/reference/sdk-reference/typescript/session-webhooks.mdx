@@ -24,20 +24,17 @@ The signature is always verified, with the project's session webhook
 secret. The event is returned as Composio sent it, with the field names of
 the webhook reference.
 
-The `request` may be either a Fetch API `Request` (Next.js App Router, Hono,
-Remix) or a plain `{ body, headers }` object (Express with `express.raw`).
-Pass the raw, unparsed body: the signature covers its exact bytes.
+Pass the raw, unparsed request body: the signature covers its exact bytes.
 
 ```typescript
-async parse(request: WebhookRequestLike, options: ParseSessionWebhookOptions): Promise<SessionWebhookEvent>
+async parse(params: ParseSessionWebhookParams): Promise<SessionWebhookEvent>
 ```
 
 **Parameters**
 
 | Name | Type | Description |
 |------|------|-------------|
-| `request` | `WebhookRequestLike` | The incoming HTTP request |
-| `options` | `ParseSessionWebhookOptions` | Parse options |
+| `params` | `ParseSessionWebhookParams` | The request and how to verify it |
 
 **Returns**
 
@@ -46,31 +43,17 @@ async parse(request: WebhookRequestLike, options: ParseSessionWebhookOptions): P
 **Example**
 
 ```typescript
-import { Composio, type SessionWebhookBeforeExecuteResponse } from '@composio/core';
-
-const composio = new Composio();
-
 // Next.js App Router, at the project's session webhook URL
 export async function POST(request: Request) {
-  let hook;
-  try {
-    hook = await composio.sessions.webhooks.parse(request, {
-      verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
-    });
-  } catch {
-    return new Response('Unauthorized', { status: 401 });
-  }
+  const hook = await composio.sessions.webhooks.parse({
+    body: await request.text(),
+    headers: request.headers,
+    verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
+  });
 
-  if (
-    hook.type === 'composio.session_hook.before_execute' &&
-    hook.data.type === 'tool_execute' &&
-    hook.data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL'
-  ) {
-    const answer: SessionWebhookBeforeExecuteResponse = {
-      action: 'block',
-      message: 'Sending email is not allowed',
-    };
-    return Response.json(answer);
+  const { data } = hook;
+  if (data.type === 'tool_execute' && data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL') {
+    return Response.json({ action: 'block', message: 'Sending email is not allowed' });
   }
   return Response.json({ action: 'continue' });
 }

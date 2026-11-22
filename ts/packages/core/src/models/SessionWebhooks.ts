@@ -8,16 +8,14 @@ import { ValidationError } from '../errors/ValidationErrors';
 import { ComposioWebhookPayloadError } from '../errors/TriggerErrors';
 import { telemetry } from '../telemetry/Telemetry';
 import {
-  ParseSessionWebhookOptions,
+  ParseSessionWebhookParams,
   SessionWebhookEvent,
   SessionWebhookEventSchema,
   SessionWebhookEventTypes,
 } from '../types/sessionWebhooks.types';
-import type { WebhookRequestLike } from '../types/triggers.types';
 import {
   WEBHOOK_HEADERS,
   getHeader,
-  readWebhookRequest,
   validateWebhookTimestamp,
   verifyWebhookSignature,
 } from '../utils/webhookVerification';
@@ -42,14 +40,13 @@ export class SessionWebhooks {
    * secret. The event is returned as Composio sent it, with the field names of
    * the webhook reference.
    *
-   * The `request` may be either a Fetch API `Request` (Next.js App Router, Hono,
-   * Remix) or a plain `{ body, headers }` object (Express with `express.raw`).
-   * Pass the raw, unparsed body: the signature covers its exact bytes.
+   * Pass the raw, unparsed request body: the signature covers its exact bytes.
    *
-   * @param {WebhookRequestLike} request - The incoming HTTP request
-   * @param {ParseSessionWebhookOptions} options - Parse options
-   * @param {string} options.verifySecret - The project's session webhook secret
-   * @param {number} [options.tolerance=300] - Max event age in seconds. Set to 0 to disable the check.
+   * @param {ParseSessionWebhookParams} params - The request and how to verify it
+   * @param {string | Uint8Array} params.body - The raw request body
+   * @param {Headers | Record<string, string | string[] | undefined>} params.headers - The request headers
+   * @param {string} params.verifySecret - The project's session webhook secret
+   * @param {number} [params.tolerance=300] - Max event age in seconds. Set to 0 to disable the check.
    * @returns {Promise<SessionWebhookEvent>} The verified event
    *
    * @throws {ValidationError} If `verifySecret` is empty or the signature headers are missing
@@ -58,43 +55,27 @@ export class SessionWebhooks {
    *
    * @example
    * ```ts
-   * import { Composio, type SessionWebhookBeforeExecuteResponse } from '@composio/core';
-   *
-   * const composio = new Composio();
-   *
    * // Next.js App Router, at the project's session webhook URL
    * export async function POST(request: Request) {
-   *   let hook;
-   *   try {
-   *     hook = await composio.sessions.webhooks.parse(request, {
-   *       verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
-   *     });
-   *   } catch {
-   *     return new Response('Unauthorized', { status: 401 });
-   *   }
+   *   const hook = await composio.sessions.webhooks.parse({
+   *     body: await request.text(),
+   *     headers: request.headers,
+   *     verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
+   *   });
    *
-   *   if (
-   *     hook.type === 'composio.session_hook.before_execute' &&
-   *     hook.data.type === 'tool_execute' &&
-   *     hook.data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL'
-   *   ) {
-   *     const answer: SessionWebhookBeforeExecuteResponse = {
-   *       action: 'block',
-   *       message: 'Sending email is not allowed',
-   *     };
-   *     return Response.json(answer);
+   *   const { data } = hook;
+   *   if (data.type === 'tool_execute' && data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL') {
+   *     return Response.json({ action: 'block', message: 'Sending email is not allowed' });
    *   }
    *   return Response.json({ action: 'continue' });
    * }
    * ```
    */
-  async parse(
-    request: WebhookRequestLike,
-    options: ParseSessionWebhookOptions
-  ): Promise<SessionWebhookEvent> {
-    const { body, headers } = await readWebhookRequest(request);
+  async parse(params: ParseSessionWebhookParams): Promise<SessionWebhookEvent> {
+    const { headers, verifySecret: secret } = params;
+    const body =
+      typeof params.body === 'string' ? params.body : new TextDecoder().decode(params.body);
 
-    const secret = options?.verifySecret;
     if (!secret) {
       throw new ValidationError(
         `Cannot verify session webhook: 'verifySecret' is empty — your ` +
@@ -122,7 +103,7 @@ export class SessionWebhooks {
       );
     }
 
-    const tolerance = options.tolerance ?? DEFAULT_TOLERANCE_SECONDS;
+    const tolerance = params.tolerance ?? DEFAULT_TOLERANCE_SECONDS;
     if (tolerance > 0) {
       validateWebhookTimestamp(timestamp, tolerance);
     }

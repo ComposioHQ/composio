@@ -14,10 +14,14 @@ declare const composio: Composio;
 declare const request: Request;
 
 async function sessionWebhook(): Promise<void> {
-  const hook = await composio.sessions.webhooks.parse(request, { verifySecret: 'secret' });
+  const hook = await composio.sessions.webhooks.parse({
+    body: await request.text(),
+    headers: request.headers,
+    verifySecret: 'secret',
+  });
 
   // @ts-expect-error the secret is required
-  await composio.sessions.webhooks.parse(request);
+  await composio.sessions.webhooks.parse({ body: '', headers: {} });
 
   if (hook.type === 'composio.session_hook.before_execute') {
     if (hook.data.type === 'tool_execute') {

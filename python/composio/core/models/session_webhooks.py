@@ -22,7 +22,6 @@ import typing_extensions as te
 from composio import exceptions
 from composio.utils.webhook_verification import (
     body_to_str,
-    extract_request_body,
     get_header,
     validate_webhook_timestamp,
     verify_webhook_signature,
@@ -294,10 +293,9 @@ class SessionWebhooks:
 
     def parse(
         self,
-        request: t.Any = None,
         *,
-        body: t.Union[str, bytes, None] = None,
-        headers: t.Union[t.Mapping[str, t.Any], None] = None,
+        body: t.Union[str, bytes],
+        headers: t.Mapping[str, t.Any],
         verify_secret: str,
         tolerance: int = 300,
     ) -> SessionWebhookEvent:
@@ -308,16 +306,11 @@ class SessionWebhooks:
         secret. The event is returned as Composio sent it, with the field
         names of the webhook reference.
 
-        Pass a framework request object, or pass ``body=`` and ``headers=``
-        explicitly. ``request`` may be any object exposing the request body and
-        headers, such as a Flask or Django request. Because this SDK is
-        synchronous, async frameworks must pass an already-read raw body, for
-        example ``body=await request.body()``. Pass the raw, unparsed body: the
-        signature covers its exact bytes.
+        Pass the raw, unparsed request body: the signature covers its exact
+        bytes.
 
-        :param request: The incoming request object (Flask/Django)
-        :param body: The raw request body (str/bytes); overrides ``request``
-        :param headers: The request headers as a mapping; overrides ``request``
+        :param body: The raw request body
+        :param headers: The request headers. Names are matched case-insensitively.
         :param verify_secret: The project's session webhook secret, shown once
             in the dashboard when the URL is saved or its secret is rotated
         :param tolerance: Max event age in seconds. Set to 0 to disable the check.
@@ -331,29 +324,18 @@ class SessionWebhooks:
             # Flask, at the project's session webhook URL
             @app.post('/composio/session-webhook')
             def session_webhook():
-                try:
-                    hook = composio.sessions.webhooks.parse(
-                        request,
-                        verify_secret=os.environ['COMPOSIO_SESSION_WEBHOOK_SECRET'],
-                    )
-                except exceptions.WebhookSignatureVerificationError:
-                    return '', 401
+                hook = composio.sessions.webhooks.parse(
+                    body=request.get_data(),
+                    headers=request.headers,
+                    verify_secret=os.environ['COMPOSIO_SESSION_WEBHOOK_SECRET'],
+                )
 
                 data = hook['data']
-                if (
-                    hook['type'] == 'composio.session_hook.before_execute'
-                    and data['type'] == 'tool_execute'
-                    and data['tool_call']['tool_slug'] == 'GMAIL_SEND_EMAIL'
-                ):
+                if data['type'] == 'tool_execute' and data['tool_call']['tool_slug'] == 'GMAIL_SEND_EMAIL':
                     return {'action': 'block', 'message': 'Sending email is not allowed'}
                 return {'action': 'continue'}
         """
-        payload = body_to_str(
-            body if body is not None else extract_request_body(request)
-        )
-        raw_headers = (
-            headers if headers is not None else getattr(request, "headers", None)
-        )
+        payload = body_to_str(body)
 
         if not verify_secret:
             raise exceptions.ValidationError(
@@ -362,9 +344,9 @@ class SessionWebhooks:
                 "project's session webhook secret from the Composio dashboard."
             )
 
-        webhook_id = get_header(raw_headers, "webhook-id")
-        timestamp = get_header(raw_headers, "webhook-timestamp")
-        signature = get_header(raw_headers, "webhook-signature")
+        webhook_id = get_header(headers, "webhook-id")
+        timestamp = get_header(headers, "webhook-timestamp")
+        signature = get_header(headers, "webhook-signature")
         if not webhook_id or not timestamp or not signature:
             missing = [
                 name
