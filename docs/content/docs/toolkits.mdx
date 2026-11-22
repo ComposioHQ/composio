@@ -68,7 +68,7 @@ Use toolkit slugs when choosing which apps your agent can work with. Use tool sl
 
 ## How your agent uses a toolkit
 
-In a default [session](/docs/how-composio-works), your agent works through meta tools:
+In a default [session](/docs/sessions), your agent works through meta tools:
 
 1. **Discover.** The agent describes its task to `COMPOSIO_SEARCH_TOOLS`, which finds relevant tools within the session's allowed toolkits and returns their schemas.
 2. **Connect.** If a tool needs an account that isn't connected, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to get a Connect Link for your user.
@@ -76,7 +76,7 @@ In a default [session](/docs/how-composio-works), your agent works through meta 
 
 Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_AN_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
 
-If you know the exact tools your agent needs upfront, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to load them into `session.tools()` without a search step.
+If you know the exact tools your agent needs upfront, use the [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset) to load them into `session.tools()` without a search step.
 
 ## Toolkits and connected accounts
 
@@ -92,12 +92,12 @@ See [Authentication](/docs/authentication) for connection flows and [Managing mu
 
 Toolkit filters choose the apps a session can access. Tool filters narrow that access to specific actions within an app. For example, you can enable Gmail but limit your agent to fetching emails and creating drafts.
 
-Use [session configuration](/docs/configuring-sessions) to enable or disable toolkits, select individual tools, or filter by tags such as read-only. The connected account's permissions still determine what those tools can do in the app.
+Use [session configuration](/docs/sessions/tool-access) to enable or disable toolkits, select individual tools, or filter by tags such as read-only. The connected account's permissions still determine what those tools can do in the app.
 
 You can also attach your own local, in-process tools with the experimental [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) API.
 
 ## Related concepts
 
-- [Sessions](/docs/how-composio-works) tie toolkits, connected accounts, and execution state to a user.
+- [Sessions](/docs/sessions) tie toolkits, connected accounts, and execution state to a user.
 - [Skills](/docs/skills) provide task-specific guidance about which tools to call and in what order. A skill can span multiple toolkits.
 - [Triggers](/docs/triggers) notify your app when an event happens in a connected service, so you can start an agent run in response.

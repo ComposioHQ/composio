@@ -13,7 +13,7 @@ tags:
 
 ## Control SerpAPI availability in a Session
 
-To exclude SerpAPI from a Session, disable `serpapi` in the top-level [toolkit configuration](/docs/configuring-sessions). To control only access through Composio accounts while keeping connected-account routes available, use the [Instant usage controls](/docs/instant-tools#control-instant-usage). Instant eligibility is per tool.
+To exclude SerpAPI from a Session, disable `serpapi` in the top-level [toolkit configuration](/docs/sessions/tool-access). To control only access through Composio accounts while keeping connected-account routes available, use the [Instant usage controls](/docs/instant-tools#control-instant-usage). Instant eligibility is per tool.
 
 ## Use toolkit details to inspect SerpAPI required auth fields
 

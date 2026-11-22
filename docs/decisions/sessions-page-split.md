@@ -1,12 +1,14 @@
 # Sessions page split proposals
 
-## Decision pending
+## Decision
 
-Brendan needs to choose one of the three splits below. I recommend option 1, task pages. This PR records alternatives and changes the title and sidebar label of `/docs/session-configs` to **Saved session policies**. It does not create a Sessions folder, move pages, change navigation order, or install redirects.
+Brendan approved option 1 on 2026-11-22: give each task its own page and put Saved session policies next to Restrict tool access. The implementation uses the nine flat pages in option 1 and updates both the content metadata and Platform sidebar.
+
+The original alternatives and complete content mapping below record the choice. Options 2 and 3 are not implemented. The former overview and configuration URLs retain short bookmark pages outside navigation, linking every old section anchor to its new task page. Saved session policies moves with permanent redirects for HTML and Markdown URLs.
 
 The reader-facing name describes a reusable access policy. The SDK and API still call the object a Session config. Keep `sessionConfigId`, `session_config_id`, `composio.sessionConfigs`, `sourceSessionConfig`, API object names, endpoints, and Dashboard **Sessions → Configs** unchanged. A saved policy is separate from a live session's `session.config` snapshot.
 
-## Current content and navigation
+## Content and navigation before the split
 
 Inspected at `9ae6a8ed13eec5647c31b4dbb38d41dbe3b1eb5f` on `next`:
 
@@ -36,7 +38,7 @@ The relevant Guides entries are **Using sessions via MCP**, **Sandboxes**, **Ext
 
 For every alternative, add `content/docs/sessions/meta.json` with `title: Sessions`, `defaultOpen: false`, and explicit page order matching its tree. Use `index.mdx` for `/docs/sessions`. Replace the current `how-composio-works` entry with `sessions`, remove `configuring-sessions`, and keep **Apps and toolkits** immediately after the folder. Remove the top-level `session-configs` entry only in options 1 and 3. Leave every other root entry in its current order. Titles and slugs below are proposed, not existing routes.
 
-## Option 1: task pages, recommended
+## Option 1: task pages, approved
 
 Keep the folder one level deep. A reader can choose the task without deciding whether it belongs in configuration or reference.
 
@@ -185,31 +187,35 @@ Keep **Extend sessions** in Guides. Proxy execute owns raw authenticated API cal
 
 Keep **Authentication**, **Sandboxes**, and **Governance** in their current positions. Sessions retains its account-selection and sandbox-option examples; those folders own full auth workflows, multiple accounts, account troubleshooting, compute/file workflows, per-action enforcement, hints, and approvals. Keep **Apps and toolkits**, **Toolkits**, the SDK/API references, and the legacy Sessions vs Direct Execution page. None becomes a new copy inside Sessions.
 
-## URL and hash compatibility after a choice
+## URL and hash compatibility
 
-The title-only change in this PR keeps `/docs/session-configs`, every heading/hash, and the root metadata entries unchanged. It requires no redirect. Do not rename its existing headings just to replace the API term “config.”
+The initial title-only proposal preserved `/docs/session-configs`. The approved implementation moves it to `/docs/sessions/saved-session-policies`, preserving all section headings and hashes. SDK/API terminology remains unchanged.
 
-For the eventual split:
+The implementation follows these compatibility rules:
 
 - Use the path redirects listed under the chosen option. Cover `.md` and `.mdx` aliases as well as HTML routes, following the existing patterns in `next.config.mjs` and markdown routing. Keep saved-policy section anchors unchanged at the new destination.
 - A server cannot see a URL fragment. A single redirect from the old configuration URL cannot route both `#direct-tools-preset` and `#concurrent-updates` to different pages. For every moved heading, keep an old-path compatibility page outside navigation with that heading's original anchor and a link to its mapped destination. Use this instead of an unconditional path redirect on that old URL while preserving bookmarks is required. Include a link at the top for readers arriving without a hash.
 - Apply the same compatibility treatment to `/docs/how-composio-works` in options 1 and 3, where execution and lifecycle sections move away from the landing page. Option 2 can redirect it directly because the whole page and its headings stay together. If a moved section has a different generated hash, retain an explicit old anchor at its destination too.
 - Inventory every real heading with the existing link validator's `github-slugger` behavior. Preserve method anchors such as `#tools` and `#executemeta--execute_meta` as generated, rather than guessing from API names. Update same-page links that now cross page boundaries.
-- Update internal links/cards, relevant guardrail routing, search/agent metadata, and tests bound to these paths. Repoint older redirects that currently land on `configuring-sessions`, `how-composio-works`, or `sessions-via-mcp` to the correct canonical page or compatibility page. Avoid redirect chains. Do not hand-edit generated search/index files.
+- Update internal links/cards, relevant guardrail routing, search/agent metadata, and tests bound to these paths. Older redirects to the two split pages keep their compatibility-page destinations so incoming fragments still resolve. Aliases for a specific task can point directly to its canonical section. Avoid redirect chains. Do not hand-edit generated search/index files.
 
 ## Recommendation and follow-up
 
 Choose option 1. The long page already has separate clusters for access, preload/presets, connections, sandbox settings, and updates. Giving those clusters task titles removes the need to scroll past unrelated examples. Keeping saved policies beside access restrictions explains their relationship without teaching a new policy system. Nine pages is a real navigation cost, but option 2 leaves a broad runtime-options page and option 3 adds nested choices plus a second reference hierarchy.
 
-This recommendation comes from the current content and folder conventions. It does not claim reader research or measured improvements. **NEEDS BRENDAN: choose option 1, 2, or 3 before any structural implementation.** After the choice, implement one tree and its compatibility plan, then verify every mapping row and example group against the original content.
+This recommendation comes from the current content and folder conventions. It does not claim reader research or measured improvements. Brendan selected option 1. Verify every mapping row and example group against the original content when changing these pages.
 
 ## Verification
 
-For this proposal/title change, run the existing content and navigation static tests from `docs/`, verify the changed MDX compiles, and check that the saved-policy title supplies the sidebar label. Check the decision index link and confirm that no code fences, section headings, or routes changed. A full site build is unnecessary for a proposal and title edit.
+Run from `docs/`:
 
 ```bash
-wc -l content/docs/how-composio-works.mdx content/docs/configuring-sessions.mdx content/docs/session-configs.mdx
-bun test tests/static/navigation.test.ts tests/static/content.test.ts tests/static/dashboard-links.test.ts tests/static/session-execution.test.ts
+bun run lint:links
+bun run test
+bun run check:code-examples
+bun run check:api-snippets
+bun run check:python-snippets
+GITHUB_ACTIONS=true timeout 20m bun run build
 ```
 
-For the later structural implementation, run `bun run lint:links`, content/navigation static tests, and the existing code-example checks for every moved example. Verify old URLs with fragments and markdown variants against their mapped destinations. Run a production build to catch Twoslash and generated-source integration issues after the pages actually move.
+Check that both sidebars expose the approved nine pages in order. The former overview and configuration bookmark pages keep all original anchors, with links to headings that exist at the destination. Saved-policy redirects cover HTML, `.md`, `.mdx`, and `/llms.mdx` forms. Internal links use the task pages. The page moves preserve all code examples and their validation markers.

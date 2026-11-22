@@ -25,7 +25,7 @@ If none of that applies, use the [remote sandbox](/docs/sandbox/remote). It's th
 
 ## Create a local sandbox session
 
-A local sandbox session is a [session](/docs/how-composio-works) created with the remote sandbox turned off. Set `workbench.enable: false`, then pass the session to `experimental_createLocalWorkbenchSession` (from the `@composio/experimental` package), which returns the two pieces you run yourself.
+A local sandbox session is a [session](/docs/sessions) created with the remote sandbox turned off. Set `workbench.enable: false`, then pass the session to `experimental_createLocalWorkbenchSession` (from the `@composio/experimental` package), which returns the two pieces you run yourself.
 
 {/* code-example: single-language reason="experimental_createLocalWorkbenchSession ships only in the TypeScript @composio/experimental package; Python SDK has no local workbench API" */}
 ```typescript
@@ -96,4 +96,4 @@ The sandbox is your security boundary. Isolate it like anything else holding a p
 
 ## Next
 
-<Card icon={<Database />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope tools, auth, and sandbox state to a user" />
+<Card icon={<Database />} title="What is a session?" href="/docs/sessions" description="How sessions scope tools, auth, and sandbox state to a user" />

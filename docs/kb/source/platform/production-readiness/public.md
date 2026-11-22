@@ -24,7 +24,7 @@ the user ID to isolate connections and tool calls, so each application user
 must resolve to the same Composio user ID across sessions.
 
 - [Authentication and user IDs](https://docs.composio.dev/docs/authentication)
-- [How Composio sessions work](https://docs.composio.dev/docs/how-composio-works)
+- [How Composio sessions work](https://docs.composio.dev/docs/sessions)
 
 ## Isolate environments with separate Composio projects when needed
 
@@ -58,7 +58,7 @@ sensitive or deterministic workflow, prefer an explicit allowlist of exact
 tool slugs. For a broader read-only agent, filter on `readOnlyHint` and disable
 `destructiveHint`, then inspect the resulting tool set before rollout.
 
-- [Configure session tool access](https://docs.composio.dev/docs/configuring-sessions)
+- [Configure session tool access](https://docs.composio.dev/docs/sessions/create-and-reuse)
 - [Create read-only and restricted sessions](../session-tool-policies/public.md)
 
 ## Reuse a stored session until the user or configuration changes
@@ -69,7 +69,7 @@ user or a materially different setup, such as a new tool policy or auth-config
 mapping. A session preserves its scoped runtime state, but it is not the
 language model's conversation memory.
 
-- [Reuse a session](https://docs.composio.dev/docs/how-composio-works#how-sessions-behave)
+- [Reuse a session](https://docs.composio.dev/docs/sessions/create-and-reuse#how-sessions-behave)
 
 ## Test production trigger handling through the real webhook path
 
