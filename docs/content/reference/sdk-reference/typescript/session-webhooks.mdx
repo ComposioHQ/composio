@@ -1,0 +1,79 @@
+---
+title: "SessionWebhooks"
+description: "`composio.sessions.webhooks` — for the endpoint at a project's session webhook URL, which answers session hooks that have a `webhook` handler."
+---
+
+## Usage
+
+Access this class through the `composio.sessions.webhooks` property:
+
+```typescript
+const composio = new Composio({ apiKey: 'your-api-key' });
+const result = await composio.sessions.webhooks.parse(request, { verifySecret });
+```
+
+## Methods
+
+### parse()
+
+Verify and parse an event Composio sent to the session webhook URL.
+
+Composio sends one before or after each tool or proxy call that a hook
+with a `webhook` handler applies to, and waits for the endpoint's answer.
+The signature is always verified, with the project's session webhook
+secret. The event is returned as Composio sent it, with the field names of
+the webhook reference.
+
+The `request` may be either a Fetch API `Request` (Next.js App Router, Hono,
+Remix) or a plain `{ body, headers }` object (Express with `express.raw`).
+Pass the raw, unparsed body: the signature covers its exact bytes.
+
+```typescript
+async parse(request: WebhookRequestLike, options: ParseSessionWebhookOptions): Promise<SessionWebhookEvent>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `request` | `WebhookRequestLike` | The incoming HTTP request |
+| `options` | `ParseSessionWebhookOptions` | Parse options |
+
+**Returns**
+
+`Promise<SessionWebhookEvent>` — The verified event
+
+**Example**
+
+```typescript
+import { Composio, SessionWebhookBeforeExecuteResponse } from '@composio/core';
+
+const composio = new Composio();
+
+// Next.js App Router, at the project's session webhook URL
+export async function POST(request: Request) {
+  let hook;
+  try {
+    hook = await composio.sessions.webhooks.parse(request, {
+      verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
+    });
+  } catch {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  if (
+    hook.type === 'composio.session_hook.before_execute' &&
+    hook.data.type === 'tool_execute' &&
+    hook.data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL'
+  ) {
+    const answer: SessionWebhookBeforeExecuteResponse = {
+      action: 'block',
+      message: 'Sending email is not allowed',
+    };
+    return Response.json(answer);
+  }
+  return Response.json({ action: 'continue' });
+}
+```
+
+---
