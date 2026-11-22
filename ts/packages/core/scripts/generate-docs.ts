@@ -50,12 +50,6 @@ const SLUG_OVERRIDES: Record<string, string> = {
   ToolRouterSessionFilesMount: 'session-files',
 };
 
-// Classes reached through another sub-client, not as `composio.<className>`:
-// the accessor path and the call their Usage block shows.
-const USAGE_OVERRIDES: Record<string, { accessor: string; call: string }> = {
-  SessionWebhooks: { accessor: 'sessions.webhooks', call: 'parse(request, { verifySecret })' },
-};
-
 // Resolve the display title for a class (falls back to the class name).
 function displayNameFor(className: string): string {
   return DISPLAY_NAME_OVERRIDES[className] ?? className;
@@ -1018,17 +1012,15 @@ export function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('');
 
     // Handle acronyms (e.g., "MCP" -> "mcp") vs PascalCase (e.g., "AuthConfigs" -> "authConfigs")
-    const usage = USAGE_OVERRIDES[classDoc.name];
     const accessorName =
-      usage?.accessor ??
-      (classDoc.name === classDoc.name.toUpperCase()
+      classDoc.name === classDoc.name.toUpperCase()
         ? classDoc.name.toLowerCase()
-        : classDoc.name.charAt(0).toLowerCase() + classDoc.name.slice(1));
+        : classDoc.name.charAt(0).toLowerCase() + classDoc.name.slice(1);
     lines.push(`Access this class through the \`composio.${accessorName}\` property:`);
     lines.push('');
     lines.push('```typescript');
     lines.push(`const composio = new Composio({ apiKey: 'your-api-key' });`);
-    const usageCall = usage?.call ?? (classDoc.name === 'Toolkits' ? 'get({})' : 'list()');
+    const usageCall = classDoc.name === 'Toolkits' ? 'get({})' : 'list()';
     lines.push(`const result = await composio.${accessorName}.${usageCall};`);
     lines.push('```');
     lines.push('');

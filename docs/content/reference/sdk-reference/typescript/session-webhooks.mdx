@@ -5,11 +5,11 @@ description: "`composio.sessions.webhooks` — for the endpoint at a project's s
 
 ## Usage
 
-Access this class through the `composio.sessions.webhooks` property:
+Access this class through the `composio.sessionWebhooks` property:
 
 ```typescript
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.sessions.webhooks.parse(request, { verifySecret });
+const result = await composio.sessionWebhooks.list();
 ```
 
 ## Methods
