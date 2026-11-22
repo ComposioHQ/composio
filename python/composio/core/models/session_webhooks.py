@@ -330,9 +330,9 @@ class SessionWebhooks:
                     verify_secret=os.environ['COMPOSIO_SESSION_WEBHOOK_SECRET'],
                 )
 
-                data = hook['data']
-                if data['type'] == 'tool_execute' and data['tool_call']['tool_slug'] == 'GMAIL_SEND_EMAIL':
-                    return {'action': 'block', 'message': 'Sending email is not allowed'}
+                # Keep a confidential project out of every call and every result
+                if 'Project Titan' in json.dumps(hook['data']):
+                    return {'action': 'block', 'message': 'Project Titan is confidential'}
                 return {'action': 'continue'}
         """
         payload = body_to_str(body)

@@ -63,9 +63,9 @@ export class SessionWebhooks {
    *     verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
    *   });
    *
-   *   const { data } = hook;
-   *   if (data.type === 'tool_execute' && data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL') {
-   *     return Response.json({ action: 'block', message: 'Sending email is not allowed' });
+   *   // Keep a confidential project out of every call and every result
+   *   if (JSON.stringify(hook.data).includes('Project Titan')) {
+   *     return Response.json({ action: 'block', message: 'Project Titan is confidential' });
    *   }
    *   return Response.json({ action: 'continue' });
    * }
