@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { beforeAll, describe, expect, test } from 'bun:test';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect } from 'effect';
@@ -7,8 +10,9 @@ import {
   type CheckOptions,
   type CheckResult,
 } from '../scripts/docs-reference-check/main';
-import { withoutBlanketSuppressions } from '../scripts/docs-reference-check/policy';
+import { withoutSuppressions } from '../scripts/docs-reference-check/policy';
 import {
+  compile,
   createReferenceHost,
   referenceCompilerOptions,
 } from '../scripts/docs-reference-check/program';
@@ -48,8 +52,13 @@ describe('reference checker over fixture pages', () => {
     expect(onPage(result, 'usage-valid.mdx')).toEqual([]);
   });
 
-  test('a session fragment passes on the session page', () => {
-    expect(onPage(result, 'session.mdx')).toEqual([]);
+  test('a session fragment is checked against the real session type', () => {
+    expect(onPage(result, 'session.mdx')).toEqual([
+      expect.objectContaining({
+        rule: 'type',
+        message: expect.stringContaining('missingSessionMember'),
+      }),
+    ]);
   });
 
   test('a property the class lacks fails and is named', async () => {
@@ -96,11 +105,14 @@ describe('reference checker over fixture pages', () => {
         line: await lineOf(page, "'composio-reference-check-missing-package'"),
         rule: 'unresolved-module',
       },
+      { line: await lineOf(page, "'../src/index'"), rule: 'unresolved-module' },
+      { line: await lineOf(page, "'#platform'"), rule: 'unresolved-module' },
+      { line: await lineOf(page, '<reference path='), rule: 'reference-path' },
     ]);
   });
 
   test('signature and opted-out fences are skipped, counted and the reason listed', async () => {
-    expect(result.checked).toBe(13);
+    expect(result.checked).toBe(19);
     expect(result.signatures).toBe(1);
     expect(result.optedOut).toEqual([
       {
@@ -133,6 +145,10 @@ describe('reference checker over fixture pages', () => {
       { line: await lineOf(page, "const count: number = 'not a number'"), rule: 'type' },
       { line: await lineOf(page, '// @noErrors'), rule: 'suppression' },
       { line: await lineOf(page, 'const label: string = 42'), rule: 'type' },
+      { line: await lineOf(page, '// @ts-ignore'), rule: 'suppression' },
+      { line: await lineOf(page, 'composio.ignoredMember()'), rule: 'type' },
+      { line: await lineOf(page, '// @ts-expect-error'), rule: 'suppression' },
+      { line: await lineOf(page, 'composio.expectedErrorMember()'), rule: 'type' },
     ]);
   });
 
@@ -149,38 +165,238 @@ describe('reference checker over fixture pages', () => {
   });
 });
 
+test(
+  'global declarations and module augmentation cannot change another fence',
+  async () => {
+    const result = await check(`${FIXTURES}/augmentation`);
+    expect(result.violations.map(({ rule }) => rule)).toEqual([
+      'augmentation',
+      'augmentation',
+      'type',
+    ]);
+    expect(result.violations.at(-1)?.message).toContain('injectedMember');
+  },
+  TIMEOUT
+);
+
 describe('blanket suppression detection', () => {
   test('a block comment and a noCheck comment are rejected and blanked', () => {
     const source = '/* @ts-nocheck */\nconst a = 1;\n// @noCheck\nconst b = 2;';
-    const { code, lines } = withoutBlanketSuppressions(source);
+    const { code, lines } = withoutSuppressions(source);
     expect(lines).toEqual([1, 3]);
     expect(code).toBe(' '.repeat(17) + '\nconst a = 1;\n' + ' '.repeat(11) + '\nconst b = 2;');
   });
 
   test('a string literal containing the marker is not a comment', () => {
     const source = "const s = '// @ts-nocheck';";
-    expect(withoutBlanketSuppressions(source)).toEqual({ code: source, lines: [] });
+    expect(withoutSuppressions(source)).toEqual({
+      code: source,
+      lines: [],
+      augmentations: [],
+      referencePaths: [],
+    });
   });
 
   test('a template literal with the marker after a substitution is not a comment', () => {
     const source = 'const s = `a ${1} // @ts-nocheck`;';
-    expect(withoutBlanketSuppressions(source)).toEqual({ code: source, lines: [] });
+    expect(withoutSuppressions(source)).toEqual({
+      code: source,
+      lines: [],
+      augmentations: [],
+      referencePaths: [],
+    });
   });
 });
 
 describe('module resolution', () => {
-  const options = referenceCompilerOptions(CORE);
-  const host = createReferenceHost(options, CORE, new Map());
-  const from = `${CORE}/snippet.ts`;
-  const resolve = (specifier: string) =>
-    ts.resolveModuleName(specifier, from, options, host).resolvedModule?.resolvedFileName;
-
-  test('@composio/core and its experimental subpath resolve to workspace source with dist hidden', () => {
-    expect(host.fileExists(`${CORE}/dist/index.d.mts`)).toBe(false);
-    expect(resolve('@composio/core')).toBe(`${CORE}/src/index.ts`);
-    expect(resolve('@composio/core/experimental')).toBe(`${CORE}/src/experimental/index.ts`);
+  test('every public export has a canonical workspace target', () => {
+    const exports = {
+      '': 'src/index.ts',
+      '/experimental': 'src/experimental/index.ts',
+      '/platform': 'src/platform/node.ts',
+      '/utils/json-schema': 'src/utils/json-schema.ts',
+      '/utils/ssrf-guard': 'src/utils/ssrfGuard.node.ts',
+      '/generated': 'generated/index.d.ts',
+    };
+    const from = `${REPO}/.reference-check/snippet.ts`;
+    const code = Object.keys(exports)
+      .map(suffix => `import '@composio/core${suffix}';`)
+      .join('\n');
+    const { program, fileDiagnostics } = compile(
+      new Map([[from, code]]),
+      referenceCompilerOptions(),
+      CORE
+    );
+    expect(fileDiagnostics.get(from)).toEqual([]);
+    const imports = program.getSourceFile(from)?.statements.filter(ts.isImportDeclaration) ?? [];
+    const checker = program.getTypeChecker();
+    expect(
+      imports.map(
+        node =>
+          checker.getSymbolAtLocation(node.moduleSpecifier)?.declarations?.[0]?.getSourceFile()
+            .fileName
+      )
+    ).toEqual(Object.values(exports).map(target => `${CORE}/${target}`));
   });
 });
+
+const PACKAGE_MANIFEST = JSON.stringify({
+  name: '@composio/core',
+  exports: { '.': { types: './dist/index.d.mts' } },
+});
+const REFERENCE_EXAMPLE = [
+  '```typescript',
+  "import { Composio } from '@composio/core';",
+  'new Composio().sourceOnly();',
+  '```',
+  '',
+].join('\n');
+
+async function withPackage(
+  run: (root: string, put: (name: string, content: string) => Promise<void>) => Promise<void>
+) {
+  const temporary = await mkdtemp(join(tmpdir(), 'composio-reference-package-'));
+  const root = join(temporary, 'core');
+  const put = async (name: string, content: string) => {
+    const file = join(root, name);
+    await mkdir(join(file, '..'), { recursive: true });
+    await writeFile(file, content);
+  };
+  try {
+    await put('package.json', PACKAGE_MANIFEST);
+    await put('tsconfig.json', '{}');
+    await put('../json-schema-to-zod/package.json', JSON.stringify({ exports: {} }));
+    await put('pages/index.mdx', REFERENCE_EXAMPLE);
+    await run(root, put);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+}
+
+test(
+  'a broken re-export in reachable SDK source fails even when the fence sees any',
+  async () => {
+    await withPackage(async (root, put) => {
+      await put('src/index.ts', "export { Composio } from './missing';");
+      const options = referenceCompilerOptions();
+      const result = compile(
+        new Map([[join(root, 'fence.ts'), REFERENCE_EXAMPLE.split('\n').slice(1, 3).join('\n')]]),
+        { ...options, types: [] },
+        root
+      );
+      expect(result.programDiagnostics.map(diagnostic => diagnostic.code)).toContain(2307);
+    });
+  },
+  TIMEOUT
+);
+
+test(
+  'a missing virtual root is a program failure',
+  () => {
+    const { programDiagnostics } = compile(
+      new Map([[`${CORE}/discard/../virtual.ts`, 'export {};']]),
+      referenceCompilerOptions(),
+      CORE
+    );
+    expect(
+      programDiagnostics.map(diagnostic =>
+        ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+      )
+    ).toContainEqual(expect.stringContaining('Missing virtual root'));
+  },
+  TIMEOUT
+);
+
+test(
+  'workspace resolution hides stale dist and refuses an installed fallback',
+  async () => {
+    await withPackage(async (root, put) => {
+      await put('src/index.ts', 'export class Composio { sourceOnly() {} }');
+      await put('dist/index.d.mts', 'export declare class Composio { staleOnly(): void }');
+      await put(
+        '../node_modules/@composio/core/package.json',
+        JSON.stringify({
+          name: '@composio/core',
+          exports: { '.': { types: './index.d.ts' } },
+        })
+      );
+      await put(
+        '../node_modules/@composio/core/index.d.ts',
+        'export declare class Composio { sourceOnly(): void }'
+      );
+
+      const file = join(root, 'fence.ts');
+      const options = { ...referenceCompilerOptions(), types: [] };
+      const files = new Map([[file, REFERENCE_EXAMPLE.split('\n').slice(1, 3).join('\n')]]);
+      expect(
+        createReferenceHost(options, root, new Map()).fileExists(join(root, 'dist/index.d.mts'))
+      ).toBe(false);
+      expect(compile(files, options, root).fileDiagnostics.get(file)).toEqual([]);
+
+      await rm(join(root, 'src/index.ts'));
+      expect(
+        compile(files, options, root)
+          .fileDiagnostics.get(file)
+          ?.map(d => d.code)
+      ).toEqual([2307]);
+    });
+  },
+  TIMEOUT
+);
+
+test(
+  'built validation checks package exports and the packaged reference bytes',
+  async () => {
+    await withPackage(async (root, put) => {
+      await put('src/index.ts', 'export class Composio { sourceOnly() {} }');
+      await put('dist/index.d.mts', 'export declare class Composio {}');
+      const options = { builtPackage: root, compilerOptions: { types: [] } };
+      const pages = join(root, 'pages');
+      const packedPage = 'dist/docs/reference/sdk-reference/typescript/index.mdx';
+      const missing = await check(pages, options);
+      expect(missing.violations).toContainEqual(
+        expect.objectContaining({
+          message: expect.stringContaining('Missing packaged reference'),
+        })
+      );
+
+      await put(packedPage, REFERENCE_EXAMPLE + '\n');
+      const changed = await check(pages, options);
+      expect(changed.violations).toContainEqual(
+        expect.objectContaining({
+          message: expect.stringContaining('Packaged reference differs'),
+        })
+      );
+
+      await put(packedPage, REFERENCE_EXAMPLE);
+      const incomplete = await check(pages, options);
+      expect(incomplete.violations).toContainEqual(
+        expect.objectContaining({
+          rule: 'type',
+          message: expect.stringContaining("Property 'sourceOnly' does not exist"),
+        })
+      );
+
+      await put('dist/index.d.mts', 'export declare class Composio { sourceOnly(): void }');
+      expect((await check(pages, options)).violations).toEqual([]);
+      await put('dist/index.d.mts', "export { Composio } from './missing';");
+      expect((await check(pages, options)).violations).toContainEqual(
+        expect.objectContaining({
+          rule: 'program',
+          message: expect.stringMatching(/dist\/index\.d\.mts.*Cannot find module '\.\/missing'/),
+        })
+      );
+      await put('package.json', JSON.stringify({ name: '@composio/core', exports: {} }));
+      expect((await check(pages, options)).violations).toContainEqual(
+        expect.objectContaining({
+          rule: 'unresolved-module',
+          message: expect.stringContaining('@composio/core'),
+        })
+      );
+    });
+  },
+  TIMEOUT
+);
 
 test(
   'a program-level diagnostic fails the run',

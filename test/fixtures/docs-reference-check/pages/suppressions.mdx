@@ -17,3 +17,13 @@ const count: number = 'not a number';
 // @noErrors
 const label: string = 42;
 ```
+
+```typescript
+// @ts-ignore
+composio.ignoredMember();
+```
+
+```typescript
+// @ts-expect-error
+composio.expectedErrorMember();
+```

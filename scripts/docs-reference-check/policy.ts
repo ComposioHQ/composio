@@ -1,12 +1,20 @@
+import { dirname } from 'node:path';
 import { Data, Effect } from 'effect';
 import ts from 'typescript6';
 import type { FenceLocation } from './pages';
-import { compile, referenceCompilerOptions, type Compilation } from './program';
+import {
+  compile,
+  referenceCompilerOptions,
+  type Compilation,
+  type ResolutionMode,
+} from './program';
 
 export type ViolationRule =
   | 'parse'
   | 'fence-option'
   | 'suppression'
+  | 'augmentation'
+  | 'reference-path'
   | 'unresolved-name'
   | 'unresolved-module'
   | 'type'
@@ -41,14 +49,14 @@ export const violationAt = (
   offset = 0
 ): Violation => ({ ...location, line: location.line + offset, rule, message });
 
-const SUPPRESSION = /^[/*\s]*@(?:noErrors(?:Cutted)?|noCheck|ts-nocheck)\b/;
+const SUPPRESSION = /^[/*\s]*@(?:noErrors(?:Cutted)?|noCheck|ts-(?:nocheck|ignore|expect-error))\b/;
 
 /**
- * Finds blanket suppression comments in the trivia around the parsed tokens, so text inside string,
+ * Finds suppression comments in the trivia around the parsed tokens, so text inside string,
  * template, regular expression and JSX text tokens never counts, and blanks them so the fence is
  * still checked. Lines are 1-based within the fence.
  */
-export const withoutBlanketSuppressions = (source: string, extension: 'ts' | 'tsx' = 'ts') => {
+export const withoutSuppressions = (source: string, extension: 'ts' | 'tsx' = 'ts') => {
   const sourceFile = ts.createSourceFile(
     `fence.${extension}`,
     source,
@@ -56,6 +64,20 @@ export const withoutBlanketSuppressions = (source: string, extension: 'ts' | 'ts
     true,
     extension === 'tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   );
+  const augmentations: number[] = [];
+  const findAugmentations = (node: ts.Node): void => {
+    if (
+      ts.isModuleDeclaration(node) &&
+      (ts.isStringLiteral(node.name) || (node.flags & ts.NodeFlags.GlobalAugmentation) !== 0)
+    ) {
+      augmentations.push(
+        sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1
+      );
+    }
+    ts.forEachChild(node, findAugmentations);
+  };
+  findAugmentations(sourceFile);
+
   const tokens: ts.Node[] = [];
   const collectTokens = (node: ts.Node) => {
     const children = node.getChildren(sourceFile).filter(child => !ts.isJSDoc(child));
@@ -83,7 +105,14 @@ export const withoutBlanketSuppressions = (source: string, extension: 'ts' | 'ts
   for (const { start, end } of comments.toReversed()) {
     code = code.slice(0, start) + code.slice(start, end).replace(/[^\r\n]/g, ' ') + code.slice(end);
   }
-  return { code, lines: comments.map(({ start }) => source.slice(0, start).split('\n').length) };
+  return {
+    code,
+    lines: comments.map(({ start }) => source.slice(0, start).split('\n').length),
+    augmentations,
+    referencePaths: sourceFile.referencedFiles.map(
+      reference => sourceFile.getLineAndCharacterOfPosition(reference.pos).line + 1
+    ),
+  };
 };
 
 type FragmentName = 'composio' | 'session';
@@ -120,7 +149,7 @@ const preludeFor = (code: string, names: ReadonlySet<FragmentName>) => {
 };
 
 const UNRESOLVED_NAME = new Set([2304, 2552, 18004]);
-const UNRESOLVED_MODULE = new Set([2307, 2792]);
+const UNRESOLVED_MODULE = new Set([2307, 2792, 2882]);
 
 const ruleFor = (code: number): ViolationRule =>
   UNRESOLVED_NAME.has(code)
@@ -130,7 +159,9 @@ const ruleFor = (code: number): ViolationRule =>
       : 'type';
 
 const messageOf = (diagnostic: ts.Diagnostic) =>
-  `${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')} [TS${diagnostic.code}]`;
+  diagnostic.code === 0
+    ? ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+    : `${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')} [TS${diagnostic.code}]`;
 
 const unresolvedFragmentNames = (
   compilation: Compilation,
@@ -171,18 +202,21 @@ const programViolation = (diagnostic: ts.Diagnostic): Violation => ({
 export const checkSnippets = (
   snippets: ReadonlyArray<Snippet>,
   coreRoot: string,
-  overrides: ts.CompilerOptions = {}
+  overrides: ts.CompilerOptions = {},
+  mode: ResolutionMode = 'workspace'
 ) =>
   Effect.try({
     try: () => {
-      const options = { ...referenceCompilerOptions(coreRoot), ...overrides };
+      if (snippets.length === 0) return [];
+      const options = { ...referenceCompilerOptions(mode), ...overrides };
       const fileNames = snippets.map(
-        (snippet, index) => `${coreRoot}/.reference-check/${index}.${snippet.extension}`
+        (snippet, index) => `${dirname(coreRoot)}/.reference-check/${index}.${snippet.extension}`
       );
       const first = compile(
         new Map(fileNames.map((fileName, index) => [fileName, snippets[index].code])),
         options,
-        coreRoot
+        coreRoot,
+        mode
       );
       const preludes = snippets.map((snippet, index) =>
         preludeFor(
@@ -197,6 +231,7 @@ export const checkSnippets = (
             ),
             options,
             coreRoot,
+            mode,
             first.program
           )
         : first;

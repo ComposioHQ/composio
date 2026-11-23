@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Cause, Console, Data, Effect, FileSystem, Path, Stdio } from 'effect';
@@ -6,8 +7,9 @@ import { decodeFenceOptions } from './fences';
 import { parsePage, type PageFence } from './pages';
 import {
   checkSnippets,
+  CompilerError,
   violationAt,
-  withoutBlanketSuppressions,
+  withoutSuppressions,
   type Snippet,
   type Violation,
 } from './policy';
@@ -16,6 +18,7 @@ import { formatText, type CheckResult, type OptOut } from './report';
 export type { CheckResult } from './report';
 
 export interface CheckOptions {
+  readonly builtPackage?: string;
   readonly compilerOptions?: ts.CompilerOptions;
 }
 
@@ -27,6 +30,45 @@ class UsageError extends Data.TaggedError('UsageError')<{ readonly message: stri
 class ReferenceCheckFailed extends Data.TaggedError('ReferenceCheckFailed')<{
   readonly message: string;
 }> {}
+
+const packagedViolations = (reference: string, packaged: string, names: readonly string[]) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const violations: Violation[] = [];
+    const report = (page: string, message: string) =>
+      violations.push({
+        page,
+        line: null,
+        className: null,
+        section: null,
+        method: null,
+        rule: 'program',
+        message,
+      });
+    const expected = new Set(names);
+    if (yield* fs.exists(path.join(reference, 'meta.json'))) expected.add('meta.json');
+
+    for (const name of expected) {
+      const file = path.join(packaged, name);
+      if (!(yield* fs.exists(file))) {
+        report(file, 'Missing packaged reference');
+        continue;
+      }
+      const source = yield* fs.readFile(path.join(reference, name));
+      const shipped = yield* fs.readFile(file);
+      if (Buffer.compare(source, shipped) !== 0)
+        report(file, 'Packaged reference differs from the repository');
+    }
+    if (yield* fs.exists(packaged)) {
+      for (const name of yield* fs.readDirectory(packaged, { recursive: true })) {
+        if (name.endsWith('.mdx') && !expected.has(name)) {
+          report(path.join(packaged, name), 'Unexpected packaged reference');
+        }
+      }
+    }
+    return violations;
+  });
 
 const byPosition = (left: Violation, right: Violation) =>
   (left.page ?? '').localeCompare(right.page ?? '') || (left.line ?? 0) - (right.line ?? 0);
@@ -41,7 +83,16 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       .filter(name => name.endsWith('.mdx'))
       .sort();
 
-    const violations: Violation[] = [];
+    const built =
+      options.builtPackage === undefined ? undefined : path.resolve(options.builtPackage);
+    const violations =
+      built === undefined
+        ? []
+        : yield* packagedViolations(
+            root,
+            path.join(built, 'dist/docs/reference/sdk-reference/typescript'),
+            names
+          );
     const optedOut: OptOut[] = [];
     const snippets: Snippet[] = [];
     let signatures = 0;
@@ -74,18 +125,46 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
         if (mode?._tag === 'Signature') signatures++;
         if (mode?._tag === 'OptedOut') optedOut.push({ ...fence.location, reason: mode.reason });
         if (mode?._tag !== 'Checked') continue;
-        const { code, lines } = withoutBlanketSuppressions(fence.code, fence.extension);
-        for (const line of lines) {
+        const inspected = yield* Effect.try({
+          try: () => withoutSuppressions(fence.code, fence.extension),
+          catch: cause => new CompilerError({ message: 'Cannot inspect TypeScript fence', cause }),
+        });
+        for (const line of inspected.lines) {
           violations.push(
             violationAt(
               fence.location,
               'suppression',
-              'Blanket diagnostic suppression is not allowed; fix the example or opt it out with nocheck="<reason>".',
+              'Diagnostic suppression is not allowed; fix the example or opt it out with nocheck="<reason>".',
               line
             )
           );
         }
-        snippets.push({ location: fence.location, extension: fence.extension, code });
+        for (const line of inspected.augmentations) {
+          violations.push(
+            violationAt(
+              fence.location,
+              'augmentation',
+              'Global declarations and module augmentation are not allowed in runnable examples.',
+              line
+            )
+          );
+        }
+        for (const line of inspected.referencePaths) {
+          violations.push(
+            violationAt(
+              fence.location,
+              'reference-path',
+              'Use package imports in runnable examples. Triple-slash path references are disallowed.',
+              line
+            )
+          );
+        }
+        snippets.push({
+          location: fence.location,
+          extension: fence.extension,
+          code:
+            inspected.augmentations.length || inspected.referencePaths.length ? '' : inspected.code,
+        });
       }
     }
 
@@ -101,8 +180,15 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       });
     }
 
-    const coreRoot = path.resolve(REPO_ROOT, 'ts/packages/core');
-    violations.push(...(yield* checkSnippets(snippets, coreRoot, options.compilerOptions)));
+    const coreRoot = built ?? path.resolve(REPO_ROOT, 'ts/packages/core');
+    violations.push(
+      ...(yield* checkSnippets(
+        snippets,
+        coreRoot,
+        options.compilerOptions,
+        built === undefined ? 'workspace' : 'built'
+      ))
+    );
     return {
       checked: snippets.length,
       signatures,
@@ -111,17 +197,27 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
     } satisfies CheckResult;
   });
 
-const USAGE = 'Usage: bun scripts/docs-reference-check/main.ts [--json] [directory]';
+const USAGE =
+  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--built-package <package-directory>] [directory]';
 
 const main = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args;
   const json = args.includes('--json');
   const rest = args.filter(arg => arg !== '--json');
+  const builtFlag = rest.indexOf('--built-package');
+  const builtPackage = builtFlag < 0 ? undefined : rest[builtFlag + 1];
+  if (builtFlag >= 0) {
+    if (!builtPackage || builtPackage.startsWith('-'))
+      return yield* new UsageError({ message: USAGE });
+    rest.splice(builtFlag, 2);
+  }
   if (rest.length > 1 || rest.some(arg => arg.startsWith('-'))) {
     return yield* new UsageError({ message: USAGE });
   }
   const path = yield* Path.Path;
-  const result = yield* checkReferencePages(rest[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY));
+  const result = yield* checkReferencePages(rest[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
+    builtPackage,
+  });
   yield* Console.log(json ? JSON.stringify(result, null, 2) : formatText(result));
   if (result.violations.length > 0) {
     return yield* new ReferenceCheckFailed({

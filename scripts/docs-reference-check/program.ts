@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path';
 import ts from 'typescript6';
 
 /**
@@ -15,8 +16,10 @@ const sourcePackages = (coreRoot: string) => [
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+export type ResolutionMode = 'workspace' | 'built';
+
 const readJson = (path: string): unknown => {
-  const { config, error } = ts.readConfigFile(path, ts.sys.readFile);
+  const { config, error } = ts.readConfigFile(path, fileName => ts.sys.readFile(fileName));
   if (error) throw new Error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
   return config;
 };
@@ -28,9 +31,13 @@ const exportedTypes = (target: unknown): string | undefined =>
       ? exportedTypes(target.types ?? target.default)
       : undefined;
 
-const exportPaths = (name: string, root: string) => {
+const packageExports = (root: string) => {
   const manifest = readJson(`${root}/package.json`);
-  const exports = isRecord(manifest) && isRecord(manifest.exports) ? manifest.exports : {};
+  return isRecord(manifest) && isRecord(manifest.exports) ? manifest.exports : {};
+};
+
+const exportPaths = (name: string, root: string) => {
+  const exports = packageExports(root);
   const paths: Record<string, string[]> = {};
   for (const [subpath, target] of Object.entries(exports)) {
     const types = exportedTypes(target);
@@ -61,7 +68,9 @@ const corePrivateImportPaths = (coreRoot: string) => {
   );
 };
 
-export const referenceCompilerOptions = (coreRoot: string): ts.CompilerOptions => ({
+export const referenceCompilerOptions = (
+  mode: ResolutionMode = 'workspace'
+): ts.CompilerOptions => ({
   target: ts.ScriptTarget.ES2022,
   module: ts.ModuleKind.ESNext,
   moduleResolution: ts.ModuleResolutionKind.Bundler,
@@ -69,32 +78,38 @@ export const referenceCompilerOptions = (coreRoot: string): ts.CompilerOptions =
   jsx: ts.JsxEmit.Preserve,
   strict: true,
   esModuleInterop: true,
-  skipLibCheck: true,
+  skipLibCheck: mode === 'workspace',
   resolveJsonModule: true,
+  noUncheckedSideEffectImports: true,
   noEmit: true,
   types: ['node'],
-  // Absolute targets: TypeScript 6 rejects `baseUrl`, and these options have no tsconfig to be relative to.
-  paths: {
-    ...Object.assign(
-      {},
-      ...sourcePackages(coreRoot).map(({ name, root }) => exportPaths(name, root))
-    ),
-    ...corePrivateImportPaths(coreRoot),
-  },
 });
+
+const CORE_NAME = '@composio/core';
+const isPackageImport = (specifier: string, name: string) =>
+  specifier === name || specifier.startsWith(`${name}/`);
 
 export const createReferenceHost = (
   options: ts.CompilerOptions,
   coreRoot: string,
-  files: ReadonlyMap<string, string>
+  files: ReadonlyMap<string, string>,
+  mode: ResolutionMode = 'workspace'
 ): ts.CompilerHost => {
   const base = ts.createCompilerHost(options, true);
-  const hidden = sourcePackages(coreRoot).flatMap(({ name, root }) => [
+  const packages = mode === 'workspace' ? sourcePackages(coreRoot) : [];
+  const hidden = packages.flatMap(({ name, root }) => [
     `${root}/dist/`,
     `/node_modules/${name}/dist/`,
   ]);
   const isHidden = (fileName: string) => hidden.some(part => fileName.includes(part));
-  return {
+  const exports = mode === 'built' ? packageExports(coreRoot) : {};
+  const sourcePaths = Object.fromEntries(
+    packages.flatMap(({ name, root }) => Object.entries(exportPaths(name, root)))
+  );
+  const publicOptions = { ...options, paths: sourcePaths };
+  const internalOptions =
+    mode === 'workspace' ? { ...options, paths: corePrivateImportPaths(coreRoot) } : options;
+  const host: ts.CompilerHost = {
     ...base,
     fileExists: fileName =>
       files.has(fileName) || (!isHidden(fileName) && base.fileExists(fileName)),
@@ -108,6 +123,54 @@ export const createReferenceHost = (
         : base.getSourceFile(fileName, languageVersion, onError, shouldCreate);
     },
   };
+
+  const canonical = (file: string) => host.realpath?.(file) ?? file;
+  const packageRoot = canonical(coreRoot);
+  const cache = ts.createModuleResolutionCache(base.getCurrentDirectory(), fileName =>
+    base.getCanonicalFileName(fileName)
+  );
+  host.resolveModuleNameLiterals = (literals, importer, redirected, _, source) =>
+    literals.map(literal => {
+      const specifier = literal.text;
+      const fence = files.has(importer);
+      const resolutionMode = ts.getModeForUsageLocation(source, literal, options);
+      const resolveFrom = (from: string, settings: ts.CompilerOptions) =>
+        ts.resolveModuleName(specifier, from, settings, host, cache, redirected, resolutionMode);
+      const missing = { resolvedModule: undefined };
+
+      // Each fence is a standalone consumer. Only SDK-internal source imports get the private aliases.
+      if (
+        fence &&
+        (specifier.startsWith('.') || specifier.startsWith('#') || isAbsolute(specifier))
+      ) {
+        return missing;
+      }
+      if (packages.some(({ name }) => isPackageImport(specifier, name))) {
+        const target = sourcePaths[specifier]?.[0];
+        if (!target || !host.fileExists(target)) return missing;
+        const result = resolveFrom(importer, publicOptions);
+        const resolved = result.resolvedModule?.resolvedFileName;
+        return resolved && canonical(resolved) === canonical(target) ? result : missing;
+      }
+      if (fence && mode === 'built' && isPackageImport(specifier, CORE_NAME)) {
+        const subpath = specifier === CORE_NAME ? '.' : `.${specifier.slice(CORE_NAME.length)}`;
+        if (!Object.hasOwn(exports, subpath)) return missing;
+        // Use the selected package's self-reference so TypeScript applies the real export
+        // conditions, even when another copy is installed in the consumer's node_modules.
+        const result = resolveFrom(`${coreRoot}/package.json`, options);
+        const target = result.resolvedModule?.resolvedFileName;
+        return target &&
+          canonical(target).startsWith(`${packageRoot}/`) &&
+          /\.d\.[cm]?ts$/.test(target)
+          ? result
+          : missing;
+      }
+      return resolveFrom(
+        importer,
+        !fence && importer.startsWith(`${coreRoot}/src/`) ? internalOptions : options
+      );
+    });
+  return host;
 };
 
 export interface Compilation {
@@ -120,27 +183,43 @@ export const compile = (
   files: ReadonlyMap<string, string>,
   options: ts.CompilerOptions,
   coreRoot: string,
+  mode: ResolutionMode = 'workspace',
   oldProgram?: ts.Program
 ): Compilation => {
-  const host = createReferenceHost(options, coreRoot, files);
+  const host = createReferenceHost(options, coreRoot, files, mode);
   const program = ts.createProgram({ rootNames: [...files.keys()], options, host, oldProgram });
-  const fileDiagnostics = new Map(
-    [...files.keys()].map(fileName => {
-      const sourceFile = program.getSourceFile(fileName);
-      return [
-        fileName,
-        sourceFile
-          ? [
-              ...program.getSyntacticDiagnostics(sourceFile),
-              ...program.getSemanticDiagnostics(sourceFile),
-            ]
-          : [],
-      ] as const;
-    })
-  );
-  return {
-    program,
-    fileDiagnostics,
-    programDiagnostics: [...program.getOptionsDiagnostics(), ...program.getGlobalDiagnostics()],
-  };
+  const programDiagnostics = [
+    ...program.getOptionsDiagnostics(),
+    ...program.getGlobalDiagnostics(),
+  ];
+  const diagnosticsOf = (file: ts.SourceFile) => [
+    ...program.getSyntacticDiagnostics(file),
+    ...program.getSemanticDiagnostics(file),
+  ];
+  const fileDiagnostics = new Map<string, ReadonlyArray<ts.Diagnostic>>();
+  for (const fileName of files.keys()) {
+    const sourceFile = program.getSourceFile(fileName);
+    if (sourceFile) {
+      fileDiagnostics.set(fileName, diagnosticsOf(sourceFile));
+    } else {
+      programDiagnostics.push({
+        file: undefined,
+        start: undefined,
+        length: undefined,
+        category: ts.DiagnosticCategory.Error,
+        code: 0,
+        messageText: `Missing virtual root: ${fileName}`,
+      });
+    }
+  }
+  const roots =
+    mode === 'workspace'
+      ? sourcePackages(coreRoot).map(({ root }) => `${root}/src/`)
+      : [`${coreRoot}/dist/`, `${host.realpath?.(coreRoot) ?? coreRoot}/dist/`];
+  for (const file of program.getSourceFiles()) {
+    if (roots.some(root => file.fileName.startsWith(root))) {
+      programDiagnostics.push(...diagnosticsOf(file));
+    }
+  }
+  return { program, fileDiagnostics, programDiagnostics };
 };
