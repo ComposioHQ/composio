@@ -4,6 +4,7 @@ import {
   checkCodeExamples, listCodeExampleFiles, inventoryCodeExamples,
   parseCodeExamples, walkCodeExamples,
 } from '../../lib/code-examples';
+import { collectPythonSnippets } from '../../scripts/check-python-snippets';
 import { componentsToMarkdown } from '../../lib/example-document';
 import { mdxToCleanMarkdown } from '../../lib/source';
 import { parseToolkitFaq } from '../../lib/toolkit-faq';
@@ -162,13 +163,47 @@ describe('maintained and rendered surfaces', () => {
 
   test('inventory includes generated, historical, and component-backed code with explicit reasons', () => {
     const inventory = inventoryCodeExamples(root);
-    for (const validation of ['generated-copy', 'symbol-reference', 'workspace-checked', 'historical', 'framework-source']) {
+    for (const validation of ['generated-copy', 'workspace-checked', 'historical', 'framework-source']) {
       const entries = inventory.filter((entry) => entry.validation === validation);
       expect(entries.map((entry) => entry.validation)).toContain(validation);
       expect(entries.every((entry) => Boolean(entry.reason))).toBe(true);
     }
+    const pythonReference = inventory.filter((entry) =>
+      entry.path.startsWith('content/reference/sdk-reference/python/') && entry.kind === 'fence');
+    expect(pythonReference.length).toBeGreaterThan(0);
+    expect(pythonReference.every((entry) => entry.validation === 'workspace-checked')).toBe(true);
     expect(inventory.some((entry) => entry.kind === 'FileBuildup source')).toBe(true);
     expect(inventory.some((entry) => entry.kind === 'RepoBrowser source')).toBe(true);
     expect(inventory.some((entry) => entry.kind === 'generated API operation' && entry.path.includes('/api/v3.1/tools/get'))).toBe(true);
+  });
+});
+
+describe('generated Python reference checks', () => {
+  const path = 'content/reference/sdk-reference/python/tools.mdx';
+  const signature = fence('python signature', 'def tools()');
+  const optedOut = fence('python nocheck="Requires an optional provider"', 'provider_example()');
+  const options = () => ({ optOuts: [] });
+
+  test('checks runnable fences and reports only explicit opt-outs', () => {
+    const reference = options();
+    const snippets = collectPythonSnippets(
+      [{ path, source: [signature, optedOut, python].join('\n\n') }], reference,
+    );
+    expect(snippets.map(({ code, typeCheck }) => ({ code, typeCheck }))).toEqual([
+      { code: 'print("hello")', typeCheck: true },
+    ]);
+    expect(reference.optOuts).toEqual([{ path, line: 5, reason: 'Requires an optional provider' }]);
+  });
+
+  test('fails when signatures and opt-outs leave zero checked fences', () => {
+    expect(() => collectPythonSnippets(
+      [{ path, source: [signature, optedOut].join('\n\n') }], options(),
+    )).toThrow('No checkable Python reference fences');
+  });
+
+  test('rejects a reference opt-out without a reason even alongside a runnable fence', () => {
+    expect(() => collectPythonSnippets(
+      [{ path, source: [fence('python nocheck=""', 'pass'), python].join('\n\n') }], options(),
+    )).toThrow('Invalid Python reference fence options');
   });
 });

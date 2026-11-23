@@ -90,14 +90,14 @@ Run `bun run inventory:code-examples` for JSON records with source path, line, k
 
 - Authored guides, examples, reference overviews, toolkit FAQs, KB source and curated KB articles.
 - Generated API/KB presentation copies and every OpenAPI path/webhook operation.
-- Generated language-specific SDK symbol references, including signatures and partial usage fragments. TypeScript reference fences are labeled `workspace-checked`; Python ones stay `symbol-reference`.
+- Generated language-specific SDK symbol references, including signatures and partial usage fragments. Both SDK references are labeled `workspace-checked`.
 - Historical changelog fences.
 - `PackageInstall`, `FileBuildup`, and `RepoBrowser` invocations and their committed source files/stages. Shared source-runtime reasons live in `lib/example-sources.ts`; new sources require an explicit classification.
 - Agent-only Markdown examples injected from `lib/llm-guardrails`. The checks use `#rendered.md` projections with source-line padding, not the TypeScript template-literal syntax.
 
 The maintained-file checks read `content/docs`, `content/examples`, authored `content/reference`, `content/toolkits`, `api-overviews`, `kb/source`, `kb/articles`, and the injected guardrail projections. Generated API overview and KB copies are checked through their maintained inputs, not treated as independent editable examples.
 
-Generated SDK symbol references remain language-specific and are not translated into other languages. The TypeScript reference's code blocks are type-checked against the workspace `@composio/core` source by `pnpm run check:docs-reference` at the repository root (see `twoslash.md`); its method signatures are skipped. Python reference examples are inventoried but not checked. Historical release examples are also inventoried rather than rewritten against today's API. These are explicit validation limits, not proof that every rendered fence offers three runnable equivalents. Edit reference generators/SDK docstrings or historical source deliberately; do not hand-edit generated pages to satisfy a gate.
+Generated SDK references are language-specific. Run `pnpm run check:docs-reference` at the repository root for TypeScript and `bun run check:python-snippets --reference` from `docs/` for Python. Both checks skip display signatures and list each `nocheck="<reason>"` opt-out. Historical release examples are inventory-only. Edit JSDoc or Python docstrings, then regenerate the pages.
 
 Component-backed complete applications use runtime-specific source classifications, not invisible parser exclusions. A Pi, Vercel AI SDK, local-workbench, or eve/macOS application does not acquire a second runtime merely because its source browser is indexed. Shared SDK operations elsewhere on those pages still need counterparts.
 
@@ -111,6 +111,7 @@ Run from `docs/`:
 | `bun run check:code-examples` | Markdown/MDX AST boundaries, tab order/content/languages, local marker placement, known file-backed sources |
 | `bun run check:api-snippets` | Supported curl syntax, operation selection, auth alternatives, API versions, and JSON Schema constraints against committed v3.1/v3 specs |
 | `bun run check:python-snippets` | Syntax for maintained Python fences, SDK-attributed mypy diagnostics against the local Python SDK/providers, and `# type: ignore` policy |
+| `bun run check:python-snippets --reference` | Syntax and local SDK-attributed mypy diagnostics for generated Python reference examples |
 | `bun run test:python-snippets` | Real Python helper regressions, including aliases, local classes, argument/TypedDict errors, SDK-model indexing, misspelled SDK bindings, suppressions, and fragment scope |
 | `bun run check:typescript-snippets` | Actual TypeScript diagnostics for API overviews, authored reference, and Markdown FAQ/KB inputs outside build-time Twoslash |
 | `bun run test` | Python-free static checker and rendering regressions |
@@ -120,6 +121,6 @@ The Python helper uses `uv run --frozen` with the locked `docs-snippets` depende
 
 A `# type: ignore` must name its mypy error codes, such as `# type: ignore[arg-type]`, and be explained by a comment on the same line, inside the enclosing statement, or directly above it. The explanation must describe a verified SDK typing gap. Ignores that no longer suppress an error fail as unused.
 
-TypeScript uses the SDK/provider versions installed from `docs/package.json` and `docs/bun.lock`, not the local TypeScript workspace source. See `twoslash.md` for build coverage and precise annotations. Python and TypeScript therefore have different version boundaries; review install instructions and release compatibility explicitly.
+Maintained TypeScript guides use the SDK/provider versions pinned in `docs/package.json` and `docs/bun.lock`. The separate reference checker uses workspace source by default and checks packaged declarations and reference bytes during release. See `twoslash.md` for coverage and annotations.
 
 All static checks are offline with respect to Composio: no credentials, accounts, tool execution, or authenticated API requests are needed. They do not prove response schemas beyond the committed contract, jq correctness, live endpoint behavior, cross-language semantic equivalence, or justified exemption reasons. Review those against SDK implementation and schema evidence, and inspect the rendered options and agent Markdown.
