@@ -14,7 +14,7 @@ const tools = await composio.tools.get('default', 'HACKERNEWS_GET_USER', {
     console.log(`🔄 Executing tool ${toolSlug} from toolkit ${toolkitSlug}...`);
     return params;
   },
-  afterExecute: async ({ toolSlug, toolkitSlug, result }) => {
+  afterExecute: async ({ toolSlug, result }) => {
     console.log(`✅ Tool ${toolSlug} executed`);
     return result;
   },

@@ -11,7 +11,9 @@ import logger from './logger';
 export function describeThrown(value: unknown): string {
   try {
     if (value instanceof Error) return value.message;
-    if (typeof value === 'object' && value !== null) return JSON.stringify(value) ?? String(value);
+    if (typeof value === 'object' && value !== null) {
+      return JSON.stringify(value) ?? Object.prototype.toString.call(value);
+    }
     return String(value);
   } catch {
     try {

@@ -799,7 +799,10 @@ describe('ComposioToolkitsRepository toolkit lists', () => {
 
   const requestOf = (fetchSpy: ReturnType<typeof spyOnToolkitsFetch>) => {
     const [input, init] = fetchSpy.mock.calls[0]!;
-    return { url: new URL(String(input)), headers: new Headers(init?.headers) };
+    return {
+      url: new URL(input instanceof Request ? input.url : input),
+      headers: new Headers(init?.headers),
+    };
   };
 
   it.effect(

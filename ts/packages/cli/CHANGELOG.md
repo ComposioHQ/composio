@@ -6,6 +6,8 @@
 
 ### Patch Changes
 
+- Keep compiler-host callbacks bound during TypeScript generation and format structured errors in CLI output.
+
 - Update @composio/client to 2.1.36 to include the latest API changes.
 
 - Release archives now include a `release-manifest.json` that lists the support files they ship. `composio upgrade` installs exactly what the manifest lists, so later releases can drop a support file without breaking upgrades. Files a release no longer lists stay in place. A release can name the oldest CLI version that may upgrade to it; an older CLI refuses it before changing anything and prints the install command to run instead.

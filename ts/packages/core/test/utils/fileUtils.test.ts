@@ -72,13 +72,11 @@ const downloadedFileResponse = (body: Uint8Array = new Uint8Array(10)) =>
 
 describe('fileUtils', () => {
   let mockClient: ComposioClient;
+  let createPresignedURL: Mock<ComposioClient['files']['createPresignedURL']>;
 
   beforeEach(() => {
-    mockClient = {
-      files: {
-        createPresignedURL: vi.fn(),
-      },
-    } as unknown as ComposioClient;
+    createPresignedURL = vi.fn<ComposioClient['files']['createPresignedURL']>();
+    mockClient = { files: { createPresignedURL } } as unknown as ComposioClient;
 
     vi.clearAllMocks();
 
@@ -186,7 +184,7 @@ describe('fileUtils', () => {
         })
       ).rejects.toThrow('exceeds maximum allowed size');
 
-      expect(mockClient.files.createPresignedURL).not.toHaveBeenCalled();
+      expect(createPresignedURL).not.toHaveBeenCalled();
     });
   });
 
@@ -568,7 +566,7 @@ describe('fileUtils', () => {
     });
 
     it('should block an upload whose presigned URL resolves internally', async () => {
-      vi.mocked(mockClient.files.createPresignedURL).mockResolvedValue({
+      createPresignedURL.mockResolvedValue({
         key: 'test-key',
         type: 'new',
         new_presigned_url: 'http://127.0.0.1:9000/upload',

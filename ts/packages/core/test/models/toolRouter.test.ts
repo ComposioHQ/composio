@@ -8,7 +8,6 @@ import ComposioClient, {
   NotFoundError,
   PermissionDeniedError,
 } from '@composio/client';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
@@ -26,9 +25,11 @@ import { ComposioSessionConfigConflictError } from '../../src/errors/ToolRouterE
 import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 
 // Mock dependencies
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -193,7 +194,7 @@ describe('ToolRouter', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(toolRouter).toBeInstanceOf(ToolRouter);
-      expect(telemetry.instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
+      expect(instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
     });
 
     it('should store the config reference', () => {

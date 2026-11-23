@@ -39,8 +39,8 @@ export function patchCompilerHostWithVirtualFiles(
 ): void {
   const currentDirectory = normalizeSlashes(tsHost.getCurrentDirectory());
   const canonicalizePath = tsHost.getCanonicalFileName.bind(tsHost);
-  const ogGetSourceFile = tsHost.getSourceFile;
-  const ogFileExists = tsHost.fileExists;
+  const ogGetSourceFile = tsHost.getSourceFile.bind(tsHost);
+  const ogFileExists = tsHost.fileExists.bind(tsHost);
 
   const virtualFileLookupMap = new Map<string, ts.SourceFile>();
   for (const [filename, sourceFile] of virtualFileMap) {

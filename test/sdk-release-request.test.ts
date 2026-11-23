@@ -3,7 +3,7 @@ import { Effect, Option } from 'effect';
 import { executeReleaseRequest, type ReleaseRequestContext } from '../scripts/sdk-release/batch';
 import type { SdkReleasePlan } from '../scripts/sdk-release/plan';
 import { parseReleaseRequest, type ReleaseRequest } from '../scripts/sdk-release/request';
-import { runRelease, type Fetch } from './sdk-release-harness';
+import { readJsonRequestBody, fetchInputUrl, runRelease, type Fetch } from './sdk-release-harness';
 
 const sha = 'a'.repeat(40);
 const context = {
@@ -68,10 +68,14 @@ function client(
 ) {
   const calls: { method: string; path: string; body?: unknown }[] = [];
   const fetcher: Fetch = async (input, init) => {
-    const url = new URL(String(input));
+    const url = new URL(fetchInputUrl(input));
     const method = init?.method ?? 'GET';
     const path = url.pathname + url.search;
-    calls.push({ method, path, ...(init?.body ? { body: JSON.parse(String(init.body)) } : {}) });
+    calls.push({
+      method,
+      path,
+      ...(init?.body ? { body: await readJsonRequestBody(init.body) } : {}),
+    });
     const respond = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
     if (path === '/orgs/ComposioHQ/memberships/member') {
       if (options.membership === 'absent') return respond({}, 404);

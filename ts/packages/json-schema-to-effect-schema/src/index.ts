@@ -550,7 +550,7 @@ export const jsonSchemaToEffectSchema = (
         // `function`, or `undefined`. That is a property of the input, so it
         // belongs in the filter. A string is the filter's shorthand for the
         // `SchemaIssue.InvalidValue` issue Effect would otherwise build by hand.
-        return `JSON Schema validation failed: ${error}`;
+        return `JSON Schema validation failed: ${error instanceof Error ? error.message : 'Unsupported input'}`;
       }
       if (validation.valid) {
         return true;

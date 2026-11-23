@@ -31,7 +31,6 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
 import { getClientIdentity } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
@@ -626,7 +625,7 @@ export class Composio<
 
     // Check for the latest version of the Composio SDK from NPM.
     if (!this.config.disableVersionCheck) {
-      checkForLatestVersionFromNPM(version);
+      void checkForLatestVersionFromNPM(version);
     }
   }
 

@@ -4,7 +4,7 @@ export const runHook = async <TResult, TContext>(
   hook: ((ctx: TContext, next: PiHookNext<TResult>) => MaybePromise<unknown>) | undefined,
   context: TContext,
   getDefaultResult: () => MaybePromise<TResult>
-): Promise<TResult | unknown> => {
+): Promise<unknown> => {
   if (!hook) return getDefaultResult();
 
   const state: { nextResult?: Promise<TResult> } = {};

@@ -29,7 +29,6 @@ import type {
   PiSearchContext,
   PiSearchHookContext,
   PiSessionToolCapabilities,
-  PiSessionToolName,
   PiSessionToolOptions,
   PiToolCollection,
   PiToolDetails,
@@ -49,7 +48,7 @@ export const createPiSessionTools = (
 
   const buildBaseContext = (
     toolCallId: string,
-    sourceTool: (typeof DEFAULT_SESSION_TOOL_NAMES)[PiSessionToolName] | string,
+    sourceTool: string,
     originalRequest: unknown
   ): PiBaseToolContext => ({
     toolCallId,
@@ -155,7 +154,7 @@ export const createPiSessionTools = (
 
   const executeWithPolicy = async (
     toolCallId: string,
-    sourceTool: (typeof DEFAULT_SESSION_TOOL_NAMES)[PiSessionToolName] | string,
+    sourceTool: string,
     originalRequest: unknown,
     toolSlug: string,
     args: Record<string, unknown>,

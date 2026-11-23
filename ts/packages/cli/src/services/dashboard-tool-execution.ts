@@ -244,6 +244,7 @@ const makeDashboardToolExecution = Effect.gen(function* () {
   const call = (
     procedure: 'execute' | 'executeMeta',
     orgId: string,
+    slug: string,
     input: Record<string, unknown>
   ) =>
     Effect.gen(function* () {
@@ -332,10 +333,7 @@ const makeDashboardToolExecution = Effect.gen(function* () {
         return yield* Effect.fail(relayedApiError(url, outcome.status, outcome.error));
       }
       if (outcome.response.result_type === 'input_required') {
-        return yield* toolInputRequiredError(
-          `Tool ${input.tool_slug ?? input.slug}`,
-          outcome.response
-        );
+        return yield* toolInputRequiredError(`Tool ${slug}`, outcome.response);
       }
       // Not validated beyond `result_type`; see `ExecutionResult`.
       return outcome.response as DashboardExecutionResult;
@@ -344,14 +342,14 @@ const makeDashboardToolExecution = Effect.gen(function* () {
   return {
     /** Runs a tool through the Dashboard. Never retried. */
     execute: (request: DashboardToolExecutionRequest) =>
-      call('execute', request.orgId, {
+      call('execute', request.orgId, request.slug, {
         tool_slug: request.slug,
         arguments: request.arguments,
         ...(request.account ? { account: request.account } : {}),
       }),
     /** Runs a meta tool through the Dashboard. Never retried. */
     executeMeta: (request: DashboardToolExecutionRequest) =>
-      call('executeMeta', request.orgId, {
+      call('executeMeta', request.orgId, request.slug, {
         slug: request.slug,
         arguments: request.arguments,
       }),

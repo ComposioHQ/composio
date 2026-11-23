@@ -66,15 +66,11 @@ import { withCancellation } from '../utils/cancellation';
 import { invokeUserCallback } from '../utils/userCallback';
 
 /**
- * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
- * This prevents runtime crashes when calling string methods like `.toLowerCase()` on non-string values.
+ * Normalizes string and numeric identifiers, falling back for empty or malformed values.
  * @private
  */
 const toStringOrDefault = (value: unknown, defaultValue: string): string => {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  const str = String(value);
+  const str = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
   return str.length > 0 ? str : defaultValue;
 };
 
@@ -929,7 +925,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     // Try V1/V2/V3 formats using shared parsing logic
     const result = this.tryParseVersionedPayload(jsonPayload);
     if (result.ok) {
-      const { ok, ...rest } = result;
+      const { ok: _ok, ...rest } = result;
       return rest;
     }
 

@@ -18,7 +18,7 @@ const { triggerId } = await composio.triggers.create(userId, 'GMAIL_NEW_GMAIL_ME
 });
 
 // Subscribe to triggers with optional filters
-const sub = await composio.triggers.subscribe(
+await composio.triggers.subscribe(
   metadata => {
     console.log('Received trigger event:');
     console.dir(metadata, { depth: 3 });

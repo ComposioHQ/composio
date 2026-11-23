@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ComposioClient from '@composio/client';
 import { Logs } from '../../src/models/Logs';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -53,7 +54,7 @@ describe('Logs', () => {
   });
 
   it('instruments the class with telemetry', () => {
-    expect(telemetry.instrument).toHaveBeenCalledWith(logs, 'Logs');
+    expect(instrument).toHaveBeenCalledWith(logs, 'Logs');
   });
 
   describe('search', () => {
