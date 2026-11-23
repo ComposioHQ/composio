@@ -24,6 +24,7 @@ jobs:
     outputs:
       languages: ${{ steps.select.outputs.languages }}
       channel: ${{ steps.select.outputs.channel }}
+      core: ${{ steps.select.outputs.core }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -40,7 +41,9 @@ jobs:
           if (!languages.every(language => ['typescript', 'python'].includes(language))) throw new Error('Unknown release language');
           const channel = batch.plan.choices.channel ?? 'stable';
           if (!['stable', 'beta'].includes(channel)) throw new Error('Unknown release channel');
-          appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\nchannel=${channel}\n`);
+          const core = batch.plan.releases.some(release =>
+            release.language === 'typescript' && release.name === '@composio/core');
+          appendFileSync(process.env.GITHUB_OUTPUT, `languages=${JSON.stringify(languages)}\nchannel=${channel}\ncore=${core}\n`);
           JS
 
   candidate:
@@ -154,11 +157,9 @@ jobs:
           path: sdk-candidate/typescript
       - name: Install the docs against the candidate packages
         run: bun scripts/sdk-release/candidate-registry.ts sdk-candidate/typescript
-      # The generated TypeScript reference ships on the docs site and inside the npm
-      # tarball, and the docs build skips its code blocks, so check them here against
-      # the release's own @composio/core source.
-      - name: Type-check the TypeScript reference code blocks
-        run: pnpm run check:docs-reference
+      - name: Check the packaged TypeScript reference against the installed candidate
+        if: needs.select-candidates.outputs.core == 'true'
+        run: pnpm run check:docs-reference --built-package docs/node_modules/@composio/core
       - name: Lint TypeScript
         working-directory: docs
         run: bun run lint

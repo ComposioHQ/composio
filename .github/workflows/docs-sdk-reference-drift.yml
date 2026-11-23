@@ -2,9 +2,8 @@ name: Docs - SDK reference drift
 
 # Regenerates both SDK references from the PR's sources and fails when the committed
 # output differs, so generator changes and stale references surface here rather than in
-# a release PR. It then type-checks every TypeScript code block on the generated
-# TypeScript reference against the workspace @composio/core source. Pushes to next run
-# it too, so two green PRs that combine into broken reference code fail on next before
+# a release PR. It then type-checks the code blocks on both generated references against
+# the workspace SDK sources (TypeScript and Python). Pushes to next run it too, so two green PRs that combine into broken reference code fail on next before
 # anyone requests a release. It runs the generators against PR code, so it gets
 # read-only contents access and no secrets.
 on:
@@ -12,6 +11,7 @@ on:
     branches: [next]
     paths:
       - 'ts/packages/core/src/**'
+      - 'ts/packages/core/generated/**'
       - 'ts/packages/core/scripts/generate-docs.ts'
       - 'ts/packages/core/package.json'
       - 'ts/packages/core/tsconfig.json'
@@ -22,12 +22,21 @@ on:
       - 'tsconfig.docs-reference-check.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'patches/**'
       - 'python/composio/**'
       - 'python/scripts/generate-docs.py'
       - 'python/pyproject.toml'
       - 'uv.lock'
       - 'docs/content/reference/sdk-reference/**'
+      - 'docs/scripts/check-python-snippets.ts'
+      - 'docs/scripts/python-snippets/**'
+      - 'docs/lib/code-examples.ts'
+      - 'docs/lib/example-document.ts'
+      - 'docs/lib/llm-guardrails/**'
+      - 'docs/package.json'
+      - 'docs/bun.lock'
+      - 'pyproject.toml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/docs-sdk-reference-drift.yml'
@@ -37,6 +46,7 @@ on:
     branches: [next]
     paths:
       - 'ts/packages/core/src/**'
+      - 'ts/packages/core/generated/**'
       - 'ts/packages/core/scripts/generate-docs.ts'
       - 'ts/packages/core/package.json'
       - 'ts/packages/core/tsconfig.json'
@@ -47,12 +57,21 @@ on:
       - 'tsconfig.docs-reference-check.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - 'patches/**'
       - 'python/composio/**'
       - 'python/scripts/generate-docs.py'
       - 'python/pyproject.toml'
       - 'uv.lock'
       - 'docs/content/reference/sdk-reference/**'
+      - 'docs/scripts/check-python-snippets.ts'
+      - 'docs/scripts/python-snippets/**'
+      - 'docs/lib/code-examples.ts'
+      - 'docs/lib/example-document.ts'
+      - 'docs/lib/llm-guardrails/**'
+      - 'docs/package.json'
+      - 'docs/bun.lock'
+      - 'pyproject.toml'
       - '.github/actions/setup-node-pnpm-bun/action.yml'
       - '.github/actions/setup-python-uv/action.yml'
       - '.github/workflows/docs-sdk-reference-drift.yml'
@@ -115,3 +134,11 @@ jobs:
 
       - name: Type-check the TypeScript reference code blocks
         run: pnpm run check:docs-reference
+
+      - name: Install docs checker dependencies
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Check the Python reference code blocks
+        working-directory: docs
+        run: bun run check:python-snippets --reference
