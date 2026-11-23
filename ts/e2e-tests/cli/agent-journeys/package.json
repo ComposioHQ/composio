@@ -12,7 +12,7 @@
     "mutate": "bun run mutate.ts"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.135.0",
+    "@anthropic-ai/sdk": "^1.12.0",
     "@copilotkit/aimock": "catalog:",
     "@e2e-tests/cli-fake-backend": "workspace:*",
     "@e2e-tests/utils": "workspace:*",
