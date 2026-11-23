@@ -316,10 +316,11 @@ describe('ComposioClientSingleton headers', () => {
         const singleton = yield* ComposioClientSingleton;
         yield* listTools(yield* singleton.get());
 
-        const hops = fetchSpy.mock.calls.map(([url, init]) => {
+        const hops = fetchSpy.mock.calls.map(([input, init]) => {
+          const url = input instanceof Request ? input.url : new URL(input).href;
           const headers = new Headers(init?.headers);
           return [
-            String(url),
+            url,
             headers.get('x-cli-agent-session-host'),
             headers.get('x-cli-agent-session-id'),
           ];
