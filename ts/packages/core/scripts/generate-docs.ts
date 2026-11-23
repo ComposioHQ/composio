@@ -133,38 +133,6 @@ export function runTypeDocCommand(
   );
 }
 
-// Discover classes to document from TypeDoc output
-function discoverClassesToDocument(project: TypeDocProject): string[] {
-  const classes: string[] = [];
-
-  // Always include Composio first
-  classes.push('Composio');
-
-  if (!project.children) return classes;
-
-  for (const child of project.children) {
-    // Direct class
-    if (child.kind === TYPEDOC_KIND.Class && !INTERNAL_CLASSES.has(child.name)) {
-      if (!classes.includes(child.name)) {
-        classes.push(child.name);
-      }
-    }
-
-    // Class inside a module
-    if (child.kind === TYPEDOC_KIND.Module && child.children) {
-      for (const nested of child.children) {
-        if (nested.kind === TYPEDOC_KIND.Class && !INTERNAL_CLASSES.has(nested.name)) {
-          if (!classes.includes(nested.name)) {
-            classes.push(nested.name);
-          }
-        }
-      }
-    }
-  }
-
-  return classes;
-}
-
 // TypeDoc kind numbers (v2.0 schema)
 const TYPEDOC_KIND = {
   Module: 2,
@@ -174,29 +142,6 @@ const TYPEDOC_KIND = {
   Property: 1024,
   Accessor: 262144,
 } as const;
-
-// Helper to find a class by name, searching through modules
-function findClass(project: TypeDocProject, className: string): TypeDocReflection | undefined {
-  if (!project.children) return undefined;
-
-  for (const child of project.children) {
-    // Check if this child is the class we're looking for
-    if (child.name === className && child.kind === TYPEDOC_KIND.Class) {
-      return child;
-    }
-
-    // If it's a module, search inside it
-    if (child.kind === TYPEDOC_KIND.Module && child.children) {
-      for (const nested of child.children) {
-        if (nested.name === className && nested.kind === TYPEDOC_KIND.Class) {
-          return nested;
-        }
-      }
-    }
-  }
-
-  return undefined;
-}
 
 // The subset of TypeDoc's JSON that the Usage walk reads. Parsing it at load
 // time turns a TypeDoc schema change into an error that names the field,
@@ -277,17 +222,98 @@ function isDeprecatedComment(comment: TypeDocGraphNode['comment']): boolean {
   return comment?.blockTags?.some(tag => tag.tag === '@deprecated') ?? false;
 }
 
-function collectClasses(project: TypeDocGraphNode): Map<number, TypeDocGraphNode> {
-  const classes = new Map<number, TypeDocGraphNode>();
-  for (const child of project.children ?? []) {
-    if (child.kind === TYPEDOC_KIND.Class) classes.set(child.id, child);
-    if (child.kind === TYPEDOC_KIND.Module) {
-      for (const nested of child.children ?? []) {
-        if (nested.kind === TYPEDOC_KIND.Class) classes.set(nested.id, nested);
+/** The reflection fields that identify a class and nest it in a module. */
+interface TypeDocCatalogNode<N> {
+  id: number;
+  name: string;
+  kind: number;
+  children?: N[];
+}
+
+/**
+ * Every class in a TypeDoc project, declared at the top level or one module
+ * deep, in project order. This is the only walk that enumerates classes, so
+ * documentation order, name lookup, ID lookup, and access paths agree on
+ * which classes exist.
+ */
+export class TypeDocClassCatalog<N extends TypeDocCatalogNode<N>> {
+  readonly classes: readonly N[];
+  private readonly ids = new Map<number, N>();
+
+  constructor(project: { children?: N[] }) {
+    const classes: N[] = [];
+    for (const child of project.children ?? []) {
+      if (child.kind === TYPEDOC_KIND.Class) classes.push(child);
+      if (child.kind === TYPEDOC_KIND.Module) {
+        for (const nested of child.children ?? []) {
+          if (nested.kind === TYPEDOC_KIND.Class) classes.push(nested);
+        }
       }
     }
+    this.classes = classes;
+    for (const node of classes) this.ids.set(node.id, node);
   }
-  return classes;
+
+  /** The first class with this name in project order. */
+  byName(name: string): N | undefined {
+    return this.classes.find(node => node.name === name);
+  }
+
+  byId(id: number): N | undefined {
+    return this.ids.get(id);
+  }
+
+  /**
+   * Names of the classes that get a reference page: `Composio` first, then
+   * every non-internal class in project order, each name once.
+   */
+  documentedNames(): string[] {
+    const names = ['Composio'];
+    for (const node of this.classes) {
+      if (!INTERNAL_CLASSES.has(node.name) && !names.includes(node.name)) names.push(node.name);
+    }
+    return names;
+  }
+
+  /**
+   * Maps each documented class to the property path that reaches it from a
+   * `Composio` instance. Classes reached only through return values (sessions,
+   * remote files) or through internal classes get no entry.
+   */
+  accessPaths(this: TypeDocClassCatalog<TypeDocGraphNode>): Map<string, AccessPath> {
+    const root = this.byName('Composio');
+    if (!root) throw new Error('TypeDoc output has no Composio class');
+
+    const best = new Map<string, RankedAccessPath>();
+
+    const visit = (node: TypeDocGraphNode, from: RankedAccessPath, onPath: Set<number>): void => {
+      for (const member of node.children ?? []) {
+        const targetId = referencedClassId(member);
+        const target = targetId === undefined ? undefined : this.byId(targetId);
+        if (!target || INTERNAL_CLASSES.has(target.name) || onPath.has(target.id)) continue;
+
+        const memberDeprecated =
+          isDeprecatedComment(member.comment) || isDeprecatedComment(member.getSignature?.comment);
+        const candidate: RankedAccessPath = {
+          path: [...from.path, member.name],
+          deprecated: from.deprecated || memberDeprecated,
+          sourceMembers: [...from.sourceMembers, member],
+        };
+        const current = best.get(target.name);
+        if (!current || isBetterPath(candidate, current)) best.set(target.name, candidate);
+
+        visit(target, candidate, new Set([...onPath, target.id]));
+      }
+    };
+
+    visit(root, { path: [], deprecated: false, sourceMembers: [] }, new Set([root.id]));
+
+    return new Map(
+      [...best.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, { path, deprecated }]) => [name, { path, deprecated }])
+    );
+  }
 }
 
 function referencedClassId(member: TypeDocGraphNode): number | undefined {
@@ -316,47 +342,6 @@ function isBetterPath(candidate: RankedAccessPath, current: RankedAccessPath): b
     if (order !== 0) return order < 0;
   }
   return false;
-}
-
-/**
- * Maps each documented class to the property path that reaches it from a
- * `Composio` instance. Classes reached only through return values (sessions,
- * remote files) or through internal classes get no entry.
- */
-export function buildAccessPaths(project: TypeDocGraphNode): Map<string, AccessPath> {
-  const classes = collectClasses(project);
-  const root = [...classes.values()].find(node => node.name === 'Composio');
-  if (!root) throw new Error('TypeDoc output has no Composio class');
-
-  const best = new Map<string, RankedAccessPath>();
-
-  const visit = (node: TypeDocGraphNode, from: RankedAccessPath, onPath: Set<number>): void => {
-    for (const member of node.children ?? []) {
-      const targetId = referencedClassId(member);
-      const target = targetId === undefined ? undefined : classes.get(targetId);
-      if (!target || INTERNAL_CLASSES.has(target.name) || onPath.has(target.id)) continue;
-
-      const memberDeprecated =
-        isDeprecatedComment(member.comment) || isDeprecatedComment(member.getSignature?.comment);
-      const candidate: RankedAccessPath = {
-        path: [...from.path, member.name],
-        deprecated: from.deprecated || memberDeprecated,
-        sourceMembers: [...from.sourceMembers, member],
-      };
-      const current = best.get(target.name);
-      if (!current || isBetterPath(candidate, current)) best.set(target.name, candidate);
-
-      visit(target, candidate, new Set([...onPath, target.id]));
-    }
-  };
-
-  visit(root, { path: [], deprecated: false, sourceMembers: [] }, new Set([root.id]));
-
-  return new Map(
-    [...best.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, { path, deprecated }]) => [name, { path, deprecated }])
-  );
 }
 
 interface TypeDocReflection {
@@ -1433,7 +1418,7 @@ async function main() {
 
   // Run TypeDoc
   const typeDocJson = await runTypeDoc();
-  const accessPaths = buildAccessPaths(parseTypeDocGraph(typeDocJson));
+  const accessPaths = new TypeDocClassCatalog(parseTypeDocGraph(typeDocJson)).accessPaths();
   // Class extraction reads many more TypeDoc fields than the Usage walk; it
   // still relies on the TypeDoc schema the interfaces above describe.
   const project = typeDocJson as TypeDocProject;
@@ -1442,8 +1427,8 @@ async function main() {
     throw new Error('No classes found in TypeDoc output');
   }
 
-  // Auto-discover classes to document (excludes internal classes)
-  const classesToDocument = discoverClassesToDocument(project);
+  const catalog = new TypeDocClassCatalog(project);
+  const classesToDocument = catalog.documentedNames();
   console.log(
     `  Found ${classesToDocument.length} classes to document: ${classesToDocument.join(', ')}`
   );
@@ -1452,7 +1437,7 @@ async function main() {
   const documented: { name: string; description: string }[] = [];
 
   for (const className of classesToDocument) {
-    const reflection = findClass(project, className);
+    const reflection = catalog.byName(className);
 
     if (!reflection) {
       console.warn(`  Warning: ${className} not found in TypeDoc output`);
