@@ -1,4 +1,4 @@
-import { Context, Effect, Option } from 'effect';
+import { Effect, Option } from 'effect';
 import { actingUser, CommandSurface } from 'src/commands/surface';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { mapComposioError } from 'src/services/composio-error-overrides';
@@ -6,7 +6,6 @@ import {
   getFreshConsumerConnectedToolkitsFromCache,
   refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
-import { CLI_DEBUG_FLAG_NAMES } from 'src/services/runtime-flags';
 import { normalizeFileUploadSchema } from 'src/services/tool-file-uploads';
 import {
   getOrFetchToolInputDefinition,
@@ -21,11 +20,7 @@ import {
   type ResolvedExecuteContext,
   type SharedRunToolsExecuteParams,
 } from './tools.execute.context';
-import {
-  invalidArguments,
-  ReportedToolExecutionError,
-  ToolExecutionError,
-} from './tools.execute.errors';
+import { ReportedToolExecutionError, ToolExecutionError } from './tools.execute.errors';
 import {
   ciRedactReplacer,
   describeStoredOutputSize,
@@ -37,18 +32,17 @@ import {
 import { prepareExecuteOutput } from './tools.execute.output';
 import { checkDryRunArguments } from './tools.execute.validation';
 
-export const ExecuteInvocationArgs = Context.Reference<ReadonlyArray<string>>(
-  'commands/ExecuteInvocationArgs',
-  { defaultValue: () => [] }
-);
-
-type ParallelExecuteSpec = {
+export type ParallelExecuteSpec = {
   readonly slug: string;
   readonly data: Option.Option<string>;
   readonly account: Option.Option<string>;
 };
 
-type ParsedParallelExecuteArgs = SharedRunToolsExecuteParams & {
+/**
+ * One `--parallel` batch: its tools in argv order, the batch-wide flags `effect/cli` parsed, and
+ * the acting user and project the raw-argv adapter (`tools.execute.parallel-argv.ts`) resolved.
+ */
+export type ParallelExecuteParams = SharedRunToolsExecuteParams & {
   readonly userId: Option.Option<string>;
   readonly specs: ReadonlyArray<ParallelExecuteSpec>;
 };
@@ -66,194 +60,6 @@ type ParallelExecuteResult =
       readonly successful: false;
       readonly error: string;
     };
-
-export const parseParallelExecuteArgs = (
-  args: ReadonlyArray<string>,
-  config: {
-    readonly surface: 'root' | 'dev';
-    readonly projectMode: 'consumer' | 'developer';
-    readonly allowUserId: boolean;
-    readonly allowProjectName: boolean;
-  }
-) =>
-  Effect.gen(function* () {
-    let getSchema = false;
-    let dryRun = false;
-    let skipConnectionCheck = false;
-    let skipToolParamsCheck = false;
-    let skipChecks = false;
-    let account = Option.none<string>();
-    let userId = Option.none<string>();
-    let projectName = Option.none<string>();
-    const specs: ParallelExecuteSpec[] = [];
-    let currentSpec: ParallelExecuteSpec | null = null;
-
-    const pushCurrentSpec = () => {
-      if (!currentSpec) return;
-      specs.push(currentSpec);
-      currentSpec = null;
-    };
-
-    const readValue = (token: string, index: number) => {
-      if (token.includes('=')) {
-        return Effect.succeed({
-          value: token.slice(token.indexOf('=') + 1),
-          nextIndex: index,
-        });
-      }
-
-      const next = args[index + 1];
-      if (!next) {
-        return Effect.fail(invalidArguments(`Missing value for ${token}.`));
-      }
-      return Effect.succeed({ value: next, nextIndex: index + 1 });
-    };
-
-    for (let i = 0; i < args.length; i += 1) {
-      const token = args[i];
-      if (!token) continue;
-
-      const flagName = token.split('=')[0];
-      if (
-        CLI_DEBUG_FLAG_NAMES.some(name => flagName === `--${name}` || flagName === `--no-${name}`)
-      )
-        continue;
-      if (flagName === '--log-level') {
-        if (!token.includes('=')) i += 1;
-        continue;
-      }
-      // The framework supplies these values; this parser only preserves tool/data grouping.
-      if (
-        [
-          'parallel',
-          'get-schema',
-          'dry-run',
-          'skip-connection-check',
-          'skip-tool-params-check',
-          'skip-checks',
-        ].some(name => flagName === `--${name}` || flagName === `--no-${name}`) &&
-        (token !== flagName || flagName.startsWith('--no-'))
-      )
-        continue;
-      if (token === '--parallel' || token === '-p') {
-        continue;
-      }
-      if (token === '--get-schema') {
-        getSchema = true;
-        continue;
-      }
-      if (token === '--dry-run') {
-        dryRun = true;
-        continue;
-      }
-      if (token === '--skip-connection-check') {
-        skipConnectionCheck = true;
-        continue;
-      }
-      if (token === '--skip-tool-params-check') {
-        skipToolParamsCheck = true;
-        continue;
-      }
-      if (token === '--skip-checks') {
-        skipChecks = true;
-        continue;
-      }
-      if (token === '--account' || token.startsWith('--account=')) {
-        const parsed = yield* readValue(token, i);
-        if (currentSpec) {
-          currentSpec = {
-            slug: currentSpec.slug,
-            data: currentSpec.data,
-            account: Option.some(parsed.value),
-          };
-        } else {
-          account = Option.some(parsed.value);
-        }
-        i = parsed.nextIndex;
-        continue;
-      }
-      if (token === '--user-id' || token.startsWith('--user-id=')) {
-        if (!config.allowUserId) {
-          return yield* Effect.fail(
-            invalidArguments(`${token} is not supported for this execute command.`)
-          );
-        }
-        const parsed = yield* readValue(token, i);
-        userId = Option.some(parsed.value);
-        i = parsed.nextIndex;
-        continue;
-      }
-      if (token === '--project-name' || token.startsWith('--project-name=')) {
-        if (!config.allowProjectName) {
-          return yield* Effect.fail(
-            invalidArguments(`${token} is not supported for this execute command.`)
-          );
-        }
-        const parsed = yield* readValue(token, i);
-        projectName = Option.some(parsed.value);
-        i = parsed.nextIndex;
-        continue;
-      }
-      if (
-        token === '--data' ||
-        token === '-d' ||
-        token.startsWith('--data=') ||
-        token.startsWith('-d=')
-      ) {
-        if (!currentSpec) {
-          return yield* Effect.fail(
-            invalidArguments(
-              `Expected a tool slug before ${token}. Use: composio execute --parallel TOOL_SLUG -d '{}' TOOL_SLUG_2 -d '{}'.`
-            )
-          );
-        }
-        const parsed = yield* readValue(token, i);
-        currentSpec = {
-          slug: currentSpec.slug,
-          data: Option.some(parsed.value),
-          account: currentSpec.account,
-        };
-        i = parsed.nextIndex;
-        continue;
-      }
-      if (token.startsWith('-')) {
-        return yield* Effect.fail(
-          invalidArguments(`Unknown option for parallel execute: ${token}`)
-        );
-      }
-
-      pushCurrentSpec();
-      currentSpec = {
-        slug: token,
-        data: Option.none(),
-        account,
-      };
-    }
-
-    pushCurrentSpec();
-
-    if (specs.length === 0) {
-      return yield* Effect.fail(
-        invalidArguments(
-          "No tool slugs were provided. Use: composio execute --parallel TOOL_SLUG -d '{}' TOOL_SLUG_2 -d '{}'."
-        )
-      );
-    }
-
-    return {
-      specs,
-      userId,
-      projectName,
-      surface: config.surface,
-      projectMode: config.projectMode,
-      getSchema,
-      dryRun,
-      skipConnectionCheck,
-      skipToolParamsCheck,
-      skipChecks,
-      account,
-    } satisfies ParsedParallelExecuteArgs;
-  });
 
 const checkConnectedToolkitOrFail = (params: {
   readonly slug: string;
@@ -295,11 +101,11 @@ const checkConnectedToolkitOrFail = (params: {
     }
   });
 
-const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
+const runParallelSchemaFetch = (params: ParallelExecuteParams) =>
   Effect.gen(function* () {
-    const contexts = yield* Effect.forEach(
+    const entries = yield* Effect.forEach(
       params.specs,
-      () =>
+      spec =>
         resolveSchemaContext({
           account: params.account,
           projectName: params.projectName,
@@ -310,15 +116,11 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
           skipConnectionCheck: params.skipConnectionCheck,
           skipToolParamsCheck: params.skipToolParamsCheck,
           skipChecks: params.skipChecks,
-        }),
+        }).pipe(Effect.map(context => ({ spec, context }))),
       { concurrency: 'unbounded' }
     );
-    const entries = contexts.map((context, index) => ({
-      context,
-      spec: params.specs[index]!,
-    }));
 
-    const ui = contexts[0]?.ui;
+    const ui = entries[0]?.context.ui;
     const results = yield* Effect.forEach(
       entries,
       ({ context, spec }) =>
@@ -394,16 +196,16 @@ const runParallelSchemaFetchFromParsed = (params: ParsedParallelExecuteArgs) =>
     }
   });
 
-const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
+const runParallelBatch = (params: ParallelExecuteParams) =>
   Effect.gen(function* () {
     if (params.getSchema) {
-      return yield* runParallelSchemaFetchFromParsed(params);
+      return yield* runParallelSchemaFetch(params);
     }
 
     // Resolved once, so a test user's notice prints once; each tool still fails on its own
     // input before it fails on a missing user.
     const user = Effect.fromResult(yield* Effect.result(actingUser()));
-    const contexts = yield* Effect.forEach(
+    const entries = yield* Effect.forEach(
       params.specs,
       spec =>
         resolveExecuteContext(
@@ -422,15 +224,11 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
             skipChecks: params.skipChecks,
           },
           user
-        ),
+        ).pipe(Effect.map(context => ({ spec, context }))),
       { concurrency: 'unbounded' }
     );
-    const entries = contexts.map((context, index) => ({
-      context,
-      spec: params.specs[index]!,
-    }));
 
-    const ui = contexts[0]?.ui;
+    const ui = entries[0]?.context.ui;
     const results = yield* Effect.forEach(
       entries,
       ({ context, spec }) =>
@@ -587,50 +385,21 @@ const runParallelToolsExecuteFromParsed = (params: ParsedParallelExecuteArgs) =>
     }
   });
 
-// Flags that can precede the command name and take the next token as their value
-// (`$default.cmd.ts`, `dev.cmd.ts`), so a value equal to the command name is not the command.
-const VALUE_FLAGS_BEFORE_COMMAND = new Set([
-  '--log-level',
-  '--mode',
-  '--user-id',
-  '--project-name',
-]);
-
-/** The index of the command name in argv, skipping a flag value that spells the same word. */
-const commandNameIndex = (argv: ReadonlyArray<string>, name: string) =>
-  argv.findIndex(
-    (token, index) => token === name && !VALUE_FLAGS_BEFORE_COMMAND.has(argv[index - 1] ?? '')
-  );
-
-export const runParallelFromCommand = (config: {
-  readonly surface: 'root' | 'dev';
-  readonly projectMode: 'consumer' | 'developer';
-  readonly getSchema: boolean;
-  readonly dryRun: boolean;
-  readonly skipConnectionCheck: boolean;
-  readonly skipToolParamsCheck: boolean;
-  readonly skipChecks: boolean;
-}) =>
+/**
+ * Runs one `--parallel` batch as its acting user: `actingUser` reads the user and project from
+ * the surface, so the batch's own replace the `dev` group's shared flags there.
+ */
+export const runParallelToolsExecute = (params: ParallelExecuteParams) =>
   Effect.gen(function* () {
-    const argv = yield* ExecuteInvocationArgs;
-    const name = config.surface === 'root' ? 'execute' : 'playground-execute';
-    const tail = argv.slice(commandNameIndex(argv, name) + 1);
-    const parsed = yield* parseParallelExecuteArgs(tail, {
-      ...config,
-      allowUserId: config.surface === 'dev',
-      allowProjectName: config.surface === 'dev',
-    });
-    // The tail starts after the command name, so the `dev` group's shared flags given before
-    // it reach the command only through the surface; the tail's own win.
     const surface = yield* CommandSurface;
-    const userId = Option.orElse(parsed.userId, () => surface.userId);
-    const projectName = Option.orElse(parsed.projectName, () => surface.projectName);
-    return yield* runParallelToolsExecuteFromParsed({
-      ...parsed,
-      ...config,
-      userId,
-      projectName,
-    }).pipe(
-      Effect.provideService(CommandSurface, CommandSurface.of({ ...surface, userId, projectName }))
+    return yield* runParallelBatch(params).pipe(
+      Effect.provideService(
+        CommandSurface,
+        CommandSurface.of({
+          ...surface,
+          userId: params.userId,
+          projectName: params.projectName,
+        })
+      )
     );
   });

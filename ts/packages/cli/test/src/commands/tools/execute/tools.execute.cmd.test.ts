@@ -20,7 +20,7 @@ import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel';
+import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel-argv';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -241,8 +241,6 @@ describe('CLI: composio execute', () => {
   it.effect('returns a CLI validation error for malformed parallel arguments', () =>
     Effect.gen(function* () {
       const failure = yield* parseParallelExecuteArgs(['--parallel', '--data', '{}'], {
-        surface: 'root',
-        projectMode: 'consumer',
         allowUserId: false,
         allowProjectName: false,
       }).pipe(Effect.flip);

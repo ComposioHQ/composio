@@ -42,7 +42,8 @@ import {
   type DryRunSummary,
 } from './tools.execute.format';
 import { prepareExecuteOutput } from './tools.execute.output';
-import { runParallelFromCommand } from './tools.execute.parallel';
+import { runParallelToolsExecute } from './tools.execute.parallel';
+import { readParallelExecuteArgv } from './tools.execute.parallel-argv';
 import { checkDryRunArguments, validateToolInputBeforeExecute } from './tools.execute.validation';
 
 const runConnectedToolkitFailFast = (params: {
@@ -472,7 +473,9 @@ export const runToolsExecuteCommand = ({
     const { tree, projectName } = yield* CommandSurface;
     const projectMode = tree === 'root' ? 'consumer' : 'developer';
     if (parallel) {
-      return yield* runParallelFromCommand({
+      const batch = yield* readParallelExecuteArgv(tree);
+      return yield* runParallelToolsExecute({
+        ...batch,
         surface: tree,
         projectMode,
         getSchema,
