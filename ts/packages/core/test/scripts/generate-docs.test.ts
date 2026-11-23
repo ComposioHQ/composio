@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  buildAccessPaths,
   discoverModelFiles,
   escapeTableTextForMdx,
   escapeTextForMdx,
@@ -11,28 +12,264 @@ import {
   getSourceFileText,
   isParameterRequired,
   parseSourceSignatureTypesAtLine,
+  parseTypeDocGraph,
   runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
 
-describe('generate-docs usage examples', () => {
-  it('uses the public get method in the Toolkits usage block', () => {
+const KIND = { Module: 2, Class: 128, Property: 1024, Accessor: 262144 } as const;
+
+const deprecatedComment = { blockTags: [{ tag: '@deprecated', content: [] }] };
+
+function reference(target: number, extra: Record<string, unknown> = {}) {
+  return { type: 'reference', target, name: 'Ref', ...extra };
+}
+
+function property(id: number, name: string, type: unknown, extra: Record<string, unknown> = {}) {
+  return { id, name, kind: KIND.Property, flags: {}, type, ...extra };
+}
+
+function classNode(id: number, name: string, children: unknown[] = []) {
+  return { id, name, kind: KIND.Class, flags: {}, children };
+}
+
+// Mirrors the shape TypeDoc emits for the SDK: classes nested in modules,
+// generic references, a type-parameter reference, a reference to another
+// package, a getter, and deprecated aliases.
+function sdkTypeDocFixture() {
+  return {
+    id: 0,
+    name: '@composio/core',
+    kind: 1,
+    children: [
+      {
+        id: 1,
+        name: 'src/composio',
+        kind: KIND.Module,
+        children: [
+          classNode(10, 'Composio', [
+            property(101, 'customToolkits', reference(20)),
+            property(102, 'experimental', reference(30)),
+            property(103, 'files', reference(70)),
+            property(104, 'mcp', reference(40), { comment: deprecatedComment }),
+            property(105, 'provider', reference(11, { refersToTypeParameter: true })),
+            property(106, 'client', {
+              type: 'reference',
+              target: { packageName: '@composio/client', qualifiedName: 'Composio' },
+              name: 'Composio',
+            }),
+            property(
+              107,
+              'tools',
+              reference(60, { typeArguments: [{ type: 'intrinsic', name: 'unknown' }] })
+            ),
+            property(108, 'webhooks', reference(50)),
+          ]),
+        ],
+      },
+      classNode(20, 'CustomToolkits'),
+      {
+        id: 2,
+        name: 'src/models/Experimental',
+        kind: KIND.Module,
+        children: [
+          classNode(30, 'Experimental', [
+            property(301, 'customToolkits', reference(20), { comment: deprecatedComment }),
+            property(302, 'usage', reference(80)),
+          ]),
+        ],
+      },
+      classNode(40, 'MCP'),
+      {
+        id: 3,
+        name: 'Webhooks',
+        kind: KIND.Module,
+        children: [
+          classNode(50, 'Webhooks', [
+            {
+              id: 501,
+              name: 'endpoints',
+              kind: KIND.Accessor,
+              flags: {},
+              getSignature: { type: reference(51) },
+            },
+            property(502, 'subscriptions', reference(52)),
+          ]),
+          classNode(51, 'WebhookEndpoints'),
+          classNode(52, 'WebhookSubscriptions'),
+        ],
+      },
+      classNode(60, 'Tools'),
+      classNode(70, 'Files', [property(701, 'remote', reference(90))]),
+      classNode(80, 'Usage'),
+      classNode(90, 'RemoteFile'),
+    ],
+  };
+}
+
+function emptyClassDoc(name: string) {
+  return { name, description: `${name} API`, constructor: undefined, methods: [], properties: [] };
+}
+
+function usageMdxFor(name: string): string {
+  const paths = buildAccessPaths(parseTypeDocGraph(sdkTypeDocFixture()));
+  return generateClassMdx(emptyClassDoc(name), paths.get(name));
+}
+
+function usageBlock(path: string, binding: string): string {
+  return (
+    '```typescript\n' +
+    "import { Composio } from '@composio/core';\n" +
+    '\n' +
+    "const composio = new Composio({ apiKey: 'your-api-key' });\n" +
+    `const ${binding} = ${path};\n` +
+    '```'
+  );
+}
+
+describe('generate-docs usage blocks', () => {
+  it('renders nested webhook sub-clients through composio.webhooks', () => {
+    expect(usageMdxFor('WebhookEndpoints')).toContain(
+      usageBlock('composio.webhooks.endpoints', 'endpoints')
+    );
+    expect(usageMdxFor('WebhookSubscriptions')).toContain(
+      usageBlock('composio.webhooks.subscriptions', 'subscriptions')
+    );
+  });
+
+  it('renders Usage through composio.experimental', () => {
+    expect(usageMdxFor('Usage')).toContain(usageBlock('composio.experimental.usage', 'usage'));
+  });
+
+  it('prefers the non-deprecated customToolkits path over the experimental alias', () => {
+    const mdx = usageMdxFor('CustomToolkits');
+
+    expect(mdx).toContain(usageBlock('composio.customToolkits', 'customToolkits'));
+    expect(mdx).not.toContain('composio.experimental.customToolkits');
+    expect(mdx).not.toContain('deprecated');
+  });
+
+  it('renders the deprecated-only MCP path with a deprecation note', () => {
+    const mdx = usageMdxFor('MCP');
+
+    expect(mdx).toContain(usageBlock('composio.mcp', 'mcp'));
+    expect(mdx).toContain('The `composio.mcp` property is deprecated.');
+  });
+
+  it('renders generic references such as composio.tools', () => {
+    expect(usageMdxFor('Tools')).toContain(usageBlock('composio.tools', 'tools'));
+  });
+
+  it('renders no Usage section for classes only reachable through internal classes', () => {
+    expect(usageMdxFor('RemoteFile')).not.toContain('## Usage');
+  });
+
+  it('maps only classes reachable from Composio through public class references', () => {
+    const paths = buildAccessPaths(parseTypeDocGraph(sdkTypeDocFixture()));
+
+    expect(Object.fromEntries(paths)).toEqual({
+      CustomToolkits: { path: ['customToolkits'], deprecated: false },
+      Experimental: { path: ['experimental'], deprecated: false },
+      MCP: { path: ['mcp'], deprecated: true },
+      Tools: { path: ['tools'], deprecated: false },
+      Usage: { path: ['experimental', 'usage'], deprecated: false },
+      WebhookEndpoints: { path: ['webhooks', 'endpoints'], deprecated: false },
+      WebhookSubscriptions: { path: ['webhooks', 'subscriptions'], deprecated: false },
+      Webhooks: { path: ['webhooks'], deprecated: false },
+    });
+  });
+
+  it('imports Composio and calls no method in every Usage block', () => {
+    for (const name of ['CustomToolkits', 'MCP', 'Tools', 'Usage', 'WebhookEndpoints']) {
+      const mdx = usageMdxFor(name);
+      expect(mdx).toContain("import { Composio } from '@composio/core';");
+      expect(mdx).not.toContain('.list()');
+      expect(mdx).not.toMatch(/const \w+ = composio[\w.]*\(/);
+    }
+  });
+
+  it('fails with a parse error naming a field the walk needs', () => {
+    const fixture = sdkTypeDocFixture();
+    // Drop `kind` from the Composio class node.
+    const composioModule = fixture.children[0] as { children: Array<Record<string, unknown>> };
+    delete composioModule.children[0].kind;
+
+    expect(() => parseTypeDocGraph(fixture)).toThrow(/children\[0\]\.children\[0\]\.kind/);
+  });
+});
+
+function methodDoc(name: string, examples: string[]) {
+  return {
+    name,
+    description: '',
+    signatures: [
+      {
+        parameters: [{ name: 'slug', type: 'string', required: true, description: '' }],
+        returnType: 'Promise<string>',
+      },
+    ],
+    examples,
+    isAsync: true,
+  };
+}
+
+function classMdxWithMethod(examples: string[]): string {
+  return generateClassMdx({ ...emptyClassDoc('Tools'), methods: [methodDoc('execute', examples)] });
+}
+
+describe('generate-docs code fences', () => {
+  it('marks method signature fences with the signature option', () => {
+    expect(classMdxWithMethod([])).toContain(
+      '```typescript signature\nasync execute(slug: string): Promise<string>\n```'
+    );
+  });
+
+  it('marks constructor signature fences with the signature option', () => {
     const mdx = generateClassMdx({
-      name: 'Toolkits',
-      description: 'Toolkits API',
-      constructor: undefined,
-      methods: [],
-      properties: [],
+      ...emptyClassDoc('Composio'),
+      constructor: { ...methodDoc('constructor', []), isAsync: false },
     });
 
+    expect(mdx).toContain('```typescript signature\nconstructor(slug: string)');
+  });
+
+  it('keeps an authored nocheck option on the fence line, not in the code', () => {
+    const mdx = classMdxWithMethod([
+      '```ts nocheck="Express handler"\napp.post(\'/webhook\', handler);\n```',
+    ]);
+
     expect(mdx).toContain(
-      '```typescript\n' +
-        "const composio = new Composio({ apiKey: 'your-api-key' });\n" +
-        'const result = await composio.toolkits.get({});\n' +
-        '```'
+      '```typescript nocheck="Express handler"\napp.post(\'/webhook\', handler);\n```'
     );
-    expect(mdx).not.toContain('composio.toolkits.list()');
+  });
+
+  it('emits an example with prose and two fences as written, without nesting', () => {
+    const mdx = classMdxWithMethod([
+      'Execute by slug:\n```ts\nawait first();\n```\nOr with a version:\n```typescript\nawait second();\n```',
+    ]);
+
+    expect(mdx).toContain(
+      '**Example**\n\n' +
+        'Execute by slug:\n```typescript\nawait first();\n```\n' +
+        'Or with a version:\n```typescript\nawait second();\n```\n'
+    );
+    const exampleSection = mdx.slice(mdx.indexOf('**Example**'));
+    expect(exampleSection.match(/^```/gm)).toHaveLength(4);
+  });
+
+  it('wraps a fence-less example once in a typescript fence', () => {
+    const mdx = classMdxWithMethod(["await composio.tools.execute('GITHUB_GET_REPOS');"]);
+
+    expect(mdx).toContain(
+      "**Example**\n\n```typescript\nawait composio.tools.execute('GITHUB_GET_REPOS');\n```\n"
+    );
+  });
+
+  it('fails generation when an authored fence claims the signature option', () => {
+    expect(() =>
+      classMdxWithMethod(['```typescript signature\nexecute(slug: string): void\n```'])
+    ).toThrow(/Tools\.execute.*signature/);
   });
 });
 
