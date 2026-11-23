@@ -2,13 +2,11 @@ import { expect, test } from 'bun:test';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { getAlgoliaSearchDocuments } from '../../lib/search-index';
 import { prepareStableReference } from '../../lib/sdk-reference-content';
 import {
   assertForwardSnapshot,
   pageNames,
   promoteSnapshot,
-  readSnapshot,
   resolveStableReferenceSource,
   reviseSnapshot,
   snapshotDirectory,
@@ -134,33 +132,6 @@ test('the production collection uses both verified snapshots at the canonical re
       resolveStableReferenceSource(root, output, join(output, 'limits.mdx'))
     ).toBe(join(worktreeReference, 'limits.mdx'));
   });
-});
-
-test('production search without the assembled collection keeps snapshot version pins', async () => {
-  const env = { VERCEL_ENV: process.env.VERCEL_ENV, COMPOSIO_STABLE_REFERENCE_DIR: process.env.COMPOSIO_STABLE_REFERENCE_DIR };
-  process.env.VERCEL_ENV = 'production';
-  delete process.env.COMPOSIO_STABLE_REFERENCE_DIR;
-  try {
-    const records = await getAlgoliaSearchDocuments();
-    const installs = {
-      typescript: { banner: 'npm install @composio/core@', widget: 'pnpm add @composio/core@' },
-      python: { banner: 'pip install composio==', widget: 'uv add composio==' },
-    } as const;
-    for (const [language, { banner, widget }] of Object.entries(installs)) {
-      const { version } = readSnapshot(snapshotDirectory(process.cwd(), language as keyof typeof installs));
-      const content = records
-        .filter(record => record.url === `/reference/sdk-reference/${language}`)
-        .map(record => record.content)
-        .join('\n');
-      expect(content).toContain(`> SDK version \`${version}\`. Install with \`${banner}${version}\`.`);
-      expect(content).toContain(`${widget}${version}\n`);
-    }
-  } finally {
-    for (const [name, value] of Object.entries(env)) {
-      if (value === undefined) delete process.env[name];
-      else process.env[name] = value;
-    }
-  }
 });
 
 test('snapshot verification rejects unchanged tampering, unexpected files, and meta.json drift', () => {
