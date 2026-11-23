@@ -8,6 +8,17 @@ The original alternatives and complete content mapping below record the choice. 
 
 The reader-facing name describes a reusable access policy. The SDK and API still call the object a Session config. Keep `sessionConfigId`, `session_config_id`, `composio.sessionConfigs`, `sourceSessionConfig`, API object names, endpoints, and Dashboard **Sessions → Configs** unchanged. A saved policy is separate from a live session's `session.config` snapshot.
 
+### Overview follow-up, 2026-11-23
+
+Palash requested an overview linking to every Sessions task, reached by clicking the **Sessions** folder header rather than a separate **What is a session?** child. The folder now uses its native Fumadocs index link, with eight task pages beneath it. The existing index page is titled **Sessions overview** and adds a task directory.
+
+Pending Brendan's decisions, the conceptual content and existing URLs, anchors, and inbound links have not been removed or rewritten. The page previously labeled **What is a session?** already lives at `/docs/sessions`; it has no separate task URL in this PR. Its pre-split URL, `/docs/how-composio-works`, still serves the existing bookmark map.
+
+Open questions for Brendan:
+
+- How much conceptual content should remain on the overview: all current sections, only the definition and diagram, or a short introduction with task links?
+- Should the legacy `/docs/how-composio-works` URL redirect to the overview, or keep its bookmark map? Should remaining inbound links be updated? If overview content is shortened, where should the existing section bookmarks lead?
+
 ## Content and navigation before the split
 
 Inspected at `9ae6a8ed13eec5647c31b4dbb38d41dbe3b1eb5f` on `next`:

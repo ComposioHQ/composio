@@ -8,7 +8,6 @@ import { buildProductPageTree } from '../../lib/product-page-tree';
 
 const content = join(import.meta.dir, '../../content/docs');
 const expectedPages = [
-  ['What is a session?', '/docs/sessions'],
   ['Create and reuse', '/docs/sessions/create-and-reuse'],
   ['Restrict tool access', '/docs/sessions/tool-access'],
   ['Saved session policies', '/docs/sessions/saved-session-policies'],
@@ -127,11 +126,13 @@ describe('Sessions task pages', () => {
     expect(config).not.toMatch(/source:\s*['"]\/docs\/sessions['"]/);
   });
 
-  test('both sidebars show the approved flat folder and policy placement', () => {
+  test('both sidebars link the Sessions header to the overview with eight task children', () => {
     for (const tree of [source.pageTree, buildProductPageTree(source.pageTree, 'platform')]) {
       const folder = tree.children.find(node => node.type === 'folder' && node.name === 'Sessions');
       expect(folder?.type).toBe('folder');
       if (folder?.type !== 'folder') throw new Error('Sessions folder is missing');
+      expect(folder.index?.url).toBe('/docs/sessions');
+      expect(readPage('/docs/sessions').match(/^title: (.+)$/m)?.[1]).toBe('Sessions overview');
       expect(folder.children.every(node => node.type === 'page')).toBe(true);
       expect(folder.children.map(node => (node.type === 'page' ? node.url : null))).toEqual(
         expectedPages.map(([, url]) => url)
@@ -140,6 +141,7 @@ describe('Sessions task pages', () => {
       // Production compilation reads these frontmatter titles.
       for (const [title, url] of expectedPages) {
         expect(readPage(url).match(/^title: (.+)$/m)?.[1]).toBe(title);
+        expect(readPage('/docs/sessions')).toContain(`[${title}](${url})`);
       }
       const urls = flattenTree(tree.children).map(page => page.url);
       expect(urls).not.toContain('/docs/configuring-sessions');

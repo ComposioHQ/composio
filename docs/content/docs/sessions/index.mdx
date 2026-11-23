@@ -1,10 +1,21 @@
 ---
-title: What is a session?
-description: How sessions scope users, tools, authentication, and execution state
+title: Sessions overview
+description: Understand sessions and find the guide for creating, configuring, and using them
 keywords: [session, tools, toolkits, configuration]
 ---
 
 A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
+
+## Choose a task
+
+- [Create and reuse](/docs/sessions/create-and-reuse): Create a session, continue it across turns, and delete it when the task is finished.
+- [Restrict tool access](/docs/sessions/tool-access): Choose which toolkits and tools the agent can use.
+- [Saved session policies](/docs/sessions/saved-session-policies): Apply a named policy to new sessions.
+- [Load tools](/docs/sessions/loading-tools): Load meta tools, preload tools, or use the direct tools preset.
+- [Select connections](/docs/sessions/connections): Choose connected accounts and configure authentication.
+- [Set sandbox options](/docs/sessions/sandbox-settings): Choose the sandbox compute tier or turn the sandbox off.
+- [Update a session](/docs/sessions/updating-sessions): Change a running session's configuration and inspect its history.
+- [Execute session tools](/docs/sessions/executing-tools): Run tools, read results, and handle requests for user input.
 
 If you only need authentication for tools you already own, follow [managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). Use a session to create a Connect Link, then call provider APIs through Proxy Execute from your own code. You don't need to fetch tool schemas or replace your tools with catalog actions.
 

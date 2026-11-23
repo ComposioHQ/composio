@@ -2,7 +2,6 @@
   "title": "Sessions",
   "defaultOpen": false,
   "pages": [
-    "index",
     "create-and-reuse",
     "tool-access",
     "saved-session-policies",
