@@ -4,6 +4,7 @@ import {
 } from '../errors/TriggerErrors';
 import type { WebhookRequestLike } from '../types/triggers.types';
 import { hmacSha256Base64, timingSafeEqual } from './crypto';
+import { describeThrown } from './userCallback';
 
 /**
  * The signature header names Composio sends with every webhook request.
@@ -37,7 +38,7 @@ const bodyToString = (body: unknown): string => {
   if (typeof body === 'object') {
     return JSON.stringify(body);
   }
-  return String(body);
+  return describeThrown(body);
 };
 
 /**
