@@ -1,4 +1,9 @@
+from __future__ import annotations
+
 import typing as t
+
+if t.TYPE_CHECKING:
+    from composio.core.provider.base import AsyncToolCallSession
 
 from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock
 from anthropic.types.cache_control_ephemeral_param import CacheControlEphemeralParam
@@ -51,6 +56,11 @@ class AnthropicProvider(
         super().__init__(**kwargs)
         self.cache_tools = cache_tools
         self._aliases: dict[str, ToolSchemaAliases] = {}
+
+    def _for_async_client(self) -> "AnthropicProvider":
+        bound = super()._for_async_client()
+        bound._aliases = {}
+        return bound
 
     def wrap_tool(self, tool: Tool) -> ToolParam:
         """
@@ -136,11 +146,7 @@ class AnthropicProvider(
             user_id=user_id, session=session
         )
 
-        # Models occasionally emit tool input as a JSON string rather than a dict (issue #2406).
-        arguments = normalize_tool_arguments(tool_call.input)
-        aliases = self._aliases.get(tool_call.name)
-        if aliases is not None:
-            arguments = aliases.restore_arguments(arguments)
+        arguments = self._arguments(tool_call)
         result = self.execute_tool_for_target(
             target=target,
             slug=tool_call.name,
@@ -195,23 +201,102 @@ class AnthropicProvider(
             raise ValueError(
                 "Direct execution modifiers cannot be used with a Tool Router session"
             )
+        outputs = []
+        for tool_call in self._function_calls(response):
+            result = (
+                self.execute_tool_call(session=session, tool_call=tool_call)
+                if session is not None
+                else self.execute_tool_call(
+                    user_id=t.cast(str, user_id),
+                    tool_call=tool_call,
+                    modifiers=modifiers,
+                )
+            )
+            outputs.append(result)
+        return outputs
+
+    @staticmethod
+    def _function_calls(response: dict | ToolsBetaMessage) -> t.Iterator[ToolUseBlock]:
         if isinstance(response, dict):
             response = ToolsBetaMessage(**response)
-
-        outputs: t.List[AnthropicToolExecutionResponse] = []
         for content in response.content:
             if isinstance(content, (ToolUseBlock, BetaToolUseBlock)):
-                result = (
-                    self.execute_tool_call(
-                        session=session,
-                        tool_call=content,
-                    )
-                    if session is not None
-                    else self.execute_tool_call(
-                        user_id=t.cast(str, user_id),
-                        tool_call=content,
-                        modifiers=modifiers,
-                    )
+                yield content
+
+    def _arguments(self, tool_call: ToolUseBlock) -> dict[str, t.Any]:
+        # Models occasionally emit tool input as a JSON string rather than a dict (issue #2406).
+        arguments = normalize_tool_arguments(tool_call.input)
+        aliases = self._aliases.get(tool_call.name)
+        if aliases is not None:
+            arguments = aliases.restore_arguments(arguments)
+        return arguments
+
+    @t.overload
+    async def aexecute_tool_call(
+        self, user_id: str, tool_call: ToolUseBlock, modifiers: Modifiers | None = None
+    ) -> AnthropicToolExecutionResponse: ...
+
+    @t.overload
+    async def aexecute_tool_call(
+        self, *, session: AsyncToolCallSession, tool_call: ToolUseBlock
+    ) -> AnthropicToolExecutionResponse: ...
+
+    async def aexecute_tool_call(
+        self,
+        user_id: str | None = None,
+        tool_call: ToolUseBlock | None = None,
+        modifiers: Modifiers | None = None,
+        *,
+        session: AsyncToolCallSession | None = None,
+    ) -> AnthropicToolExecutionResponse:
+        if tool_call is None:
+            raise TypeError("tool_call is required")
+        result = await self.aexecute_tool_for_target(
+            user_id=user_id,
+            session=session,
+            slug=tool_call.name,
+            arguments=self._arguments(tool_call),
+            modifiers=modifiers,
+        )
+        return {**result, "tool_use_id": tool_call.id}
+
+    @t.overload
+    async def ahandle_tool_calls(
+        self,
+        user_id: str,
+        response: dict | ToolsBetaMessage,
+        modifiers: Modifiers | None = None,
+    ) -> list[AnthropicToolExecutionResponse]: ...
+
+    @t.overload
+    async def ahandle_tool_calls(
+        self, *, session: AsyncToolCallSession, response: dict | ToolsBetaMessage
+    ) -> list[AnthropicToolExecutionResponse]: ...
+
+    async def ahandle_tool_calls(
+        self,
+        user_id: str | None = None,
+        response: dict | ToolsBetaMessage | None = None,
+        modifiers: Modifiers | None = None,
+        *,
+        session: AsyncToolCallSession | None = None,
+    ) -> list[AnthropicToolExecutionResponse]:
+        if response is None:
+            raise TypeError("response is required")
+        if (user_id is None) == (session is None):
+            raise ValueError("Provide exactly one of user_id or session")
+        if session is not None and modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
+        outputs = []
+        for call in self._function_calls(response):
+            result = (
+                await self.aexecute_tool_call(session=session, tool_call=call)
+                if session is not None
+                else await self.aexecute_tool_call(
+                    user_id=t.cast(str, user_id), tool_call=call, modifiers=modifiers
                 )
-                outputs.append(result)
+            )
+            outputs.append(result)
         return outputs

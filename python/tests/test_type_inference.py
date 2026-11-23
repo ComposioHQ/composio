@@ -16,7 +16,7 @@ Requirements:
 
 from typing import TYPE_CHECKING, Any
 
-from composio import Composio
+from composio import AsyncComposio, Composio
 from composio.core.provider._openai import (
     OpenAIProvider,
     OpenAITool,
@@ -171,3 +171,20 @@ def test_auth_config_create_option_types() -> None:
 
         assert_type(on_app, AuthConfig)
         assert_type(on_default, AuthConfig)
+
+
+if TYPE_CHECKING:
+
+    async def verify_async_provider_inference() -> None:
+        async with AsyncComposio() as client:
+            assert_type(
+                await client.tools.get(user_id="u", tools=["A"]),
+                list[ChatCompletionToolParam],
+            )
+            session = await client.create(user_id="u", mcp=True)
+            assert_type(await session.tools(), list[ChatCompletionToolParam])
+            await session.delete()
+
+        async with AsyncComposio(provider=OpenAIResponsesProvider()) as responses:
+            attached = await responses.use("session-id")
+            assert_type(await attached.tools(), ResponsesToolCollection)

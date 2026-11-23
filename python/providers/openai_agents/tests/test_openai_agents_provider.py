@@ -342,3 +342,78 @@ def test_strict_mode_free_form_root_falls_back_and_is_advertised_open():
         "properties": {},
         "additionalProperties": True,
     }
+
+
+def test_async_sessions_dispatch_framework_tools_to_the_session_that_created_them():
+    import asyncio
+    import json
+
+    import httpx
+
+    from composio import AsyncComposio
+
+    base = "/api/v3.1/tool_router/session"
+    calls = []
+    users = ["first", "second"]
+
+    async def respond(request):
+        path = request.url.path
+        if path == base:
+            user = json.loads(request.content)["user_id"]
+            return httpx.Response(
+                201,
+                json={
+                    "session_id": user,
+                    "config_version": 1,
+                    "mcp": {"type": "http", "url": "https://backend.invalid/mcp"},
+                    "config": {"user_id": user, "preload": {"tools": []}},
+                    "tool_router_tools": ["CHECK_HEALTH"],
+                },
+            )
+        if path.endswith("/tools"):
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {
+                            "slug": "CHECK_HEALTH",
+                            "description": "Check health",
+                            "input_parameters": {"type": "object", "properties": {}},
+                            "toolkit": {"slug": "check"},
+                        }
+                    ],
+                    "next_cursor": None,
+                },
+            )
+        if path.endswith("/execute"):
+            calls.append((path, json.loads(request.content)["tool_slug"]))
+            return httpx.Response(
+                200,
+                json={"result_type": "completed", "data": {"ok": True}, "log_id": path},
+            )
+        raise AssertionError(path)
+
+    async def scenario():
+        async with AsyncComposio(
+            api_key="test",
+            provider=OpenAIAgentsProvider(),
+            http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)),
+            base_url="https://backend.invalid",
+            allow_tracking=False,
+        ) as sdk:
+            sessions = await asyncio.gather(
+                *(sdk.create(user_id=user) for user in users)
+            )
+            collections = await asyncio.gather(
+                *(session.tools() for session in sessions)
+            )
+            results = await asyncio.gather(
+                *(tools[0].on_invoke_tool(None, "{}") for tools in collections)
+            )
+        for user, result in zip(users, results):
+            assert json.loads(result)["log_id"] == f"{base}/{user}/execute"
+
+    asyncio.run(scenario())
+    assert sorted(calls) == [
+        (f"{base}/{user}/execute", "CHECK_HEALTH") for user in users
+    ]

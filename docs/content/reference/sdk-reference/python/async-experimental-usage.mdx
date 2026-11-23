@@ -1,0 +1,49 @@
+---
+title: "AsyncExperimentalUsage"
+description: "Async counterpart to ExperimentalUsage."
+---
+
+## Methods
+
+### summary()
+
+Fetch a usage summary for the project. Experimental — shape may change.
+
+```python signature
+async def summary(**params: Unpack[usage_retrieve_summary_params.UsageRetrieveSummaryParams]) -> UsageSummaryResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params?` | `Unpack[usage_retrieve_summary_params.UsageRetrieveSummaryParams]` |
+
+**Returns**
+
+`UsageSummaryResponse`
+
+---
+
+### breakdown()
+
+Fetch a grouped usage breakdown for one entity type. Experimental — shape may change.
+
+```python signature
+async def breakdown(entity_type: str, **params: Unpack[usage_retrieve_params.UsageRetrieveParams]) -> usage_retrieve_response.UsageRetrieveResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `entity_type` | `str` |
+| `params?` | `Unpack[usage_retrieve_params.UsageRetrieveParams]` |
+
+**Returns**
+
+`usage_retrieve_response.UsageRetrieveResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/experimental.py#L35)

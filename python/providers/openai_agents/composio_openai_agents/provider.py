@@ -81,6 +81,8 @@ class OpenAIAgentsProvider(
     Composio toolset for OpenAI Agents framework.
     """
 
+    async_tool_execution = "native"
+
     def __init__(
         self, strict: bool = False, **kwargs: te.Unpack[BaseProviderConfig]
     ) -> None:
@@ -120,15 +122,16 @@ class OpenAIAgentsProvider(
                 arguments = normalize_tool_arguments(payload)
                 if strict_source is not None:
                     arguments = omit_null_tool_arguments(arguments, strict_source)
-                return json.dumps(
-                    obj=(
-                        await asyncio.to_thread(  # Running a thread since `execute_tool` is not async
-                            execute_tool,
-                            slug=tool.slug,
-                            arguments=arguments,
-                        )
+                async_execute = getattr(type(execute_tool), "aexecute", None)
+                if async_execute is None:
+                    result = await asyncio.to_thread(
+                        execute_tool, slug=tool.slug, arguments=arguments
                     )
-                )
+                else:
+                    result = await async_execute(
+                        execute_tool, slug=tool.slug, arguments=arguments
+                    )
+                return json.dumps(result)
             except pydantic.ValidationError as e:
                 return json.dumps(
                     {

@@ -55,18 +55,6 @@
   },
   {
     "ruleId": "py-unchecked-ignore",
-    "file": "python/composio/core/models/base.py",
-    "source": "                \"environment\": _environment,  # type: ignore",
-    "count": 1
-  },
-  {
-    "ruleId": "py-unchecked-ignore",
-    "file": "python/composio/core/models/base.py",
-    "source": "        return {k: v for k, v in payload.items()}  # type: ignore",
-    "count": 1
-  },
-  {
-    "ruleId": "py-unchecked-ignore",
     "file": "python/composio/core/models/mcp.py",
     "source": "    response.generate = generate  # type: ignore",
     "count": 1

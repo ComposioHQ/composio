@@ -25,6 +25,7 @@ from composio_client.types.tool_router.session_retrieve_response import (
 )
 
 from composio.client import HttpClient
+from composio.client._async import AsyncHttpClient
 from composio.core.models.base import Resource, credential_headers, scope_headers
 from composio.core.models.custom_tool import (
     ExperimentalToolkit,
@@ -423,6 +424,8 @@ def _resolve_local_option(
     new_value: t.Optional[_LocalOption],
     old_name: str,
     old_value: t.Optional[_LocalOption],
+    *,
+    warning_stacklevel: int = 4,
 ) -> t.Optional[_LocalOption]:
     # `custom_*` options were renamed to `local_*` because "custom toolkits"
     # also names the server-side Custom MCP toolkits.
@@ -438,7 +441,7 @@ def _resolve_local_option(
         ComposioDeprecationWarning,
         # Point at the caller of create()/use(), past this helper and the
         # Resource tracing wrapper around those methods.
-        stacklevel=4,
+        stacklevel=warning_stacklevel,
     )
     return old_value
 
@@ -628,64 +631,314 @@ class ToolRouterSessionExperimental:
     assistive_prompt: t.Optional[str] = None
 
 
-class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
+def _transform_tags_params(
+    tags: t.Optional[ToolRouterConfigTags],
+) -> t.Optional[session_create_params.TagsUnionMember1]:
+    """Transform tags configuration to API format.
+
+    Args:
+        tags: Tags configuration - can be a list (shorthand for enable)
+              or an object with enable/disable keys.
+
+    Returns:
+        Transformed tags payload in API format, or None if tags is None.
     """
-    ToolRouter class for managing tool routing sessions.
+    if tags is None:
+        return None
+    if isinstance(tags, list):
+        return {"enable": tags}
+    elif isinstance(tags, dict):
+        result: session_create_params.TagsUnionMember1 = {}
+        enable_value = tags.get("enable")
+        if enable_value is not None:
+            result["enable"] = enable_value
+        disable_value = tags.get("disable")
+        if disable_value is not None:
+            result["disable"] = disable_value
+        require_approval_value = tags.get("require_approval")
+        if require_approval_value is not None:
+            result["require_approval"] = require_approval_value
+        return result or None
 
-    Provides functionality to create isolated tool router sessions with provider-wrapped tools,
-    authorization helpers, and connection management.
 
-    Example:
-        ```python
-        from composio import Composio
-
-        composio = Composio()
-
-        # Create a session for a user
-        session = composio.tool_router.create(
-            user_id='user_123',
-            manage_connections=True
+def _prepare_session_create(
+    *,
+    user_id: str,
+    toolkits: t.Optional[
+        t.Union[
+            t.List[str],
+            ToolRouterToolkitsEnableConfig,
+            ToolRouterToolkitsDisableConfig,
+            ToolRouterToolkitsRequireApprovalConfig,
+        ]
+    ] = None,
+    tools: t.Optional[t.Dict[str, ToolRouterToolsConfig]] = None,
+    tags: t.Optional[ToolRouterConfigTags] = None,
+    manage_connections: t.Optional[
+        t.Union[bool, ToolRouterManageConnectionsConfig]
+    ] = None,
+    auth_configs: t.Optional[t.Dict[str, str]] = None,
+    connected_accounts: t.Optional[t.Dict[str, t.Union[str, t.List[str]]]] = None,
+    sandbox: t.Optional[ToolRouterSandboxConfig] = None,
+    workbench: t.Optional[ToolRouterWorkbenchConfig] = None,
+    multi_account: t.Optional[ToolRouterMultiAccountConfig] = None,
+    proxy_execute: t.Optional[t.Union[bool, ToolRouterProxyExecuteConfig]] = None,
+    hooks: t.Optional[t.List[ToolRouterHook]] = None,
+    preload: t.Optional[ToolRouterPreloadConfig] = None,
+    session_preset: t.Optional[SessionPreset] = None,
+    experimental: t.Optional[ToolRouterExperimentalConfig] = None,
+    instant: t.Optional[t.Union[t.Literal[False], ToolRouterInstantConfig]] = None,
+) -> tuple[
+    dict[str, t.Any],
+    list[CustomTool] | None,
+    list[ExperimentalToolkit] | None,
+    bool,
+    InlineCustomToolsWirePayload | None,
+]:
+    if sandbox is not None and workbench is not None:
+        raise InvalidParams(
+            "Pass either `sandbox` or `workbench`, not both. "
+            "`workbench` is a backwards-compatible alias for `sandbox`."
         )
 
-        # Get tools wrapped for the provider
-        tools = session.tools()
+    sandbox_config: t.Optional[ToolRouterSandboxConfig] = (
+        sandbox if sandbox is not None else workbench
+    )
 
-        # Authorize a toolkit
-        connection_request = session.authorize('github')
-        print(f"Redirect URL: {connection_request.redirect_url}")
-        ```
-    """
+    direct_tools_preset = session_preset == SESSION_PRESET_DIRECT_TOOLS
+    manage_connections, sandbox_config, preload = _apply_session_preset_defaults(
+        session_preset=session_preset,
+        manage_connections=manage_connections,
+        workbench=sandbox_config,
+        preload=preload,
+    )
+    default_custom_preload = _preloads_all_custom_tools(preload)
 
-    def __init__(
-        self,
-        client: HttpClient,
-        provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
-        dangerously_allow_auto_upload_download_files: bool = False,
-        sensitive_file_upload_protection: bool = True,
-        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
-        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = None,
-    ):
-        """
-        Initialize ToolRouter instance.
+    # Parse manage_connections config
+    manage_connections = manage_connections if manage_connections is not None else True
+    auto_manage_connections = (
+        manage_connections
+        if isinstance(manage_connections, bool)
+        else manage_connections.get("enable", True)
+    )
 
-        :param client: HTTP client for API calls
-        :param provider: Optional provider for tool wrapping
-        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
-        :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
-        :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
-        :param file_upload_dirs: Allowlist of directories for auto-upload. See ``Composio`` for details.
-        """
-        super().__init__(client)
-        self._provider = provider
-        self._sensitive_file_upload_protection = sensitive_file_upload_protection
-        self._file_upload_path_deny_segments = file_upload_path_deny_segments
-        self._file_upload_dirs = file_upload_dirs
-        self._auto_upload_download_files = bool(
-            dangerously_allow_auto_upload_download_files
+    # Parse toolkits config
+    toolkits_payload: t.Optional[t.Dict[str, t.List[str]]] = None
+    if toolkits is not None:
+        if isinstance(toolkits, list):
+            toolkits_payload = {"enable": toolkits}
+        else:
+            toolkits_payload = t.cast(t.Dict[str, t.List[str]], toolkits)
+
+    # Parse tools config - transform to API format
+    # Transform tools from Dict[str, Union[List, enable/disable/tags]] to client SDK format
+    tools_payload: t.Optional[t.Dict[str, t.Any]] = None
+    if tools is not None:
+        tools_payload = {}
+        for toolkit_slug, config in tools.items():
+            if isinstance(config, list):
+                # List shorthand means enable these tools
+                tools_payload[toolkit_slug] = {"enable": config}
+            elif isinstance(config, dict):
+                # Transform config dict - handle 'tags' specially if present
+                # Build the transformed config explicitly to maintain proper typing
+                transformed_config: t.Dict[
+                    str,
+                    t.Union[
+                        t.List[str],
+                        session_create_params.TagsUnionMember1,
+                    ],
+                ] = {}
+                # Copy existing keys (enable, disable) if present
+                if "enable" in config:
+                    # config is ToolRouterToolsEnableConfig when "enable" is present
+                    enable_config = t.cast(ToolRouterToolsEnableConfig, config)
+                    transformed_config["enable"] = enable_config["enable"]
+                if "disable" in config:
+                    # config is ToolRouterToolsDisableConfig when "disable" is present
+                    disable_config = t.cast(ToolRouterToolsDisableConfig, config)
+                    transformed_config["disable"] = disable_config["disable"]
+                if "require_approval" in config:
+                    approval_config = t.cast(
+                        ToolRouterToolsRequireApprovalConfig, config
+                    )
+                    transformed_config["require_approval"] = approval_config[
+                        "require_approval"
+                    ]
+                # Use type guard to narrow the type when "tags" is present
+                if _is_tools_tags_config(config):
+                    # Type narrowed: config is now ToolRouterToolsTagsConfig
+                    tags_value = config["tags"]
+                    transformed_tags = _transform_tags_params(tags_value)
+                    if transformed_tags is not None:
+                        transformed_config["tags"] = transformed_tags
+                tools_payload[toolkit_slug] = transformed_config
+
+    # Parse callback_url and wait_for_connections from manage_connections config
+    callback_url = (
+        manage_connections.get("callback_url")
+        if isinstance(manage_connections, dict)
+        else omit
+    )
+    wait_for_connections = (
+        manage_connections.get("wait_for_connections")
+        if isinstance(manage_connections, dict)
+        else omit
+    )
+
+    # Build the API payload
+    create_params: t.Dict[str, t.Any] = {
+        "user_id": user_id,
+    }
+    if instant is not None:
+        create_params["instant"] = instant
+    if proxy_execute is not None:
+        create_params["proxy_execute"] = _proxy_execute_payload(proxy_execute)
+    if hooks is not None:
+        if (
+            experimental is not None
+            and t.cast(t.Dict[str, t.Any], experimental).get("session_config_id")
+            is not None
+        ):
+            raise InvalidParams(
+                "`hooks` cannot be combined with "
+                "`experimental={'session_config_id': ...}`; create the session "
+                "from the saved config and add hooks in a separate update() call"
+            )
+        create_params["hooks"] = hooks
+
+    # Build connections config
+    connections_config: t.Dict[str, t.Any] = {
+        "enable": auto_manage_connections,
+    }
+    if callback_url is not None and callback_url is not omit:
+        connections_config["callback_url"] = callback_url
+    if wait_for_connections is not None and wait_for_connections is not omit:
+        connections_config["enable_wait_for_connections"] = wait_for_connections
+
+    create_params["manage_connections"] = connections_config
+
+    # Add optional fields
+    if auth_configs is not None:
+        create_params["auth_configs"] = auth_configs
+
+    if connected_accounts is not None:
+        create_params["connected_accounts"] = {
+            k: [v] if isinstance(v, str) else v for k, v in connected_accounts.items()
+        }
+
+    if toolkits_payload is not None:
+        create_params["toolkits"] = toolkits_payload
+
+    if tools_payload:
+        create_params["tools"] = tools_payload
+
+    # Transform tags config
+    tags_payload = _transform_tags_params(tags)
+    if tags_payload is not None:
+        create_params["tags"] = tags_payload
+
+    if sandbox_config is not None:
+        execution_payload: t.Dict[str, t.Any] = {
+            "enable": sandbox_config.get("enable", True),
+        }
+        if "enable_proxy_execution" in sandbox_config:
+            execution_payload["enable_proxy_execution"] = sandbox_config[
+                "enable_proxy_execution"
+            ]
+        if "auto_offload_threshold" in sandbox_config:
+            execution_payload["auto_offload_threshold"] = int(
+                sandbox_config["auto_offload_threshold"]
+            )
+        if "sandbox_size" in sandbox_config:
+            execution_payload["sandbox_size"] = sandbox_config["sandbox_size"]
+
+        if execution_payload:
+            create_params["workbench"] = execution_payload
+
+    if multi_account is not None:
+        ma = dict(multi_account)
+        if ma.get("enable") and "require_explicit_selection" not in ma:
+            ma["require_explicit_selection"] = True
+        create_params["multi_account"] = ma
+
+    if preload is not None:
+        create_params["preload"] = preload
+
+    if direct_tools_preset:
+        create_params["search"] = {"enable": False}
+        create_params["execute"] = {"enable_multi_execute": False}
+
+    # Build experimental config
+    # Map SDK's experimental.assistive_prompt.user_timezone to API's
+    # experimental.assistive_prompt_config.user_timezone
+    custom_tools: t.Optional[t.List[CustomTool]] = None
+    custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None
+    inline_custom_tools_payload: t.Optional[InlineCustomToolsWirePayload] = None
+    experimental_payload: t.Dict[str, t.Any] = {}
+
+    if experimental is not None:
+        assistive_prompt_config = experimental.get("assistive_prompt")
+        if assistive_prompt_config is not None:
+            user_timezone = assistive_prompt_config.get("user_timezone")
+            if user_timezone:
+                experimental_payload["assistive_prompt_config"] = {
+                    "user_timezone": user_timezone,
+                }
+
+        fallback = experimental.get("no_elicitation_support_fallback")
+        if fallback is not None:
+            experimental_payload["no_elicitation_support_fallback"] = fallback
+
+        # Serialize local tools and toolkits for the backend
+        custom_tools = _resolve_local_option(
+            "local_tools",
+            experimental.get("local_tools"),
+            "custom_tools",
+            experimental.get("custom_tools"),
+            warning_stacklevel=5,
         )
-        self.webhooks = SessionWebhooks()
-        """Read the events Composio sends to the project's session webhook
-        URL, for session hooks with a ``webhook`` handler."""
+        custom_toolkits = _resolve_local_option(
+            "local_toolkits",
+            experimental.get("local_toolkits"),
+            "custom_toolkits",
+            experimental.get("custom_toolkits"),
+            warning_stacklevel=5,
+        )
+
+    inline_custom_tools_payload = _prepare_inline_custom_tools(
+        custom_tools=custom_tools,
+        custom_toolkits=custom_toolkits,
+        default_preload=default_custom_preload,
+        preload_tools=preload.get("tools") if preload is not None else None,
+    )
+    if inline_custom_tools_payload:
+        if "custom_tools" in inline_custom_tools_payload:
+            experimental_payload["custom_tools"] = inline_custom_tools_payload[
+                "custom_tools"
+            ]
+        if "custom_toolkits" in inline_custom_tools_payload:
+            experimental_payload["custom_toolkits"] = inline_custom_tools_payload[
+                "custom_toolkits"
+            ]
+
+    if experimental_payload:
+        create_params["experimental"] = experimental_payload
+
+    return (
+        create_params,
+        custom_tools,
+        custom_toolkits,
+        default_custom_preload,
+        inline_custom_tools_payload,
+    )
+
+
+_Client = t.TypeVar("_Client", HttpClient, AsyncHttpClient)
+
+
+class _SessionMcpConfig(t.Generic[_Client]):
+    _client: _Client
 
     def _mcp_destination_rejection(self, url: str) -> t.Optional[MCPDestinationError]:
         """The error describing why ``url`` must not receive the session
@@ -757,40 +1010,67 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         }
         return ToolRouterMCPServerConfig(type=mcp_type, url=url, headers=headers)
 
-    def _transform_tags_params(
-        self, tags: t.Optional[ToolRouterConfigTags]
-    ) -> t.Optional[session_create_params.TagsUnionMember1]:
-        """Transform tags configuration to API format.
 
-        Args:
-            tags: Tags configuration - can be a list (shorthand for enable)
-                  or an object with enable/disable keys.
+class ToolRouter(
+    Resource, _SessionMcpConfig[HttpClient], t.Generic[TTool, TToolCollection]
+):
+    """
+    ToolRouter class for managing tool routing sessions.
 
-        Returns:
-            Transformed tags payload in API format, or None if tags is None.
+    Provides functionality to create isolated tool router sessions with provider-wrapped tools,
+    authorization helpers, and connection management.
+
+    Example:
+        ```python
+        from composio import Composio
+
+        composio = Composio()
+
+        # Create a session for a user
+        session = composio.tool_router.create(
+            user_id='user_123',
+            manage_connections=True
+        )
+
+        # Get tools wrapped for the provider
+        tools = session.tools()
+
+        # Authorize a toolkit
+        connection_request = session.authorize('github')
+        print(f"Redirect URL: {connection_request.redirect_url}")
+        ```
+    """
+
+    def __init__(
+        self,
+        client: HttpClient,
+        provider: t.Optional["BaseProvider[TTool, TToolCollection]"] = None,
+        dangerously_allow_auto_upload_download_files: bool = False,
+        sensitive_file_upload_protection: bool = True,
+        file_upload_path_deny_segments: t.Optional[t.Sequence[str]] = None,
+        file_upload_dirs: t.Union[t.Sequence[str], t.Literal[False], None] = None,
+    ):
         """
-        if tags is None:
-            return None
+        Initialize ToolRouter instance.
 
-        if isinstance(tags, list):
-            # List shorthand means enable these tags
-            # Return value structure matches TagsUnionMember1: {"enable": [...]}
-            return {"enable": tags}
-        elif isinstance(tags, dict):
-            # Object format with enable/disable and an approval list
-            # Only include keys that are present and not None
-            # Return value structure matches TagsUnionMember1
-            result: session_create_params.TagsUnionMember1 = {}
-            enable_value = tags.get("enable")
-            if enable_value is not None:
-                result["enable"] = enable_value
-            disable_value = tags.get("disable")
-            if disable_value is not None:
-                result["disable"] = disable_value
-            require_approval_value = tags.get("require_approval")
-            if require_approval_value is not None:
-                result["require_approval"] = require_approval_value
-            return result or None
+        :param client: HTTP client for API calls
+        :param provider: Optional provider for tool wrapping
+        :param dangerously_allow_auto_upload_download_files: Opt-in for automatic file upload/download. Defaults to False.
+        :param sensitive_file_upload_protection: When True, block local paths on the built-in sensitive-path denylist before upload.
+        :param file_upload_path_deny_segments: Extra path segment names to merge with the built-in denylist.
+        :param file_upload_dirs: Allowlist of directories for auto-upload. See ``Composio`` for details.
+        """
+        super().__init__(client)
+        self._provider = provider
+        self._sensitive_file_upload_protection = sensitive_file_upload_protection
+        self._file_upload_path_deny_segments = file_upload_path_deny_segments
+        self._file_upload_dirs = file_upload_dirs
+        self._auto_upload_download_files = bool(
+            dangerously_allow_auto_upload_download_files
+        )
+        self.webhooks = SessionWebhooks()
+        """Read the events Composio sends to the project's session webhook
+        URL, for session hooks with a ``webhook`` handler."""
 
     # Overloads: pass ``mcp=True`` to surface ``session.mcp`` in the returned
     # type (ToolRouterSessionWithMcp). The MCP endpoint exists at runtime on
@@ -1130,237 +1410,30 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
             ```
         """
 
-        if sandbox is not None and workbench is not None:
-            raise InvalidParams(
-                "Pass either `sandbox` or `workbench`, not both. "
-                "`workbench` is a backwards-compatible alias for `sandbox`."
-            )
-
-        sandbox_config: t.Optional[ToolRouterSandboxConfig] = (
-            sandbox if sandbox is not None else workbench
-        )
-
-        direct_tools_preset = session_preset == SESSION_PRESET_DIRECT_TOOLS
-        manage_connections, sandbox_config, preload = _apply_session_preset_defaults(
-            session_preset=session_preset,
+        (
+            create_params,
+            custom_tools,
+            custom_toolkits,
+            default_custom_preload,
+            inline_custom_tools_payload,
+        ) = _prepare_session_create(
+            user_id=user_id,
+            toolkits=toolkits,
+            tools=tools,
+            tags=tags,
             manage_connections=manage_connections,
-            workbench=sandbox_config,
+            auth_configs=auth_configs,
+            connected_accounts=connected_accounts,
+            sandbox=sandbox,
+            workbench=workbench,
+            multi_account=multi_account,
+            proxy_execute=proxy_execute,
+            hooks=hooks,
             preload=preload,
+            session_preset=session_preset,
+            experimental=experimental,
+            instant=instant,
         )
-        default_custom_preload = _preloads_all_custom_tools(preload)
-
-        # Parse manage_connections config
-        manage_connections = (
-            manage_connections if manage_connections is not None else True
-        )
-        auto_manage_connections = (
-            manage_connections
-            if isinstance(manage_connections, bool)
-            else manage_connections.get("enable", True)
-        )
-
-        # Parse toolkits config
-        toolkits_payload: t.Optional[t.Dict[str, t.List[str]]] = None
-        if toolkits is not None:
-            if isinstance(toolkits, list):
-                toolkits_payload = {"enable": toolkits}
-            else:
-                toolkits_payload = t.cast(t.Dict[str, t.List[str]], toolkits)
-
-        # Parse tools config - transform to API format
-        # Transform tools from Dict[str, Union[List, enable/disable/tags]] to client SDK format
-        tools_payload: t.Optional[t.Dict[str, t.Any]] = None
-        if tools is not None:
-            tools_payload = {}
-            for toolkit_slug, config in tools.items():
-                if isinstance(config, list):
-                    # List shorthand means enable these tools
-                    tools_payload[toolkit_slug] = {"enable": config}
-                elif isinstance(config, dict):
-                    # Transform config dict - handle 'tags' specially if present
-                    # Build the transformed config explicitly to maintain proper typing
-                    transformed_config: t.Dict[
-                        str,
-                        t.Union[
-                            t.List[str],
-                            session_create_params.TagsUnionMember1,
-                        ],
-                    ] = {}
-                    # Copy existing keys (enable, disable) if present
-                    if "enable" in config:
-                        # config is ToolRouterToolsEnableConfig when "enable" is present
-                        enable_config = t.cast(ToolRouterToolsEnableConfig, config)
-                        transformed_config["enable"] = enable_config["enable"]
-                    if "disable" in config:
-                        # config is ToolRouterToolsDisableConfig when "disable" is present
-                        disable_config = t.cast(ToolRouterToolsDisableConfig, config)
-                        transformed_config["disable"] = disable_config["disable"]
-                    if "require_approval" in config:
-                        approval_config = t.cast(
-                            ToolRouterToolsRequireApprovalConfig, config
-                        )
-                        transformed_config["require_approval"] = approval_config[
-                            "require_approval"
-                        ]
-                    # Use type guard to narrow the type when "tags" is present
-                    if _is_tools_tags_config(config):
-                        # Type narrowed: config is now ToolRouterToolsTagsConfig
-                        tags_value = config["tags"]
-                        transformed_tags = self._transform_tags_params(tags_value)
-                        if transformed_tags is not None:
-                            transformed_config["tags"] = transformed_tags
-                    tools_payload[toolkit_slug] = transformed_config
-
-        # Parse callback_url and wait_for_connections from manage_connections config
-        callback_url = (
-            manage_connections.get("callback_url")
-            if isinstance(manage_connections, dict)
-            else omit
-        )
-        wait_for_connections = (
-            manage_connections.get("wait_for_connections")
-            if isinstance(manage_connections, dict)
-            else omit
-        )
-
-        # Build the API payload
-        create_params: t.Dict[str, t.Any] = {
-            "user_id": user_id,
-        }
-        if instant is not None:
-            create_params["instant"] = instant
-        if proxy_execute is not None:
-            create_params["proxy_execute"] = _proxy_execute_payload(proxy_execute)
-        if hooks is not None:
-            if (
-                experimental is not None
-                and t.cast(t.Dict[str, t.Any], experimental).get("session_config_id")
-                is not None
-            ):
-                raise InvalidParams(
-                    "`hooks` cannot be combined with "
-                    "`experimental={'session_config_id': ...}`; create the session "
-                    "from the saved config and add hooks in a separate update() call"
-                )
-            create_params["hooks"] = hooks
-
-        # Build connections config
-        connections_config: t.Dict[str, t.Any] = {
-            "enable": auto_manage_connections,
-        }
-        if callback_url is not None and callback_url is not omit:
-            connections_config["callback_url"] = callback_url
-        if wait_for_connections is not None and wait_for_connections is not omit:
-            connections_config["enable_wait_for_connections"] = wait_for_connections
-
-        create_params["manage_connections"] = connections_config
-
-        # Add optional fields
-        if auth_configs is not None:
-            create_params["auth_configs"] = auth_configs
-
-        if connected_accounts is not None:
-            create_params["connected_accounts"] = {
-                k: [v] if isinstance(v, str) else v
-                for k, v in connected_accounts.items()
-            }
-
-        if toolkits_payload is not None:
-            create_params["toolkits"] = toolkits_payload
-
-        if tools_payload:
-            create_params["tools"] = tools_payload
-
-        # Transform tags config
-        tags_payload = self._transform_tags_params(tags)
-        if tags_payload is not None:
-            create_params["tags"] = tags_payload
-
-        if sandbox_config is not None:
-            execution_payload: t.Dict[str, t.Any] = {
-                "enable": sandbox_config.get("enable", True),
-            }
-            if "enable_proxy_execution" in sandbox_config:
-                execution_payload["enable_proxy_execution"] = sandbox_config[
-                    "enable_proxy_execution"
-                ]
-            if "auto_offload_threshold" in sandbox_config:
-                execution_payload["auto_offload_threshold"] = int(
-                    sandbox_config["auto_offload_threshold"]
-                )
-            if "sandbox_size" in sandbox_config:
-                execution_payload["sandbox_size"] = sandbox_config["sandbox_size"]
-
-            if execution_payload:
-                create_params["workbench"] = execution_payload
-
-        if multi_account is not None:
-            ma = dict(multi_account)
-            if ma.get("enable") and "require_explicit_selection" not in ma:
-                ma["require_explicit_selection"] = True
-            create_params["multi_account"] = ma
-
-        if preload is not None:
-            create_params["preload"] = preload
-
-        if direct_tools_preset:
-            create_params["search"] = {"enable": False}
-            create_params["execute"] = {"enable_multi_execute": False}
-
-        # Build experimental config
-        # Map SDK's experimental.assistive_prompt.user_timezone to API's
-        # experimental.assistive_prompt_config.user_timezone
-        custom_tools: t.Optional[t.List[CustomTool]] = None
-        custom_toolkits: t.Optional[t.List[ExperimentalToolkit]] = None
-        inline_custom_tools_payload: t.Optional[InlineCustomToolsWirePayload] = None
-        experimental_payload: t.Dict[str, t.Any] = {}
-
-        if experimental is not None:
-            assistive_prompt_config = experimental.get("assistive_prompt")
-            if assistive_prompt_config is not None:
-                user_timezone = assistive_prompt_config.get("user_timezone")
-                if user_timezone:
-                    experimental_payload["assistive_prompt_config"] = {
-                        "user_timezone": user_timezone,
-                    }
-
-            fallback = experimental.get("no_elicitation_support_fallback")
-            if fallback is not None:
-                experimental_payload["no_elicitation_support_fallback"] = fallback
-
-            # Serialize local tools and toolkits for the backend
-            custom_tools = _resolve_local_option(
-                "local_tools",
-                experimental.get("local_tools"),
-                "custom_tools",
-                experimental.get("custom_tools"),
-            )
-            custom_toolkits = _resolve_local_option(
-                "local_toolkits",
-                experimental.get("local_toolkits"),
-                "custom_toolkits",
-                experimental.get("custom_toolkits"),
-            )
-
-        inline_custom_tools_payload = _prepare_inline_custom_tools(
-            custom_tools=custom_tools,
-            custom_toolkits=custom_toolkits,
-            default_preload=default_custom_preload,
-            preload_tools=preload.get("tools") if preload is not None else None,
-        )
-        if inline_custom_tools_payload:
-            if "custom_tools" in inline_custom_tools_payload:
-                experimental_payload["custom_tools"] = inline_custom_tools_payload[
-                    "custom_tools"
-                ]
-            if "custom_toolkits" in inline_custom_tools_payload:
-                experimental_payload["custom_toolkits"] = inline_custom_tools_payload[
-                    "custom_toolkits"
-                ]
-
-        if experimental_payload:
-            create_params["experimental"] = experimental_payload
-
         if self._provider is None:
             raise ValueError(
                 "Provider is required for tool router. "

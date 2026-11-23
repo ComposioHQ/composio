@@ -1,0 +1,110 @@
+---
+title: "AsyncCustomToolkits"
+description: "Async counterpart to CustomToolkits."
+---
+
+## Methods
+
+### create()
+
+Create a custom MCP toolkit and return its generated slug.
+
+```python signature
+async def create(**params: Unpack[custom_create_toolkit_params.CustomCreateToolkitParams]) -> custom_create_toolkit_response.CustomCreateToolkitResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params?` | `Unpack[custom_create_toolkit_params.CustomCreateToolkitParams]` |
+
+**Returns**
+
+`custom_create_toolkit_response.CustomCreateToolkitResponse`
+
+---
+
+### update()
+
+Update a custom toolkit's name, logo or API key field copy. Omitted fields keep their current value.
+
+```python signature
+async def update(slug: str, **params: Unpack[custom_update_toolkits_params.CustomUpdateToolkitsParams]) -> custom_update_toolkits_response.CustomUpdateToolkitsResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug` | `str` |
+| `params?` | `Unpack[custom_update_toolkits_params.CustomUpdateToolkitsParams]` |
+
+**Returns**
+
+`custom_update_toolkits_response.CustomUpdateToolkitsResponse`
+
+---
+
+### upsert()
+
+Create a custom toolkit, or update its display metadata (name, API key field copy) when the project already owns one with this slug.
+
+```python signature
+async def upsert(**params: Unpack[custom_upsert_params.CustomUpsertParams]) -> custom_upsert_response.CustomUpsertResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params?` | `Unpack[custom_upsert_params.CustomUpsertParams]` |
+
+**Returns**
+
+`custom_upsert_response.CustomUpsertResponse`
+
+---
+
+### sync()
+
+Re-fetch a custom toolkit's tool definitions from its remote MCP server. Call it when automatic sync fails or the remote tools change.
+
+```python signature
+async def sync(slug: str, *, connected_account_id: str | None = ...) -> custom_sync_response.CustomSyncResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug` | `str` |
+| `connected_account_id?` | `str \| None` |
+
+**Returns**
+
+`custom_sync_response.CustomSyncResponse`
+
+---
+
+### delete()
+
+Delete a custom toolkit owned by the project, with its tools, auth configs and connected accounts. The credentials behind those connected accounts are revoked in background jobs (`revoke_job_ids`). Composio-managed toolkits cannot be deleted (API 403).
+
+```python signature
+async def delete(slug: str) -> custom_delete_toolkit_response.CustomDeleteToolkitResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug` | `str` |
+
+**Returns**
+
+`custom_delete_toolkit_response.CustomDeleteToolkitResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/experimental.py#L70)

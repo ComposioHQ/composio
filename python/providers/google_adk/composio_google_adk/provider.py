@@ -1,4 +1,3 @@
-import types
 import typing as t
 from inspect import Signature
 
@@ -55,6 +54,8 @@ class GoogleAdkProvider(
     Composio toolset for Google ADK framework.
     """
 
+    async_tool_execution = "native"
+
     __schema_skip_defaults__ = True
 
     def wrap_tool(
@@ -93,27 +94,43 @@ class GoogleAdkProvider(
             aliases.schema, skip_default=self.skip_default
         )
 
+        def arguments_for(kwargs: dict[str, t.Any]) -> dict[str, t.Any]:
+            arguments = validate_and_serialize_tool_arguments(
+                args_schema, normalize_tool_arguments(kwargs)
+            )
+            return aliases.restore_arguments(arguments)
+
         def _execute(**kwargs: t.Any) -> t.Dict:
             try:
-                arguments = validate_and_serialize_tool_arguments(
-                    args_schema, normalize_tool_arguments(kwargs)
-                )
-            except pydantic.ValidationError as e:
+                arguments = arguments_for(kwargs)
+            except pydantic.ValidationError as exc:
                 return {
                     "successful": False,
-                    "error": parse_pydantic_error(e),
+                    "error": parse_pydantic_error(exc),
                     "data": None,
                 }
-            return execute_tool(
-                slug=tool.slug, arguments=aliases.restore_arguments(arguments)
+
+            return execute_tool(slug=tool.slug, arguments=arguments)
+
+        async_execute = getattr(type(execute_tool), "aexecute", None)
+
+        async def _execute_async(**kwargs: t.Any) -> t.Dict:
+            assert async_execute is not None
+            try:
+                arguments = arguments_for(kwargs)
+            except pydantic.ValidationError as exc:
+                return {
+                    "successful": False,
+                    "error": parse_pydantic_error(exc),
+                    "data": None,
+                }
+
+            return await async_execute(
+                execute_tool, slug=tool.slug, arguments=arguments
             )
 
-        function = types.FunctionType(
-            code=_execute.__code__,
-            name=tool.slug,
-            globals=globals(),
-            closure=_execute.__closure__,
-        )
+        function = _execute_async if async_execute is not None else _execute
+        function.__name__ = tool.slug
         parameters = function_signature_from_jsonschema(
             schema=aliases.schema,
             skip_default=self.skip_default,

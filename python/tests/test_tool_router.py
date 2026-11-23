@@ -4148,3 +4148,45 @@ class TestSessionExecuteMeta:
 
         assert client_slugs
         assert set(t.get_args(ToolRouterSessionMetaToolSlug)) == client_slugs
+
+
+@pytest.mark.parametrize(
+    ("call", "subject"), TestCustomToolBodyRequiresUserInput._BODIES
+)
+def test_async_local_tool_preserves_approval_request(call, subject):
+    import asyncio
+    from composio.client._async import AsyncHttpClient
+    from composio.core.models._async_sessions import AsyncToolRouterSession
+
+    async def scenario():
+        requests_seen = []
+
+        async def respond(request):
+            requests_seen.append(request)
+            return httpx.Response(200, json=_INPUT_REQUIRED_JSON)
+
+        async with AsyncHttpClient(
+            auth=ProjectAuth("test"),
+            provider="test",
+            http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)),
+            base_url="https://backend.invalid",
+        ) as client:
+            session = AsyncToolRouterSession(
+                client=client,
+                provider=None,
+                dangerously_allow_auto_upload_download_files=False,
+                session_id="session_123",
+                mcp=MagicMock(),
+                experimental=MagicMock(),
+                custom_tools_map=_custom_tool_calling(call),
+                user_id="user_123",
+            )
+            with pytest.raises(ToolInputRequiredError) as raised:
+                await session.execute("SEND_WELCOME_EMAIL", arguments={})
+
+            assert f"{subject} requires user input" in raised.value.message
+            assert raised.value.request_state == "opaque-state-token"
+            assert list(raised.value.input_requests) == ["approval_1"]
+            assert len(requests_seen) == 1
+
+    asyncio.run(scenario())

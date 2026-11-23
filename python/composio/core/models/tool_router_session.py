@@ -21,6 +21,9 @@ from composio_client.types.tool_list_response import (
     ItemDeprecatedToolkit,
     ItemToolkit,
 )
+from composio_client.types.tool_router.session_toolkits_response import (
+    SessionToolkitsResponse,
+)
 from composio_client.types.tool_router import (
     session_create_response,
     session_execute_params,
@@ -313,7 +316,216 @@ _CUSTOM_TOOLKITS_DEPRECATION = (
 )
 
 
-class ToolRouterSession(t.Generic[TTool, TToolCollection]):
+class _LocalSessionTools:
+    _custom_tools_map: CustomToolsMap | None
+    _preloaded_custom_tool_slugs: list[str]
+    preload: ToolRouterSessionPreloadConfig
+
+    def _has_custom_tools(self) -> bool:
+        """Check if this session has any custom tools bound."""
+        if self._custom_tools_map is None:
+            return False
+        return len(self._custom_tools_map.by_final_slug) > 0
+
+    def _add_preloaded_custom_tools(
+        self,
+        tools: t.List[Tool],
+        modifiers: t.Optional["Modifiers"],
+    ) -> t.List[Tool]:
+        custom_tools = self._get_preloaded_custom_tool_schemas(modifiers)
+        if not custom_tools:
+            return tools
+
+        existing_slugs = {tool.slug.upper() for tool in tools}
+        appended_tools = [
+            tool for tool in custom_tools if tool.slug.upper() not in existing_slugs
+        ]
+        if not appended_tools:
+            return tools
+
+        return [*tools, *appended_tools]
+
+    def _get_preloaded_custom_tool_schemas(
+        self,
+        modifiers: t.Optional["Modifiers"],
+    ) -> t.List[Tool]:
+        if not self._custom_tools_map or not self._preloaded_custom_tool_slugs:
+            return []
+
+        tools: t.List[Tool] = []
+        for slug in self._preloaded_custom_tool_slugs:
+            entry = find_custom_tool_map_entry_by_final_slug(
+                self._custom_tools_map,
+                slug,
+            )
+            if entry is None:
+                continue
+
+            tool = self._custom_tool_entry_to_tool(entry)
+            if modifiers is not None:
+                tool = t.cast(
+                    Tool,
+                    apply_modifier_by_type(
+                        modifiers=modifiers,
+                        toolkit=tool.toolkit.slug,
+                        tool=tool.slug,
+                        type="schema",
+                        schema=tool,
+                    ),
+                )
+            tools.append(tool)
+
+        return tools
+
+    def _custom_tool_entry_to_tool(self, entry: CustomToolsMapEntry) -> Tool:
+        toolkit_slug = entry.toolkit or "custom"
+        toolkit_name = (
+            self._custom_toolkit_name(toolkit_slug) or entry.toolkit or "Custom"
+        )
+
+        return Tool(
+            available_versions=[],
+            deprecated=ItemDeprecated(
+                available_versions=[],
+                displayName=entry.handle.name,
+                is_deprecated=False,
+                toolkit=ItemDeprecatedToolkit(logo=""),
+                version="latest",
+            ),
+            description=(
+                f"{DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX}\n{entry.handle.description}"
+            ),
+            input_parameters=entry.handle.input_schema,
+            is_deprecated=False,
+            name=entry.handle.name,
+            no_auth=entry.handle.extends_toolkit is None,
+            output_parameters=entry.handle.output_schema or {},
+            scopes=[],
+            slug=entry.final_slug,
+            tags=[],
+            toolkit=ItemToolkit(logo="", name=toolkit_name, slug=toolkit_slug),
+            version="latest",
+        )
+
+    def _custom_toolkit_name(self, toolkit_slug: str) -> t.Optional[str]:
+        if self._custom_tools_map is None:
+            return None
+
+        for toolkit in self._custom_tools_map.toolkits or []:
+            if toolkit.slug.lower() == toolkit_slug.lower():
+                return toolkit.name
+        return None
+
+    def _parse_tool_item(self, item: t.Any) -> t.Dict[str, t.Any]:
+        """Parse an individual tool item from COMPOSIO_MULTI_EXECUTE_TOOL's tools array."""
+        if not isinstance(item, dict):
+            return {"tool_slug": "", "arguments": {}}
+        return {
+            "tool_slug": str(item.get("tool_slug", "")),
+            "arguments": item.get("arguments", {}),
+        }
+
+    def local_tools(
+        self, *, toolkit: t.Optional[str] = None
+    ) -> t.List[RegisteredLocalTool]:
+        """List all local tools registered in this session.
+
+        Returns tools with their final slugs, schemas, and resolved toolkit.
+
+        :param toolkit: Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
+        :returns: Array of registered local tools
+        """
+        if not self._custom_tools_map:
+            return []
+
+        entries = list(self._custom_tools_map.by_final_slug.values())
+        if toolkit:
+            entries = [
+                e for e in entries if e.toolkit and e.toolkit.lower() == toolkit.lower()
+            ]
+
+        return [
+            RegisteredCustomTool(
+                slug=entry.final_slug,
+                name=entry.handle.name,
+                description=entry.handle.description,
+                toolkit=entry.toolkit,
+                input_schema=entry.handle.input_schema,
+                output_schema=entry.handle.output_schema,
+            )
+            for entry in entries
+        ]
+
+    def local_toolkits(self) -> t.List[RegisteredLocalToolkit]:
+        """List all toolkits of local tools registered in this session.
+
+        Returns toolkits with their tools showing final slugs.
+        """
+        if not self._custom_tools_map or not self._custom_tools_map.toolkits:
+            return []
+
+        result = []
+        for tk in self._custom_tools_map.toolkits:
+            tools = []
+            for tool in tk.tools:
+                entry = find_custom_tool_map_entry_by_toolkit_and_original_slug(
+                    self._custom_tools_map, tk.slug, tool.slug
+                )
+                if entry is None:
+                    # Only trust a bare alias that belongs to this toolkit.
+                    bare = self._custom_tools_map.by_original_slug.get(
+                        tool.slug.upper()
+                    )
+                    if (
+                        bare is not None
+                        and bare.toolkit is not None
+                        and bare.toolkit.lower() == tk.slug.lower()
+                    ):
+                        entry = bare
+                tools.append(
+                    RegisteredCustomTool(
+                        slug=entry.final_slug if entry else tool.slug,
+                        name=tool.name,
+                        description=tool.description,
+                        toolkit=tk.slug,
+                        input_schema=tool.input_schema,
+                        output_schema=tool.output_schema,
+                    )
+                )
+            result.append(
+                RegisteredCustomToolkit(
+                    slug=tk.slug,
+                    name=tk.name,
+                    description=tk.description,
+                    tools=tools,
+                )
+            )
+        return result
+
+    @te.deprecated(_CUSTOM_TOOLS_DEPRECATION, category=None)
+    def custom_tools(
+        self, *, toolkit: t.Optional[str] = None
+    ) -> t.List[RegisteredCustomTool]:
+        """Deprecated alias for :meth:`local_tools`."""
+        warnings.warn(
+            _CUSTOM_TOOLS_DEPRECATION,
+            exceptions.ComposioDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.local_tools(toolkit=toolkit)
+
+    @te.deprecated(_CUSTOM_TOOLKITS_DEPRECATION, category=None)
+    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
+        """Deprecated alias for :meth:`local_toolkits`."""
+        warnings.warn(
+            _CUSTOM_TOOLKITS_DEPRECATION,
+            exceptions.ComposioDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.local_toolkits()
+
+
+class ToolRouterSession(_LocalSessionTools, t.Generic[TTool, TToolCollection]):
     """
     A Composio session — the object returned by ``composio.create(...)`` /
     ``composio.use(...)``. Use it to fetch session-scoped tools, authorize
@@ -414,12 +626,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 inline_custom_tools_payload=inline_custom_tools_payload,
             )
 
-    def _has_custom_tools(self) -> bool:
-        """Check if this session has any custom tools bound."""
-        if self._custom_tools_map is None:
-            return False
-        return len(self._custom_tools_map.by_final_slug) > 0
-
     def _tool_router_backend_execute(
         self,
         tools_model: t.Any,
@@ -503,95 +709,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             ),
         )
 
-    def _add_preloaded_custom_tools(
-        self,
-        tools: t.List[Tool],
-        modifiers: t.Optional["Modifiers"],
-    ) -> t.List[Tool]:
-        custom_tools = self._get_preloaded_custom_tool_schemas(modifiers)
-        if not custom_tools:
-            return tools
-
-        existing_slugs = {tool.slug.upper() for tool in tools}
-        appended_tools = [
-            tool for tool in custom_tools if tool.slug.upper() not in existing_slugs
-        ]
-        if not appended_tools:
-            return tools
-
-        return [*tools, *appended_tools]
-
-    def _get_preloaded_custom_tool_schemas(
-        self,
-        modifiers: t.Optional["Modifiers"],
-    ) -> t.List[Tool]:
-        if not self._custom_tools_map or not self._preloaded_custom_tool_slugs:
-            return []
-
-        tools: t.List[Tool] = []
-        for slug in self._preloaded_custom_tool_slugs:
-            entry = find_custom_tool_map_entry_by_final_slug(
-                self._custom_tools_map,
-                slug,
-            )
-            if entry is None:
-                continue
-
-            tool = self._custom_tool_entry_to_tool(entry)
-            if modifiers is not None:
-                tool = t.cast(
-                    Tool,
-                    apply_modifier_by_type(
-                        modifiers=modifiers,
-                        toolkit=tool.toolkit.slug,
-                        tool=tool.slug,
-                        type="schema",
-                        schema=tool,
-                    ),
-                )
-            tools.append(tool)
-
-        return tools
-
-    def _custom_tool_entry_to_tool(self, entry: CustomToolsMapEntry) -> Tool:
-        toolkit_slug = entry.toolkit or "custom"
-        toolkit_name = (
-            self._custom_toolkit_name(toolkit_slug) or entry.toolkit or "Custom"
-        )
-
-        return Tool(
-            available_versions=[],
-            deprecated=ItemDeprecated(
-                available_versions=[],
-                displayName=entry.handle.name,
-                is_deprecated=False,
-                toolkit=ItemDeprecatedToolkit(logo=""),
-                version="latest",
-            ),
-            description=(
-                f"{DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX}\n{entry.handle.description}"
-            ),
-            input_parameters=entry.handle.input_schema,
-            is_deprecated=False,
-            name=entry.handle.name,
-            no_auth=entry.handle.extends_toolkit is None,
-            output_parameters=entry.handle.output_schema or {},
-            scopes=[],
-            slug=entry.final_slug,
-            tags=[],
-            toolkit=ItemToolkit(logo="", name=toolkit_name, slug=toolkit_slug),
-            version="latest",
-        )
-
-    def _custom_toolkit_name(self, toolkit_slug: str) -> t.Optional[str]:
-        if self._custom_tools_map is None:
-            return None
-
-        for toolkit in self._custom_tools_map.toolkits or []:
-            if toolkit.slug.lower() == toolkit_slug.lower():
-                return toolkit.name
-        return None
-
     def _create_routing_execute_fn(
         self,
         tools_model: t.Any,
@@ -654,15 +771,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             return backend_execute(slug, arguments)
 
         return routing_execute
-
-    def _parse_tool_item(self, item: t.Any) -> t.Dict[str, t.Any]:
-        """Parse an individual tool item from COMPOSIO_MULTI_EXECUTE_TOOL's tools array."""
-        if not isinstance(item, dict):
-            return {"tool_slug": "", "arguments": {}}
-        return {
-            "tool_slug": str(item.get("tool_slug", "")),
-            "arguments": item.get("arguments", {}),
-        }
 
     def _route_multi_execute(
         self,
@@ -761,103 +869,9 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
                 except Exception as error:
                     remote_error_message = str(error) or "Remote tool execution failed"
 
-        # If only one local tool and no remote, return unwrapped
-        if not remote_indices and len(local_results) == 1:
-            return t.cast(t.Dict[str, t.Any], local_results[0][1])
-
-        # Build local result entries matching backend format
-        local_entries = []
-        for idx, result in local_results:
-            local_entry: t.Dict[str, t.Any] = {
-                "response": {
-                    "successful": result["successful"],
-                    "data": result["data"],
-                },
-                "tool_slug": parsed[idx]["tool_slug"],
-                "index": idx,
-            }
-            if result.get("error"):
-                local_entry["response"]["error"] = result["error"]
-                local_entry["error"] = result["error"]
-            local_entries.append(local_entry)
-
-        # Restore original request order, then re-index sequentially.
-        remote_data_raw = (remote_result or {}).get("data")
-        remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
-        remote_results_list: t.List[t.Dict[str, t.Any]]
-        if remote_error_message is not None:
-            remote_results_list = [
-                {
-                    "response": {
-                        "successful": False,
-                        "data": {},
-                        "error": remote_error_message,
-                    },
-                    "tool_slug": parsed[index]["tool_slug"],
-                    "error": remote_error_message,
-                }
-                for index in remote_indices
-            ]
-        else:
-            remote_results_list = (
-                remote_data.get("results", [])
-                if isinstance(remote_data.get("results"), list)
-                else []
-            )
-        merged_results = [
-            {
-                **entry,
-                "index": remote_indices[position]
-                if position < len(remote_indices)
-                else position,
-            }
-            for position, entry in enumerate(remote_results_list)
-        ]
-        merged_results.extend(local_entries)
-        merged_results.sort(key=lambda entry: int(entry["index"]))
-        all_results = [{**entry, "index": i} for i, entry in enumerate(merged_results)]
-        failed = sum(1 for r in all_results if r.get("error"))
-        merged_data = {**remote_data, "results": all_results}
-        if local_entries and (
-            remote_error_message is not None
-            or any(
-                key in remote_data
-                for key in ("total_count", "success_count", "error_count")
-            )
-        ):
-            merged_data["total_count"] = len(all_results)
-            merged_data["success_count"] = len(all_results) - failed
-            merged_data["error_count"] = failed
-
-        remote_error = remote_error_message
-        if remote_error is None and remote_result:
-            raw_remote_error = remote_result.get("error")
-            remote_error = (
-                str(raw_remote_error) if raw_remote_error is not None else None
-            )
-        # A failed execution can carry no error text, so success is read from
-        # each result's own verdict and not from the absence of an error message.
-        has_any_failure = (
-            any(not r["successful"] for _, r in local_results)
-            or (remote_result is not None and remote_result.get("successful") is False)
-            or bool(remote_error)
+        return _merge_multi_execute_results(
+            parsed, local_results, remote_indices, remote_result, remote_error_message
         )
-        error_message = None
-        if has_any_failure:
-            error_message = (
-                f"{failed} out of {len(all_results)} tools failed"
-                if failed > 0
-                else remote_error
-            )
-
-        merged: t.Dict[str, t.Any] = {
-            "data": merged_data,
-            "error": error_message,
-            "successful": not has_any_failure,
-        }
-        if remote_result and remote_result.get("instant_charge") is not None:
-            merged["instant_charge"] = remote_result["instant_charge"]
-        return merged
 
     def authorize(
         self,
@@ -914,13 +928,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
         """
         Get toolkit connection states for the session.
         """
-        from composio.core.models.tool_router import (
-            ToolkitConnectedAccount,
-            ToolkitConnection,
-            ToolkitConnectionAuthConfig,
-            ToolkitConnectionsDetails,
-            ToolkitConnectionState,
-        )
 
         toolkits_params: t.Dict[str, t.Any] = {}
         if next_cursor is not None:
@@ -939,52 +946,7 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             **toolkits_params,
         )
 
-        toolkit_states: t.List[ToolkitConnectionState] = []
-        for item in result.items:
-            connected_account = item.connected_account
-            auth_config: t.Optional[ToolkitConnectionAuthConfig] = None
-            connected_acc: t.Optional[ToolkitConnectedAccount] = None
-
-            if connected_account:
-                if connected_account.auth_config:
-                    auth_config = ToolkitConnectionAuthConfig(
-                        id=connected_account.auth_config.id,
-                        mode=connected_account.auth_config.auth_scheme,
-                        is_composio_managed=connected_account.auth_config.is_composio_managed,
-                    )
-                connected_acc = ToolkitConnectedAccount(
-                    id=connected_account.id,
-                    status=connected_account.status,
-                )
-
-            connection = (
-                None
-                if item.is_no_auth
-                else ToolkitConnection(
-                    is_active=(
-                        connected_account.status == "ACTIVE"
-                        if connected_account
-                        else False
-                    ),
-                    auth_config=auth_config,
-                    connected_account=connected_acc,
-                )
-            )
-
-            toolkit_state = ToolkitConnectionState(
-                slug=item.slug,
-                name=item.name,
-                logo=item.meta.logo if item.meta else None,
-                is_no_auth=item.is_no_auth if item.is_no_auth else False,
-                connection=connection,
-            )
-            toolkit_states.append(toolkit_state)
-
-        return ToolkitConnectionsDetails(
-            items=toolkit_states,
-            next_cursor=result.next_cursor,
-            total_pages=int(result.total_pages),
-        )
+        return _toolkit_connections(result)
 
     def search(
         self,
@@ -1148,105 +1110,6 @@ class ToolRouterSession(t.Generic[TTool, TToolCollection]):
             ),
             slug,
         )
-
-    def local_tools(
-        self, *, toolkit: t.Optional[str] = None
-    ) -> t.List[RegisteredLocalTool]:
-        """List all local tools registered in this session.
-
-        Returns tools with their final slugs, schemas, and resolved toolkit.
-
-        :param toolkit: Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS')
-        :returns: Array of registered local tools
-        """
-        if not self._custom_tools_map:
-            return []
-
-        entries = list(self._custom_tools_map.by_final_slug.values())
-        if toolkit:
-            entries = [
-                e for e in entries if e.toolkit and e.toolkit.lower() == toolkit.lower()
-            ]
-
-        return [
-            RegisteredCustomTool(
-                slug=entry.final_slug,
-                name=entry.handle.name,
-                description=entry.handle.description,
-                toolkit=entry.toolkit,
-                input_schema=entry.handle.input_schema,
-                output_schema=entry.handle.output_schema,
-            )
-            for entry in entries
-        ]
-
-    def local_toolkits(self) -> t.List[RegisteredLocalToolkit]:
-        """List all toolkits of local tools registered in this session.
-
-        Returns toolkits with their tools showing final slugs.
-        """
-        if not self._custom_tools_map or not self._custom_tools_map.toolkits:
-            return []
-
-        result = []
-        for tk in self._custom_tools_map.toolkits:
-            tools = []
-            for tool in tk.tools:
-                entry = find_custom_tool_map_entry_by_toolkit_and_original_slug(
-                    self._custom_tools_map, tk.slug, tool.slug
-                )
-                if entry is None:
-                    # Only trust a bare alias that belongs to this toolkit.
-                    bare = self._custom_tools_map.by_original_slug.get(
-                        tool.slug.upper()
-                    )
-                    if (
-                        bare is not None
-                        and bare.toolkit is not None
-                        and bare.toolkit.lower() == tk.slug.lower()
-                    ):
-                        entry = bare
-                tools.append(
-                    RegisteredCustomTool(
-                        slug=entry.final_slug if entry else tool.slug,
-                        name=tool.name,
-                        description=tool.description,
-                        toolkit=tk.slug,
-                        input_schema=tool.input_schema,
-                        output_schema=tool.output_schema,
-                    )
-                )
-            result.append(
-                RegisteredCustomToolkit(
-                    slug=tk.slug,
-                    name=tk.name,
-                    description=tk.description,
-                    tools=tools,
-                )
-            )
-        return result
-
-    @te.deprecated(_CUSTOM_TOOLS_DEPRECATION, category=None)
-    def custom_tools(
-        self, *, toolkit: t.Optional[str] = None
-    ) -> t.List[RegisteredCustomTool]:
-        """Deprecated alias for :meth:`local_tools`."""
-        warnings.warn(
-            _CUSTOM_TOOLS_DEPRECATION,
-            exceptions.ComposioDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.local_tools(toolkit=toolkit)
-
-    @te.deprecated(_CUSTOM_TOOLKITS_DEPRECATION, category=None)
-    def custom_toolkits(self) -> t.List[RegisteredCustomToolkit]:
-        """Deprecated alias for :meth:`local_toolkits`."""
-        warnings.warn(
-            _CUSTOM_TOOLKITS_DEPRECATION,
-            exceptions.ComposioDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.local_toolkits()
 
     def proxy_execute(
         self,
@@ -1543,3 +1406,162 @@ class ToolRouterSessionWithMcp(ToolRouterSession[TTool, TToolCollection]):
     #: This is the recommended MCP path, gated behind ``mcp=True``.
     #: See https://docs.composio.dev/docs/sessions-via-mcp
     mcp: "ToolRouterMCPServerConfig"
+
+
+def _merge_multi_execute_results(
+    parsed: list[dict[str, t.Any]],
+    local_results: list[tuple[int, ToolExecutionResponse]],
+    remote_indices: list[int],
+    remote_result: dict[str, t.Any] | None,
+    remote_error_message: str | None,
+) -> dict[str, t.Any]:
+    # If only one local tool and no remote, return unwrapped
+    if not remote_indices and len(local_results) == 1:
+        return t.cast(t.Dict[str, t.Any], local_results[0][1])
+
+    # Build local result entries matching backend format
+    local_entries = []
+    for idx, result in local_results:
+        local_entry: t.Dict[str, t.Any] = {
+            "response": {
+                "successful": result["successful"],
+                "data": result["data"],
+            },
+            "tool_slug": parsed[idx]["tool_slug"],
+            "index": idx,
+        }
+        if result.get("error"):
+            local_entry["response"]["error"] = result["error"]
+            local_entry["error"] = result["error"]
+        local_entries.append(local_entry)
+
+    # Restore original request order, then re-index sequentially.
+    remote_data_raw = (remote_result or {}).get("data")
+    remote_data = remote_data_raw if isinstance(remote_data_raw, dict) else {}
+    remote_results_list: t.List[t.Dict[str, t.Any]]
+    if remote_error_message is not None:
+        remote_results_list = [
+            {
+                "response": {
+                    "successful": False,
+                    "data": {},
+                    "error": remote_error_message,
+                },
+                "tool_slug": parsed[index]["tool_slug"],
+                "error": remote_error_message,
+            }
+            for index in remote_indices
+        ]
+    else:
+        remote_results_list = (
+            remote_data.get("results", [])
+            if isinstance(remote_data.get("results"), list)
+            else []
+        )
+    merged_results = [
+        {
+            **entry,
+            "index": remote_indices[position]
+            if position < len(remote_indices)
+            else position,
+        }
+        for position, entry in enumerate(remote_results_list)
+    ]
+    merged_results.extend(local_entries)
+    merged_results.sort(key=lambda entry: int(entry["index"]))
+    all_results = [{**entry, "index": i} for i, entry in enumerate(merged_results)]
+    failed = sum(1 for r in all_results if r.get("error"))
+    merged_data = {**remote_data, "results": all_results}
+    if local_entries and (
+        remote_error_message is not None
+        or any(
+            key in remote_data
+            for key in ("total_count", "success_count", "error_count")
+        )
+    ):
+        merged_data["total_count"] = len(all_results)
+        merged_data["success_count"] = len(all_results) - failed
+        merged_data["error_count"] = failed
+
+    remote_error = remote_error_message
+    if remote_error is None and remote_result:
+        raw_remote_error = remote_result.get("error")
+        remote_error = str(raw_remote_error) if raw_remote_error is not None else None
+    # A failed execution can carry no error text, so success is read from
+    # each result's own verdict and not from the absence of an error message.
+    has_any_failure = (
+        any(not r["successful"] for _, r in local_results)
+        or (remote_result is not None and remote_result.get("successful") is False)
+        or bool(remote_error)
+    )
+    error_message = None
+    if has_any_failure:
+        error_message = (
+            f"{failed} out of {len(all_results)} tools failed"
+            if failed > 0
+            else remote_error
+        )
+
+    merged: t.Dict[str, t.Any] = {
+        "data": merged_data,
+        "error": error_message,
+        "successful": not has_any_failure,
+    }
+    if remote_result and remote_result.get("instant_charge") is not None:
+        merged["instant_charge"] = remote_result["instant_charge"]
+    return merged
+
+
+def _toolkit_connections(result: SessionToolkitsResponse) -> ToolkitConnectionsDetails:
+    from composio.core.models.tool_router import (
+        ToolkitConnectedAccount,
+        ToolkitConnection,
+        ToolkitConnectionAuthConfig,
+        ToolkitConnectionsDetails,
+        ToolkitConnectionState,
+    )
+
+    toolkit_states: t.List[ToolkitConnectionState] = []
+    for item in result.items:
+        connected_account = item.connected_account
+        auth_config: t.Optional[ToolkitConnectionAuthConfig] = None
+        connected_acc: t.Optional[ToolkitConnectedAccount] = None
+
+        if connected_account:
+            if connected_account.auth_config:
+                auth_config = ToolkitConnectionAuthConfig(
+                    id=connected_account.auth_config.id,
+                    mode=connected_account.auth_config.auth_scheme,
+                    is_composio_managed=connected_account.auth_config.is_composio_managed,
+                )
+            connected_acc = ToolkitConnectedAccount(
+                id=connected_account.id,
+                status=connected_account.status,
+            )
+
+        connection = (
+            None
+            if item.is_no_auth
+            else ToolkitConnection(
+                is_active=(
+                    connected_account.status == "ACTIVE" if connected_account else False
+                ),
+                auth_config=auth_config,
+                connected_account=connected_acc,
+            )
+        )
+
+        toolkit_state = ToolkitConnectionState(
+            slug=item.slug,
+            name=item.name,
+            logo=item.meta.logo if item.meta else None,
+            is_no_auth=item.is_no_auth if item.is_no_auth else False,
+            connection=connection,
+        )
+        toolkit_states.append(toolkit_state)
+
+    return ToolkitConnectionsDetails(
+        items=toolkit_states,
+        next_cursor=result.next_cursor,
+        total_pages=int(result.total_pages),
+    )

@@ -1,0 +1,35 @@
+---
+title: "AsyncComposio"
+description: "Asynchronous Composio SDK. Use one client per application event loop.  Enter an async context or call `await client.aclose()` on shutdown. Closing ..."
+---
+
+## Properties
+
+| Name | Type |
+|------|------|
+| [`tools`](/reference/sdk-reference/python/async-tools) | `AsyncTools` |
+| [`toolkits`](/reference/sdk-reference/python/async-toolkits) | `AsyncToolkits` |
+| [`triggers`](/reference/sdk-reference/python/async-triggers) | `AsyncTriggers` |
+| [`auth_configs`](/reference/sdk-reference/python/async-auth-configs) | `AsyncAuthConfigs` |
+| [`connected_accounts`](/reference/sdk-reference/python/async-connected-accounts) | `AsyncConnectedAccounts` |
+| [`mcp`](/reference/sdk-reference/python/async-mcp) | `AsyncMCP` |
+| [`webhooks`](/reference/sdk-reference/python/async-webhooks) | `AsyncWebhooks` |
+| [`logs`](/reference/sdk-reference/python/async-logs) | `AsyncLogs` |
+| [`keyring`](/reference/sdk-reference/python/async-keyring) | `AsyncKeyring` |
+| [`experimental`](/reference/sdk-reference/python/async-experimental-api) | `AsyncExperimentalAPI` |
+| [`custom_toolkits`](/reference/sdk-reference/python/async-custom-toolkits) | `AsyncCustomToolkits` |
+| [`sessions`](/reference/sdk-reference/python/async-tool-router) | `AsyncToolRouter` |
+
+## Methods
+
+### aclose()
+
+Stop realtime subscriptions and close the shared HTTP connection pool.
+
+```python signature
+async def aclose() -> None
+```
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/async_sdk.py#L50)

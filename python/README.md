@@ -34,7 +34,7 @@ Set the key in the shell that starts your application:
 export COMPOSIO_API_KEY="your_composio_api_key"
 ```
 
-`Composio()` reads `COMPOSIO_API_KEY`. You can instead load the key from your secret store and pass it with `Composio(api_key=project_api_key)`. Keep keys out of source control and logs.
+Both `AsyncComposio()` and `Composio()` read `COMPOSIO_API_KEY`. You can instead load the key from your secret store and pass it with `Composio(api_key=project_api_key)`. Keep keys out of source control and logs.
 
 Without a project key, `Composio()` raises `ApiKeyNotProvidedError` before making API requests. Passing `api_key=None` or `api_key=""` explicitly does not fall back to the environment.
 
@@ -43,6 +43,25 @@ The CLI is optional and installed separately. `pip install composio` provides ne
 ## Quickstart
 
 Create a session for one of your users and hand its tools to your agent:
+
+**Async Python**
+
+```python
+import asyncio
+
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()  # OpenAI-format tool definitions by default
+
+
+asyncio.run(main())
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 from composio import Composio
@@ -53,17 +72,44 @@ session = composio.create(user_id="user_123")
 tools = session.tools()  # OpenAI-format tool definitions by default
 ```
 
+</details>
+
 By default a session gets meta tools that discover, authenticate, and execute app tools at runtime, so you don't load hundreds of tool definitions into context. Store `session.session_id` and reuse the session across turns:
+
+**Async Python** (inside your coroutine)
+
+```python
+session = await composio.use(session_id)
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 session = composio.use(session_id)
 ```
+
+</details>
 
 See [how Composio works](https://docs.composio.dev/docs/how-composio-works) for sessions and meta tools, and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting `toolkits`, `tools`, `auth_configs`, and `connected_accounts` on `composio.create()`.
 
 ## Execution results
 
 Python session execution takes `tool_slug`, not the direct Tools API's `slug`:
+
+**Async Python** (inside your coroutine)
+
+```python
+result = await session.execute(
+    tool_slug="COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "find recent emails"}]},
+)
+if result.result_type == "completed":
+    print(result.data)
+else:  # "failed" or "blocked", even if error is empty
+    print(result.result_type, result.error)
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 result = session.execute(
@@ -76,6 +122,8 @@ else:  # "failed" or "blocked", even if error is empty
     print(result.result_type, result.error)
 ```
 
+</details>
+
 `session.execute` returns a Pydantic `ToolRouterSessionExecuteResponse` with `data`, `error`, `log_id`, and `result_type` attributes. Serialize it with `result.model_dump(mode="json")` or `result.model_dump_json()`. It has no `successful` key or model tool-call ID.
 
 In contrast, `composio.tools.execute(slug=..., arguments=..., user_id=...)` and `after_execute` modifiers use `ToolExecutionResponse` dictionaries: check `response["successful"]` and serialize with `json.dumps(response)`. Provider adapters for session execution derive that flag from `result_type == "completed"` and retain `result_type`, `log_id`, and any returned `instant_charge`. Modifiers receive `(tool, toolkit, response)` and must return the dictionary. Calling `session.execute` directly doesn't invoke callbacks supplied to `session.tools(modifiers=...)`.
@@ -87,6 +135,29 @@ Transport/authentication errors and requests for user input can raise instead of
 ## Error handling
 
 API rejections raise a `composio_client` status error, which is also a `ComposioError`. The message carries the server's explanation, and the error exposes the HTTP status, request id, numeric API error code, and a suggested fix:
+
+**Async Python** (inside your coroutine)
+
+```python
+from composio import api_error_details
+from composio_client import APIStatusError
+
+try:
+    await composio.tools.execute(
+        slug="GMAIL_SEND_EMAIL",
+        arguments={"to": "user@example.com", "subject": "Hi", "body": "Hello"},
+        user_id="user_123",
+    )
+except APIStatusError as error:
+    details = api_error_details(error)
+    print(details.message)          # 410 toolkit GMAIL version 20250114_00 is retired ...
+    print(details.status_code)      # 410
+    print(details.api_error_code)   # 1410
+    print(details.request_id)       # req_...
+    print(details.possible_fixes)   # ["Pin 20261101_00"] or status-specific guidance
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 from composio import api_error_details
@@ -107,6 +178,8 @@ except APIStatusError as error:
     print(details.possible_fixes)   # ["Pin 20261101_00"] or status-specific guidance
 ```
 
+</details>
+
 `api_error_details()` returns the typed view of the same exception, so type checkers see these fields. `details.possible_fixes` uses the server's `suggested_fix` when present. Without one, it returns a fix chosen for the HTTP status, so a 401, 402, 403, 410, or 5xx doesn't tell you to check the tool slug and arguments. `details.details` still exposes the validated error envelope.
 
 ## Use with an agent framework
@@ -116,6 +189,36 @@ Provider packages adapt `session.tools()` to your framework's native tool format
 ```bash
 pip install composio composio-openai-agents openai-agents
 ```
+
+**Async Python**
+
+```python
+import asyncio
+
+from composio import AsyncComposio
+from composio_openai_agents import OpenAIAgentsProvider
+from agents import Agent, Runner
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIAgentsProvider()) as composio:
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = Agent(
+            name="Personal Assistant",
+            instructions="You are a helpful assistant. Use Composio tools to take action.",
+            tools=tools,
+        )
+
+        result = await Runner.run(starting_agent=agent, input="Summarize my emails from today")
+        print(result.final_output)
+
+
+asyncio.run(main())
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 from composio import Composio
@@ -137,11 +240,33 @@ result = Runner.run_sync(starting_agent=agent, input="Summarize my emails from t
 print(result.final_output)
 ```
 
+</details>
+
 Other Python providers: [`composio-openai`](https://github.com/ComposioHQ/composio/tree/next/python/providers/openai), [`composio-anthropic`](https://github.com/ComposioHQ/composio/tree/next/python/providers/anthropic), [`composio-claude-agent-sdk`](https://github.com/ComposioHQ/composio/tree/next/python/providers/claude_agent_sdk), [`composio-langchain`](https://github.com/ComposioHQ/composio/tree/next/python/providers/langchain), [`composio-langgraph`](https://github.com/ComposioHQ/composio/tree/next/python/providers/langgraph), [`composio-llamaindex`](https://github.com/ComposioHQ/composio/tree/next/python/providers/llamaindex), [`composio-crewai`](https://github.com/ComposioHQ/composio/tree/next/python/providers/crewai), [`composio-autogen`](https://github.com/ComposioHQ/composio/tree/next/python/providers/autogen), [`composio-gemini`](https://github.com/ComposioHQ/composio/tree/next/python/providers/gemini), [`composio-google`](https://github.com/ComposioHQ/composio/tree/next/python/providers/google), [`composio-google-adk`](https://github.com/ComposioHQ/composio/tree/next/python/providers/google_adk). Don't see yours? [Build a custom provider](https://docs.composio.dev/docs/providers/custom-providers).
 
 ## MCP
 
 Every session also exposes a hosted MCP endpoint. Pass `mcp=True` and point Claude, Cursor, or any MCP client at it:
+
+**Async Python**
+
+```python
+import asyncio
+
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        session = await composio.create(user_id="user_123", mcp=True)
+        print(session.mcp.url)      # MCP endpoint for this session
+        print(session.mcp.headers)  # auth headers for the endpoint
+
+
+asyncio.run(main())
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 from composio import Composio
@@ -153,11 +278,23 @@ print(session.mcp.url)      # MCP endpoint for this session
 print(session.mcp.headers)  # auth headers for the endpoint
 ```
 
+</details>
+
 See [sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp).
 
 ## Authentication
 
 Sessions manage connections for you by default; the agent walks the user through OAuth with the session's meta tools. To drive the flow yourself, authorize a toolkit from the session:
+
+**Async Python** (inside your coroutine)
+
+```python
+connection_request = await session.authorize("gmail")
+print(connection_request.redirect_url)  # send the user here to approve access
+await connection_request.wait_for_connection()
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 connection_request = session.authorize("gmail")
@@ -165,11 +302,43 @@ print(connection_request.redirect_url)  # send the user here to approve access
 connection_request.wait_for_connection()
 ```
 
+</details>
+
 See [authentication](https://docs.composio.dev/docs/authentication) for auth configs, custom OAuth apps, and connection lifecycle.
 
 ## Triggers
 
 Subscribe to events from connected apps (new email, new commit, and so on) and react to them:
+
+**Async Python**
+
+```python
+import asyncio
+
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        trigger = await composio.triggers.create(
+            slug="GITHUB_COMMIT_EVENT",
+            user_id="user_123",
+            trigger_config={"owner": "composiohq", "repo": "composio"},
+        )
+
+        subscription = await composio.triggers.subscribe()
+
+        @subscription.handle(trigger_id=trigger.trigger_id)
+        async def handle_event(data):
+            print("Event received:", data)
+
+        await subscription.wait_forever()
+
+
+asyncio.run(main())
+```
+
+<details><summary>Sync Python</summary>
 
 ```python
 from composio import Composio
@@ -190,6 +359,8 @@ def handle_event(data):
 
 subscription.wait_forever()
 ```
+
+</details>
 
 `subscribe()` streams events over a WebSocket for local development. In production, register a webhook URL and parse deliveries with `composio.triggers.parse()`. See [setting up triggers](https://docs.composio.dev/docs/setting-up-triggers/creating-triggers).
 

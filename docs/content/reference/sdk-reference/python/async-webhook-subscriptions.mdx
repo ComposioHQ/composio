@@ -1,0 +1,148 @@
+---
+title: "AsyncWebhookSubscriptions"
+description: "Async counterpart to WebhookSubscriptions."
+---
+
+## Methods
+
+### list()
+
+List webhook subscriptions for the project.
+
+```python signature
+async def list(*, limit: float | None = ..., cursor: str | None = ...) -> webhook_subscription_list_response.WebhookSubscriptionLis...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `limit?` | `float \| None` |
+| `cursor?` | `str \| None` |
+
+**Returns**
+
+`webhook_subscription_list_response.WebhookSubscriptionLis...`
+
+---
+
+### get()
+
+Retrieve a webhook subscription by id.
+
+```python signature
+async def get(id: str) -> webhook_subscription_retrieve_response.WebhookSubscriptio...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+
+**Returns**
+
+`webhook_subscription_retrieve_response.WebhookSubscriptio...`
+
+---
+
+### set()
+
+Create or update the project webhook subscription used for webhook delivery.
+
+```python signature
+async def set(*, webhook_url: str, enabled_events: Sequence[str] | None = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `webhook_url` | `str` |
+| `enabled_events?` | `Sequence[str] \| None` |
+| `version?` | `Union[WebhookVersion, str]` |
+
+**Returns**
+
+`WebhookSubscription`
+
+---
+
+### update()
+
+Update an existing webhook subscription. Omitted fields are preserved.
+
+```python signature
+async def update(id: str, *, webhook_url: str | None = ..., enabled_events: Sequence[str] | None = ..., version: Union[WebhookVersion, str, None] = ...) -> webhook_subscription_update_response.WebhookSubscriptionU...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+| `webhook_url?` | `str \| None` |
+| `enabled_events?` | `Sequence[str] \| None` |
+| `version?` | `Union[WebhookVersion, str, None]` |
+
+**Returns**
+
+`webhook_subscription_update_response.WebhookSubscriptionU...`
+
+---
+
+### delete()
+
+Delete a webhook subscription.
+
+```python signature
+async def delete(id: str) -> webhook_subscription_delete_response.WebhookSubscriptionD...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+
+**Returns**
+
+`webhook_subscription_delete_response.WebhookSubscriptionD...`
+
+---
+
+### rotate_secret()
+
+Rotate the signing secret of a webhook subscription.
+
+```python signature
+async def rotate_secret(id: str) -> webhook_subscription_rotate_secret_response.WebhookSubscr...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+
+**Returns**
+
+`webhook_subscription_rotate_secret_response.WebhookSubscr...`
+
+---
+
+### list_event_types()
+
+List the event types a subscription can be enabled for.
+
+```python signature
+async def list_event_types() -> webhook_subscription_list_event_types_response.WebhookSub...
+```
+
+**Returns**
+
+`webhook_subscription_list_event_types_response.WebhookSub...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/webhooks.py#L32)

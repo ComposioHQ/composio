@@ -17,7 +17,6 @@ from composio_client.types.file_create_presigned_url_response import (
 )
 from pydantic import BaseModel, ConfigDict, Field
 
-from composio.client import HttpClient
 from composio.client.types import Tool
 from composio.exceptions import (
     ErrorDownloadingFile,
@@ -46,6 +45,24 @@ from composio.utils.logging import WithLogger
 if t.TYPE_CHECKING:
     from .tools import ToolExecutionResponse
     from ._modifiers import BeforeFileUploadContextCallable  # noqa: F401
+
+
+class _PresignFiles(t.Protocol):
+    def create_presigned_url(
+        self,
+        *,
+        md5: str,
+        filename: str,
+        mimetype: str,
+        tool_slug: str,
+        toolkit_slug: str,
+    ) -> FileCreatePresignedURLResponse: ...
+
+
+class _FileClient(t.Protocol):
+    @property
+    def files(self) -> _PresignFiles: ...
+
 
 _DEFAULT_CHUNK_SIZE = 1024 * 1024
 _MAX_FILENAME_LENGTH = 100
@@ -259,7 +276,7 @@ def upload(url: str, file: Path, mimetype: t.Optional[str] = None) -> bool:
 
 
 def _request_presigned_upload(
-    client: HttpClient,
+    client: _FileClient,
     *,
     filename: str,
     md5: str,
@@ -474,7 +491,7 @@ def _fetch_file_from_url(
 
 
 def _upload_bytes_to_s3(
-    client: HttpClient,
+    client: _FileClient,
     filename: str,
     content: bytes,
     mimetype: str,
@@ -506,7 +523,7 @@ class FileUploadable(BaseModel):
     @classmethod
     def from_url(
         cls,
-        client: HttpClient,
+        client: _FileClient,
         url: str,
         tool: str,
         toolkit: str,
@@ -537,7 +554,7 @@ class FileUploadable(BaseModel):
     @classmethod
     def from_path(
         cls,
-        client: HttpClient,
+        client: _FileClient,
         file: t.Union[str, Path],
         tool: str,
         toolkit: str,
@@ -777,7 +794,7 @@ from composio.core.models._modifiers import (  # noqa: E402
 class FileHelper(WithLogger):
     def __init__(
         self,
-        client: HttpClient,
+        client: _FileClient,
         outdir: t.Optional[str] = None,
         *,
         sensitive_file_upload_protection: bool = True,
