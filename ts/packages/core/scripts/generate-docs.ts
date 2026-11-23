@@ -13,6 +13,9 @@ import { join, dirname, resolve } from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { z } from 'zod';
+import { Effect } from 'effect';
+import ts from 'typescript6';
+import { renderAuthoredExample } from '../../../../scripts/docs-reference-check/pages';
 
 // Paths (relative to ts/packages/core)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -221,6 +224,9 @@ const typeDocGraphNodeSchema = z.object({
     })
     .optional(),
   comment: typeDocCommentSchema.optional(),
+  sources: z
+    .array(z.object({ fileName: z.string(), line: z.number(), character: z.number() }))
+    .optional(),
   type: typeDocMemberTypeSchema.optional(),
   getSignature: z
     .object({
@@ -252,7 +258,19 @@ export interface AccessPath {
 }
 
 interface RankedAccessPath extends AccessPath {
-  memberPositions: number[];
+  sourceMembers: TypeDocGraphNode[];
+}
+
+function compareDeclaration(left: TypeDocGraphNode, right: TypeDocGraphNode): number {
+  const a = left.sources?.[0];
+  const b = right.sources?.[0];
+  if (a && b) {
+    const position =
+      a.fileName.localeCompare(b.fileName) || a.line - b.line || a.character - b.character;
+    if (position !== 0) return position;
+  }
+  // TypeDoc allocates reflection IDs before sorting its children for presentation.
+  return left.id - right.id;
 }
 
 function isDeprecatedComment(comment: TypeDocGraphNode['comment']): boolean {
@@ -293,10 +311,9 @@ function isBetterPath(candidate: RankedAccessPath, current: RankedAccessPath): b
   if (candidate.path.length !== current.path.length) {
     return candidate.path.length < current.path.length;
   }
-  for (let i = 0; i < candidate.memberPositions.length; i++) {
-    if (candidate.memberPositions[i] !== current.memberPositions[i]) {
-      return candidate.memberPositions[i] < current.memberPositions[i];
-    }
+  for (let i = 0; i < candidate.sourceMembers.length; i++) {
+    const order = compareDeclaration(candidate.sourceMembers[i], current.sourceMembers[i]);
+    if (order !== 0) return order < 0;
   }
   return false;
 }
@@ -314,7 +331,7 @@ export function buildAccessPaths(project: TypeDocGraphNode): Map<string, AccessP
   const best = new Map<string, RankedAccessPath>();
 
   const visit = (node: TypeDocGraphNode, from: RankedAccessPath, onPath: Set<number>): void => {
-    for (const [index, member] of (node.children ?? []).entries()) {
+    for (const member of node.children ?? []) {
       const targetId = referencedClassId(member);
       const target = targetId === undefined ? undefined : classes.get(targetId);
       if (!target || INTERNAL_CLASSES.has(target.name) || onPath.has(target.id)) continue;
@@ -324,7 +341,7 @@ export function buildAccessPaths(project: TypeDocGraphNode): Map<string, AccessP
       const candidate: RankedAccessPath = {
         path: [...from.path, member.name],
         deprecated: from.deprecated || memberDeprecated,
-        memberPositions: [...from.memberPositions, index],
+        sourceMembers: [...from.sourceMembers, member],
       };
       const current = best.get(target.name);
       if (!current || isBetterPath(candidate, current)) best.set(target.name, candidate);
@@ -333,7 +350,7 @@ export function buildAccessPaths(project: TypeDocGraphNode): Map<string, AccessP
     }
   };
 
-  visit(root, { path: [], deprecated: false, memberPositions: [] }, new Set([root.id]));
+  visit(root, { path: [], deprecated: false, sourceMembers: [] }, new Set([root.id]));
 
   return new Map(
     [...best.entries()]
@@ -1002,55 +1019,10 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
 // reference checker: only the generator writes `signature`, and authored
 // options such as `nocheck="<reason>"` pass through unchanged.
 const SIGNATURE_FENCE = '```typescript signature';
-const FENCE_LINE = /^(\s*)(`{3,}|~{3,})(.*)$/;
-const FENCE_OPTION = /(?<=^|\s)([^\s=]+)(?:=(?:"[^"]*"|'[^']*'|\S*))?/g;
-
-function fenceOptionNames(options: string): string[] {
-  return [...options.matchAll(FENCE_OPTION)].map(match => match[1]);
-}
-
-function normalizeOpeningFence(
-  indent: string,
-  marker: string,
-  info: string,
-  owner: string
-): string {
-  const trimmed = info.trim();
-  const languageEnd = trimmed.search(/\s/);
-  const language = languageEnd === -1 ? trimmed : trimmed.slice(0, languageEnd);
-  const options = languageEnd === -1 ? '' : trimmed.slice(languageEnd).trim();
-  if (fenceOptionNames(options).includes('signature')) {
-    throw new Error(
-      `${owner}: an @example fence uses the "signature" option, which only the docs generator writes. Remove it, or use nocheck="<reason>" to skip checking.`
-    );
-  }
-  const normalizedLanguage = language === 'ts' ? 'typescript' : language;
-  return `${indent}${marker}${[normalizedLanguage, options].filter(Boolean).join(' ')}`;
-}
-
 function renderExample(example: string, owner: string): string {
-  const body = example.trim();
-  const lines = body.split('\n');
-  if (!lines.some(line => FENCE_LINE.test(line))) {
-    return ['```typescript', body, '```'].join('\n');
-  }
-
-  let openMarker: string | undefined;
-  return lines
-    .map(line => {
-      const match = FENCE_LINE.exec(line);
-      if (!match) return line;
-      const [, indent, marker, info] = match;
-      if (openMarker === undefined) {
-        openMarker = marker;
-        return normalizeOpeningFence(indent, marker, info, owner);
-      }
-      if (marker[0] === openMarker[0] && marker.length >= openMarker.length && !info.trim()) {
-        openMarker = undefined;
-      }
-      return line;
-    })
-    .join('\n');
+  const rendered = Effect.runSync(Effect.result(renderAuthoredExample(example, owner)));
+  if (rendered._tag === 'Failure') throw new Error(rendered.failure.message);
+  return rendered.success;
 }
 
 function generateMethodMdx(method: MethodDoc, className: string): string {
@@ -1164,14 +1136,32 @@ function generateMethodMdx(method: MethodDoc, className: string): string {
 // The Usage section binds the class instance through its real accessor path
 // and calls nothing on it, so it stays valid for every class.
 function generateUsageMdx(access: AccessPath): string[] {
-  const accessor = ['composio', ...access.path].join('.');
-  const binding = access.path[access.path.length - 1];
+  const isIdentifier = (name: string) =>
+    /^[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u.test(name);
+  const accessor =
+    'composio' +
+    access.path
+      .map(name => (isIdentifier(name) ? `.${name}` : `[${JSON.stringify(name)}]`))
+      .join('');
+  const last = access.path[access.path.length - 1];
+  const token = ts
+    .createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, last)
+    .scan();
+  const conflicts = ['Composio', 'composio', 'eval', 'arguments'];
+  const binding =
+    isIdentifier(last) && token === ts.SyntaxKind.Identifier && !conflicts.includes(last)
+      ? last
+      : 'instance';
+  const delimiter = '`'.repeat(
+    Math.max(0, ...[...accessor.matchAll(/`+/g)].map(run => run[0].length)) + 1
+  );
+  const inlineAccessor = `${delimiter}${accessor}${delimiter}`;
   const lines = ['## Usage', ''];
   if (access.deprecated) {
-    lines.push(`The \`${accessor}\` property is deprecated.`);
+    lines.push(`The ${inlineAccessor} property is deprecated.`);
     lines.push('');
   }
-  lines.push(`Access this class through the \`${accessor}\` property:`);
+  lines.push(`Access this class through the ${inlineAccessor} property:`);
   lines.push('');
   lines.push('```typescript');
   lines.push(`import { Composio } from '@composio/core';`);
@@ -1523,7 +1513,8 @@ const tools = await composio.tools.get('user-123', {
 // Execute a tool
 const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   userId: 'user-123',
-  arguments: { owner: 'composio' }
+  arguments: { owner: 'composio' },
+  version: '20250909_00'
 });
 \`\`\`
 `;

@@ -1,6 +1,8 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Effect } from 'effect';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildAccessPaths,
@@ -17,6 +19,10 @@ import {
   simplifyTypeForSignature,
   simplifyTypeForTable,
 } from '../../scripts/generate-docs';
+
+import { parsePage } from '../../../../../scripts/docs-reference-check/pages';
+import { Composio } from '../../src/composio';
+import { toolMocks } from '../utils/mocks/data.mock';
 
 const KIND = { Module: 2, Class: 128, Property: 1024, Accessor: 262144 } as const;
 
@@ -518,4 +524,133 @@ writeFileSync(outputJson, args.join('\\n'));
     expect(args.some(arg => arg.includes('npx'))).toBe(false);
     expect(args.slice(-2)).toEqual(['src/composio.ts', 'src/models/a b.ts']);
   });
+});
+
+describe('access path ranking', () => {
+  const rank = (members: unknown[], children: unknown[] = []) =>
+    buildAccessPaths(
+      parseTypeDocGraph({
+        id: 0,
+        name: 'SDK',
+        kind: 1,
+        children: [
+          classNode(1, 'Composio', members),
+          classNode(2, 'Target', children),
+          classNode(3, 'Other'),
+        ],
+      })
+    );
+
+  it('breaks equal length ties in declaration order even when TypeDoc sorts alphabetically', () => {
+    const paths = rank([
+      property(20, 'alphabeticallyFirst', reference(2), {
+        sources: [{ fileName: 'src/composio.ts', line: 50, character: 2 }],
+      }),
+      property(21, 'declaredFirst', reference(2), {
+        sources: [{ fileName: 'src/composio.ts', line: 10, character: 2 }],
+      }),
+    ]);
+    expect(paths.get('Target')?.path).toEqual(['declaredFirst']);
+  });
+
+  it('picks a longer non-deprecated path over a shorter deprecated path and handles cycles', () => {
+    const paths = rank(
+      [
+        property(20, 'old', reference(3), { comment: deprecatedComment }),
+        property(21, 'target', reference(2)),
+      ],
+      [property(22, 'cycle', reference(1)), property(23, 'other', reference(3))]
+    );
+    expect(paths.get('Other')).toEqual({ path: ['target', 'other'], deprecated: false });
+    expect(paths.has('Composio')).toBe(false);
+  });
+
+  it('uses the shortest public instance path when neither path is deprecated', () => {
+    const paths = rank(
+      [
+        property(20, 'target', reference(2)),
+        property(21, 'privateOther', reference(3), { flags: { isPrivate: true } }),
+        property(22, 'protectedOther', reference(3), { flags: { isProtected: true } }),
+        property(23, 'staticOther', reference(3), { flags: { isStatic: true } }),
+        property(24, 'other', reference(3)),
+      ],
+      [property(25, 'nestedOther', reference(3))]
+    );
+    expect(paths.get('Other')?.path).toEqual(['other']);
+  });
+
+  it('renders a quoted property with bracket access and a valid local binding', () => {
+    const access = rank([property(20, 'webhook-endpoints', reference(2))]).get('Target');
+    expect(generateClassMdx(emptyClassDoc('Target'), access)).toContain(
+      usageBlock('composio["webhook-endpoints"]', 'instance')
+    );
+  });
+});
+
+describe('authored reference fence validation', () => {
+  it.each([
+    ['unlabelled', '```\nconst x = 1;\n```', /language/],
+    ['mixed-case', '```TypeScript\nconst x = 1;\n```', /language/],
+    ['blockquote signature', '> ```typescript signature\n> const x = 1;\n> ```', /signature/],
+    ['unclosed', '```typescript\nconst x = 1;', /unclosed/i],
+    ['invalid metadata', '```ts nocheck=""\nconst x = 1;\n```', /non-empty reason/],
+  ])('rejects an %s fence even after a valid fence', (_, invalid, message) => {
+    expect(() =>
+      classMdxWithMethod(['```typescript\nconst valid = true;\n```\n\n' + invalid])
+    ).toThrow(message);
+  });
+
+  it('preserves a checked fence inside a blockquote', () => {
+    const quoted = '> ```typescript\n> const valid = true;\n> ```';
+    const page = classMdxWithMethod([quoted]);
+    const fences = Effect.runSync(parsePage('tools.mdx', page));
+    expect(fences.map(({ meta, code }) => ({ meta, code }))).toEqual([
+      { meta: 'signature', code: 'async execute(slug: string): Promise<string>' },
+      { meta: null, code: 'const valid = true;' },
+    ]);
+  });
+});
+
+it('executes the generated Quick Start with the real SDK and a stub client', async () => {
+  const reference = await readFile(
+    new URL(
+      '../../../../../docs/content/reference/sdk-reference/typescript/index.mdx',
+      import.meta.url
+    ),
+    'utf8'
+  );
+  const example = /## Quick Start\s+```typescript\n([\s\S]*?)\n```/.exec(reference)?.[1];
+  expect(example).toContain("import { Composio } from '@composio/core';");
+  const tool = {
+    ...toolMocks.rawTool,
+    slug: 'GITHUB_GET_REPOS',
+    toolkit: { ...toolMocks.rawTool.toolkit, slug: 'github' },
+  };
+  const execute = vi.fn().mockResolvedValue(toolMocks.rawToolExecuteResponse);
+  const list = vi.fn().mockResolvedValue({ items: [tool], total_pages: 1, current_page: 1 });
+  const retrieve = vi.fn().mockResolvedValue(tool);
+  class TestComposio extends Composio {
+    constructor(config: ConstructorParameters<typeof Composio>[0]) {
+      super(config);
+      vi.spyOn(this.client.tools, 'list').mockImplementation(list);
+      vi.spyOn(this.client.tools, 'retrieve').mockImplementation(retrieve);
+      vi.spyOn(this.client.tools, 'execute').mockImplementation(execute);
+    }
+  }
+
+  const code = example?.replace("import { Composio } from '@composio/core';", '');
+  await runInNewContext(`(async () => {\n${code}\n})()`, {
+    Composio: TestComposio,
+    process: { env: { COMPOSIO_API_KEY: 'test-key' } },
+  });
+  expect(list).toHaveBeenCalledOnce();
+  expect(retrieve).toHaveBeenCalledOnce();
+  expect(execute.mock.calls[0]?.slice(0, 2)).toEqual([
+    'GITHUB_GET_REPOS',
+    expect.objectContaining({
+      arguments: { owner: 'composio' },
+      user_id: 'user-123',
+      version: '20250909_00',
+    }),
+  ]);
 });
