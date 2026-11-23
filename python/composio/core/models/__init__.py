@@ -24,6 +24,15 @@ from .experimental import (
 from .keyring import Keyring
 from .logs import Logs
 from .mcp import MCP
+from .session_webhooks import (
+    SessionWebhookAfterExecuteEvent,
+    SessionWebhookAfterExecuteResponse,
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+    SessionWebhookEvent,
+    SessionWebhookEventType,
+    SessionWebhooks,
+)
 from .tool_router import ToolRouter
 from .tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .tool_router_session import (
@@ -81,6 +90,13 @@ __all__ = [
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",
+    "SessionWebhookAfterExecuteEvent",
+    "SessionWebhookAfterExecuteResponse",
+    "SessionWebhookBeforeExecuteEvent",
+    "SessionWebhookBeforeExecuteResponse",
+    "SessionWebhookEvent",
+    "SessionWebhookEventType",
+    "SessionWebhooks",
     "SingleConnectedAccountDetailedResponse",
     "ToolRouter",
     "ToolRouterSession",

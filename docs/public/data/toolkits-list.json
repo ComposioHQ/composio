@@ -225,14 +225,6 @@
     "triggerCount": 0
   },
   {
-    "slug": "composio_search",
-    "name": "Composio Search",
-    "logo": "https://logos.composio.dev/api/composio_search",
-    "category": "ai agents",
-    "toolCount": 22,
-    "triggerCount": 0
-  },
-  {
     "slug": "reddit",
     "name": "Reddit",
     "logo": "https://logos.composio.dev/api/reddit",
@@ -512,14 +504,6 @@
     "logo": "https://logos.composio.dev/api/googlemeet",
     "category": "video conferencing",
     "toolCount": 25,
-    "triggerCount": 0
-  },
-  {
-    "slug": "text_to_pdf",
-    "name": "Text to PDF",
-    "logo": "https://logos.composio.dev/api/text_to_pdf",
-    "category": "documents",
-    "toolCount": 6,
     "triggerCount": 0
   },
   {
@@ -9208,7 +9192,7 @@
     "name": "Microsoft 365",
     "logo": "https://logos.composio.dev/api/microsoft_365",
     "category": "email",
-    "toolCount": 1000,
+    "toolCount": 1208,
     "triggerCount": 0
   },
   {
@@ -11125,6 +11109,14 @@
     "logo": "https://logos.composio.dev/api/postpone",
     "category": "social media marketing",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "predicthq",
+    "name": "PredictHQ",
+    "logo": "https://logos.composio.dev/api/predicthq",
+    "category": "analytics",
+    "toolCount": 62,
     "triggerCount": 0
   },
   {
@@ -14864,6 +14856,14 @@
     "logo": "https://logos.composio.dev/api/zixflow",
     "category": "crm",
     "toolCount": 7,
+    "triggerCount": 0
+  },
+  {
+    "slug": "zoho_analytics",
+    "name": "Zoho Analytics",
+    "logo": "https://logos.composio.dev/api/zoho_analytics",
+    "category": "analytics",
+    "toolCount": 198,
     "triggerCount": 0
   },
   {
