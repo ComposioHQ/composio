@@ -1,10 +1,5 @@
 import { Data, Effect, Schema } from 'effect';
 
-/**
- * What the checker does with one fence, decided by the options after its language:
- * ```typescript signature``` marks a generated method signature, and
- * ```typescript nocheck="reason"``` opts an authored example out with a stated reason.
- */
 export type FenceMode =
   | { readonly _tag: 'Checked' }
   | { readonly _tag: 'Signature' }
@@ -29,7 +24,6 @@ const FenceOptions = Schema.Struct({
 
 const OPTION = /\s*([A-Za-z][\w-]*)(?:="([^"]*)")?\s*/y;
 
-/** Splits a fence's meta string into `key` flags and `key="value"` options. */
 const tokenize = (meta: string) => {
   const options: Record<string, string | true> = {};
   OPTION.lastIndex = 0;
@@ -46,7 +40,6 @@ const tokenize = (meta: string) => {
   return Effect.succeed(options);
 };
 
-/** Decodes a fence's options; unknown options, an empty reason or both modes at once fail. */
 export const decodeFenceOptions = (
   meta: string | null | undefined
 ): Effect.Effect<FenceMode, FenceOptionError> =>

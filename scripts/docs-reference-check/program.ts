@@ -21,7 +21,6 @@ const readJson = (path: string): unknown => {
   return config;
 };
 
-/** The declaration file an `exports` entry points at, following its `default` conditions. */
 const exportedTypes = (target: unknown): string | undefined =>
   typeof target === 'string'
     ? target
@@ -29,7 +28,6 @@ const exportedTypes = (target: unknown): string | undefined =>
       ? exportedTypes(target.types ?? target.default)
       : undefined;
 
-/** Maps each subpath export from its built declarations (`dist/x.d.mts`) back to `src/x.ts`. */
 const exportPaths = (name: string, root: string) => {
   const manifest = readJson(`${root}/package.json`);
   const exports = isRecord(manifest) && isRecord(manifest.exports) ? manifest.exports : {};
@@ -45,7 +43,6 @@ const exportPaths = (name: string, root: string) => {
   return paths;
 };
 
-/** Core's `#` imports, as its own tsconfig maps them to source. */
 const corePrivateImportPaths = (coreRoot: string) => {
   const tsconfig = readJson(`${coreRoot}/tsconfig.json`);
   const paths =
@@ -64,7 +61,6 @@ const corePrivateImportPaths = (coreRoot: string) => {
   );
 };
 
-/** Compiler options for reference examples: strict, and `@composio/core` resolved to workspace source. */
 export const referenceCompilerOptions = (coreRoot: string): ts.CompilerOptions => ({
   target: ts.ScriptTarget.ES2022,
   module: ts.ModuleKind.ESNext,
@@ -87,7 +83,6 @@ export const referenceCompilerOptions = (coreRoot: string): ts.CompilerOptions =
   },
 });
 
-/** A compiler host that serves the in-memory example modules and hides the source packages' builds. */
 export const createReferenceHost = (
   options: ts.CompilerOptions,
   coreRoot: string,
@@ -117,13 +112,10 @@ export const createReferenceHost = (
 
 export interface Compilation {
   readonly program: ts.Program;
-  /** Syntactic and semantic diagnostics of each example module. */
   readonly fileDiagnostics: ReadonlyMap<string, ReadonlyArray<ts.Diagnostic>>;
-  /** Option, global and file-processing diagnostics that belong to no example. */
   readonly programDiagnostics: ReadonlyArray<ts.Diagnostic>;
 }
 
-/** Type-checks every example module in one program; `oldProgram` lets a second pass reuse the first. */
 export const compile = (
   files: ReadonlyMap<string, string>,
   options: ts.CompilerOptions,

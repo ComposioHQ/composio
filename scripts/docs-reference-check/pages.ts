@@ -4,7 +4,6 @@ import remarkGfm from 'remark-gfm';
 import { Data, Effect } from 'effect';
 import { visit } from 'unist-util-visit';
 
-/** Where a fence sits: the page, its opening line, the page's class, and the nearest headings. */
 export interface FenceLocation {
   readonly page: string;
   readonly line: number;
@@ -32,7 +31,9 @@ const LANGUAGES: Readonly<Record<string, 'ts' | 'tsx'>> = {
   tsx: 'tsx',
 };
 
-// The docs site parses reference pages with this processor (docs/lib/example-document.ts).
+// Mirrors the processor in docs/lib/example-document.ts so fences split exactly as the
+// docs site renders them; that module is not imported because its other dependencies
+// are installed only under docs/.
 const processor = createProcessor({ format: 'mdx', remarkPlugins: [remarkGfm] });
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
@@ -41,7 +42,6 @@ const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
 const withoutFrontmatter = (source: string) =>
   source.replace(FRONTMATTER, frontmatter => frontmatter.replace(/[^\n]/g, ' '));
 
-/** Generated pages carry the class name as the frontmatter `title`. */
 const pageTitle = (source: string) => {
   const title = FRONTMATTER.exec(source)?.[1]?.match(/^title:\s*(.+?)\s*$/m)?.[1];
   if (title === undefined) return null;
@@ -57,7 +57,6 @@ const lineOfCause = (cause: unknown) => {
   return line === undefined ? null : Number(line);
 };
 
-/** Collects the TypeScript fences of one page with the class and headings around each. */
 export const parsePage = (page: string, source: string) =>
   Effect.gen(function* () {
     const tree: Root = yield* Effect.try({

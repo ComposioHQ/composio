@@ -247,15 +247,12 @@ export function parseTypeDocGraph(json: unknown): TypeDocGraphNode {
 
 /** How a documented class is reached from a `Composio` instance. */
 export interface AccessPath {
-  /** Property names after `composio`, e.g. `['webhooks', 'endpoints']`. */
   path: string[];
-  /** True when any property along the path carries `@deprecated`. */
   deprecated: boolean;
 }
 
 interface RankedAccessPath extends AccessPath {
-  /** Member positions along the path, for the final tie-break. */
-  order: number[];
+  memberPositions: number[];
 }
 
 function isDeprecatedComment(comment: TypeDocGraphNode['comment']): boolean {
@@ -275,7 +272,6 @@ function collectClasses(project: TypeDocGraphNode): Map<number, TypeDocGraphNode
   return classes;
 }
 
-// The class a public instance property or getter points at, if any.
 function referencedClassId(member: TypeDocGraphNode): number | undefined {
   if (member.flags?.isPrivate || member.flags?.isProtected || member.flags?.isStatic) {
     return undefined;
@@ -297,8 +293,10 @@ function isBetterPath(candidate: RankedAccessPath, current: RankedAccessPath): b
   if (candidate.path.length !== current.path.length) {
     return candidate.path.length < current.path.length;
   }
-  for (let i = 0; i < candidate.order.length; i++) {
-    if (candidate.order[i] !== current.order[i]) return candidate.order[i] < current.order[i];
+  for (let i = 0; i < candidate.memberPositions.length; i++) {
+    if (candidate.memberPositions[i] !== current.memberPositions[i]) {
+      return candidate.memberPositions[i] < current.memberPositions[i];
+    }
   }
   return false;
 }
@@ -326,7 +324,7 @@ export function buildAccessPaths(project: TypeDocGraphNode): Map<string, AccessP
       const candidate: RankedAccessPath = {
         path: [...from.path, member.name],
         deprecated: from.deprecated || memberDeprecated,
-        order: [...from.order, index],
+        memberPositions: [...from.memberPositions, index],
       };
       const current = best.get(target.name);
       if (!current || isBetterPath(candidate, current)) best.set(target.name, candidate);
@@ -335,7 +333,7 @@ export function buildAccessPaths(project: TypeDocGraphNode): Map<string, AccessP
     }
   };
 
-  visit(root, { path: [], deprecated: false, order: [] }, new Set([root.id]));
+  visit(root, { path: [], deprecated: false, memberPositions: [] }, new Set([root.id]));
 
   return new Map(
     [...best.entries()]
@@ -1011,8 +1009,6 @@ function fenceOptionNames(options: string): string[] {
   return [...options.matchAll(FENCE_OPTION)].map(match => match[1]);
 }
 
-// Normalizes an authored opening fence: `ts` becomes `typescript`, and the
-// options after the language are kept as written.
 function normalizeOpeningFence(
   indent: string,
   marker: string,
@@ -1032,8 +1028,6 @@ function normalizeOpeningFence(
   return `${indent}${marker}${[normalizedLanguage, options].filter(Boolean).join(' ')}`;
 }
 
-// An example that contains fences is emitted as written (prose and every
-// fence); a fence-less example is wrapped once.
 function renderExample(example: string, owner: string): string {
   const body = example.trim();
   const lines = body.split('\n');

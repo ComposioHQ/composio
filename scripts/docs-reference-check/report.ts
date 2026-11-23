@@ -23,7 +23,6 @@ const formatViolation = (violation: Violation) => {
   return `${place}${heading === '' ? '' : ` ${heading}`} [${violation.rule}] ${violation.message}`;
 };
 
-/** The human-readable report: violations, then counts, then every opt-out with its reason. */
 export const formatText = (result: CheckResult) => {
   const lines = result.violations.map(formatViolation);
   if (lines.length > 0) lines.push('');
@@ -40,15 +39,3 @@ export const formatText = (result: CheckResult) => {
   );
   return lines.join('\n');
 };
-
-export const formatJson = (result: CheckResult) =>
-  JSON.stringify(
-    {
-      checked: result.checked,
-      signatures: result.signatures,
-      optedOut: result.optedOut,
-      violations: result.violations,
-    },
-    null,
-    2
-  );

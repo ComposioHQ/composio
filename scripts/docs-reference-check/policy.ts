@@ -13,7 +13,6 @@ export type ViolationRule =
   | 'checker'
   | 'program';
 
-/** One failure. Program-level failures have no page, line or headings. */
 export interface Violation {
   readonly page: string | null;
   readonly line: number | null;
@@ -74,11 +73,11 @@ export const withoutBlanketSuppressions = (source: string) => {
   return { code, lines: comments.map(({ start }) => source.slice(0, start).split('\n').length) };
 };
 
-/** Pages that document the session object, where examples may use an undeclared `session`. */
+type FragmentName = 'composio' | 'session';
+
 const SESSION_PAGES = new Set(['session.mdx', 'session-files.mdx']);
 
-/** The names an example may leave undeclared on a page; every other free name must be declared. */
-const fragmentNames = (page: string) =>
+const fragmentNames = (page: string): ReadonlyArray<FragmentName> =>
   SESSION_PAGES.has(page.slice(page.lastIndexOf('/') + 1)) ? ['composio', 'session'] : ['composio'];
 
 const unusedName = (code: string, name: string) => {
@@ -88,7 +87,7 @@ const unusedName = (code: string, name: string) => {
 };
 
 /** A one-line, typed declaration for each fragment name; never `any`. */
-const preludeFor = (code: string, names: ReadonlySet<string>) => {
+const preludeFor = (code: string, names: ReadonlySet<FragmentName>) => {
   const parts: string[] = [];
   if (names.has('composio')) {
     const composio = unusedName(code, '__ReferenceComposio');
@@ -120,14 +119,13 @@ const ruleFor = (code: number): ViolationRule =>
 const messageOf = (diagnostic: ts.Diagnostic) =>
   `${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')} [TS${diagnostic.code}]`;
 
-/** The allowlisted names the compiler reports unresolved in one example. */
 const unresolvedFragmentNames = (
   compilation: Compilation,
   fileName: string,
-  allowed: ReadonlyArray<string>
+  allowed: ReadonlyArray<FragmentName>
 ) => {
   const sourceFile = compilation.program.getSourceFile(fileName);
-  const names = new Set<string>();
+  const names = new Set<FragmentName>();
   for (const diagnostic of compilation.fileDiagnostics.get(fileName) ?? []) {
     if (!UNRESOLVED_NAME.has(diagnostic.code) || diagnostic.start === undefined || !sourceFile)
       continue;
@@ -135,7 +133,8 @@ const unresolvedFragmentNames = (
       diagnostic.start,
       diagnostic.start + (diagnostic.length ?? 0)
     );
-    if (allowed.includes(name)) names.add(name);
+    const fragment = allowed.find(candidate => candidate === name);
+    if (fragment !== undefined) names.add(fragment);
   }
   return names;
 };

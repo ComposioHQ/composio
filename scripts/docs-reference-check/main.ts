@@ -11,12 +11,11 @@ import {
   type Snippet,
   type Violation,
 } from './policy';
-import { formatJson, formatText, type CheckResult, type OptOut } from './report';
+import { formatText, type CheckResult, type OptOut } from './report';
 
 export type { CheckResult } from './report';
 
 export interface CheckOptions {
-  /** Merged over the reference compiler options. */
   readonly compilerOptions?: ts.CompilerOptions;
 }
 
@@ -32,10 +31,6 @@ class ReferenceCheckFailed extends Data.TaggedError('ReferenceCheckFailed')<{
 const byPosition = (left: Violation, right: Violation) =>
   (left.page ?? '').localeCompare(right.page ?? '') || (left.line ?? 0) - (right.line ?? 0);
 
-/**
- * Type-checks every TypeScript fence on the `.mdx` pages under `directory` against workspace
- * `@composio/core` source. Page paths in the result are relative to the working directory.
- */
 export const checkReferencePages = (directory: string, options: CheckOptions = {}) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -115,7 +110,7 @@ const main = Effect.gen(function* () {
   }
   const path = yield* Path.Path;
   const result = yield* checkReferencePages(rest[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY));
-  yield* Console.log(json ? formatJson(result) : formatText(result));
+  yield* Console.log(json ? JSON.stringify(result, null, 2) : formatText(result));
   if (result.violations.length > 0) {
     return yield* new ReferenceCheckFailed({
       message: `${result.violations.length} violation(s) on the TypeScript reference pages`,
