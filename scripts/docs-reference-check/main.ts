@@ -74,7 +74,7 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
         if (mode?._tag === 'Signature') signatures++;
         if (mode?._tag === 'OptedOut') optedOut.push({ ...fence.location, reason: mode.reason });
         if (mode?._tag !== 'Checked') continue;
-        const { code, lines } = withoutBlanketSuppressions(fence.code);
+        const { code, lines } = withoutBlanketSuppressions(fence.code, fence.extension);
         for (const line of lines) {
           violations.push(
             violationAt(
@@ -87,6 +87,18 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
         }
         snippets.push({ location: fence.location, extension: fence.extension, code });
       }
+    }
+
+    if (snippets.length === 0) {
+      violations.push({
+        page: null,
+        line: null,
+        className: null,
+        section: null,
+        method: null,
+        rule: 'program',
+        message: `No checkable TypeScript fences found under ${path.relative(cwd, root) || '.'}`,
+      });
     }
 
     const coreRoot = path.resolve(REPO_ROOT, 'ts/packages/core');

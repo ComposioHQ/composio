@@ -44,28 +44,41 @@ export const violationAt = (
 const SUPPRESSION = /^[/*\s]*@(?:noErrors(?:Cutted)?|noCheck|ts-nocheck)\b/;
 
 /**
- * Finds blanket suppression comments with the TypeScript scanner, so string literals never count,
- * and blanks them so the fence is still checked. Lines are 1-based within the fence.
+ * Finds blanket suppression comments in the trivia around the parsed tokens, so text inside string,
+ * template, regular expression and JSX text tokens never counts, and blanks them so the fence is
+ * still checked. Lines are 1-based within the fence.
  */
-export const withoutBlanketSuppressions = (source: string) => {
-  const scanner = ts.createScanner(
+export const withoutBlanketSuppressions = (source: string, extension: 'ts' | 'tsx' = 'ts') => {
+  const sourceFile = ts.createSourceFile(
+    `fence.${extension}`,
+    source,
     ts.ScriptTarget.Latest,
-    false,
-    ts.LanguageVariant.Standard,
-    source
+    true,
+    extension === 'tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS
   );
+  const tokens: ts.Node[] = [];
+  const collectTokens = (node: ts.Node) => {
+    const children = node.getChildren(sourceFile).filter(child => !ts.isJSDoc(child));
+    if (children.length === 0) tokens.push(node);
+    else children.forEach(collectTokens);
+  };
+  collectTokens(sourceFile);
+  // A comment scan that starts next to JSX text reads that text as trivia; real comments never
+  // start inside a token.
+  const insideToken = (position: number) =>
+    tokens.some(token => position >= token.getStart(sourceFile) && position < token.end);
+  const starts = new Set<number>();
   const comments: { start: number; end: number }[] = [];
-  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (
-      token !== ts.SyntaxKind.SingleLineCommentTrivia &&
-      token !== ts.SyntaxKind.MultiLineCommentTrivia
-    ) {
-      continue;
-    }
-    if (SUPPRESSION.test(scanner.getTokenText())) {
-      comments.push({ start: scanner.getTokenStart(), end: scanner.getTokenEnd() });
-    }
+  const collect = (start: number, end: number) => {
+    if (starts.has(start) || insideToken(start)) return;
+    starts.add(start);
+    if (SUPPRESSION.test(source.slice(start, end))) comments.push({ start, end });
+  };
+  for (const token of tokens) {
+    ts.forEachLeadingCommentRange(source, token.pos, collect);
+    ts.forEachTrailingCommentRange(source, token.end, collect);
   }
+  comments.sort((left, right) => left.start - right.start);
   let code = source;
   for (const { start, end } of comments.toReversed()) {
     code = code.slice(0, start) + code.slice(start, end).replace(/[^\r\n]/g, ' ') + code.slice(end);

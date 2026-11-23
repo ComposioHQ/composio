@@ -7,6 +7,7 @@ import {
   type CheckOptions,
   type CheckResult,
 } from '../scripts/docs-reference-check/main';
+import { withoutBlanketSuppressions } from '../scripts/docs-reference-check/policy';
 import {
   createReferenceHost,
   referenceCompilerOptions,
@@ -17,6 +18,7 @@ const CORE = `${REPO}/ts/packages/core`;
 const FIXTURES = 'test/fixtures/docs-reference-check';
 const PAGES = `${FIXTURES}/pages`;
 const REPORT = `${FIXTURES}/report`;
+const NO_FENCES = `${FIXTURES}/no-fences`;
 const TIMEOUT = 120_000;
 
 const check = (directory: string, options?: CheckOptions) =>
@@ -147,6 +149,25 @@ describe('reference checker over fixture pages', () => {
   });
 });
 
+describe('blanket suppression detection', () => {
+  test('a block comment and a noCheck comment are rejected and blanked', () => {
+    const source = '/* @ts-nocheck */\nconst a = 1;\n// @noCheck\nconst b = 2;';
+    const { code, lines } = withoutBlanketSuppressions(source);
+    expect(lines).toEqual([1, 3]);
+    expect(code).toBe(' '.repeat(17) + '\nconst a = 1;\n' + ' '.repeat(11) + '\nconst b = 2;');
+  });
+
+  test('a string literal containing the marker is not a comment', () => {
+    const source = "const s = '// @ts-nocheck';";
+    expect(withoutBlanketSuppressions(source)).toEqual({ code: source, lines: [] });
+  });
+
+  test('a template literal with the marker after a substitution is not a comment', () => {
+    const source = 'const s = `a ${1} // @ts-nocheck`;';
+    expect(withoutBlanketSuppressions(source)).toEqual({ code: source, lines: [] });
+  });
+});
+
 describe('module resolution', () => {
   const options = referenceCompilerOptions(CORE);
   const host = createReferenceHost(options, CORE, new Map());
@@ -171,6 +192,18 @@ test(
     expect(program).toHaveLength(1);
     expect(program[0]).toMatchObject({ page: null, line: null });
     expect(program[0]?.message).toContain('composio-reference-check-missing-types');
+  },
+  TIMEOUT
+);
+
+test(
+  'a run that checks no fences fails and names the directory',
+  async () => {
+    const result = await check(NO_FENCES);
+    expect(result.checked).toBe(0);
+    expect(result.violations).toHaveLength(1);
+    expect(result.violations[0]).toMatchObject({ page: null, line: null, rule: 'program' });
+    expect(result.violations[0]?.message).toContain(NO_FENCES);
   },
   TIMEOUT
 );
