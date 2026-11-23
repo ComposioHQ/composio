@@ -490,7 +490,7 @@ test(
 describe('the SDK reference drift workflow', () => {
   type Step = { name?: string; id?: string; if?: string; run?: string };
   type Workflow = {
-    on: { push: { paths: string[] }; pull_request: Record<string, unknown> };
+    on: { push: Record<string, unknown>; pull_request: Record<string, unknown> };
     jobs: { drift: { name: string; steps: Step[] } };
   };
   const workflow = async () =>
@@ -498,26 +498,14 @@ describe('the SDK reference drift workflow', () => {
       await Bun.file(`${REPO}/.github/workflows/docs-sdk-reference-drift.yml`).text()
     ) as Workflow;
   const scopeStep = (steps: Step[]) => steps.find(step => step.id === 'scope');
-  /** The quoted entries of the scope step's `inputs=( ... )` array. */
-  const scopeInputs = (run: string) =>
-    [...(/inputs=\(([\s\S]*?)\n\s*\)/.exec(run)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
-      match => match[1]
-    );
 
-  test('reports on every pull request, so next can require it', async () => {
+  test('reports on every pull request and uses one scope step for push and pull_request', async () => {
     const { on, jobs } = await workflow();
     expect(jobs.drift.name).toBe('SDK reference drift');
     // A path filter would leave the required check pending forever on unrelated PRs.
     expect(on.pull_request).not.toHaveProperty('paths');
     expect(on.pull_request).not.toHaveProperty('paths-ignore');
-  });
-
-  test('scopes pull requests by the same inputs as the push filter', async () => {
-    const { on, jobs } = await workflow();
-    const scope = scopeStep(jobs.drift.steps);
-    expect(scope?.run).toBeDefined();
-    expect(scopeInputs(scope?.run ?? '')).toEqual(on.push.paths);
-    expect(on.push.paths.length).toBeGreaterThan(0);
+    expect(on.push).not.toHaveProperty('paths');
   });
 
   test('skips every step after the scope decision when no input changed', async () => {
@@ -540,23 +528,24 @@ describe('the SDK reference drift workflow', () => {
         await mkdir(join(repo, path, '..'), { recursive: true });
         await writeFile(join(repo, path), text);
       };
-      const decide = async (path: string) => {
+      const decide = async (path: string, eventName: 'pull_request' | 'push' = 'pull_request') => {
         git('checkout', '-q', '-B', 'base', 'main');
         git('checkout', '-q', '-B', 'pr');
         await write(path, String(Math.random()));
         git('add', '-A');
         git('commit', '-q', '-m', 'change');
         const base = git('rev-parse', 'main').stdout.toString().trim();
-        const output = join(repo, '.output');
+        const output = `${repo}.output`;
         await writeFile(output, '');
         // The workflow fetches the base from origin; here the base commit is already local.
-        const script = run.replace(/^\s*git fetch .*$/m, ':');
+        const script = run.replace(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/, 'true');
         const result = Bun.spawnSync(['bash', '-c', script], {
           cwd: repo,
           env: {
             ...process.env,
-            EVENT_NAME: 'pull_request',
-            BASE_SHA: base,
+            EVENT_NAME: eventName,
+            PR_BASE_SHA: eventName === 'pull_request' ? base : '',
+            PUSH_BEFORE_SHA: eventName === 'push' ? base : '',
             GITHUB_OUTPUT: output,
           },
         });
@@ -580,7 +569,10 @@ describe('the SDK reference drift workflow', () => {
         expect(await decide('docs/content/docs/quickstart.mdx')).toBe('affected=false');
         // Only the root manifest is an input, not every package.json.
         expect(await decide('ts/packages/cli/package.json')).toBe('affected=false');
+        expect(await decide('ts/packages/core/src/models/Tools.ts', 'push')).toBe('affected=true');
+        expect(await decide('ts/packages/cli/src/index.ts', 'push')).toBe('affected=false');
       } finally {
+        await rm(`${repo}.output`, { force: true });
         await rm(repo, { recursive: true, force: true });
       }
     },

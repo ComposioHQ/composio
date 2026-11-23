@@ -140,7 +140,7 @@ jobs:
   reference:
     name: SDK candidate reference
     needs: [select-candidates, candidate]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.select-candidates.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

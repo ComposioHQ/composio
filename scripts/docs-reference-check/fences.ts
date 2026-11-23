@@ -1,4 +1,4 @@
-import { Data, Effect, Schema } from 'effect';
+import { Data, Effect } from 'effect';
 
 export type FenceMode =
   | { readonly _tag: 'Checked' }
@@ -7,6 +7,7 @@ export type FenceMode =
 
 const CHECKED: FenceMode = { _tag: 'Checked' };
 const SIGNATURE: FenceMode = { _tag: 'Signature' };
+const NOCHECK = /^nocheck="([^"]*)"$/;
 
 export class FenceOptionError extends Data.TaggedError('FenceOptionError')<{
   readonly message: string;
@@ -15,45 +16,21 @@ export class FenceOptionError extends Data.TaggedError('FenceOptionError')<{
 const optionError = (meta: string, problem: string) =>
   new FenceOptionError({ message: `Invalid fence options \`${meta}\`: ${problem}` });
 
-const FenceOptions = Schema.Struct({
-  signature: Schema.optionalKey(Schema.Literal(true)),
-  nocheck: Schema.optionalKey(
-    Schema.String.check(Schema.isPattern(/\S/, { message: 'nocheck needs a non-empty reason' }))
-  ),
-});
-
-const OPTION = /\s*([A-Za-z][\w-]*)(?:="([^"]*)")?\s*/y;
-
-const tokenize = (meta: string) => {
-  const options: Record<string, string | true> = {};
-  OPTION.lastIndex = 0;
-  while (OPTION.lastIndex < meta.length) {
-    const start = OPTION.lastIndex;
-    const match = OPTION.exec(meta);
-    if (match === null) {
-      return Effect.fail(optionError(meta, `cannot read the options from column ${start + 1}`));
-    }
-    const [, key, value] = match;
-    if (key in options) return Effect.fail(optionError(meta, `${key} is given twice`));
-    options[key] = value ?? true;
-  }
-  return Effect.succeed(options);
-};
-
 export const decodeFenceOptions = (
   meta: string | null | undefined
-): Effect.Effect<FenceMode, FenceOptionError> =>
-  Effect.gen(function* () {
-    const text = meta?.trim() ?? '';
-    if (text === '') return CHECKED;
-    const raw = yield* tokenize(text);
-    const options = yield* Schema.decodeUnknownEffect(FenceOptions)(raw, {
-      onExcessProperty: 'error',
-    }).pipe(Effect.mapError(error => optionError(text, error.message)));
-    if (options.signature && options.nocheck !== undefined) {
-      return yield* optionError(text, 'a fence is either a signature or opted out, not both');
+): Effect.Effect<FenceMode, FenceOptionError> => {
+  const text = meta?.trim() ?? '';
+  if (text === '') return Effect.succeed(CHECKED);
+  if (text === 'signature') return Effect.succeed(SIGNATURE);
+  const nocheck = NOCHECK.exec(text);
+  if (nocheck !== null) {
+    const reason = nocheck[1] ?? '';
+    if (!/\S/.test(reason)) {
+      return Effect.fail(optionError(text, 'nocheck needs a non-empty reason'));
     }
-    if (options.signature) return SIGNATURE;
-    if (options.nocheck !== undefined) return { _tag: 'OptedOut', reason: options.nocheck };
-    return CHECKED;
-  });
+    return Effect.succeed({ _tag: 'OptedOut', reason });
+  }
+  return Effect.fail(
+    optionError(text, 'expected `signature` or `nocheck="<non-empty reason>"`')
+  );
+};

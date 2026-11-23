@@ -373,9 +373,9 @@ describe('docs workflows', () => {
     expect(extraChecks('stable')).toContain(String(reference.name));
     expect(extraChecks('beta')).toContain(String(reference.name));
     expect(reference.needs).toEqual(['select-candidates', 'candidate']);
-    // No channel or language condition on the job: a skipped job reports no success, and the
-    // gate would then refuse a release that has no core candidate.
-    expect(reference.if).toBe('${{ !cancelled() }}');
+    // Runs on every release channel (skipped on non-release PRs where select-candidates is skipped
+    // or failed); a release that has no core candidate still reports success via the pass step.
+    expect(reference.if).toBe("${{ !cancelled() && needs.select-candidates.result == 'success' }}");
     expect(reference.permissions).toEqual({ contents: 'read' });
     expect(reference['timeout-minutes']).toBeGreaterThan(0);
     expect(JSON.stringify(reference)).not.toContain('secrets.');
