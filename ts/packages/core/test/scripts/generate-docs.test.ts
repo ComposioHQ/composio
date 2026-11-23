@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { Effect } from 'effect';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  buildAccessPaths,
   discoverModelFiles,
   escapeTableTextForMdx,
   escapeTextForMdx,
@@ -18,6 +17,7 @@ import {
   runTypeDocCommand,
   simplifyTypeForSignature,
   simplifyTypeForTable,
+  TypeDocClassCatalog,
 } from '../../scripts/generate-docs';
 
 import { parsePage } from '../../../../../scripts/docs-reference-check/pages';
@@ -114,12 +114,16 @@ function sdkTypeDocFixture() {
   };
 }
 
+function accessPathsFor(json: unknown) {
+  return new TypeDocClassCatalog(parseTypeDocGraph(json)).accessPaths();
+}
+
 function emptyClassDoc(name: string) {
   return { name, description: `${name} API`, constructor: undefined, methods: [], properties: [] };
 }
 
 function usageMdxFor(name: string): string {
-  const paths = buildAccessPaths(parseTypeDocGraph(sdkTypeDocFixture()));
+  const paths = accessPathsFor(sdkTypeDocFixture());
   return generateClassMdx(emptyClassDoc(name), paths.get(name));
 }
 
@@ -172,7 +176,7 @@ describe('generate-docs usage blocks', () => {
   });
 
   it('maps only classes reachable from Composio through public class references', () => {
-    const paths = buildAccessPaths(parseTypeDocGraph(sdkTypeDocFixture()));
+    const paths = accessPathsFor(sdkTypeDocFixture());
 
     expect(Object.fromEntries(paths)).toEqual({
       CustomToolkits: { path: ['customToolkits'], deprecated: false },
@@ -526,20 +530,123 @@ writeFileSync(outputJson, args.join('\\n'));
   });
 });
 
+describe('TypeDoc class catalog', () => {
+  // Classes interleave top-level declarations and module members, a module
+  // holds a non-class reflection, and two modules declare a class with the
+  // same name.
+  const catalog = new TypeDocClassCatalog(
+    parseTypeDocGraph({
+      id: 0,
+      name: '@composio/core',
+      kind: 1,
+      children: [
+        classNode(1, 'Tools'),
+        {
+          id: 2,
+          name: 'src/models/Toolkits',
+          kind: KIND.Module,
+          children: [
+            classNode(20, 'Toolkits'),
+            { id: 21, name: 'ToolkitOptions', kind: 4194304 },
+            classNode(22, 'Duplicate'),
+          ],
+        },
+        { id: 3, name: 'helper', kind: 64 },
+        classNode(4, 'AuthScheme'),
+        {
+          id: 5,
+          name: 'src/composio',
+          kind: KIND.Module,
+          children: [classNode(50, 'Composio'), classNode(51, 'Duplicate')],
+        },
+        { id: 6, name: 'src/empty', kind: KIND.Module },
+        classNode(7, 'ToolRouter'),
+      ],
+    })
+  );
+
+  it('enumerates top-level and module classes in project order', () => {
+    expect(catalog.classes.map(node => [node.id, node.name])).toEqual([
+      [1, 'Tools'],
+      [20, 'Toolkits'],
+      [22, 'Duplicate'],
+      [4, 'AuthScheme'],
+      [50, 'Composio'],
+      [51, 'Duplicate'],
+      [7, 'ToolRouter'],
+    ]);
+  });
+
+  it('documents Composio first, then non-internal classes once each', () => {
+    expect(catalog.documentedNames()).toEqual(['Composio', 'Tools', 'Toolkits', 'Duplicate']);
+  });
+
+  it('still lists Composio first when TypeDoc emits no Composio class', () => {
+    const empty = new TypeDocClassCatalog(
+      parseTypeDocGraph({ id: 0, name: 'SDK', kind: 1, children: [classNode(1, 'Tools')] })
+    );
+    expect(empty.documentedNames()).toEqual(['Composio', 'Tools']);
+    expect(empty.byName('Composio')).toBeUndefined();
+    expect(() => empty.accessPaths()).toThrow('TypeDoc output has no Composio class');
+  });
+
+  it('looks up the first class with a name in project order', () => {
+    expect(catalog.byName('Duplicate')?.id).toBe(22);
+    expect(catalog.byName('Composio')?.id).toBe(50);
+    expect(catalog.byName('ToolkitOptions')).toBeUndefined();
+    expect(catalog.byName('src/composio')).toBeUndefined();
+  });
+
+  it('looks up classes by reflection ID, including module members', () => {
+    expect(catalog.byId(51)?.name).toBe('Duplicate');
+    expect(catalog.byId(4)?.name).toBe('AuthScheme');
+    expect(catalog.byId(21)).toBeUndefined();
+    expect(catalog.byId(5)).toBeUndefined();
+  });
+
+  it('ranks access paths to module classes and skips internal classes', () => {
+    const paths = accessPathsFor({
+      id: 0,
+      name: 'SDK',
+      kind: 1,
+      children: [
+        classNode(1, 'Composio', [
+          property(10, 'authScheme', reference(3)),
+          property(11, 'legacy', reference(21), { comment: deprecatedComment }),
+          property(12, 'toolkits', reference(20)),
+        ]),
+        {
+          id: 2,
+          name: 'src/models/Toolkits',
+          kind: KIND.Module,
+          children: [
+            classNode(20, 'Toolkits', [property(200, 'nested', reference(21))]),
+            classNode(21, 'Nested'),
+          ],
+        },
+        classNode(3, 'AuthScheme', [property(30, 'hidden', reference(4))]),
+        classNode(4, 'Hidden'),
+      ],
+    });
+    expect([...paths]).toEqual([
+      ['Nested', { path: ['toolkits', 'nested'], deprecated: false }],
+      ['Toolkits', { path: ['toolkits'], deprecated: false }],
+    ]);
+  });
+});
+
 describe('access path ranking', () => {
   const rank = (members: unknown[], children: unknown[] = []) =>
-    buildAccessPaths(
-      parseTypeDocGraph({
-        id: 0,
-        name: 'SDK',
-        kind: 1,
-        children: [
-          classNode(1, 'Composio', members),
-          classNode(2, 'Target', children),
-          classNode(3, 'Other'),
-        ],
-      })
-    );
+    accessPathsFor({
+      id: 0,
+      name: 'SDK',
+      kind: 1,
+      children: [
+        classNode(1, 'Composio', members),
+        classNode(2, 'Target', children),
+        classNode(3, 'Other'),
+      ],
+    });
 
   it('breaks equal length ties in declaration order even when TypeDoc sorts alphabetically', () => {
     const paths = rank([
