@@ -180,7 +180,7 @@ Python commands run from `python/`; see [`python/README.md`](python/README.md). 
 - [Documentation](https://docs.composio.dev)
 - [Discord community](https://discord.gg/composio)
 - [Open an issue](https://github.com/ComposioHQ/composio/issues)
-- [support@composio.dev](mailto:support@composio.dev)
+- [Support in the dashboard](https://dashboard.composio.dev/~/org/support)
 
 ## License
 
