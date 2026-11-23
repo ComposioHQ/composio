@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   checkCodeExamples, listCodeExampleFiles, inventoryCodeExamples,
@@ -7,6 +8,7 @@ import {
 import { collectPythonSnippets } from '../../scripts/check-python-snippets';
 import { componentsToMarkdown } from '../../lib/example-document';
 import { mdxToCleanMarkdown } from '../../lib/source';
+import { toCleanMarkdown } from '../../agent/lib/docs';
 import { parseToolkitFaq } from '../../lib/toolkit-faq';
 
 const root = join(import.meta.dir, '../..');
@@ -144,6 +146,28 @@ describe('Markdown options and agent output', () => {
     for (const label of ['Python', 'TypeScript', 'API']) expect(markdown).toContain(`**${label}:**`);
     for (const language of ['python', 'typescript', 'bash']) expect(markdown).toContain(`\`\`\`${language}`);
     expect(markdown).not.toContain('<Card');
+  });
+
+  test('preserves TypeScript generics inside fenced code blocks and inline code spans in agent Markdown', () => {
+    const page = readFileSync(
+      join(root, 'content/reference/sdk-reference/typescript/webhook-endpoints.mdx'),
+      'utf8',
+    );
+    const markdown = mdxToCleanMarkdown(page);
+    expect(markdown).toContain(
+      'async create(params: WebhookEndpointCreateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>',
+    );
+    expect(markdown).toContain('`Promise<WebhookEndpoint>` — The endpoint');
+    expect(markdown).toContain(
+      'async list(query?: WebhookEndpointListParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpointListResponse>',
+    );
+    expect(markdown).toContain('`Promise<WebhookEndpointListResponse>` — The endpoints');
+
+    const agentMarkdown = toCleanMarkdown(page);
+    expect(agentMarkdown).toContain(
+      'async create(params: WebhookEndpointCreateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>',
+    );
+    expect(agentMarkdown).toContain('`Promise<WebhookEndpoint>` — The endpoint');
   });
 
   test('source line reporting survives Markdown grouping', () => {
