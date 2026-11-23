@@ -99,3 +99,5 @@ Don't:
 If you read through the changes and a developer following them would succeed → approve.
 
 A PR doesn't need to be perfect. It needs to not break things or mislead people.
+
+Review the Python async and sync examples together. Check that the async example appears first, awaits network calls and keeps provider invocation inside the client lifetime.

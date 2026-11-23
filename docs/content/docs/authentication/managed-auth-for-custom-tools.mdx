@@ -22,6 +22,37 @@ This example uses a session to create the Connect Link. Subsequent API calls pas
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+# Resolve this owner from your authenticated application session.
+owner_id = "org_42:user_7"
+session = await composio.create(user_id=owner_id, toolkits=["github"])
+connection = await session.authorize("github")
+print(f"Open this Connect Link: {connection.redirect_url}")
+account = await connection.wait_for_connection(60)
+
+
+async def read_github_profile(connected_account_id: str):
+    return await composio.tools.proxy(
+        user_id=owner_id,
+        connected_account_id=connected_account_id,
+        endpoint="/user",
+        method="GET",
+    )
+
+
+# Use the account returned by this owner's connection attempt.
+response = await read_github_profile(account.id)
+print(response.status)
+print(response.data)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -49,6 +80,8 @@ response = read_github_profile(account.id)
 print(response.status)
 print(response.data)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

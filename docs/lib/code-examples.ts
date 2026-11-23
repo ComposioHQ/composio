@@ -10,7 +10,7 @@ import { EXAMPLE_SOURCES, EXAMPLE_SOURCE_REASONS, EXAMPLE_BUILD_SOURCES } from '
 import { z } from 'zod';
 import { SESSION_GUARDRAILS, DIRECT_EXECUTION_GUARDRAILS } from './llm-guardrails';
 import { apiCodeUsages } from './api-code-usages';
-import { attributeValue, markdownLanguageGroups, parseExampleDocument, type ExampleNode } from './example-document';
+import { attributeValue, PYTHON_MODES, markdownLanguageGroups, parseExampleDocument, type ExampleNode } from './example-document';
 
 export type CodeExampleRule =
   | 'language-items'
@@ -210,7 +210,7 @@ export function parseCodeExamples(source: string, path: string): ParsedCodeExamp
     shiftLines(beforeUnits, lineOffset);
     for (const marker of markers) marker.line += lineOffset;
     units.push(...beforeUnits);
-    const tabs: TabsUnit = { type: 'tabs', line: group.line, groupId: 'language', items: group.tabs.map((tab) => tab.value), markers, children: [] };
+    const tabs: TabsUnit = { type: 'tabs', line: group.line, groupId: group.groupId, items: group.tabs.map((tab) => tab.value), markers, children: [] };
     for (const tab of group.tabs) {
       const children = parseCodeExamples(tab.source, 'part.md').units;
       shiftLines(children, tab.line - 1);
@@ -423,6 +423,14 @@ function checkFile(parsed: ParsedCodeExamples, requireApi: boolean): CodeExample
           const isLanguage = unit.groupId === 'language';
           checkMarkers(unit.markers, (kind) => (isLanguage ? kind === 'no-api' : kind === 'single-language'));
           if (isLanguage) checkLanguageGroup(unit);
+          if (unit.groupId === 'python-mode') {
+            const options = unit.children.filter((child): child is TabUnit => child.type === 'tab');
+            if (!unit.items || unit.items.length !== PYTHON_MODES.length || options.length !== PYTHON_MODES.length ||
+              PYTHON_MODES.some((mode, index) => unit.items?.[index] !== mode || options[index]?.value !== mode ||
+                !descendants(options[index].children).some((child) => child.type === 'fence' && PYTHON_LANGS[child.lang]))) {
+              report(unit.line, 'language-items', 'Python mode tabs require Async then Sync, each with a Python example');
+            }
+          }
           walk(unit.children, inLanguage || isLanguage, unit);
           break;
         }
@@ -448,6 +456,15 @@ function checkFile(parsed: ParsedCodeExamples, requireApi: boolean): CodeExample
     }
   };
 
+  walkCodeExamples(parsed.units, (unit, ancestors) => {
+    if (unit.type !== 'fence' || !PYTHON_LANGS[unit.lang]) return;
+    if (/\(previous\)/i.test(unit.info) || ancestors.some((ancestor) =>
+      (ancestor.type === 'tabs' && ancestor.groupId === 'python-mode') ||
+      (ancestor.type === 'tab' && /\(previous\)/i.test(ancestor.value ?? '')))) return;
+    if (/^\s*# Sync-only: \S/m.test(unit.code)) return;
+    const usesClient = /\b(?:AsyncComposio|Composio)\s*\(|\bcomposio\.(?:create|use|tools\.\w+|triggers\.(?!verify_webhook\b|parse\b)\w+|connected_accounts\.\w+|auth_configs\.\w+)\s*\(|\bsession\.(?:execute|tools|authorize|proxy_execute|search|toolkits|delete)\s*\(/.test(unit.code);
+    if (usesClient) report(unit.line, 'language-items', 'Python SDK usage needs both Async and Sync examples, or an inline # Sync-only: reason');
+  });
   walk(parsed.units, false, undefined);
   return violations;
 }

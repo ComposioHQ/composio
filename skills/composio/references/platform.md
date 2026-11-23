@@ -89,7 +89,18 @@ const session = await composio.create(existingUserId);
 const tools = await session.tools();
 ```
 
-Python:
+For a new Python integration, use the async client. If the application pins a Python SDK version that predates `AsyncComposio`, keep its sync client until the developer upgrades. In an application server, keep the client open for the application's lifetime and close it at shutdown. This example assumes an async entry point.
+
+```python
+from composio import AsyncComposio
+
+async with AsyncComposio() as composio:
+    session = await composio.create(user_id=existing_user_id)
+    tools = await session.tools()
+    # Run the agent here while the client is open.
+```
+
+For an existing synchronous Python application, keep the synchronous client.
 
 ```python
 from composio import Composio
@@ -98,6 +109,8 @@ composio = Composio()
 session = composio.create(user_id=existing_user_id)
 tools = session.tools()
 ```
+
+Both clients ship in the `composio` package.
 
 Both SDKs also expose `composio.sessions.create(...)`; do not teach an artificial TypeScript/Python asymmetry. The SDK reads `COMPOSIO_API_KEY` from the environment, so do not pass it inline.
 

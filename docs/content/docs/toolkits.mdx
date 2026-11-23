@@ -10,6 +10,22 @@ You choose which toolkits a session can access. Your agent discovers the individ
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github", "gmail"],
+)
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -21,6 +37,8 @@ session = composio.sessions.create(
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

@@ -8,9 +8,18 @@ keywords: [session, toolkits, auth configs, connected accounts]
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(user_id="user_123")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(user_id="user_123")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -87,6 +96,23 @@ To limit a session to specific toolkits, pass an array of toolkit slugs. The age
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Using array format
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github", "gmail", "slack"]
+)
+
+# Using object format with enable key
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits={"enable": ["github", "gmail", "slack"]}
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Using array format
 session = composio.sessions.create(
@@ -100,6 +126,8 @@ session = composio.sessions.create(
     toolkits={"enable": ["github", "gmail", "slack"]}
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -133,12 +161,24 @@ To keep every toolkit discoverable except a few, use the `disable` syntax. This 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits={"disable": ["exa", "firecrawl"]}
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
     toolkits={"disable": ["exa", "firecrawl"]}
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -174,12 +214,24 @@ Use an empty allowlist when a session should only run [local tools](/docs/extend
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits={"enable": []},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
     toolkits={"enable": []},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -215,6 +267,43 @@ This is not the default mode for broad agents. The default session behavior keep
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_api_key",
+        provider=OpenAIAgentsProvider(),
+    ) as composio:
+        session = await composio.sessions.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            tools={
+                "gmail": {
+                    "enable": [
+                        "GMAIL_FETCH_EMAILS",
+                        "GMAIL_CREATE_EMAIL_DRAFT",
+                    ],
+                },
+            },
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+        )
+
+        tools = await session.tools()
+        print([tool.name for tool in tools])
+        # GMAIL_FETCH_EMAILS
+        # GMAIL_CREATE_EMAIL_DRAFT
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 from composio_openai_agents import OpenAIAgentsProvider
@@ -243,6 +332,8 @@ print([tool.name for tool in tools])
 # GMAIL_FETCH_EMAILS
 # GMAIL_CREATE_EMAIL_DRAFT
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -299,6 +390,52 @@ With the direct tools preset, you can re-enable supported meta tool groups that 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_api_key",
+        provider=OpenAIAgentsProvider(),
+    ) as composio:
+        session = await composio.sessions.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            tools={
+                "gmail": {
+                    "enable": [
+                        "GMAIL_FETCH_EMAILS",
+                        "GMAIL_CREATE_EMAIL_DRAFT",
+                    ],
+                },
+            },
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+            manage_connections={
+                "enable": True,
+            },
+            sandbox={
+                "enable": True,
+            },
+        )
+
+        tools = await session.tools()
+        print([tool.name for tool in tools])
+        # GMAIL_FETCH_EMAILS
+        # GMAIL_CREATE_EMAIL_DRAFT
+        # COMPOSIO_MANAGE_CONNECTIONS
+        # COMPOSIO_REMOTE_WORKBENCH
+        # COMPOSIO_REMOTE_BASH_TOOL
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 from composio_openai_agents import OpenAIAgentsProvider
@@ -336,6 +473,8 @@ print([tool.name for tool in tools])
 # COMPOSIO_REMOTE_WORKBENCH
 # COMPOSIO_REMOTE_BASH_TOOL
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -405,6 +544,21 @@ To enable only specific tools, pass an `enable` list per toolkit:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tools={
+        # Only these Gmail tools will be available
+        "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+        # Only issue-related GitHub tools
+        "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -416,6 +570,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -452,6 +608,19 @@ The shorthand array syntax is equivalent to `enable`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tools={
+        "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+        "github": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -461,6 +630,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -496,6 +667,21 @@ To keep every tool in a toolkit except a few, use `disable`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tools={
+        # All Slack tools except delete
+        "slack": {"disable": ["SLACK_DELETE_MESSAGE"]},
+        # All GitHub tools except destructive ones
+        "github": {"disable": ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"]}
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -507,6 +693,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -551,12 +739,24 @@ For example, to block every tool that can delete something:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tags={"disable": ["destructiveHint"]}
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
     tags={"disable": ["destructiveHint"]}
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -586,6 +786,21 @@ For example, this session blocks tools that update or delete everywhere, but ove
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    # Everywhere: block tools that update or delete
+    tags={"disable": ["updateHint", "destructiveHint"]},
+    tools={
+        # GitHub: block only tools that delete
+        "github": {"tags": {"disable": ["destructiveHint"]}}
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -597,6 +812,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -650,6 +867,42 @@ Requires `@composio/core` ≥ `0.9.0` (TypeScript) or `composio` ≥ `0.13.0`
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_openai_agents import OpenAIAgentsProvider
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_api_key",
+        provider=OpenAIAgentsProvider(),
+    ) as composio:
+        session = await composio.sessions.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            preload={
+                "tools": [
+                    "GMAIL_FETCH_EMAILS",
+                    "GMAIL_CREATE_EMAIL_DRAFT",
+                ],
+            },
+        )
+
+        tools = await session.tools()
+        print([tool.name for tool in tools])
+        # GMAIL_FETCH_EMAILS
+        # GMAIL_CREATE_EMAIL_DRAFT
+        # COMPOSIO_SEARCH_TOOLS
+        # ... other default meta tools
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_openai_agents import OpenAIAgentsProvider
@@ -677,6 +930,8 @@ print([tool.name for tool in tools])
 # COMPOSIO_SEARCH_TOOLS
 # ... other default meta tools
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -730,6 +985,19 @@ Use your own OAuth credentials instead of Composio's defaults. Pass an auth conf
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -739,6 +1007,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -774,6 +1044,19 @@ When a user has multiple connected accounts for the same toolkit, specify which 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": ["ca_work_gmail"],
+        "github": ["ca_personal_github"],
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -783,6 +1066,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -834,6 +1119,18 @@ By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent e
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    sandbox={
+        "enable": False
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -842,6 +1139,8 @@ session = composio.sessions.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -900,6 +1199,19 @@ Defaults to `standard` when omitted.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    sandbox={
+        "enable": True,
+        "sandbox_size": "large",
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -909,6 +1221,8 @@ session = composio.sessions.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -946,11 +1260,22 @@ Changing `sandbox_size` on an existing session recreates the sandbox on the next
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.use("session_id")
+
+await session.update(toolkits={"enable": ["gmail", "github"]})
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.use("session_id")
 
 session.update(toolkits={"enable": ["gmail", "github"]})
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -995,11 +1320,22 @@ The update:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(
+    tools={"slack": {"enable": ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]}},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(
     tools={"slack": {"enable": ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]}},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1042,9 +1378,18 @@ An empty allowlist on update denies every app toolkit, exactly as it does on cre
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(toolkits={"enable": []})
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(toolkits={"enable": []})
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1071,9 +1416,18 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(manage_connections={"callback_url": None})
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(manage_connections={"callback_url": None})
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1102,9 +1456,18 @@ Passing `null` (`None` in Python) for a whole block removes the stored override 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(manage_connections=None, multi_account=None)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(manage_connections=None, multi_account=None)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1133,12 +1496,24 @@ Clearing a policy can widen access. `toolkits: null` removes the toolkit policy 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(
+    search={"enable": False},
+    execute={"enable_multi_execute": False},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(
     search={"enable": False},
     execute={"enable_multi_execute": False},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1177,12 +1552,24 @@ An update that narrows `toolkits`, `tools`, or `tags` while leaving an explicitl
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(
+    toolkits={"enable": ["slack"]},
+    preload={"tools": ["SLACK_SEND_MESSAGE"]},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(
     toolkits={"enable": ["slack"]},
     preload={"tools": ["SLACK_SEND_MESSAGE"]},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1218,6 +1605,28 @@ On a conflict, the SDK raises `ComposioSessionConfigConflictError` (TypeScript) 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio.exceptions import SessionConfigConflictError
+
+session = await composio.sessions.use("session_id")
+
+try:
+    await session.update(
+        toolkits={"enable": ["gmail", "github"]},
+        expected_config_version=session.config_version,
+    )
+except SessionConfigConflictError:
+    # Another client changed the session first. Nothing was written.
+    session = await composio.sessions.use("session_id")
+    await session.update(
+        toolkits={"enable": ["gmail", "github"]},
+        expected_config_version=session.config_version,
+    )
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio.exceptions import SessionConfigConflictError
 
@@ -1236,6 +1645,8 @@ except SessionConfigConflictError:
         expected_config_version=session.config_version,
     )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1293,9 +1704,18 @@ Get the tools the session exposes for your AI framework. By default these are th
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1320,6 +1740,22 @@ Run a `COMPOSIO_*` [meta tool](/toolkits/meta-tools) directly from your session 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.create(user_id="user_123")
+result = await session.execute_meta(
+    "COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "send an email"}]},
+)
+print(result.data, result.result_type)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -1331,6 +1767,8 @@ result = session.execute_meta(
 )
 print(result.data, result.result_type)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1371,6 +1809,20 @@ Manually authenticate a user to a toolkit outside of the chat flow.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connection_request = await session.authorize(
+    "github",
+    callback_url="https://myapp.com/callback",
+)
+
+print(connection_request.redirect_url)
+
+connected_account = await connection_request.wait_for_connection()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connection_request = session.authorize(
     "github",
@@ -1381,6 +1833,8 @@ print(connection_request.redirect_url)
 
 connected_account = connection_request.wait_for_connection()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1415,6 +1869,21 @@ List the toolkits enabled for the session and their connection status, sorted by
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+toolkits = await session.toolkits()
+
+for toolkit in toolkits.items:
+    connection = toolkit.connection
+    if connection and connection.is_active and connection.connected_account:
+        status = connection.connected_account.id
+    else:
+        status = "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 toolkits = session.toolkits()
 
@@ -1426,6 +1895,8 @@ for toolkit in toolkits.items:
         status = "Not connected"
     print(f"{toolkit.name}: {status}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1452,9 +1923,18 @@ Filter to only connected toolkits:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connected = await session.toolkits(is_connected=True)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connected = session.toolkits(is_connected=True)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1477,6 +1957,21 @@ Paginate through every toolkit with `limit` and the returned cursor:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+all_toolkits = []
+cursor = None
+
+while True:
+    result = await session.toolkits(limit=20, next_cursor=cursor)
+    all_toolkits.extend(result.items)
+    cursor = result.next_cursor
+    if not cursor:
+        break
+```
+</Tab>
+<Tab value="Sync">
 ```python
 all_toolkits = []
 cursor = None
@@ -1488,6 +1983,8 @@ while True:
     if not cursor:
         break
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1525,9 +2022,18 @@ Patch the session configuration in place. See [Updating a session](#updating-a-s
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+config = await session.update(toolkits={"enable": ["gmail", "github"]})
+```
+</Tab>
+<Tab value="Sync">
 ```python
 config = session.update(toolkits={"enable": ["gmail", "github"]})
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1564,10 +2070,20 @@ Requires `@composio/core` ≥ `0.13.1` (TypeScript) or `composio` ≥ `0.17.1` (
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.delete()
+print(result["session_id"], result["deleted"])
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.delete()
 print(result["session_id"], result["deleted"])
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1593,6 +2109,17 @@ Before configuring a session, explore the toolkits and tools available. Browse t
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# List toolkits
+toolkits = await composio.toolkits.get()
+
+# List tools within a toolkit (top 20 by default)
+tools = await composio.tools.get("user_123", toolkits=["GITHUB"])
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # List toolkits
 toolkits = composio.toolkits.get()
@@ -1600,6 +2127,8 @@ toolkits = composio.toolkits.get()
 # List tools within a toolkit (top 20 by default)
 tools = composio.tools.get("user_123", toolkits=["GITHUB"])
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -1631,6 +2160,17 @@ Inspect a tool's input and output schema without a user context with `getRawComp
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+tool = await composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+print(tool.name)
+print(tool.description)
+print(tool.input_parameters)
+print(tool.output_parameters)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
 print(tool.name)
@@ -1638,6 +2178,8 @@ print(tool.description)
 print(tool.input_parameters)
 print(tool.output_parameters)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

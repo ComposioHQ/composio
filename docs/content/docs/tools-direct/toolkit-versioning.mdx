@@ -20,6 +20,26 @@ These examples use `20251027_00`. Replace it with an available version you have 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="YOUR_API_KEY")
+
+result = await composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio"
+    },
+    user_id="user-k7334",
+    version="20251027_00",
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -36,6 +56,8 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -92,6 +114,27 @@ For example, a v3 tools-list request without `toolkit_versions` returns the base
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+base_version = await composio.client.get(
+    "/api/v3/tools",
+    cast_to=object,
+    query={"toolkit_slug": "googledrive"},
+)
+latest_version = await composio.client.get(
+    "/api/v3/tools",
+    cast_to=object,
+    query={"toolkit_slug": "googledrive", "toolkit_versions": "latest"},
+)
+print(base_version, latest_version)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -108,6 +151,8 @@ latest_version = composio.client.get(
 )
 print(base_version, latest_version)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -147,6 +192,32 @@ To use the same version across calls, set a default at SDK initialization or thr
 {/* code-example: no-api reason="SDK constructor option sets client-side default toolkit versions" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+# Pin specific versions for each toolkit
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="YOUR_API_KEY",
+        toolkit_versions={
+            "github": "20251027_00",
+            "slack": "20251027_00",
+            "gmail": "20251027_00"
+        }
+    ) as composio:
+        # Use the client within this context.
+        pass
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -160,6 +231,8 @@ composio = Composio(
     }
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -243,6 +316,19 @@ Check available versions using:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Get toolkit information including available versions
+toolkit = await composio.toolkits.get(slug="github")
+
+# Extract and print version information
+print(f"Toolkit: {toolkit.name}")
+print(f"Current Version: {toolkit.meta.version}")
+print(f"Available Versions: {toolkit.meta.available_versions}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Get toolkit information including available versions
 toolkit = composio.toolkits.get(slug="github")
@@ -252,6 +338,8 @@ print(f"Toolkit: {toolkit.name}")
 print(f"Current Version: {toolkit.meta.version}")
 print(f"Available Versions: {toolkit.meta.available_versions}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

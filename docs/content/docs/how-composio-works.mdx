@@ -14,11 +14,22 @@ Create a session for a user, then read its tools formatted for your framework. T
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(user_id="user_123")
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(user_id="user_123")
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -124,6 +135,18 @@ When your model asks to call a session tool, execute it with `session.execute()`
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
+
+if result.result_type == "failed":
+    raise RuntimeError(result.error or f"Tool execution failed (log ID: {result.log_id})")
+
+print(result.data)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.execute("COMPOSIO_SEARCH_TOOLS", arguments={"queries": [{"use_case": "send an email"}]})
 
@@ -132,6 +155,8 @@ if result.result_type == "failed":
 
 print(result.data)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -205,10 +230,20 @@ Sessions persist on the server and don't expire. For multi-turn conversations, s
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.use("session_id")
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.use("session_id")
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -234,6 +269,17 @@ You can also update a session in place instead of creating a new one:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(
+    toolkits={"enable": ["gmail", "slack"]},
+    auth_configs={"gmail": "ac_new_config"},
+    connected_accounts={"slack": ["ca_work_slack"]},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(
     toolkits={"enable": ["gmail", "slack"]},
@@ -241,6 +287,8 @@ session.update(
     connected_accounts={"slack": ["ca_work_slack"]},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

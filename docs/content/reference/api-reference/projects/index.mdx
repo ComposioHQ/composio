@@ -39,6 +39,22 @@ The Python SDK also needs `COMPOSIO_API_KEY` to initialize. Its generated organi
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from composio import AsyncComposio
+
+composio = AsyncComposio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"])
+
+project = await composio.client.org.owner.project.create(
+    name="my-staging-project",
+    should_create_api_key=True,
+)
+print(project)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -50,6 +66,8 @@ project = composio.client.org.owner.project.create(
 )
 print(project)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

@@ -4,6 +4,8 @@
  * Run from docs/: bun scripts/python-snippets/test-helper.ts
  */
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 import { runPythonHelper, pythonSnippetViolations, type PythonSnippet } from '../check-python-snippets';
 
 type Fixture = {
@@ -15,10 +17,14 @@ type Fixture = {
   /** Expected rejected `# type: ignore` lines, with mypy's code when it reports one. */
   directives?: [number, string | undefined][];
   typeCheck?: boolean;
+  asyncMode?: boolean;
   other?: RegExp;
 };
 
 const fixtures: Fixture[] = [
+  { id: 'awaited_session', code: 'async def example():\n    await session.tools()', asyncMode: true },
+  { id: 'forgot_await', code: 'async def example():\n    session.tools()', asyncMode: true, api: [[2, 'unused-coroutine']] },
+  { id: 'awaited_sync', code: 'async def example():\n    await composio.connected_accounts.get("x")', api: [[2, 'misc']] },
   { id: 'control', code: 'composio.tools.exectue("X", user_id="u", arguments={})', api: [[1, 'attr-defined']] },
   { id: 'constructor', code: 'Composio(apikey="bad")', api: [[1, 'call-overload']] },
   {
@@ -155,10 +161,12 @@ const fixtures: Fixture[] = [
   },
 ];
 
-const snippets: PythonSnippet[] = fixtures.map(({ id, code, typeCheck = true }) => ({
-  id, code, typeCheck, path: `fixtures/${id}.mdx`, line: 100,
+const snippets: PythonSnippet[] = fixtures.map(({ id, code, typeCheck = true, asyncMode }) => ({
+  id, code, typeCheck, asyncMode, path: `fixtures/${id}.mdx`, line: 100,
 }));
-const result = runPythonHelper(snippets);
+const { values } = parseArgs({ options: { 'installed-python': { type: 'string' } } });
+const installed = values['installed-python'] ? resolve(values['installed-python']) : undefined;
+const result = runPythonHelper(snippets, false, installed);
 const violations = pythonSnippetViolations(snippets, result);
 for (const fixture of fixtures) {
   const actual = violations.filter(({ path }) => path === `fixtures/${fixture.id}.mdx`);
@@ -177,7 +185,7 @@ for (const fixture of fixtures) {
 }
 
 // Syntax-only mode must not invoke mypy attribution, but still compile legacy code.
-const syntaxOnly = runPythonHelper(snippets, true);
+const syntaxOnly = runPythonHelper(snippets, true, installed);
 assert.deepEqual(syntaxOnly.api, []);
 assert.deepEqual(syntaxOnly.other, []);
 assert.deepEqual(syntaxOnly.directives, []);

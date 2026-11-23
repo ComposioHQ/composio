@@ -53,6 +53,45 @@ Save the setup script for your language and run it once. The API option performs
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python title="setup.py"
+import asyncio
+import os
+
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        user_id = os.environ["COMPOSIO_USER_ID"]
+        session = await composio.create(user_id=user_id, toolkits=["gmail"])
+        try:
+            connection = await session.authorize("gmail")
+            print(f"Connect Gmail: {connection.redirect_url}", flush=True)
+            account = await connection.wait_for_connection()
+            subscription = await composio.triggers.set_webhook_subscription(
+                webhook_url=os.environ["COMPOSIO_WEBHOOK_URL"],
+                version="V3",
+            )
+            # The SDK overload omits the supported user_id + connected_account_id combination.
+            trigger = await composio.triggers.create(  # type: ignore[call-overload]
+                slug="GMAIL_NEW_GMAIL_MESSAGE",
+                user_id=user_id,
+                connected_account_id=account.id,
+                trigger_config={},
+            )
+            print("COMPOSIO_GMAIL_ACCOUNT_ID:", account.id)
+            print("COMPOSIO_TRIGGER_ID:", trigger.trigger_id)
+            print("COMPOSIO_WEBHOOK_SECRET:", subscription["secret"])
+        finally:
+            await session.delete()
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python title="setup.py"
 import os
 
@@ -82,6 +121,8 @@ try:
 finally:
     session.delete()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript title="setup.ts"
@@ -194,12 +235,13 @@ Deleting the setup session leaves the connected Gmail account and trigger in pla
 
 ## Verify the event and run the agent
 
-Save the handler as `server.py` or `server.ts`. Both versions process one request at a time and acknowledge the webhook after storing the summary. Keep the database file between restarts to preserve completed event IDs. Signature verification and the OpenAI agent loop run in your application, not through a Composio REST endpoint.
+The [trigger webhook guide](/docs/setting-up-triggers/subscribing-to-events#handling-events) covers async Python web handlers. Save the handler below as `server.py` or `server.ts`. Both versions process one request at a time and acknowledge the webhook after storing the summary. Keep the database file between restarts to preserve completed event IDs. Signature verification and the OpenAI agent loop run in your application, not through a Composio REST endpoint.
 
 {/* code-example: no-api reason="HTTP receiver, local HMAC verification, SQLite deduplication, and the OpenAI Agents runner execute in your application; setup REST operations are shown above" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 ```python title="server.py"
+# Sync-only: HTTPServer calls a synchronous request handler. The setup above supports either client.
 import json
 import os
 import sqlite3
@@ -244,7 +286,7 @@ def summarize(event):
                 "Use the Gmail tool only if more context is needed for this message. "
                 "If the event lacks enough information to identify the email, say so."
             ),
-            tools=session.tools(),
+            tools=[*session.tools()],
         )
         result = Runner.run_sync(
             agent,
@@ -506,12 +548,24 @@ Delete the trigger when you finish testing:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from composio import AsyncComposio
+
+await AsyncComposio().triggers.delete(trigger_id=os.environ["COMPOSIO_TRIGGER_ID"])
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
 
 Composio().triggers.delete(trigger_id=os.environ["COMPOSIO_TRIGGER_ID"])
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

@@ -57,6 +57,67 @@ Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio`
 {/* code-example: no-api reason="Anthropic Messages agent loop with the Composio Anthropic provider; not a single REST call" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import json
+
+import anthropic
+from composio import AsyncComposio
+from composio_anthropic import AnthropicProvider
+
+
+async def main():
+    async with AsyncComposio(provider=AnthropicProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, AnthropicProvider)
+        client = anthropic.AsyncAnthropic()
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        messages = [
+            {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+        ]
+
+        response = await client.messages.create(
+            model="claude-opus-5-5",
+            max_tokens=4096,
+            tools=tools,
+            messages=messages,
+        )
+
+        # Agentic loop: keep executing tool calls until the model responds with text
+        while response.stop_reason == "tool_use":
+            tool_use_blocks = [block for block in response.content if block.type == "tool_use"]
+            results = await provider.ahandle_tool_calls(response=response, session=session)
+            messages.append({"role": "assistant", "content": response.content})
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "tool_result", "tool_use_id": tool_use_blocks[i].id, "content": json.dumps(result)}
+                    for i, result in enumerate(results)
+                ],
+            })
+            response = await client.messages.create(
+                model="claude-opus-5-5",
+                max_tokens=4096,
+                tools=tools,
+                messages=messages,
+            )
+
+        # Print final response
+        for block in response.content:
+            if block.type == "text":
+                print(block.text)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import json
 
@@ -107,6 +168,8 @@ for block in response.content:
     if block.type == "text":
         print(block.text)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -209,6 +272,39 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 {/* code-example: no-api reason="Claude Agent SDK integration via the Composio provider and an in-process MCP server" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_claude_agent_sdk import ClaudeAgentSDKProvider
+from claude_agent_sdk import AssistantMessage, ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server
+
+
+async def main():
+    async with AsyncComposio(provider=ClaudeAgentSDKProvider()) as composio:
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+        tool_server = create_sdk_mcp_server(name="composio", version="1.0.0", tools=tools)
+
+        options = ClaudeAgentOptions(
+            system_prompt="You are a helpful assistant",
+            permission_mode="bypassPermissions",
+            mcp_servers={"composio": tool_server},
+        )
+
+        async with ClaudeSDKClient(options=options) as client:
+            await client.query("Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")
+            async for msg in client.receive_response():
+                if isinstance(msg, AssistantMessage):
+                    print("Claude:", msg.content)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import asyncio
 from composio import Composio
@@ -237,6 +333,8 @@ async def main():
 
 asyncio.run(main())
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

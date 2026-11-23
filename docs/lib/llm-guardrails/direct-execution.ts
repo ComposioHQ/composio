@@ -26,6 +26,23 @@ Create an **Auth Config** on [dashboard.composio.dev](https://dashboard.composio
 
 #### Python
 
+##### Async
+
+\`\`\`python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+connection = await composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_...",  # from platform dashboard
+    callback_url="https://your-app.com/callback",
+)
+print(connection.redirect_url)  # send user here to authenticate
+\`\`\`
+
+##### Sync
+
 \`\`\`python
 from composio import Composio
 
@@ -37,6 +54,8 @@ connection = composio.connected_accounts.link(
 )
 print(connection.redirect_url)  # send user here to authenticate
 \`\`\`
+
+<!-- end-python-modes -->
 
 #### TypeScript
 
@@ -66,6 +85,25 @@ A toolkit version is **required** for direct execution — \`tools.execute()\` w
 
 #### Python
 
+##### Async
+
+\`\`\`python
+from composio import AsyncComposio
+
+composio = AsyncComposio(toolkit_versions={"github": "latest"})
+
+tools = await composio.tools.get("user_123", tools=["GITHUB_CREATE_AN_ISSUE"])
+
+result = await composio.tools.execute(
+    "GITHUB_CREATE_AN_ISSUE",
+    {"owner": "org", "repo": "repo", "title": "Bug report"},
+    user_id="user_123",
+    dangerously_skip_version_check=True,  # required when running "latest"
+)
+\`\`\`
+
+##### Sync
+
 \`\`\`python
 from composio import Composio
 
@@ -79,6 +117,8 @@ result = composio.tools.execute(
     dangerously_skip_version_check=True,  # required when running "latest"
 )
 \`\`\`
+
+<!-- end-python-modes -->
 
 #### TypeScript
 

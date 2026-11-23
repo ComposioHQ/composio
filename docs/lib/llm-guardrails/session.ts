@@ -32,9 +32,26 @@ For agent tool delivery, Composio supports **Native Tools** (with a provider pac
 
 For application-owned tools or deterministic backend code, use [managed authentication with Proxy Execute](/docs/authentication/managed-auth-for-custom-tools). A session can provide a user-scoped runtime context without an LLM or MCP. Composio authenticates provider requests server-side; connected-account reads redact credentials and aren't a supported token-export workflow.
 
+Async Python fragments below run inside an async function. Keep the client open through tool execution and close it with \`async with AsyncComposio() as composio\` or \`await composio.aclose()\`.
+
 ### Native Tools
 
 #### Python
+
+##### Async
+
+\`\`\`python
+# ✅ CORRECT — Python (defaults to OpenAI)
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+session = await composio.create(user_id="user_123")
+tools = await session.tools()
+# Pass tools to your agent/LLM framework
+\`\`\`
+
+##### Sync
 
 \`\`\`python
 # ✅ CORRECT — Python (defaults to OpenAI)
@@ -45,6 +62,8 @@ session = composio.create(user_id="user_123")
 tools = session.tools()
 # Pass tools to your agent/LLM framework
 \`\`\`
+
+<!-- end-python-modes -->
 
 #### TypeScript
 

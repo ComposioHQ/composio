@@ -61,6 +61,67 @@ Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio`
 {/* code-example: no-api reason="OpenAI Responses agent loop with the Composio OpenAI provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import json
+from openai import AsyncOpenAI
+from composio import AsyncComposio
+from composio_openai import OpenAIResponsesProvider
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIResponsesProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, OpenAIResponsesProvider)
+        client = AsyncOpenAI()
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        response = await client.responses.create(
+            model="gpt-5.2",
+            tools=tools,
+            input=[
+                {
+                    "role": "user",
+                    "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+                }
+            ]
+        )
+
+        # Agentic loop: keep executing tool calls until the model responds with text
+        while True:
+            tool_calls = [o for o in response.output if o.type == "function_call"]
+            if not tool_calls:
+                break
+            results = await provider.ahandle_tool_calls(response=response, session=session)
+            response = await client.responses.create(
+                model="gpt-5.2",
+                tools=tools,
+                previous_response_id=response.id,
+                input=[
+                    {
+                        "type": "function_call_output",
+                        "call_id": call.call_id,
+                        "output": json.dumps(results[i]),
+                    }
+                    for i, call in enumerate(tool_calls)
+                ]
+            )
+
+        # Print final response
+        for item in response.output:
+            if item.type == "message":
+                print(item.content[0].text)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import json
 from openai import OpenAI
@@ -111,6 +172,8 @@ for item in response.output:
     if item.type == "message":
         print(item.content[0].text)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -211,6 +274,59 @@ Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio`
 {/* code-example: no-api reason="OpenAI Chat Completions agent loop with the Composio OpenAI provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import json
+from openai import AsyncOpenAI
+from composio import AsyncComposio
+from composio_openai import OpenAIProvider
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, OpenAIProvider)
+        client = AsyncOpenAI()
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        messages = [
+            {"role": "user", "content": "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"}
+        ]
+
+        response = await client.chat.completions.create(
+            model="gpt-5.2",
+            tools=tools,
+            messages=messages,
+        )
+
+        # Agentic loop: keep executing tool calls until the model responds with text
+        while response.choices[0].message.tool_calls:
+            results = await provider.ahandle_tool_calls(response=response, session=session)
+            messages.append(response.choices[0].message)
+            for i, tc in enumerate(response.choices[0].message.tool_calls):
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": json.dumps(results[i]),
+                })
+            response = await client.chat.completions.create(
+                model="gpt-5.2",
+                tools=tools,
+                messages=messages,
+            )
+
+        print(response.choices[0].message.content)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import json
 from openai import OpenAI
@@ -253,6 +369,8 @@ while response.choices[0].message.tool_calls:
 
 print(response.choices[0].message.content)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -339,6 +457,38 @@ OPENAI_API_KEY=xxxxxxxxx
 {/* code-example: no-api reason="OpenAI Agents SDK integration via the Composio OpenAI Agents provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_openai_agents import OpenAIAgentsProvider
+from agents import Agent, Runner
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIAgentsProvider()) as composio:
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = Agent(
+            name="Email Agent",
+            instructions="You are a helpful assistant.",
+            tools=tools,
+        )
+
+        result = await Runner.run(
+            starting_agent=agent,
+            input="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+        )
+        print(result.final_output)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import asyncio
 from composio import Composio
@@ -366,6 +516,8 @@ async def main():
 
 asyncio.run(main())
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -422,12 +574,26 @@ The OpenAI integration ships three providers, one per API surface:
 {/* code-example: no-api reason="strict is a client-side provider option that rewrites tool schemas in the SDK" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio_openai import OpenAIResponsesProvider
+
+composio = AsyncComposio(provider=OpenAIResponsesProvider(strict=True))
+
+# Reuse the client across requests. At application shutdown, await composio.aclose().
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_openai import OpenAIResponsesProvider
 
 composio = Composio(provider=OpenAIResponsesProvider(strict=True))
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

@@ -16,6 +16,19 @@ Each trigger type declares the config it needs. Check it before you create, so y
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+trigger_type = await composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_type.config)
+# {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -25,6 +38,8 @@ trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
 print(trigger_type.config)
 # {"properties": {"owner": {...}, "repo": {...}}, "required": ["owner", "repo"]}
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -51,6 +66,26 @@ Pass the user, the trigger slug, and the config the type requires.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+user_id = "user-id-123435"
+
+# The user needs a connected account for this toolkit before this runs.
+# Set it up first. See /docs/authentication.
+trigger = await composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
+)
+print(f"Trigger created: {trigger.trigger_id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -66,6 +101,8 @@ trigger = composio.triggers.create(
 )
 print(f"Trigger created: {trigger.trigger_id}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -100,6 +137,19 @@ If a user has more than one connected account for the toolkit, Composio uses the
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# The SDK overload omits the supported user_id + connected_account_id combination.
+trigger = await composio.triggers.create(  # type: ignore[call-overload]
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    connected_account_id="ca_def456",
+    trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # The SDK overload omits the supported user_id + connected_account_id combination.
 trigger = composio.triggers.create(  # type: ignore[call-overload]
@@ -109,6 +159,8 @@ trigger = composio.triggers.create(  # type: ignore[call-overload]
     trigger_config={"owner": "your-repo-owner", "repo": "your-repo-name"},
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -142,6 +194,23 @@ Some trigger types, including the Gmail and Google Calendar triggers, can receiv
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+trigger = await composio.triggers.create(
+    slug="GMAIL_NEW_GMAIL_MESSAGE",
+    user_id="user-id-123435",
+    type="poll",
+    polling_interval=2,
+)
+print(trigger.type, trigger.polling_interval, trigger.fallback_reason)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -155,6 +224,8 @@ trigger = composio.triggers.create(
 )
 print(trigger.type, trigger.polling_interval, trigger.fallback_reason)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

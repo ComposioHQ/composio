@@ -46,11 +46,24 @@ The previous `customTools` / `custom_tools` and `customToolkits` / `custom_toolk
 {/* code-example: no-api reason="SDK client constructor; REST calls send the key in the x-api-key header instead" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+# Reuse the client across requests. At application shutdown, await composio.aclose().
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -70,6 +83,35 @@ A standalone tool handles internal app logic that doesn't need Composio auth. `c
 {/* code-example: no-api reason="local tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from pydantic import BaseModel
+
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+class UserLookupInput(BaseModel):
+    pass
+
+
+PROFILES = {
+    "user_1": {"name": "Alice Johnson", "email": "alice@myapp.com", "tier": "enterprise"},
+    "user_2": {"name": "Bob Smith", "email": "bob@myapp.com", "tier": "free"},
+}
+
+
+@composio.experimental.tool()
+def get_user_profile(input: UserLookupInput, ctx):
+    """Retrieve the current user's profile from the internal directory."""
+    profile = PROFILES.get(ctx.user_id)
+    if not profile:
+        raise ValueError(f'No profile found for user "{ctx.user_id}"')
+    return profile
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from pydantic import BaseModel
 
@@ -96,6 +138,8 @@ def get_user_profile(input: UserLookupInput, ctx):
         raise ValueError(f'No profile found for user "{ctx.user_id}"')
     return profile
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -131,6 +175,24 @@ Pass local tools via the `experimental` option. `session.tools()` returns both r
 {/* code-example: no-api reason="binding custom tools needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.create(
+    user_id="user_1",
+    experimental={
+        "local_tools": [get_user_profile],
+    },
+)
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -145,6 +207,8 @@ session = composio.create(
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -190,11 +254,24 @@ const tools = await session.tools();
 {/* code-example: no-api reason="SDK client constructor; REST calls send the key in the x-api-key header instead" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+# Reuse the client across requests. At application shutdown, await composio.aclose().
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -216,6 +293,50 @@ Prefer relative `endpoint` values in proxy calls. They resolve against the toolk
 {/* code-example: no-api reason="extension tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import base64
+
+from pydantic import BaseModel, Field
+
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+class PromoEmailInput(BaseModel):
+    to: str = Field(description="Recipient email address")
+
+
+@composio.experimental.tool(extends_toolkit="gmail")
+def send_promo_email(input: PromoEmailInput, ctx):
+    """Send the standard promotional email to a recipient."""
+    subject = "You're invited to try MyApp Pro"
+    body = (
+        "Hi there,\n\n"
+        "We'd love for you to try MyApp Pro — free for 14 days.\n\n"
+        "Best,\nThe MyApp Team"
+    )
+    raw_msg = (
+        f"To: {input.to}\r\n"
+        f"Subject: {subject}\r\n"
+        "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
+        f"{body}"
+    )
+    raw = base64.urlsafe_b64encode(raw_msg.encode()).decode().rstrip("=")
+
+    res = ctx.proxy_execute(
+        toolkit="gmail",
+        endpoint="/gmail/v1/users/me/messages/send",
+        method="POST",
+        body={"raw": raw},
+    )
+    if res["result_type"] == "blocked":
+        raise RuntimeError(res["message"])
+    return {"status": res["status"], "to": input.to}
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import base64
 
@@ -257,6 +378,8 @@ def send_promo_email(input: PromoEmailInput, ctx):
         raise RuntimeError(res["message"])
     return {"status": res["status"], "to": input.to}
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -301,6 +424,25 @@ Pass local tools via the `experimental` option. Extension tools inherit auth fro
 {/* code-example: no-api reason="binding custom tools needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.create(
+    user_id="user_1",
+    toolkits=["gmail"],
+    experimental={
+        "local_tools": [send_promo_email],
+    },
+)
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -316,6 +458,8 @@ session = composio.create(
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -362,11 +506,24 @@ const tools = await session.tools();
 {/* code-example: no-api reason="SDK client constructor; REST calls send the key in the x-api-key header instead" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+# Reuse the client across requests. At application shutdown, await composio.aclose().
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="your_api_key")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -386,6 +543,36 @@ A local toolkit groups related standalone tools under a namespace. Tools inside 
 {/* code-example: no-api reason="local toolkits and their tool handlers are defined in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import typing as t
+
+from pydantic import BaseModel, Field
+
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+user_management = composio.experimental.Toolkit(
+    slug="USER_MANAGEMENT",
+    name="User scoping",
+    description="Manage user roles and permissions",
+)
+
+
+class AssignRoleInput(BaseModel):
+    user_id: str = Field(description="Target user ID")
+    role: t.Literal["admin", "editor", "viewer"] = Field(description="Role to assign")
+
+
+@user_management.tool()
+def assign_role(input: AssignRoleInput, ctx):
+    """Assign a role to a user in the internal system."""
+    return {"user_id": input.user_id, "role": input.role, "assigned": True}
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import typing as t
 
@@ -412,6 +599,8 @@ def assign_role(input: AssignRoleInput, ctx):
     """Assign a role to a user in the internal system."""
     return {"user_id": input.user_id, "role": input.role, "assigned": True}
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -451,6 +640,24 @@ Pass local toolkits via the `experimental` option. `session.tools()` returns bot
 {/* code-example: no-api reason="binding custom toolkits needs the SDK to serialize their schemas and run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.create(
+    user_id="user_1",
+    experimental={
+        "local_toolkits": [user_management],
+    },
+)
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -465,6 +672,8 @@ session = composio.create(
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -501,6 +710,49 @@ preload applies to all tools in that toolkit; set `preload: false` /
 {/* code-example: no-api reason="preload is a property of SDK-defined local tools whose handlers run in-process" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from pydantic import BaseModel, Field
+
+from composio import AsyncComposio
+from composio_openai_agents import OpenAIAgentsProvider
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_api_key",
+        provider=OpenAIAgentsProvider(),
+    ) as composio:
+        class ReplyGuideInput(BaseModel):
+            topic: str = Field(description="Email topic")
+
+
+        @composio.experimental.tool(preload=True)
+        def get_reply_style_guide(input: ReplyGuideInput, ctx):
+            """Return the team's email reply style guide."""
+            return {"topic": input.topic, "tone": "concise and helpful"}
+
+
+        session = await composio.create(
+            user_id="user_1",
+            experimental={
+                "local_tools": [get_reply_style_guide],
+            },
+        )
+
+        tools = await session.tools()
+        print([tool.name for tool in tools])
+        # LOCAL_GET_REPLY_STYLE_GUIDE
+        # COMPOSIO_SEARCH_TOOLS
+        # ... other default meta tools
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from pydantic import BaseModel, Field
 
@@ -536,6 +788,8 @@ print([tool.name for tool in tools])
 # COMPOSIO_SEARCH_TOOLS
 # ... other default meta tools
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -646,6 +900,20 @@ When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `comp
 {/* code-example: no-api reason="attaching local tools on use() needs the SDK to run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.use(
+    "session_id",
+    local_tools=[get_user_profile],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -656,6 +924,8 @@ session = composio.use(
     local_tools=[get_user_profile],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -680,9 +950,18 @@ Use `session.execute()` to run local tools directly, outside of an agent loop. L
 {/* code-example: no-api reason="local tools execute in-process in the SDK, not on the backend" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.execute("GET_USER_PROFILE")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.execute("GET_USER_PROFILE")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

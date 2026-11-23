@@ -45,6 +45,37 @@ Set `COMPOSIO_API_KEY` and `TYPESAFE_API_KEY` in your environment before running
 pip install composio composio-typesafe typesafe-sdk==0.6.0
 ```
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_typesafe import TypesafeProvider
+
+
+async def main():
+    async with AsyncComposio(provider=TypesafeProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, TypesafeProvider)
+        tool_set = await composio.tools.get(
+            user_id="user_123",
+            tools=["GITHUB_LIST_REPOSITORY_ISSUES"],
+        )
+        decision = await provider.adecide(tool_set, "List the closed issues of ComposioHQ/composio")
+
+        if decision["kind"] != "abstain":
+            result = await provider.aexecute(
+                "user_123",
+                decision,
+                arguments={"owner": "ComposioHQ", "repo": "composio"},
+            )
+            print(result["data"])
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_typesafe import TypesafeProvider
@@ -65,8 +96,10 @@ if decision["kind"] != "abstain":
     )
     print(result["data"])
 ```
+</Tab>
+</Tabs>
 
-Use `provider.shortlist_tools()` to narrow the tools before deciding, or `provider.confidence_gate()` to apply a minimum judgement score before execution. Destructive tools require explicit confirmation through `provider.execute(..., confirm=True)`.
+Use `await provider.ashortlist_tools()` or `provider.shortlist_tools()` to narrow the tools before deciding, or `provider.confidence_gate()` to apply a minimum judgement score before execution. Destructive tools require explicit confirmation through `await provider.aexecute(..., confirm=True)` or `provider.execute(..., confirm=True)`.
 
 </Tab>
 <Tab value="TypeScript">

@@ -16,9 +16,19 @@ Reuse an existing session with `composio.use(sessionId)` in TypeScript or `compo
 
 ### Python
 
+#### Async
+
+```python
+await composio.sessions.delete("trs_1a2b3c4d5e6f")
+```
+
+#### Sync
+
 ```python
 composio.sessions.delete("trs_1a2b3c4d5e6f")
 ```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 

@@ -78,6 +78,27 @@ If you want a white-label flow, pass `authConfigs` at creation to pin the sessio
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        # user_id is your own identifier, stable for the life of the account
+        session = await composio.sessions.create(
+            user_id="user_123",
+            manage_connections=False,
+            sandbox={"enable": False},
+        )
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -90,6 +111,8 @@ session = composio.sessions.create(
     sandbox={"enable": False},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -124,6 +147,18 @@ The catalog does not belong to a user. `composio.toolkits.list()` in Python or `
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+page = await composio.toolkits.list(limit=50)
+
+for toolkit in page.items:
+    print(f"{toolkit.slug:<20} {toolkit.name}")
+
+# page.next_cursor -> pass back as next_cursor= for the next page
+```
+</Tab>
+<Tab value="Sync">
 ```python
 page = composio.toolkits.list(limit=50)
 
@@ -132,6 +167,8 @@ for toolkit in page.items:
 
 # page.next_cursor -> pass back as next_cursor= for the next page
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -161,10 +198,20 @@ Filter by category or sort alphabetically. If you also need to know whether this
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+developer = await composio.toolkits.list(category="developer-tools", limit=50)
+connected = await session.toolkits(is_connected=True, limit=100)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 developer = composio.toolkits.list(category="developer-tools", limit=50)
 connected = session.toolkits(is_connected=True, limit=100)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -197,6 +244,23 @@ Toolkits where `isNoAuth` is true (search, scrapers, and similar) need no connec
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+request = await session.authorize(
+    "github",
+    callback_url="https://your-app.com/composio/callback",
+)
+
+# Redirect the user here
+print(request.redirect_url)
+
+# Scripts and CLIs can block; a web server should not
+account = await request.wait_for_connection()
+print(f"Connected account: {account.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 request = session.authorize(
     "github",
@@ -210,6 +274,8 @@ print(request.redirect_url)
 account = request.wait_for_connection()
 print(f"Connected account: {account.id}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -247,6 +313,38 @@ By default, `session.authorize()` uses Composio's managed OAuth app. To brand th
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from typing import cast
+from composio.client.types import auth_config_create_params as auth_types
+
+auth_config = await composio.auth_configs.create(
+    toolkit="github",
+    options={
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "name": "My GitHub App",
+        # The generated credentials type omits OAuth client fields accepted by the API.
+        "credentials": cast(auth_types.AuthConfigUnionMember1Credentials, {
+            "client_id": os.environ["GITHUB_CLIENT_ID"],
+            "client_secret": os.environ["GITHUB_CLIENT_SECRET"],
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v1/auth-apps/add",
+        }),
+    },
+)
+
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github"],
+    auth_configs={"github": auth_config.id},
+    manage_connections=False,
+    sandbox={"enable": False},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from typing import cast
@@ -275,6 +373,8 @@ session = composio.sessions.create(
     sandbox={"enable": False},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -346,6 +446,23 @@ Your harness can consume tools in two shapes. Load raw JSON Schema and call them
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connected = await session.toolkits(is_connected=True, limit=100)
+slugs = [toolkit.slug for toolkit in connected.items]
+
+tools = await composio.tools.get_raw_composio_tools(toolkits=slugs)
+
+for tool in tools:
+    index.add(
+        name=tool.slug,                    # "GITHUB_CREATE_AN_ISSUE"
+        description=tool.description,
+        parameters=tool.input_parameters,  # JSON Schema
+    )
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connected = session.toolkits(is_connected=True, limit=100)
 slugs = [toolkit.slug for toolkit in connected.items]
@@ -359,6 +476,8 @@ for tool in tools:
         parameters=tool.input_parameters,  # JSON Schema
     )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -413,6 +532,35 @@ Create a session with `mcp: true` and hand `session.mcp.url` (and `session.mcp.h
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio, SESSION_PRESET_DIRECT_TOOLS
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        session = await composio.sessions.create(
+            user_id="user_123",
+            toolkits=["gmail"],
+            tools={
+                "gmail": {
+                    "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"],
+                },
+            },
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+            mcp=True,
+        )
+
+        print(session.mcp.url)
+        print(session.mcp.headers)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 
@@ -433,6 +581,8 @@ session = composio.sessions.create(
 print(session.mcp.url)
 print(session.mcp.headers)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -494,9 +644,18 @@ If you scoped the session to specific toolkits, that filter is what gates execut
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(toolkits={"enable": [*slugs, "linear"]})
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(toolkits={"enable": [*slugs, "linear"]})
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -527,6 +686,27 @@ Your planner picked a tool and produced arguments. `session.execute` runs it as 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.execute(
+    "GITHUB_CREATE_AN_ISSUE",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio",
+        "title": "Tool schemas drift between staging and prod",
+        "body": "Filed by the harness.",
+    },
+)
+
+if result.result_type == "failed":
+    raise RuntimeError(result.error or f"Tool execution failed (log ID: {result.log_id})")
+
+print(result.data)
+print(result.log_id)  # look this up in the dashboard
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.execute(
     "GITHUB_CREATE_AN_ISSUE",
@@ -544,6 +724,8 @@ if result.result_type == "failed":
 print(result.data)
 print(result.log_id)  # look this up in the dashboard
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

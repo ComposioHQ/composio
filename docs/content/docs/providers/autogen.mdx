@@ -33,6 +33,57 @@ OPENAI_API_KEY=xxxxxxxxx
 <Step>
 **Create session and run**
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+
+from autogen import AssistantAgent, LLMConfig, UserProxyAgent
+from composio import AsyncComposio
+from composio_autogen import AutogenProvider
+
+
+async def main():
+    async with AsyncComposio(provider=AutogenProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, AutogenProvider)
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        chatbot = AssistantAgent(
+            "chatbot",
+            system_message="Reply TERMINATE when the task is done or when user's content is empty",
+            llm_config=LLMConfig({
+                "api_type": "openai",
+                "model": "gpt-5.2",
+                "api_key": os.environ["OPENAI_API_KEY"],
+            }),
+        )
+
+        user_proxy = UserProxyAgent(
+            "user_proxy",
+            is_termination_msg=lambda msg: "TERMINATE" in (msg.get("content", "") or ""),
+            human_input_mode="NEVER",
+            code_execution_config={"use_docker": False},
+        )
+
+        # Register tools with both agents
+        provider.register_tools(caller=chatbot, executor=user_proxy, tools=tools)
+
+        response = await asyncio.to_thread(user_proxy.initiate_chat,
+            chatbot,
+            message="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+        )
+
+        print(response.chat_history)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 
@@ -74,6 +125,8 @@ response = user_proxy.initiate_chat(
 
 print(response.chat_history)
 ```
+</Tab>
+</Tabs>
 </Step>
 </Steps>
 

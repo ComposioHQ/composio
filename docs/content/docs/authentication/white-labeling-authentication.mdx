@@ -17,6 +17,21 @@ For the hosted path, create an auth config, then run this on your server with a 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+request = await composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+    callback_url="https://your-app.com/connections/callback",
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -27,6 +42,8 @@ request = composio.connected_accounts.link(
     callback_url="https://your-app.com/connections/callback",
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -117,6 +134,20 @@ Use these values exactly as written. Any other value, including variants such as
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from urllib.parse import urlencode
+
+connection_request = await session.authorize("gmail")
+
+if connection_request.redirect_url:
+    # Show the Connect Link in Spanish
+    connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
+    print(connect_url)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from urllib.parse import urlencode
 
@@ -127,6 +158,8 @@ if connection_request.redirect_url:
     connect_url = f"{connection_request.redirect_url}?{urlencode({'locale': 'es'})}"
     print(connect_url)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -188,6 +221,24 @@ For sessions, select the custom config explicitly:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={"github": "ac_your_github_config"},
+)
+request = await session.authorize(
+    "github",
+    callback_url="https://your-app.com/connections/callback",
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -201,6 +252,8 @@ request = session.authorize(
     callback_url="https://your-app.com/connections/callback",
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -260,6 +313,25 @@ For a toolkit that supports direct OAuth2 initiation with custom credentials, yo
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+request = await composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_github_config",
+    callback_url="https://your-app.com/connections/callback",
+    config={
+        "auth_scheme": "OAUTH2",
+        "val": {"status": "INITIALIZING", "long_redirect_url": True},
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -274,6 +346,8 @@ request = composio.connected_accounts.initiate(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -325,6 +399,22 @@ After verification, pass the connected account ID to a session for the same serv
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={"github": "ac_your_github_config"},
+    connected_accounts={"github": "ca_verified_github_account"},
+    manage_connections=False,
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -336,6 +426,8 @@ session = composio.create(
     manage_connections=False,
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -416,12 +508,24 @@ Pass an application `callbackUrl` when starting either flow to return to your pr
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connection_request = await session.authorize(
+    "gmail",
+    callback_url="https://your-app.com/callback"
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connection_request = session.authorize(
     "gmail",
     callback_url="https://your-app.com/callback"
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -457,6 +561,23 @@ Before marking an integration connected:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+accounts = await composio.connected_accounts.list(
+    connected_account_ids=["ca_saved_connection_id"],
+    user_ids=["user_123"],
+    auth_config_ids=["ac_your_github_config"],
+    toolkit_slugs=["github"],
+    statuses=["ACTIVE"],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -469,6 +590,8 @@ accounts = composio.connected_accounts.list(
     statuses=["ACTIVE"],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

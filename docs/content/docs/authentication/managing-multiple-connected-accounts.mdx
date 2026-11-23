@@ -14,6 +14,20 @@ By default, each session uses **one account per toolkit**. Enable multi-account 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    multi_account={
+        "enable": True,
+        "max_accounts_per_toolkit": 3,
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -24,6 +38,8 @@ session = composio.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -71,6 +87,27 @@ Call `session.authorize()` multiple times for the same toolkit. Each call create
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    multi_account={"enable": True},
+)
+
+# Connect work account
+work_auth = await session.authorize("gmail", alias="work-gmail")
+print(f"Connect work Gmail: {work_auth.redirect_url}")
+work_connection = await work_auth.wait_for_connection()
+
+# Connect personal account
+personal_auth = await session.authorize("gmail", alias="personal-gmail")
+print(f"Connect personal Gmail: {personal_auth.redirect_url}")
+personal_connection = await personal_auth.wait_for_connection()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -88,6 +125,8 @@ personal_auth = session.authorize("gmail", alias="personal-gmail")
 print(f"Connect personal Gmail: {personal_auth.redirect_url}")
 personal_connection = personal_auth.wait_for_connection()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -154,11 +193,22 @@ Pass `alias` to `session.authorize()`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(user_id="user_123")
+
+connection_request = await session.authorize("gmail", alias="work-gmail")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(user_id="user_123")
 
 connection_request = session.authorize("gmail", alias="work-gmail")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -191,6 +241,17 @@ The direct-execution methods `connectedAccounts.initiate()` and `connectedAccoun
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Set or update an alias
+await composio.connected_accounts.update("ca_abc123", alias="work-gmail")
+
+# Clear an alias
+await composio.connected_accounts.update("ca_abc123", alias="")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Set or update an alias
 composio.connected_accounts.update("ca_abc123", alias="work-gmail")
@@ -198,6 +259,8 @@ composio.connected_accounts.update("ca_abc123", alias="work-gmail")
 # Clear an alias
 composio.connected_accounts.update("ca_abc123", alias="")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -235,6 +298,19 @@ Pin a session to specific accounts by passing their IDs in the session config. T
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": ["ca_work_gmail_id"],
+        "github": ["ca_personal_github_id"],
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -244,6 +320,8 @@ session = composio.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -278,6 +356,17 @@ Use `session.toolkits()` to see which accounts are currently active:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+toolkits = await session.toolkits()
+
+for toolkit in toolkits.items:
+    if toolkit.connection and toolkit.connection.connected_account:
+        print(f"{toolkit.name}: {toolkit.connection.connected_account.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 toolkits = session.toolkits()
 
@@ -285,6 +374,8 @@ for toolkit in toolkits.items:
     if toolkit.connection and toolkit.connection.connected_account:
         print(f"{toolkit.name}: {toolkit.connection.connected_account.id}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

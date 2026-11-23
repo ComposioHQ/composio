@@ -30,7 +30,7 @@ ATTRIBUTE_CODES = {"attr-defined", "union-attr"}
 IMPORT_CODES = {"import-not-found", "import-untyped"}
 # Value misuse whose owner is an expression type: indexing an SDK model and
 # assigning an SDK result to an incompatible annotation.
-VALUE_CODES = {"index", "assignment"}
+VALUE_CODES = {"index", "assignment", "unused-coroutine", "misc"}
 TYPE_IGNORE = re.compile(r"#\s*type:\s*ignore\b(\[[^\]]*\])?")
 
 
@@ -104,6 +104,8 @@ def run_mypy(files: list[str], request: dict, trees: dict[str, ast.Module], prel
     def sdk_type(typ) -> bool:
         typ = get_proper_type(typ)
         if isinstance(typ, Instance):
+            if typ.type.fullname in {"typing.Coroutine", "typing.Awaitable"} and typ.args:
+                return sdk_type(typ.args[-1])
             return sdk_name(typ.type.fullname)
         if isinstance(typ, CallableType):
             definition = typ.definition
@@ -209,7 +211,16 @@ def run_mypy(files: list[str], request: dict, trees: dict[str, ast.Module], prel
             sdk = sdk_import(snippet_id, snippet_line)
         elif code in ATTRIBUTE_CODES | CALL_CODES | VALUE_CODES:
             expressions = find_all_by_location(result.files[snippet_id], line, column)
-            if code in ATTRIBUTE_CODES:
+            if code == "unused-coroutine" or (code == "misc" and 'in "await"' in message):
+                sdk = any(isinstance(expr, CallExpr) and sdk_expression(expr.callee) for expr in expressions)
+                if not sdk:
+                    # An await diagnostic points to the keyword, before its call.
+                    from mypy.nodes import AwaitExpr
+                    sdk = any(isinstance(expr, AwaitExpr) and isinstance(expr.expr, CallExpr) and
+                              sdk_expression(expr.expr.callee) for expr in expressions)
+            elif code == "misc":
+                pass
+            elif code in ATTRIBUTE_CODES:
                 attribute = re.search(r'has no attribute "([^"]+)"', message)
                 owner = next((
                     expr for expr in expressions
@@ -312,14 +323,24 @@ def main() -> None:
         if snippet["typeCheck"]:
             parsed.append((snippet["id"], snippet["code"], tree))
 
-    prelude_source = PRELUDE.read_text(encoding="utf-8")
-    prelude_lines = prelude_source.splitlines()
-    bindings = prelude_bindings(prelude_source)
+    # Blank the other mode's lines to keep a single diagnostic offset.
+    # Old reference snapshots can still be checked using their original wheel.
+    prelude = PRELUDE.read_text(encoding="utf-8")
+    common, modes = prelude.split("# Sync client\n")
+    sync, asynchronous = modes.split("# Async client\n")
+    sync_source = common + sync + "\n" * len(asynchronous.splitlines())
+    async_source = common + "\n" * len(sync.splitlines()) + asynchronous
+    contexts = {
+        is_async: (source.splitlines(), prelude_bindings(source))
+        for is_async, source in [(False, sync_source), (True, async_source)]
+    }
+    async_ids = {s["id"] for s in request["snippets"] if s.get("asyncMode")}
     output: dict[str, list] = {"syntax": syntax, "api": [], "other": [], "directives": [], "mypy": []}
     if not request["syntaxOnly"] and parsed:
         files: list[str] = []
         for snippet_id, code, tree in parsed:
             path = work_dir / f"{snippet_id}.py"
+            prelude_lines, bindings = contexts[snippet_id in async_ids]
             path.write_text(module_source(prelude_lines, bindings, tree, code), encoding="utf-8")
             files.append(path.name)
         os.chdir(work_dir)

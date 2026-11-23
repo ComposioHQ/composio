@@ -43,6 +43,66 @@ The `HN_RESEARCH` toolkit contains one local tool. The direct-tools preset puts 
 
 Save as `research.py`:
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python title="research.py"
+import asyncio
+from agents import Agent, Runner
+from composio import AsyncComposio, SESSION_PRESET_DIRECT_TOOLS
+from composio_openai_agents import OpenAIAgentsProvider
+from pydantic import BaseModel, Field
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIAgentsProvider()) as composio:
+        class UserNoteInput(BaseModel):
+            username: str = Field(description="Hacker News username, for example pg")
+
+
+        research = composio.experimental.Toolkit(
+            slug="HN_RESEARCH",
+            name="Hacker News research",
+            description="Internal research notes for Hacker News users.",
+        )
+
+
+        @research.tool(slug="GET_USER_NOTE", name="Get internal research note")
+        def get_user_note(input: UserNoteInput, ctx):
+            """Return the internal research note for a Hacker News username."""
+            notes = {"pg": "Paul Graham; YC co-founder and essayist."}
+            return {"note": notes.get(input.username.lower(), "No internal note found.")}
+
+
+        session = await composio.create(
+            user_id="custom-tools-demo",
+            session_preset=SESSION_PRESET_DIRECT_TOOLS,
+            toolkits=["hackernews"],
+            tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
+            experimental={"local_toolkits": [research]},
+        )
+        try:
+            tools = await session.tools()
+            print("Available tools:", [tool.name for tool in tools])
+            agent = Agent(
+                name="Research agent",
+                model="gpt-5.2",
+                instructions="Use both tools. Distinguish public facts from internal notes.",
+                tools=tools,
+            )
+            result = await Runner.run(
+                agent,
+                "Look up pg on Hacker News and include our internal research note.",
+                max_turns=10,
+            )
+            print(result.final_output)
+        finally:
+            await session.delete()
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python title="research.py"
 from agents import Agent, Runner
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
@@ -95,6 +155,8 @@ try:
 finally:
     session.delete()
 ```
+</Tab>
+</Tabs>
 
 ```bash
 python research.py

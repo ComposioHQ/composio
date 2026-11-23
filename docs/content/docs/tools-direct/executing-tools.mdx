@@ -48,6 +48,48 @@ Use the Composio SDK with providers like OpenAI, Anthropic, and Google AI. To le
 {/* code-example: no-api reason="LLM chat-completions loop with provider-formatted tools and handle_tool_calls; the provider integration is SDK-side" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio_openai import OpenAIProvider
+from openai import AsyncOpenAI
+from datetime import datetime
+
+# Use a unique identifier for each user in your application
+user_id = "user-k7334"
+
+# Create composio client
+
+composio = AsyncComposio(provider=OpenAIProvider(), api_key="your_composio_api_key")
+provider = composio.provider
+assert isinstance(provider, OpenAIProvider)
+
+# Create openai client
+openai = AsyncOpenAI()
+
+# Get calendar tools for this user
+tools = await composio.tools.get(
+    user_id=user_id,
+    tools=["GOOGLECALENDAR_EVENTS_LIST"]
+)
+
+# Ask the LLM to check calendar
+result = await openai.chat.completions.create(
+    model="gpt-5.4",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": f"What's on my calendar for the next 7 days?"}
+    ]
+)
+
+# Handle tool calls
+result = await provider.ahandle_tool_calls(user_id=user_id, response=result)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_openai import OpenAIProvider
@@ -84,6 +126,8 @@ result = openai.chat.completions.create(
 result = provider.handle_tool_calls(user_id=user_id, response=result)
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -131,6 +175,41 @@ Agentic frameworks automatically handle the tool execution loop. Composio provid
 {/* code-example: no-api reason="OpenAI Agents framework integration; the agent loop runs in the SDK provider" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from agents import Agent, Runner
+from composio import AsyncComposio
+from composio_openai_agents import OpenAIAgentsProvider
+
+# Use a unique identifier for each user in your application
+user_id = "user-k7334"
+
+# Initialize Composio toolset
+
+composio = AsyncComposio(provider=OpenAIAgentsProvider(), api_key="your_composio_api_key")
+
+# Get all tools for the user
+tools = await composio.tools.get(
+    user_id=user_id,
+    toolkits=["COMPOSIO_SEARCH"],
+)
+
+# Create an agent with the tools
+agent = Agent(
+    name="Deep Researcher",
+    instructions="You are an investigative journalist.",
+    tools=tools,
+)
+
+result = await Runner.run(
+    starting_agent=agent,
+    input=("Do a thorough DEEP research on Golden Gate Bridge"),
+)
+print(result.final_output)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import asyncio
 from agents import Agent, Runner
@@ -166,6 +245,8 @@ async def main():
 # Run the agent
 asyncio.run(main())
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -232,6 +313,23 @@ Choose an available version from the [GitHub toolkit page](/toolkits/github) or 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_composio_api_key")
+
+result = await composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    user_id="user-k7334",
+    version="20250909_00",
+    arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -245,6 +343,8 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -278,6 +378,37 @@ If an LLM consumes the output and can handle schema changes, you can use `latest
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+user_id = "user-k7334"
+# Configure toolkit versions at SDK level for every toolkit you execute.
+# Use "latest", or pin a version (see "Pin a version" above)
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_composio_api_key",
+        toolkit_versions={"github": "latest"}
+    ) as composio:
+        # Find available arguments for any tool in the Composio dashboard
+        result = await composio.tools.execute(
+            "GITHUB_LIST_STARGAZERS",
+            user_id=user_id,
+            arguments={"owner": "ComposioHQ", "repo": "composio", "page": 1, "per_page": 5},
+            # "latest" requires this opt-in; to pin instead, pass version (see "Pin a version" above)
+            dangerously_skip_version_check=True,
+        )
+        print(result)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -299,6 +430,8 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -356,6 +489,27 @@ A relative endpoint is appended to the base URL, and many base URLs already incl
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Send a proxy request to the endpoint
+response = await composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ca_jI6********",  # use connected account for github
+    parameters=[
+        {
+            "name": "Accept",
+            "value": "application/vnd.github.v3+json",
+            "type": "header",
+        },
+    ],
+)
+
+print(response)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Send a proxy request to the endpoint
 response = composio.tools.proxy(
@@ -373,6 +527,8 @@ response = composio.tools.proxy(
 
 print(response)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -427,6 +583,35 @@ Pass local file paths, URLs, or File objects to tools that accept files. The SDK
 {/* code-example: no-api reason="automatic file upload from local paths/URLs is done client-side by the SDK before execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_api_key",
+        toolkit_versions={"googledrive": "latest", "gmail": "latest"},
+        dangerously_allow_auto_upload_download_files=True,
+    ) as composio:
+        # Upload a local file to Google Drive
+        result = await composio.tools.execute(
+            slug="GOOGLEDRIVE_UPLOAD_FILE",
+            user_id="user-1235***",
+            arguments={"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+            dangerously_skip_version_check=True,  # required when running "latest"
+        )
+
+        print(result)  # Print Google Drive file details
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -447,6 +632,8 @@ result = composio.tools.execute(
 
 print(result)  # Print Google Drive file details
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -478,6 +665,23 @@ This also works with public URLs. For example, to send a Gmail email with an att
 {/* code-example: no-api reason="the SDK fetches the attachment URL and stages it in Composio storage client-side before execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.tools.execute(
+    slug="GMAIL_SEND_EMAIL",
+    user_id="user-1235***",
+    arguments={
+        "recipient_email": "recipient@example.com",
+        "subject": "Report attached",
+        "body": "Please find the report attached.",
+        "attachment": "https://example.com/report.pdf",
+    },
+    dangerously_skip_version_check=True,  # required when running "latest"
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.tools.execute(
     slug="GMAIL_SEND_EMAIL",
@@ -491,6 +695,8 @@ result = composio.tools.execute(
     dangerously_skip_version_check=True,  # required when running "latest"
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -522,6 +728,35 @@ When tools return files, Composio downloads them to the local directory and prov
 {/* code-example: no-api reason="automatic file download to a local directory is done client-side by the SDK after execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_api_key",
+        toolkit_versions={"googledrive": "latest"},
+        dangerously_allow_auto_upload_download_files=True,
+        file_download_dir="./downloads",  # Optional: Specify download directory
+    ) as composio:
+        result = await composio.tools.execute(
+            "GOOGLEDRIVE_DOWNLOAD_FILE",
+            user_id="user-1235***",
+            arguments={"file_id": "your_file_id"},
+            dangerously_skip_version_check=True,  # required when running "latest"
+        )
+
+        # Result includes local file path
+        print(result)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -542,6 +777,8 @@ result = composio.tools.execute(
 # Result includes local file path
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -606,6 +843,27 @@ Disabling protection or wiring a hook that always approves paths can allow **exf
 {/* code-example: no-api reason="sensitive file upload protection is an SDK constructor option enforced client-side" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_composio_api_key",
+        sensitive_file_upload_protection=True,
+        file_upload_path_deny_segments=("internal-only-secrets",),
+    ) as composio:
+        # Use the client within this context.
+        pass
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -615,6 +873,8 @@ composio = Composio(
     file_upload_path_deny_segments=("internal-only-secrets",),
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -638,6 +898,33 @@ const composio = new Composio({
 {/* code-example: no-api reason="before_file_upload/beforeFileUpload hooks run client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from composio import AsyncComposio, before_file_upload
+
+# New form: take a single ``context`` arg; ``context["source"]`` is "path"
+# or "url". The legacy ``(path, tool, toolkit)`` 3-arg form is still accepted.
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(context) -> str | bool:
+    if context["source"] != "path":
+        return context["path"]
+    # ...audit context["path"]...
+    return context["path"]
+
+composio = AsyncComposio(api_key="your_api_key", toolkit_versions={"googledrive": "latest"})
+
+await composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": os.path.join(os.getcwd(), "document.pdf")},
+    user_id="user-4235***",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    modifiers=[audit_path],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio, before_file_upload
@@ -661,6 +948,8 @@ composio.tools.execute(
     modifiers=[audit_path],
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -707,6 +996,28 @@ The Python SDK does not expose a top-level manual-staging API. Either:
 
 1. Enable auto-handling and configure `file_upload_dirs` to cover the directories your code reads from:
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="your_composio_key",
+        toolkit_versions={"googledrive": "latest"},
+        dangerously_allow_auto_upload_download_files=True,
+        file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
+    ) as composio:
+        # Use the client within this context.
+        pass
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -717,9 +1028,23 @@ composio = Composio(
     file_upload_dirs=["/srv/agent/uploads", "~/.composio/temp"],
 )
 ```
+</Tab>
+</Tabs>
 
 2. Or keep auto-handling off and pass an already-staged `{ "name", "mimetype", "s3key" }` dict directly into `tools.execute`. Pre-stage your files via your own pipeline (or an upstream tool) and inject the descriptor:
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    user_id="user-1",
+    arguments={"file_to_upload": prestaged_descriptor},
+    dangerously_skip_version_check=True,  # required when running "latest"
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.tools.execute(
     "GOOGLEDRIVE_UPLOAD_FILE",
@@ -728,6 +1053,8 @@ result = composio.tools.execute(
     dangerously_skip_version_check=True,  # required when running "latest"
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 With `dangerouslyAllowAutoUploadDownloadFiles: false` (the default), call `composio.files.upload(...)` to stage paths/URLs explicitly. That call bypasses `fileUploadDirs` by design — the caller controls the path:

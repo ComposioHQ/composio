@@ -67,6 +67,18 @@ Fetch the toolkit and read its managed auth schemes (`composio_managed_auth_sche
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+toolkit = await composio.toolkits.get("gmail")
+print(toolkit.composio_managed_auth_schemes)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -74,6 +86,8 @@ composio = Composio()
 toolkit = composio.toolkits.get("gmail")
 print(toolkit.composio_managed_auth_schemes)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

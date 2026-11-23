@@ -219,7 +219,7 @@ export function markdownForMdx(markdown: string): string {
   let cursor = 0;
   for (const group of markdownLanguageGroups(markdown)) {
     result += safeMarkdownForMdx(markdown.slice(cursor, group.start));
-    result += `<Tabs groupId="language" items={${JSON.stringify(group.tabs.map((tab) => tab.value))}} persist>\n`;
+    result += `<Tabs groupId="${group.groupId}" items={${JSON.stringify(group.tabs.map((tab) => tab.value))}} persist>\n`;
     for (const tab of group.tabs) {
       result += `\n<Tab value="${tab.value}">\n${markdownForMdx(tab.source).trim()}\n</Tab>\n`;
     }

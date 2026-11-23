@@ -18,6 +18,37 @@ Pass `customAuthParams` in the `tools.execute()` call to inject your own token a
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+
+from composio import AsyncComposio
+from composio.client.types import tool_execute_params
+
+composio = AsyncComposio(toolkit_versions={"googlecalendar": "latest"})
+
+auth_params: tool_execute_params.CustomAuthParams = {
+    "parameters": [
+        {
+            "name": "Authorization",
+            "value": f"Bearer {os.environ['GOOGLE_ACCESS_TOKEN']}",
+            "in_": "header",  # Python field name; serialized as "in" on the wire
+        }
+    ],
+}
+
+result = await composio.tools.execute(
+    slug="GOOGLECALENDAR_LIST_EVENTS",
+    user_id="user_123",
+    arguments={},
+    dangerously_skip_version_check=True,  # required when running "latest"
+    custom_auth_params=auth_params,
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 
@@ -45,6 +76,8 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -122,6 +155,48 @@ Before Execute Modifiers are a way to modify the parameters of a tool before it 
 {/* code-example: no-api reason="beforeExecute modifier runs client-side in the SDK; the REST equivalent is passing custom_auth_params directly, shown above" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+
+from composio import AsyncComposio, before_execute
+from composio.types import ToolExecuteParams
+
+composio = AsyncComposio(toolkit_versions={"notion": "latest"})
+
+@before_execute(toolkits=["notion"])
+def add_custom_auth(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    if params.get("custom_auth_params") is None:
+        params["custom_auth_params"] = {"parameters": []}
+
+    params["custom_auth_params"]["parameters"].append(
+        {
+            "name": "x-api-key",
+            "value": os.environ["NOTION_API_KEY"],
+            "in_": "header",
+        }
+    )
+    return params
+
+
+result = await composio.tools.execute(
+    slug="NOTION_GET_DATABASE_ITEMS",
+    user_id="user_123",
+    arguments={"database_id": "1234567890"},
+    dangerously_skip_version_check=True,  # required when running "latest"
+    modifiers=[
+        add_custom_auth,
+    ],
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 
@@ -161,6 +236,8 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

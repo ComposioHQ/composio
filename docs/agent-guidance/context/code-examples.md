@@ -7,9 +7,18 @@ Maintained operation examples offer Python, TypeScript, and API options. A valid
 ````mdx
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
 ```python
-# Python SDK operation
+session = await composio.create(user_id=user_id)
 ```
+</Tab>
+<Tab value="Sync">
+```python
+session = composio.create(user_id=user_id)
+```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -25,6 +34,8 @@ curl https://backend.composio.dev/api/v3.1/tools \
 </Tabs>
 ````
 
+- Start new Python integrations with `AsyncComposio`. Pair each maintained Python SDK operation with its synchronous `Composio` equivalent. Nest the mode selector inside Python and keep a separate persistence key. Readers choose the execution model independently of language. Show shared installs, local-only helpers with identical code, and historical examples once. Identify framework-specific restrictions where a callback requires a particular execution model.
+- Runnable async examples use `async with AsyncComposio()` and keep tool invocations inside the context. In a multi-step guide, fragments run in an existing async function with a client owned by the application. Reuse the client across steps and call `await composio.aclose()` on shutdown. Preserve the same user, tool filters, return values, and side effects as the sync variant.
 - Keep the order Python, TypeScript, API. Use `python`, `typescript`, and `bash` fences.
 - Preserve the operation, inputs, user identity, account pinning, filters, pagination, permissions, version selection, and output in all options. Expand SDK defaults, transformations, polling, and create-or-update behavior in curl.
 - A tab may contain installation instructions, output fences, a table, or an SDK-gap Callout. Empty code fences and another language's code are not substitutes.
@@ -38,9 +49,19 @@ FAQ and KB Markdown uses consecutive headings at the same depth:
 ````md
 ### Python
 
+#### Async
+
 ```python
-# Python operation
+session = await composio.create(user_id=user_id)
 ```
+
+#### Sync
+
+```python
+session = composio.create(user_id=user_id)
+```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 
@@ -85,6 +106,8 @@ An API exception identifies the exact rule and operation, and the affected field
 Allowed exception rules are defined by `EXEMPTIBLE_RULES` in `lib/api-snippets.ts`. Add separate markers for separate operations. A field exception does not waive route, method, authentication, version, or other body validation. Unused exceptions fail, so remove them when the schema catches up. Unsupported shell/curl syntax and opaque request bodies must not silently bypass validation.
 
 ## Inventory and validation scope
+
+For Python-only runtime constraints, explain the reason on a `# Sync-only: ...` line in the snippet. Pure local operations, install commands, and historical examples can use one snippet. To validate a release candidate, install its wheel, providers, and the locked mypy version into a clean environment and run `bun run check:python-snippets --installed-python /path/to/venv/bin/python`.
 
 Run `bun run inventory:code-examples` for JSON records with source path, line, kind, language/options, validation category, and exception reason. The inventory includes:
 

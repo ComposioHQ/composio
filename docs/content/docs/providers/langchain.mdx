@@ -50,6 +50,34 @@ OPENAI_API_KEY=xxxxxxxxx
 {/* code-example: no-api reason="LangChain agent integration via the Composio LangChain provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_langchain import LangchainProvider
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+
+async def main():
+    async with AsyncComposio(provider=LangchainProvider()) as composio:
+        llm = ChatOpenAI(model="gpt-5.2")
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = create_agent(tools=tools, model=llm)
+        result = await agent.ainvoke({"messages": [("user", "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")]})
+
+        print(result["messages"][-1].content)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_langchain import LangchainProvider
@@ -68,6 +96,8 @@ result = agent.invoke({"messages": [("user", "Send an email to john@example.com 
 
 print(result["messages"][-1].content)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -155,6 +185,34 @@ OPENAI_API_KEY=xxxxxxxxx
 **Create session and run**
 
 {/* code-example: single-language reason="LangGraph provider (composio_langgraph) is Python-only" */}
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_langgraph import LanggraphProvider
+from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+
+
+async def main():
+    async with AsyncComposio(provider=LanggraphProvider()) as composio:
+        llm = ChatOpenAI(model="gpt-5.2")
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = create_agent(tools=tools, model=llm)
+        result = await agent.ainvoke({"messages": [("user", "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")]})
+
+        print(result["messages"][-1].content)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_langgraph import LanggraphProvider
@@ -173,6 +231,8 @@ result = agent.invoke({"messages": [("user", "Send an email to john@example.com 
 
 print(result["messages"][-1].content)
 ```
+</Tab>
+</Tabs>
 </Step>
 </Steps>
 

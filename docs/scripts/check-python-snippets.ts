@@ -36,6 +36,8 @@ export type PythonSnippet = {
   code: string;
   /** False for legacy-SDK fences, which are only syntax-checked. */
   typeCheck: boolean;
+  /** Async fragments use the typed async client and session prelude. */
+  asyncMode?: boolean;
 };
 
 export type PythonSnippetRule = 'python-syntax' | 'python-api' | 'python-directive' | 'python-reference';
@@ -79,6 +81,10 @@ export function collectPythonSnippets(
         line: unit.line,
         code: unit.code,
         typeCheck: !legacy,
+        ...(ancestors.some((ancestor, i) => {
+          const tab = ancestors[i + 1];
+          return ancestor.type === 'tabs' && ancestor.groupId === 'python-mode' && tab?.type === 'tab' && tab.value === 'Async';
+        }) ? { asyncMode: true } : {}),
       });
     });
   }
@@ -142,7 +148,7 @@ export function runPythonHelper(
         sdkPython: installedPython ?? SDK_PYTHON,
         installed: installedPython !== undefined,
         syntaxOnly,
-        snippets: snippets.map(({ id, code, typeCheck }) => ({ id, code, typeCheck })),
+        snippets: snippets.map(({ id, code, typeCheck, asyncMode }) => ({ id, code, typeCheck, asyncMode })),
       }),
     );
     const result = spawnSync(
@@ -189,9 +195,9 @@ function main(): void {
   });
   const installed = values['installed-python'];
   const directory = values.directory === undefined ? undefined : resolve(values.directory);
-  if ((!values.reference && (directory !== undefined || installed !== undefined)) ||
+  if ((!values.reference && directory !== undefined) ||
       (installed !== undefined && values['syntax-only'])) {
-    throw new Error('Use --reference with --directory or --installed-python. Installed checks require type checking.');
+    throw new Error('Use --reference with --directory. Installed checks require type checking.');
   }
   const reference: { optOuts: ReferenceOptOut[] } | undefined = values.reference
     ? { optOuts: [] }
@@ -200,7 +206,7 @@ function main(): void {
     ? collectPythonSnippets(listPythonReferenceFiles(DOCS_ROOT, directory), reference)
     : collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
   const helper = runPythonHelper(snippets, values['syntax-only'], installed === undefined ? undefined : resolve(installed));
-  const violations = pythonSnippetViolations(snippets, helper, installed !== undefined);
+  const violations = pythonSnippetViolations(snippets, helper, Boolean(reference && installed));
   violations.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
 
   const counts: Record<string, number> = {};

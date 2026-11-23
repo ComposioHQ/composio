@@ -30,6 +30,27 @@ Here's a `before_execute` hook that stops your agent from sharing internal prici
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "no_pricing_to_customers",
+            "type": "before_execute",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "Sharing internal pricing with anyone outside acme.com",
+                "action": "block",
+            },
+        },
+    ],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -47,6 +68,8 @@ session = composio.create(
     ],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -98,6 +121,25 @@ When your agent tries to email internal pricing to someone outside your company,
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.execute(
+    "GMAIL_SEND_EMAIL",
+    arguments={
+        "recipient_email": "jane@customer.com",
+        "subject": "Pricing",
+        "body": "Our internal floor price is $40 per seat.",
+    },
+)
+
+print(result.result_type)   # 'blocked'
+print(result.error)         # 'Blocked by session policy'
+print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
+print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.execute(
     "GMAIL_SEND_EMAIL",
@@ -113,6 +155,8 @@ print(result.error)         # 'Blocked by session policy'
 print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
 print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -165,6 +209,28 @@ Here's an `after_execute` hook that keeps emails with passwords or API keys away
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "no_secrets_in_results",
+            "type": "after_execute",
+            "name": "No secrets in emails",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "An email that contains a password, API key or access token",
+                "action": "block",
+            },
+        },
+    ],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -183,6 +249,8 @@ session = composio.create(
     ],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -266,6 +334,23 @@ To block prompt injection, use the `prompt_injection_check` hook. It screens eac
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "block_injection",
+            "type": "after_execute",
+            "applies_to": "all",
+            "handler": {"type": "prompt_injection_check", "action": "block"},
+        },
+    ],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -279,6 +364,8 @@ session = composio.create(
     ],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -338,9 +425,18 @@ To change a session's checks, pass a new `hooks` list to `session.update()`. The
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(hooks=[...])  # every hook you want to keep
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(hooks=[...])  # every hook you want to keep
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

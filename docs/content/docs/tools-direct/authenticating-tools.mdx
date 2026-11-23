@@ -117,6 +117,30 @@ Redirect users to a Composio-hosted URL that handles the entire authentication p
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+# Use the "AUTH CONFIG ID" from your dashboard
+auth_config_id = "your_auth_config_id"
+
+# Use a unique identifier for each user in your application
+user_id = 'user-1349-129-12'
+
+connection_request = await composio.connected_accounts.link(
+    user_id=user_id,
+    auth_config_id=auth_config_id,
+    callback_url='https://your-app.com/callback'
+)
+
+redirect_url = connection_request.redirect_url
+print(f"Visit: {redirect_url} to authenticate your account")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -137,6 +161,8 @@ connection_request = composio.connected_accounts.link(
 redirect_url = connection_request.redirect_url
 print(f"Visit: {redirect_url} to authenticate your account")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -210,6 +236,40 @@ For OAuth flows, you'll redirect users to complete authorization. You can specif
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio.types import auth_scheme
+
+composio = AsyncComposio(api_key="YOUR_COMPOSIO_API_KEY")
+
+# Use the "AUTH CONFIG ID" from your dashboard
+auth_config_id = "your_auth_config_id"
+
+# Use a unique identifier for each user in your application
+user_id = "user-1349-129-12"
+
+connection_request = await composio.connected_accounts.initiate(
+  user_id=user_id,
+  auth_config_id=auth_config_id,
+  # The helper fills status="INITIALIZING"; its generated input type still requires it.
+  config=auth_scheme.oauth2({}),  # type: ignore[arg-type]
+  callback_url="https://www.yourapp.com/callback"
+)
+print(f"Redirect URL: {connection_request.redirect_url}")
+
+connected_account = await connection_request.wait_for_connection()
+
+# Alternative: if you only have the connection request ID
+# connected_account = await composio.connected_accounts.wait_for_connection(
+#  connection_request.id)
+# Recommended when the connection_request object is no longer available
+
+print(f"Connection established: {connected_account.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio.types import auth_scheme
@@ -240,6 +300,8 @@ connected_account = connection_request.wait_for_connection()
 
 print(f"Connection established: {connected_account.id}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -298,6 +360,27 @@ Some services like Zendesk require additional parameters such as `subdomain`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio.types import auth_scheme
+
+composio = AsyncComposio(api_key="your_api_key")
+
+user_id = "user_123"
+auth_config_id = "ac_zendesk"
+
+# For Zendesk, include the subdomain. oauth2 fills status="INITIALIZING",
+# which its generated input type incorrectly requires callers to supply.
+connection_request = await composio.connected_accounts.initiate(
+  user_id=user_id,
+  auth_config_id=auth_config_id,
+  config=auth_scheme.oauth2({"subdomain": "mycompany"})  # type: ignore[arg-type]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio.types import auth_scheme
@@ -314,6 +397,8 @@ connection_request = composio.connected_accounts.initiate(
   config=auth_scheme.oauth2({"subdomain": "mycompany"})  # type: ignore[arg-type]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -349,6 +434,35 @@ Here is how to initiate the flow:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio.types import auth_scheme
+
+composio = AsyncComposio(api_key="your_api_key")
+
+# Use the "AUTH CONFIG ID" from your dashboard
+auth_config_id = "your_auth_config_id"
+
+# Use a unique identifier for each user in your application
+user_id = "user_12345678"
+
+# API key provided by the user (collected from your app's UI)
+# or use your own key
+user_api_key = "user_api_key_here"
+
+connection_request = await composio.connected_accounts.initiate(
+  user_id=user_id,
+  auth_config_id=auth_config_id,
+  # The helper fills status="ACTIVE"; its generated input type still requires it.
+  config=auth_scheme.api_key({"api_key": user_api_key}),  # type: ignore[arg-type]
+)
+
+print(f"Connection established: {connection_request.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio.types import auth_scheme
@@ -374,6 +488,8 @@ connection_request = composio.connected_accounts.initiate(
 
 print(f"Connection established: {connection_request.id}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -418,6 +534,27 @@ Here is how you would fetch the authentication method and input fields:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+# Use the "AUTH CONFIG ID" from your dashboard
+auth_config_id = "your_auth_config_id"
+
+# Fetch the auth configuration details
+auth_config = await composio.auth_configs.get(auth_config_id)
+
+# Check what authentication method this config uses
+print(f"Authentication method: {auth_config.auth_scheme}")
+
+# See what input fields are required
+print(f"Required fields: {auth_config.expected_input_fields}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -435,6 +572,8 @@ print(f"Authentication method: {auth_config.auth_scheme}")
 # See what input fields are required
 print(f"Required fields: {auth_config.expected_input_fields}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -506,6 +645,22 @@ The `waitForConnection` method allows you to poll for a connection to become act
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Wait for the connection to be established
+connected_account = await connection_request.wait_for_connection()
+print(connected_account.id)
+
+# Alternative: Wait with custom timeout
+# connected_account = await connection_request.wait_for_connection(120)  # 2 minute timeout
+
+# Alternative: If you only have the connection request ID (e.g., stored in database)
+# connection_id = connection_request.id  # You can store this ID in your database
+# connected_account = await composio.connected_accounts.wait_for_connection(connection_id, 60)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Wait for the connection to be established
 connected_account = connection_request.wait_for_connection()
@@ -518,6 +673,8 @@ print(connected_account.id)
 # connection_id = connection_request.id  # You can store this ID in your database
 # connected_account = composio.connected_accounts.wait_for_connection(connection_id, 60)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -614,6 +771,24 @@ You can check the status of a connected account programmatically:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Get a specific connected account
+connected_account = await composio.connected_accounts.get("your_connected_account_id")
+print(f"Status: {connected_account.status}")
+
+# Filter connections by user_id, auth_config_id, and status (only active accounts)
+filtered_connections = await composio.connected_accounts.list(
+    user_ids=["user_123"],
+    auth_config_ids=["your_auth_config_id"],
+    statuses=["ACTIVE"]
+)
+for connection in filtered_connections.items:
+    print(f"{connection.id}: {connection.status}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Get a specific connected account
 connected_account = composio.connected_accounts.get("your_connected_account_id")
@@ -628,6 +803,8 @@ filtered_connections = composio.connected_accounts.list(
 for connection in filtered_connections.items:
     print(f"{connection.id}: {connection.status}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

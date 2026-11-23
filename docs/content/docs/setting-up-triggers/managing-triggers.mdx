@@ -12,6 +12,29 @@ List the trigger instances you've created. Results are cursor-paginated.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+active = await composio.triggers.list_active(
+    connected_account_ids=["ca_def456"],
+)
+
+for trigger in active.items:
+    print(f"{trigger.id} ({trigger.trigger_name}) - disabled: {trigger.disabled_at is not None}")
+
+# Paginate with cursor
+if active.next_cursor:
+    next_page = await composio.triggers.list_active(
+        connected_account_ids=["ca_def456"],
+        cursor=active.next_cursor,
+    )
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -31,6 +54,8 @@ if active.next_cursor:
         cursor=active.next_cursor,
     )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -87,6 +112,17 @@ Pause a trigger temporarily without deleting it:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Disable a trigger
+await composio.triggers.disable(trigger_id="ti_abcd123")
+
+# Re-enable when needed
+await composio.triggers.enable(trigger_id="ti_abcd123")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Disable a trigger
 composio.triggers.disable(trigger_id="ti_abcd123")
@@ -94,6 +130,8 @@ composio.triggers.disable(trigger_id="ti_abcd123")
 # Re-enable when needed
 composio.triggers.enable(trigger_id="ti_abcd123")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -130,9 +168,18 @@ Permanently remove a trigger instance:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await composio.triggers.delete(trigger_id="ti_abcd123")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 composio.triggers.delete(trigger_id="ti_abcd123")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

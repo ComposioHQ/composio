@@ -13,12 +13,26 @@ API key:
 
 #### Python
 
+##### Async
+
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+print(await composio.toolkits.get("sharepoint_graph"))
+```
+
+##### Sync
+
 ```python
 from composio import Composio
 
 composio = Composio()
 print(composio.toolkits.get("sharepoint_graph"))
 ```
+
+<!-- end-python-modes -->
 
 #### TypeScript
 
@@ -53,6 +67,23 @@ config](/reference/api-reference/auth-configs/patchAuthConfigsByNanoid) with
 
 The high-level Python update helper does not forward `shared_credentials`; use its public generated client.
 
+##### Async
+
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+result = await composio.client.auth_configs.update(
+    "<AUTH_CONFIG_ID>",
+    type="custom",
+    shared_credentials={"issuer": "<MICROSOFT_TENANT_ID>"},
+)
+print(result)
+```
+
+##### Sync
+
 ```python
 from composio import Composio
 
@@ -64,6 +95,8 @@ result = composio.client.auth_configs.update(
 )
 print(result)
 ```
+
+<!-- end-python-modes -->
 
 #### TypeScript
 

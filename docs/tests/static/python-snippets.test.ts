@@ -19,6 +19,12 @@ function snippet(id: string, code: string, line = 100): PythonSnippet {
 
 
 describe('collectPythonSnippets', () => {
+  test('selects the async prelude only inside the Async mode tab', () => {
+    const source = '### Python\n\n#### Async\n\n```python\nawait session.tools()\n```\n\n#### Sync\n\n```python\nsession.tools()\n```';
+    const variants = collectPythonSnippets([{ path: 'guide.md', source }]);
+    expect(variants.map((s) => [s.code, Boolean(s.asyncMode)])).toEqual([['await session.tools()', true], ['session.tools()', false]]);
+  });
+
   const source = [
     '# Page', //                                                                   1
     '', //                                                                         2

@@ -27,6 +27,60 @@ Save the following script. `username` represents a value supplied by your applic
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python title="select-tool.py"
+import asyncio
+import json
+
+from composio import AsyncComposio
+from composio_typesafe import TypesafeProvider
+
+user_id = "example-user"
+username = "pg"
+request = f"Look up the Hacker News user '{username}'"
+known_arguments = {"HACKERNEWS_GET_USER": {"username": username}}
+
+
+async def main():
+    async with AsyncComposio(provider=TypesafeProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, TypesafeProvider)
+        tool_set = await composio.tools.get(
+            user_id=user_id,
+            tools=[
+                "HACKERNEWS_GET_USER",
+                "HACKERNEWS_GET_TOP_STORIES",
+                "HACKERNEWS_SEARCH_POSTS",
+            ],
+        )
+        decision = await provider.adecide(tool_set, request)
+        print(json.dumps(decision, indent=2))
+
+        if decision["kind"] == "abstain":
+            print(f"No tool call: {decision['reason']}")
+            return
+
+        if decision["risk"] != "read_only":
+            print(f"This example does not execute {decision['risk']} tools.")
+            return
+
+        if decision["kind"] == "partial":
+            print("Arguments to supply:", decision["missing"])
+
+        result = await provider.aexecute(
+            user_id,
+            decision,
+            arguments=known_arguments.get(decision["tool"], {}),
+        )
+        print(result["data"])
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python title="select-tool.py"
 import json
 
@@ -75,6 +129,8 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+</Tab>
+</Tabs>
 
 Run the script in the environment where you installed the packages:
 
@@ -168,6 +224,35 @@ Install the OpenAI provider alongside the packages above:
 
 <PackageInstall packages="composio-openai" ecosystem="python" />
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python title="shortlist-tools.py"
+import asyncio
+from composio import AsyncComposio
+from composio_openai import OpenAIProvider
+from composio_typesafe import TypesafeProvider
+
+typesafe = TypesafeProvider()
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIProvider()) as composio:
+        request = "What are the top stories on Hacker News right now?"
+
+        raw = await composio.tools.get_raw_composio_tools(toolkits=["hackernews"], limit=50)
+        shortlist = await typesafe.ashortlist_tools(raw, request, k=3)
+        tools = await composio.tools.get(
+            user_id="example-user",
+            tools=[tool.slug for tool in shortlist["tools"]],
+        )
+        print(shortlist["scores"])
+        print(f"Prepared {len(tools)} tools for OpenAI")
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python title="shortlist-tools.py"
 from composio import Composio
 from composio_openai import OpenAIProvider
@@ -186,6 +271,8 @@ tools = composio.tools.get(
 print(shortlist["scores"])
 print(f"Prepared {len(tools)} tools for OpenAI")
 ```
+</Tab>
+</Tabs>
 
 ```bash
 python shortlist-tools.py

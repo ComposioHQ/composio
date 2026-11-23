@@ -21,6 +21,23 @@ Under the hood `subscribe()` opens the WebSocket via [Pusher](https://pusher.com
 {/* code-example: no-api reason="subscribe() opens an SDK-managed realtime WebSocket; there is no REST call to stream events" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+subscription = await composio.triggers.subscribe()
+
+@subscription.handle(trigger_id="your_trigger_id")
+def handle_event(data):
+    print(f"Event received: {data}")
+
+await subscription.wait_forever()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -34,6 +51,8 @@ def handle_event(data):
 
 subscription.wait_forever()
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -58,6 +77,19 @@ Subscription failures (for example a rejected auth request) do not reject the `s
 {/* code-example: no-api reason="subscription error callbacks are client-side SDK hooks on the realtime WebSocket" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+subscription = await composio.triggers.subscribe(
+    on_subscription_error=lambda error: print("Trigger subscription failed:", error)
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -67,6 +99,8 @@ subscription = composio.triggers.subscribe(
     on_subscription_error=lambda error: print("Trigger subscription failed:", error)
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -124,6 +158,21 @@ Register your webhook URL once per project. Composio then `POST`s every trigger 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+subscription = await composio.triggers.set_webhook_subscription(
+    webhook_url="https://your-app.com/webhooks/composio",
+)
+print(f"Delivering events to {subscription['webhook_url']}")
+# Store subscription['secret'] to verify signatures
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -135,6 +184,8 @@ subscription = composio.triggers.set_webhook_subscription(
 print(f"Delivering events to {subscription['webhook_url']}")
 # Store subscription['secret'] to verify signatures
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -179,6 +230,35 @@ In your handler, pass the incoming request to `parse()`. It returns the typed, n
 {/* code-example: no-api reason="parse() runs inside your webhook handler; it verifies and normalizes the incoming request in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+@app.post("/webhooks/composio")
+async def webhook_handler(request: Request):
+    # On async frameworks (FastAPI) read the raw body and pass body=/headers=.
+    # On sync frameworks (Flask, Django) you can pass the request directly.
+    # Use the raw body so the signature verifies. Omit verify_secret to skip it.
+    result = composio.triggers.parse(
+        body=await request.body(),
+        headers=request.headers,
+        verify_secret=os.environ["COMPOSIO_WEBHOOK_SECRET"],
+    )
+
+    if result["raw_payload"].get("type") == "composio.trigger.message":
+        event = result["payload"]
+        if event["trigger_slug"] == "GITHUB_COMMIT_EVENT":
+            data = event["payload"]
+            print(f"New commit by {data['author']}: {data['message']}")
+
+    return {"status": "ok"}
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -204,6 +284,8 @@ async def webhook_handler(request: Request):
 
     return {"status": "ok"}
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -244,6 +326,19 @@ Each trigger type declares the shape of the `data` it sends. Inspect it before y
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+trigger_type = await composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_type.payload)
+# {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -253,6 +348,8 @@ trigger_type = composio.triggers.get_type("GITHUB_COMMIT_EVENT")
 print(trigger_type.payload)
 # {"properties": {"author": {...}, "id": {...}, "message": {...}, "timestamp": {...}, "url": {...}}}
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

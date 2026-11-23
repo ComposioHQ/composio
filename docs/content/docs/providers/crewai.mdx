@@ -33,6 +33,44 @@ OPENAI_API_KEY=xxxxxxxxx
 <Step>
 **Create session and run**
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from crewai import Agent, Crew, Task
+from composio import AsyncComposio
+from composio_crewai import CrewAIProvider
+
+
+async def main():
+    async with AsyncComposio(provider=CrewAIProvider()) as composio:
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = Agent(
+            role="Email Agent",
+            goal="Send emails on behalf of the user",
+            backstory="You are an AI agent that sends emails using Gmail.",
+            tools=tools,
+            llm="gpt-5.2",
+        )
+
+        task = Task(
+            description="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
+            agent=agent,
+            expected_output="Confirmation that the email was sent",
+        )
+
+        crew = Crew(agents=[agent], tasks=[task])
+        result = await asyncio.to_thread(crew.kickoff)
+        print(result)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from crewai import Agent, Crew, Task
 from composio import Composio
@@ -62,6 +100,8 @@ crew = Crew(agents=[agent], tasks=[task])
 result = crew.kickoff()
 print(result)
 ```
+</Tab>
+</Tabs>
 </Step>
 </Steps>
 

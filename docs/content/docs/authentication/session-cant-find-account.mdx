@@ -21,11 +21,22 @@ Look up the account by its ID (`ca_...`, shown in the dashboard) and read its `u
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+account = await composio.connected_accounts.get("ca_123")
+
+print(account.user_id, account.status, account.auth_config.id)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 account = composio.connected_accounts.get("ca_123")
 
 print(account.user_id, account.status, account.auth_config.id)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -65,12 +76,24 @@ Enable the Tool Router flag on an auth config you created:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await composio.auth_configs.update(
+    "ac_your_config",
+    options={"type": "custom", "is_enabled_for_tool_router": True},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 composio.auth_configs.update(
     "ac_your_config",
     options={"type": "custom", "is_enabled_for_tool_router": True},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -99,6 +122,26 @@ Create a session for your application's user ID, then authorize the toolkit from
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={"gmail": "ac_your_config"},
+)
+
+connection_request = await session.authorize("gmail")
+print(connection_request.redirect_url)  # Send the user here
+
+await connection_request.wait_for_connection(60)
+
+# Confirm the session sees the account
+for toolkit in (await session.toolkits(is_connected=True)).items:
+    account = toolkit.connection and toolkit.connection.connected_account
+    print(toolkit.slug, account.id if account else None)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -115,6 +158,8 @@ for toolkit in session.toolkits(is_connected=True).items:
     account = toolkit.connection and toolkit.connection.connected_account
     print(toolkit.slug, account.id if account else None)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

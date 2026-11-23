@@ -24,12 +24,30 @@ Include your API key in the request header:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        print(await composio.client.get("/api/v3/tools", cast_to=object))
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio()
 print(composio.client.get("/api/v3/tools", cast_to=object))
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -53,6 +71,28 @@ The Python SDK also requires `COMPOSIO_API_KEY` to initialize. These raw calls e
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        projects = await composio.client.get(
+            "/api/v3/org/owner/project/list",
+            cast_to=object,
+            headers={"x-api-key": None, "x-org-api-key": os.environ["COMPOSIO_ORG_API_KEY"]},
+        )
+        print(projects)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -65,6 +105,8 @@ projects = composio.client.get(
 )
 print(projects)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

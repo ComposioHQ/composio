@@ -6,6 +6,25 @@ All endpoints in this section require a **project API key** (`x-api-key`) or a v
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+page = await composio.logs.search(
+    limit=20,
+    time_range={"from": 1744848000000, "to": 1744934400000},
+    filters=[
+        {"field": "toolkit_slug", "operator": "==", "value": "gmail"},
+        {"field": "status", "operator": "==", "value": "failed"},
+    ],
+)
+print(page.logs, page.next_cursor)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -21,6 +40,8 @@ page = composio.logs.search(
 )
 print(page.logs, page.next_cursor)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -124,6 +145,18 @@ Fetch one log by ID to get the **full** payload, including request/response bodi
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+log = await composio.logs.get("log_-jRTWClpBoVo")
+print(log.status, log.data)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -132,6 +165,8 @@ composio = Composio()
 log = composio.logs.get("log_-jRTWClpBoVo")
 print(log.status, log.data)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -166,6 +201,26 @@ This is the endpoint to call when you need to reconstruct *exactly* what happene
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import time
+
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+now = int(time.time() * 1000)
+page = await composio.logs.search(
+    time_range={"from": now - 3_600_000, "to": now},
+    filters=[
+        {"field": "toolkit_slug", "operator": "==", "value": "gmail"},
+        {"field": "status", "operator": "==", "value": "failed"},
+    ],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import time
 
@@ -182,6 +237,8 @@ page = composio.logs.search(
     ],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -221,6 +278,22 @@ curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+page = await composio.logs.search(
+    filters=[
+        {"field": "user_id", "operator": "==", "value": "user_abc123"},
+        {"field": "status", "operator": "==", "value": "failed"},
+    ],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -233,6 +306,8 @@ page = composio.logs.search(
     ],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -267,6 +342,18 @@ curl -X POST https://backend.composio.dev/api/v3.1/logs/tool_execution \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+log = await composio.logs.get("log_-jRTWClpBoVo")
+print(log.status, log.data)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -275,6 +362,8 @@ composio = Composio()
 log = composio.logs.get("log_-jRTWClpBoVo")
 print(log.status, log.data)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

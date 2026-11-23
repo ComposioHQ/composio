@@ -18,12 +18,24 @@ Not sure which toolkit covers your use case? Browse the [Toolkits catalog](/tool
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+tools = await composio.tools.get(
+    user_id,
+    toolkits=["GITHUB"]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 tools = composio.tools.get(
     user_id,
     toolkits=["GITHUB"]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -54,9 +66,18 @@ Inspect tool parameters and types without a user_id:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+tool = await composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -94,6 +115,24 @@ When you filter only by toolkit, the TypeScript SDK automatically requests tools
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Fetch with limit for a specific user
+tools = await composio.tools.get(
+    user_id,
+    toolkits=["GITHUB"],
+    limit=5  # Return at most 5 tools
+)
+
+# Same filter but without user_id (for schemas)
+raw_tools = await composio.tools.get_raw_composio_tools(
+    toolkits=["GITHUB"],
+    limit=5
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Fetch with limit for a specific user
 tools = composio.tools.get(
@@ -108,6 +147,8 @@ raw_tools = composio.tools.get_raw_composio_tools(
     limit=5
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -145,6 +186,22 @@ Fetch specific tools when you know their names.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Fetch specific tools by name
+tools = await composio.tools.get(
+    user_id,
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+)
+
+# Get schemas without user_id
+raw_tools = await composio.tools.get_raw_composio_tools(
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Fetch specific tools by name
 tools = composio.tools.get(
@@ -157,6 +214,8 @@ raw_tools = composio.tools.get_raw_composio_tools(
     tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -190,6 +249,18 @@ Filter OAuth tools by permission level. Only works with a single toolkit.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Filter by OAuth scopes (single toolkit only)
+tools = await composio.tools.get(
+    user_id,
+    toolkits=["GITHUB"],
+    scopes=["write:org"]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Filter by OAuth scopes (single toolkit only)
 tools = composio.tools.get(
@@ -198,6 +269,8 @@ tools = composio.tools.get(
     scopes=["write:org"]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -229,6 +302,37 @@ Inspect the returned descriptions and input schemas before selecting a tool. Do 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Search tools by action keywords
+tools = await composio.tools.get(
+    user_id,
+    search="create event",
+    toolkits=["googlecalendar"]
+)
+
+# Search schemas without user_id
+raw_tools = await composio.tools.get_raw_composio_tools(
+    search="create event",
+    toolkits=["googlecalendar"]
+)
+
+# Search within a specific toolkit
+tools = await composio.tools.get(
+    user_id,
+    search="issues",
+    toolkits=["GITHUB"],
+)
+
+# Search toolkit schemas without user_id
+raw_tools = await composio.tools.get_raw_composio_tools(
+    search="issues",
+    toolkits=["GITHUB"]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Search tools by action keywords
 tools = composio.tools.get(
@@ -256,6 +360,8 @@ raw_tools = composio.tools.get_raw_composio_tools(
     toolkits=["GITHUB"]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

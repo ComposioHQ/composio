@@ -35,15 +35,18 @@ export function attributeValue(node: JsxElement, name: string): string | string[
   return items;
 }
 
+export const PYTHON_MODES = ['Async', 'Sync'] as const;
+
 export type MarkdownLanguageGroup = {
+  groupId: 'language' | 'python-mode';
   start: number;
   end: number;
   line: number;
   tabs: { value: string; source: string; line: number }[];
 };
 
-const isEndLanguages = (node: RootContent | undefined) =>
-  node?.type === 'html' && /^<!--\s*end-languages\s*-->$/.test(node.value.trim());
+const isGroupEnd = (node: RootContent | undefined, marker: string) =>
+  node?.type === 'html' && node.value.trim().replace(/\s/g, '') === `<!--${marker}-->`;
 
 /**
  * Plain Markdown uses consecutive Python / TypeScript / API headings. The last
@@ -55,8 +58,14 @@ export function markdownLanguageGroups(source: string): MarkdownLanguageGroup[] 
   const groups: MarkdownLanguageGroup[] = [];
   for (let index = 0; index < nodes.length; index++) {
     const first = nodes[index];
-    if (first.type !== 'heading' || toString(first) !== 'Python') continue;
+    if (first.type !== 'heading') continue;
+    const label = toString(first);
+    if (label !== 'Python' && label !== 'Async') continue;
+    const groupId = label === 'Python' ? 'language' : 'python-mode';
+    const names: readonly string[] = groupId === 'language' ? ['Python', 'TypeScript', 'API'] : PYTHON_MODES;
+    const endMarker = groupId === 'language' ? 'end-languages' : 'end-python-modes';
     const group: MarkdownLanguageGroup = {
+      groupId,
       start: first.position?.start.offset ?? 0,
       end: source.length,
       line: first.position?.start.line ?? 1,
@@ -66,12 +75,12 @@ export function markdownLanguageGroups(source: string): MarkdownLanguageGroup[] 
     while (cursor < nodes.length) {
       const heading = nodes[cursor];
       if (heading.type !== 'heading' || heading.depth !== first.depth ||
-        !['Python', 'TypeScript', 'API'].includes(toString(heading))) break;
+        !names.includes(toString(heading))) break;
       let end = cursor + 1;
       while (end < nodes.length) {
         const next = nodes[end];
         if (next.type === 'heading' && next.depth <= first.depth) break;
-        if (isEndLanguages(next)) break;
+        if (isGroupEnd(next, endMarker)) break;
         end++;
       }
       const contentStart = heading.position?.end.offset ?? 0;
@@ -79,7 +88,7 @@ export function markdownLanguageGroups(source: string): MarkdownLanguageGroup[] 
       group.tabs.push({ value: toString(heading), source: source.slice(contentStart, contentEnd), line: heading.position?.start.line ?? 1 });
       group.end = contentEnd;
       cursor = end;
-      if (isEndLanguages(nodes[end])) {
+      if (isGroupEnd(nodes[end], endMarker)) {
         group.end = nodes[end].position?.end.offset ?? contentEnd;
         cursor = end + 1;
         break;

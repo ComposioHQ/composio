@@ -30,6 +30,54 @@ Since completion providers don't have a function execution step, Composio execut
 {/* code-example: no-api reason="Before-execute modifier runs client-side in the SDK around an LLM tool-call loop" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from openai import AsyncOpenAI
+from composio import AsyncComposio, before_execute
+from composio.types import ToolExecuteParams
+from composio_openai import OpenAIProvider
+
+
+composio = AsyncComposio(provider=OpenAIProvider(), toolkit_versions={"hackernews": "latest"})
+provider = composio.provider
+assert isinstance(provider, OpenAIProvider)
+
+openai_client = AsyncOpenAI()
+user_id = "user@email.com"
+
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    return params
+
+# Get tools
+tools = await composio.tools.get(user_id=user_id, slug="HACKERNEWS_GET_LATEST_POSTS")
+
+# Get response from the LLM
+response = await openai_client.chat.completions.create(
+    model="gpt-5.4",
+    tools=tools,
+    messages=[{"role": "user", "content": "Fetch latest posts from hackernews"}],
+)
+print(response)
+
+# Execute the function calls
+result = await provider.ahandle_tool_calls(
+    response=response,
+    user_id="default",
+    modifiers=[
+        before_execute_modifier,
+    ],
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from openai import OpenAI
 from composio import Composio, before_execute
@@ -71,6 +119,8 @@ result = provider.handle_tool_calls(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -120,6 +170,38 @@ Agentic providers have a function execution step. The modifier is configured on 
 {/* code-example: no-api reason="Before-execute modifier runs client-side inside the agentic framework's tool execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, before_execute
+from composio.types import ToolExecuteParams
+from composio_crewai import CrewAIProvider
+
+composio = AsyncComposio(provider=CrewAIProvider())
+
+@before_execute(tools=["LINEAR_CREATE_LINEAR_ISSUE"])
+def modify_linear_project_id(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["project_id"] = "1234567890"
+    return params
+
+tools = await composio.tools.get(
+    user_id="default",
+    tools=[
+        "HACKERNEWS_GET_LATEST_POSTS",
+        "HACKERNEWS_GET_USER",
+        "LINEAR_CREATE_LINEAR_ISSUE",
+    ],
+    modifiers=[
+        modify_linear_project_id,
+    ]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
@@ -148,6 +230,8 @@ tools = composio.tools.get(
     ]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -198,6 +282,31 @@ The hook takes either a single `context` argument (preferred) or the legacy
 {/* code-example: no-api reason="before_file_upload hook runs client-side while the SDK uploads local files" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, before_file_upload
+
+@before_file_upload(tools=["GOOGLEDRIVE_UPLOAD_FILE"])
+def audit_path(context) -> str | bool:
+    # context = {"path": ..., "source": "path" | "url", "tool": ..., "toolkit": ...}
+    if context["source"] != "path":
+        return context["path"]  # let URLs through untouched
+    # return a new path string, or False to abort the upload
+    return context["path"]
+
+composio = AsyncComposio(toolkit_versions={"googledrive": "latest"})
+
+await composio.tools.execute(
+    "GOOGLEDRIVE_UPLOAD_FILE",
+    {"file_to_upload": "/path/to/document.pdf"},
+    user_id="user_123",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    modifiers=[audit_path],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, before_file_upload
 
@@ -218,6 +327,8 @@ composio.tools.execute(
     modifiers=[audit_path],
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 In TypeScript, pass `beforeFileUpload` on the third argument to `tools.execute`. The context also includes `source: 'file'` for `File` objects.

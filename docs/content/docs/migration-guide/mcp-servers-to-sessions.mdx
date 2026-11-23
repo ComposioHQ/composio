@@ -64,6 +64,34 @@ The two-step "create a server, then generate a per-user URL" collapses into a si
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="YOUR_API_KEY")
+
+# Before: create a server config, then generate a per-user URL
+# server = composio.mcp.create(
+#     name="my-gmail-server",
+#     toolkits=[{"toolkit": "gmail", "auth_config": "ac_xyz123"}],
+#     allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+# )
+# instance = composio.mcp.generate(user_id="user-123", mcp_config_id=server.id)
+# mcp_url = instance["url"]
+
+# After: one session, same toolkit + auth config + tools
+session = await composio.create(
+    user_id="user-123",
+    toolkits=["gmail"],
+    auth_configs={"gmail": "ac_xyz123"},
+    tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]}},
+    mcp=True,
+)
+mcp_url = session.mcp.url
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -88,6 +116,8 @@ session = composio.create(
 )
 mcp_url = session.mcp.url
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -186,6 +216,21 @@ preset**. This preloads exactly the tools you enable and turns meta-tools off.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, SESSION_PRESET_DIRECT_TOOLS
+
+session = await composio.create(
+    user_id="user-123",
+    toolkits=["gmail"],
+    auth_configs={"gmail": "ac_xyz123"},
+    tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]}},
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 
@@ -197,6 +242,8 @@ session = composio.create(
     session_preset=SESSION_PRESET_DIRECT_TOOLS,
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -252,9 +299,18 @@ exact fixed tool set; by default it returns the meta-tools that drive runtime di
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -281,12 +337,24 @@ For a deterministic, non-agent path, call a tool directly on the session.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.execute(
+    "GITHUB_CREATE_AN_ISSUE",
+    arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.execute(
     "GITHUB_CREATE_AN_ISSUE",
     arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

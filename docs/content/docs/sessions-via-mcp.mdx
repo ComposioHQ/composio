@@ -24,6 +24,20 @@ Opt into MCP by passing `mcp: true` when you create the session. The session the
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+session = await composio.sessions.create(user_id="user_123", mcp=True)
+
+mcp_url = session.mcp.url
+mcp_headers = session.mcp.headers
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -33,6 +47,8 @@ session = composio.sessions.create(user_id="user_123", mcp=True)
 mcp_url = session.mcp.url
 mcp_headers = session.mcp.headers
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -98,6 +114,26 @@ Combine `mcp: true` with the [direct-tools preset](/docs/configuring-sessions) t
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, SESSION_PRESET_DIRECT_TOOLS
+
+composio = AsyncComposio()
+
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["gmail"],
+    tools={"gmail": {"enable": ["GMAIL_FETCH_EMAILS", "GMAIL_CREATE_EMAIL_DRAFT"]}},
+    session_preset=SESSION_PRESET_DIRECT_TOOLS,
+    mcp=True,
+)
+
+# A single MCP URL that exposes just these two tools
+print(session.mcp.url)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, SESSION_PRESET_DIRECT_TOOLS
 
@@ -114,6 +150,8 @@ session = composio.sessions.create(
 # A single MCP URL that exposes just these two tools
 print(session.mcp.url)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -165,6 +203,33 @@ For complete CrewAI and LangChain scripts, follow the [Python MCP research agent
 {/* code-example: no-api reason="OpenAI Agents HostedMCPTool configuration runs in the framework, outside Composio's HTTP API" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from agents import Agent, HostedMCPTool
+
+composio = AsyncComposio()
+
+session = await composio.create(user_id="user_123", mcp=True)
+
+agent = Agent(
+    name="Assistant",
+    tools=[
+        HostedMCPTool(
+            tool_config={
+                "type": "mcp",
+                "server_label": "composio",
+                "server_url": session.mcp.url,
+                "headers": session.mcp.headers,
+                "require_approval": "never",
+            }
+        )
+    ],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from agents import Agent, HostedMCPTool
@@ -187,6 +252,8 @@ agent = Agent(
     ],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -212,6 +279,28 @@ const agent = new Agent({
 {/* code-example: no-api reason="Claude Agent SDK HTTP transport configuration runs in the framework, not as a Composio REST operation" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from claude_agent_sdk import ClaudeAgentOptions
+
+composio = AsyncComposio()
+
+session = await composio.create(user_id="user_123", mcp=True)
+
+options = ClaudeAgentOptions(
+    mcp_servers={
+        "composio": {
+            "type": "http",
+            "url": session.mcp.url,
+            "headers": session.mcp.headers,
+        }
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from claude_agent_sdk import ClaudeAgentOptions
@@ -229,6 +318,8 @@ options = ClaudeAgentOptions(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

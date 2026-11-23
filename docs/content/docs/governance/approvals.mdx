@@ -19,6 +19,17 @@ You choose which tools need approval with their [hints](/docs/governance/tool-hi
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    # Everywhere: ask before tools that create, update or delete
+    tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -26,6 +37,8 @@ session = composio.create(
     tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -56,6 +69,21 @@ To handle a toolkit differently, override the session-wide `tags` in `tools.<too
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    # Everywhere: ask before tools that create, update or delete
+    tags={"require_approval": ["createHint", "updateHint", "destructiveHint"]},
+    tools={
+        # GitHub: ask only before tools that delete
+        "github": {"tags": {"require_approval": ["destructiveHint"]}},
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -67,6 +95,8 @@ session = composio.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -108,6 +138,21 @@ When a tool needs approval, `session.execute()` raises an error:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio.exceptions import ToolInputRequiredError
+
+arguments = {"recipient_email": "priya@acme.com", "subject": "Q3 numbers"}
+
+try:
+    await session.execute("GMAIL_SEND_EMAIL", arguments=arguments)
+except ToolInputRequiredError as error:
+    questions = error.input_requests
+    request_state = error.request_state
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio.exceptions import ToolInputRequiredError
 
@@ -119,6 +164,8 @@ except ToolInputRequiredError as error:
     questions = error.input_requests
     request_state = error.request_state
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -196,6 +243,23 @@ Send the same call again with the user's answers:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await session.execute(
+    "GMAIL_SEND_EMAIL",
+    arguments=arguments,
+    input_responses={
+        "elicit_0f2f8872eea523ed": {
+            "action": "accept",
+            "content": {"decision": "approve"},
+        }
+    },
+    request_state=request_state,
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = session.execute(
     "GMAIL_SEND_EMAIL",
@@ -209,6 +273,8 @@ result = session.execute(
     request_state=request_state,
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -255,6 +321,22 @@ Approvals use MCP [elicitation](https://modelcontextprotocol.io/specification/20
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    tools={
+        "gmail": {
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        }
+    },
+    experimental={"no_elicitation_support_fallback": "allow"},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -267,6 +349,8 @@ session = composio.create(
     experimental={"no_elicitation_support_fallback": "allow"},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -318,6 +402,103 @@ An agent loop with Claude that asks for approval in the terminal:
 {/* code-example: no-api reason="agent loop with the Anthropic provider; the approval handling runs client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import json
+
+import anthropic
+from composio import AsyncComposio
+from composio.exceptions import ToolInputRequiredError
+from composio_anthropic import AnthropicProvider
+
+composio = AsyncComposio(provider=AnthropicProvider())
+
+client = anthropic.AsyncAnthropic()
+
+session = await composio.create(
+    user_id="user_123",
+    toolkits={"enable": ["gmail"]},
+    tools={
+        "gmail": {
+            # The agent can fetch and send emails
+            "enable": ["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"],
+            # but needs the user's approval to send one
+            "require_approval": ["GMAIL_SEND_EMAIL"],
+        }
+    },
+)
+tools = await session.tools()
+
+
+async def ask_user(question):
+    """Show one question in the terminal and return the user's answer."""
+    # Describes the tool call, like which email the agent wants to send
+    print(question["message"])
+    # Ask for each field in requested_schema, like the decision to approve or deny
+    content = {}
+    for name, field in question["requested_schema"]["properties"].items():
+        choices = [choice["const"] for choice in field.get("oneOf", [])]
+        content[name] = await asyncio.to_thread(input, f"{field.get('title', name)} ({'/'.join(choices)}): ")
+    return {"action": "accept", "content": content}
+
+
+async def run_tool(block):
+    """Run one tool call, asking the user whenever Composio needs their input."""
+    # No answers yet on the first try
+    input_responses, request_state = None, None
+    while True:
+        try:
+            result = await session.execute(
+                block.name,
+                arguments=block.input,
+                input_responses=input_responses,
+                request_state=request_state,
+            )
+            break
+        except ToolInputRequiredError as error:
+            # The tool needs approval: ask the user every question, keyed by its ID
+            input_responses = {
+                question_id: await ask_user(question)
+                for question_id, question in error.input_requests.items()
+            }
+            # Send this back with the answers when you retry the call
+            request_state = error.request_state
+
+    # Return the result to Claude
+    return {
+        "type": "tool_result",
+        "tool_use_id": block.id,
+        "content": json.dumps({"data": result.data, "error": result.error}),
+        "is_error": result.result_type == "failed",
+    }
+
+
+messages = [
+    {"role": "user", "content": "Email priya@acme.com with the subject 'Q3 numbers' and say the report is ready."}
+]
+response = await client.messages.create(
+    model="claude-opus-5-5", max_tokens=4096, tools=tools, messages=messages
+)
+
+# Run the tools Claude calls until it has a final answer
+while response.stop_reason == "tool_use":
+    messages.append({"role": "assistant", "content": response.content})
+    messages.append({
+        "role": "user",
+        "content": [await run_tool(block) for block in response.content if block.type == "tool_use"],
+    })
+    response = await client.messages.create(
+        model="claude-opus-5-5", max_tokens=4096, tools=tools, messages=messages
+    )
+
+for block in response.content:
+    if block.type == "text":
+        print(block.text)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import json
 
@@ -409,6 +590,8 @@ for block in response.content:
     if block.type == "text":
         print(block.text)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

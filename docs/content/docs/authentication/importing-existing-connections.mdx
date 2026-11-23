@@ -27,6 +27,28 @@ For services that use API key authentication (e.g., SendGrid, Tavily, PostHog):
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio.types import auth_scheme
+
+composio = AsyncComposio(api_key="your-api-key")
+
+connection = await composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    # The helper fills status="ACTIVE"; its generated input type still requires it.
+    config=auth_scheme.api_key({  # type: ignore[arg-type]
+        "api_key": "sg-existing-sendgrid-key",
+    }),
+)
+
+# API key connections are immediately active
+print(f"Connected: {connection.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio.types import auth_scheme
@@ -45,6 +67,8 @@ connection = composio.connected_accounts.initiate(
 # API key connections are immediately active
 print(f"Connected: {connection.id}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -94,6 +118,28 @@ After [creating an auth config](/docs/authentication/programmatic-auth-configs) 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio.types import auth_scheme
+
+composio = AsyncComposio(api_key="your-api-key")
+
+connection = await composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    # The helper fills status="ACTIVE"; its generated input type still requires it.
+    config=auth_scheme.bearer_token({  # type: ignore[arg-type]
+        "token": "existing-bearer-token",
+    }),
+)
+
+# Bearer token connections are immediately active
+print(f"Connected: {connection.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio.types import auth_scheme
@@ -112,6 +158,8 @@ connection = composio.connected_accounts.initiate(
 # Bearer token connections are immediately active
 print(f"Connected: {connection.id}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -155,6 +203,29 @@ curl -X POST https://backend.composio.dev/api/v3.1/connected_accounts \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio.types import auth_scheme
+
+composio = AsyncComposio(api_key="your-api-key")
+
+connection = await composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_your_auth_config",
+    # The helper fills status="ACTIVE"; its generated input type still requires it.
+    config=auth_scheme.basic({  # type: ignore[arg-type]
+        "username": "user@example.com",
+        "password": "existing-password",
+    }),
+)
+
+# Basic auth connections are immediately active
+print(f"Connected: {connection.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio.types import auth_scheme
@@ -174,6 +245,8 @@ connection = composio.connected_accounts.initiate(
 # Basic auth connections are immediately active
 print(f"Connected: {connection.id}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -222,6 +295,21 @@ When credentials expire or rotate, update them in place without recreating the c
 <Tab value="Bearer token">
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio.client.types import connected_account_patch_params
+
+connection: connected_account_patch_params.Connection = {
+    "state": {
+        "auth_scheme": "BEARER_TOKEN",
+        "val": {"token": "new-access-token"},
+    },
+}
+await composio.connected_accounts.update("ca_your_connection_id", connection=connection)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio.client.types import connected_account_patch_params
 
@@ -233,6 +321,8 @@ connection: connected_account_patch_params.Connection = {
 }
 composio.connected_accounts.update("ca_your_connection_id", connection=connection)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -263,6 +353,21 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_your_c
 <Tab value="API key">
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio.client.types import connected_account_patch_params
+
+connection: connected_account_patch_params.Connection = {
+    "state": {
+        "auth_scheme": "API_KEY",
+        "val": {"generic_api_key": "new-api-key"},
+    },
+}
+await composio.connected_accounts.update("ca_your_connection_id", connection=connection)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio.client.types import connected_account_patch_params
 
@@ -274,6 +379,8 @@ connection: connected_account_patch_params.Connection = {
 }
 composio.connected_accounts.update("ca_your_connection_id", connection=connection)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -304,6 +411,21 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/connected_accounts/ca_your_c
 <Tab value="Basic auth">
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio.client.types import connected_account_patch_params
+
+connection: connected_account_patch_params.Connection = {
+    "state": {
+        "auth_scheme": "BASIC",
+        "val": {"username": "user@example.com", "password": "new-password"},
+    },
+}
+await composio.connected_accounts.update("ca_your_connection_id", connection=connection)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio.client.types import connected_account_patch_params
 
@@ -315,6 +437,8 @@ connection: connected_account_patch_params.Connection = {
 }
 composio.connected_accounts.update("ca_your_connection_id", connection=connection)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -350,6 +474,17 @@ Pass the auth config or connection ID when creating a session:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={"gmail": "ac_your_auth_config"},
+    toolkits=["gmail"],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -357,6 +492,8 @@ session = composio.create(
     toolkits=["gmail"],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

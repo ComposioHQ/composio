@@ -106,6 +106,22 @@ This auth config is now ready to be used in your application!
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Create a new connected account
+connection_request = await composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_1234",
+)
+print(connection_request.redirect_url)
+
+# Wait for the connection to be established
+connected_account = await connection_request.wait_for_connection()
+print(connected_account)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Create a new connected account
 connection_request = composio.connected_accounts.initiate(
@@ -118,6 +134,8 @@ print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection()
 print(connected_account)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

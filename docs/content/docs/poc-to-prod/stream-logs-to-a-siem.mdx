@@ -14,6 +14,27 @@ Set `COMPOSIO_API_KEY` to the project API key for the project you want to monito
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+import time
+
+from composio import AsyncComposio
+
+os.umask(0o077)
+
+composio = AsyncComposio()
+
+to_ms = int(time.time() * 1000)
+from_ms = to_ms - 300_000
+
+page = await composio.logs.search(limit=100, time_range={"from": from_ms, "to": to_ms})
+with open("logs-page.json", "w") as f:
+    f.write(page.model_dump_json(indent=2))
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 import time
@@ -30,6 +51,8 @@ page = composio.logs.search(limit=100, time_range={"from": from_ms, "to": to_ms}
 with open("logs-page.json", "w") as f:
     f.write(page.model_dump_json(indent=2))
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

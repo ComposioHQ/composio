@@ -22,6 +22,20 @@ filters are enforced when the session executes tools.
 
 ### Python
 
+#### Async
+
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tags={
+        "enable": ["readOnlyHint"],
+        "disable": ["destructiveHint"],
+    },
+)
+```
+
+#### Sync
+
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -31,6 +45,8 @@ session = composio.sessions.create(
     },
 )
 ```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 
@@ -70,6 +86,20 @@ shares a toolkit or behavior tag.
 
 ### Python
 
+#### Async
+
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tools={
+        "gmail": {"enable": ["GMAIL_FETCH_EMAILS"]},
+        "github": {"enable": ["GITHUB_GET_AN_ISSUE"]},
+    },
+)
+```
+
+#### Sync
+
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -79,6 +109,8 @@ session = composio.sessions.create(
     },
 )
 ```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 
@@ -134,6 +166,21 @@ than relaxing the global policy for the entire session.
 
 ### Python
 
+#### Async
+
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tags=["readOnlyHint"],
+    tools={
+        "github": {"tags": {"disable": ["destructiveHint"]}},
+        "gmail": {"tags": ["readOnlyHint"]},
+    },
+)
+```
+
+#### Sync
+
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -144,6 +191,8 @@ session = composio.sessions.create(
     },
 )
 ```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 
@@ -181,6 +230,18 @@ does not need Python, shell, file processing, or remote workbench execution.
 
 ### Python
 
+#### Async
+
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    tags=["readOnlyHint"],
+    sandbox={"enable": False},
+)
+```
+
+#### Sync
+
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -188,6 +249,8 @@ session = composio.sessions.create(
     sandbox={"enable": False},
 )
 ```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 

@@ -49,3 +49,5 @@ uv run --package composio python -c "import composio"
 ```
 
 Then run the focused nox/Makefile checks relevant to the change.
+
+For a release that introduces the async client, smoke-test an unchanged sync consumer and an async consumer against the built candidate and the published version.

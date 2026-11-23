@@ -34,7 +34,7 @@ bun run inventory:code-examples
 
 - Branch docs work from `next` and target PRs at `next`.
 - Production Twoslash and the standalone TypeScript snippet gate cover different maintained surfaces. Read the Twoslash context before changing typed examples.
-- Maintained operations offer Python, TypeScript, and API options or a specific justified exception. Read `docs/agent-guidance/context/code-examples.md` for scope, generated/historical limits, and narrow markers. Static checks do not prove equivalence or exemption reasons.
+- Maintained operations offer Python (Async first, then Sync), TypeScript, and API options or a specific justified exception. Read `docs/agent-guidance/context/code-examples.md` for scope, generated/historical limits, and narrow markers. Static checks do not prove equivalence or exemption reasons.
 - Use relative site links, not absolute docs URLs, for internal links.
 - Generated OpenAPI, toolkit, and meta-tool data should be changed through their scripts.
 - Prefer cURL for API interactions because docs are read by humans and agents.
