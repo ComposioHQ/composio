@@ -8,6 +8,13 @@ pnpm --filter @e2e-tests/cli-agent-journeys test:e2e:cli
 
 No API key is read and no model is called when the tests run.
 
+To see which commands of each hand-authored path the journey's checks depend on, play the path once per command with that command left out (Docker, no key, one container per run):
+
+```bash
+cd ts/e2e-tests/cli/agent-journeys
+bun run mutate.ts [--journeys first-run-login] [--json] [--strict]
+```
+
 ## What a passing journey proves
 
 Read this before drawing a conclusion from a green run.
@@ -18,6 +25,30 @@ Read this before drawing a conclusion from a green run.
 - **A replay does not notice a changed skill or a changed tool schema.** A fixture is matched on the turn's position, the previous call, and that command's exit code (hand-authored: a substring of its output). The system prompt and the schema text a command printed are not part of the match, so after a skill edit the replays stay green and say nothing about the new skill. Only a new recording does.
 
 A replay on its own proves nothing: aimock answers the same whether a command succeeded or failed. So every journey is judged by its checks (`src/journeys.ts`), which read the commands that ran, their exit codes and output, and the fake backend's journal: which tool ran, on which project, as which user. None of them reads the model's prose. See [How a run is graded](#how-a-run-is-graded).
+
+### What a mutation run proves
+
+`mutate.ts` plays a journey's hand-authored path with no model (`src/scripted.ts`), first whole and then once per command with that command left out, and grades each run with the journey's checks. Each dropped command gets a verdict (`src/mutation.ts`):
+
+- `needed`: some check failed without it.
+- `unused`: every check passed, and the run left the same outcome as the whole path: the same tools ran with the same arguments, as the same user on the same project; the same connections and logins were made; the next `composio whoami` found the same login. A read the checks do not depend on lands here.
+- `check-too-weak`: every check passed, but the outcome differs. The run ended somewhere else and no check noticed.
+
+When the whole path fails a check, the tool says so, drops nothing, and exits 1. `--strict` also exits 1 when a step is `check-too-weak` and names it, which is the gate worth having: it fails only when a way to end somewhere else went unnoticed. It passes on every journey today. An `unused` step never fails, because a read or a command that fails on purpose changes nothing for an outcome check to notice — see the steps listed below. Results go to `results/<batch>/`.
+
+What it proves: whether the checks notice that one step of the taught path is missing. What it does not prove: that they catch a wrong path the hand-authored file never takes (another command in place of a dropped one, two steps missing, the right step on the wrong project), or anything about a real model. The outcome compares only what is listed above; a difference elsewhere in the fake's state is not seen.
+
+Last run, on every journey (2026-11-16, at the commit that added the tool): 17 steps, 10 `needed`, 7 `unused`, none `check-too-weak`, every unmutated path passing.
+
+| Journey                              | `unused` steps                                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `consumer-slack-message`             | `composio search`; the first `composio execute`, which fails because Slack is not connected         |
+| `developer-auth-configs-and-execute` | `cat` of the `composio-dev.md` reference; `composio dev --help`                                     |
+| `developer-execute-unconnected`      | the wrong-tree `composio dev execute`; the first `playground-execute`, which fails as not connected |
+| `first-run-login`                    | the last `composio whoami`                                                                          |
+| `run-inline-script`                  | none                                                                                                |
+
+Each is a read or a command that fails on purpose. The checks grade what a run changed, so `unused` is the expected verdict for both kinds. The failing commands are on the path for the error text an agent recovers from: in `developer-execute-unconnected` the journey's `scriptedChecks` pin that text when the hand-authored file is replayed; in `consumer-slack-message` nothing does. A mutation run does not grade `scriptedChecks`.
 
 ## How a run works
 
@@ -163,7 +194,7 @@ How to read it:
 
 The replay suite answers "does the CLI still behave on paths models have taken". It cannot answer "does this change make models do better", because a replay does not consult the model. Recording does, and the pieces here are meant to be the base of that measurement:
 
-- **Environment**: `startCliRig()` gives a fresh container with the real binary, a seeded backend that every host the CLI knows is pointed at, and a journal of which project and user every request acted on. It needs no account and changes nothing outside the fake as long as the agent stays on `composio`; the container's other outbound traffic is not blocked. Each run has its own container and backend, so runs are repeatable and can run in parallel.
+- **Environment**: `startCliRig()` gives a fresh container with the real binary, a seeded backend that every host the CLI knows is pointed at, and a journal of which project and user every request acted on. It needs no account and changes nothing outside the fake as long as the agent stays on `composio`; the container's other outbound traffic is not blocked. Each run has its own container and backend, so runs are repeatable and can run in parallel. Two tests hold that up: `determinism.test.ts` pins the seeded world by its hash (`worldHash` in the fake backend), and the replay suite checks that every replayed attempt of a journey started from the same world after its setup, and that a rig left alone after a login sends no request and changes nothing.
 - **Task**: a journey's `prompt`, `setup`, and starting directory.
 - **Grader**: a journey's `checks` for success and its `detours` for how the run got there; see [How a run is graded](#how-a-run-is-graded). They read exit codes, command output, and the journal, never the model's prose, so a grade is a fact and not a judgement. Each is reported by name, which says where a failed run went wrong (wrong project, never linked, wrong text) and not only that it failed. Compute the wrong-tree rate from the detours of every run, the failed ones included.
 - **Subject**: the skill text, rendered from source on every run and identified by `skillSha256`; and the CLI, identified by `revision`.

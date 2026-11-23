@@ -570,6 +570,31 @@ describe('CommandSurface: a named project does not borrow the directory test use
     })
   );
 
+  it.effect.each([
+    {
+      name: 'before the subcommand',
+      args: ['dev', '--user-id', '', 'playground-execute', 'GMAIL_SEND_EMAIL', '--skip-checks'],
+    },
+    {
+      name: 'inside a parallel batch',
+      args: [
+        'dev',
+        'playground-execute',
+        '--parallel',
+        'GMAIL_SEND_EMAIL',
+        '--user-id=',
+        '--skip-checks',
+      ],
+    },
+  ])('uses the test user when --user-id is empty $name', ({ args }) =>
+    Effect.gen(function* () {
+      expect(yield* sessionUser([...args, '-d', '{}'])).toEqual({
+        users: ['directory_user'],
+        notices: ['Using test user id "directory_user"'],
+      });
+    })
+  );
+
   const accountFor = (userId: string, id: string): ConnectedAccountItem => ({
     id,
     alias: id,

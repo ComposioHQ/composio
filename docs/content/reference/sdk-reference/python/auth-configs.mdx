@@ -9,7 +9,7 @@ description: "Manage authentication configurations."
 
 Lists authentication configurations based on provided filter criteria.
 
-```python
+```python signature
 def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_config_list_response.AuthConfigListResponse
 ```
 
@@ -29,8 +29,8 @@ def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_
 
 Create a new auth config
 
-```python
-def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_config_create_response.AuthConfig
+```python signature
+def create(toolkit: str, options: Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]) -> auth_config_create_response.AuthConfig
 ```
 
 **Parameters**
@@ -38,11 +38,22 @@ def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_
 | Name | Type | Description |
 |------|------|-------------|
 | `toolkit` | `str` | The toolkit to create the auth config for. |
-| `options` | `auth_config_create_params.AuthConfig` | The options to create the auth config with. |
+| `options` | `Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]` | The options to create the auth config with. For a Composio-managed auth config, `managed_app_id` picks the app. |
 
 **Returns**
 
 `auth_config_create_response.AuthConfig` — The created auth config.
+
+**Example**
+
+```python
+toolkit = composio.toolkits.get("slack")
+app = next(a for a in toolkit.composio_managed_auth if not a.is_default)
+composio.auth_configs.create(
+    "slack",
+    {"type": "use_composio_managed_auth", "managed_app_id": app.managed_app_id},
+)
+```
 
 ---
 
@@ -50,7 +61,7 @@ def create(toolkit: str, options: auth_config_create_params.AuthConfig) -> auth_
 
 Retrieves a specific authentication configuration by its ID
 
-```python
+```python signature
 def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 ```
 
@@ -70,7 +81,7 @@ def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 
 Updates an existing authentication configuration.  This method allows you to modify properties of an auth config such as credentials, scopes, or tool restrictions. The update type (custom or default) determines which fields can be updated.
 
-```python
+```python signature
 def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
 ```
 
@@ -91,7 +102,7 @@ def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdatePa
 
 Deletes an existing authentication configuration.
 
-```python
+```python signature
 def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
 ```
 
@@ -111,7 +122,7 @@ def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
 
 Enables an existing authentication configuration.
 
-```python
+```python signature
 def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
 ```
 
@@ -131,7 +142,7 @@ def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateSt
 
 Disables an existing authentication configuration.
 
-```python
+```python signature
 def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
 ```
 
@@ -147,4 +158,4 @@ def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateS
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/auth_configs.py#L21)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/auth_configs.py#L31)

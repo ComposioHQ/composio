@@ -42,6 +42,8 @@ export interface Evidence {
 
 export interface JourneyRun extends Evidence {
   readonly rig: CliRig;
+  /** `worldHash` of the fake once the setup had run, before the first model turn. */
+  readonly startingWorldHash: string;
   /** What the run cost, when the agent reports it. */
   readonly usage?: Usage;
 }

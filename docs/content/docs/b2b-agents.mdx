@@ -89,6 +89,8 @@ Your application remains responsible for deciding which members may ask the work
 
 ## Choose the customer's authentication model
 
+Review the [table of controls](/docs/security/token-custody#choose-your-controls) before choosing OAuth app ownership, credential custody, deployment, and retention. Your application still authorizes each member's access to member-owned and workspace-owned connections.
+
 Start with managed auth when Composio's provider app and scopes fit the product. Use [custom auth configs](/docs/authentication/custom-app-vs-managed-app) when your product needs its own OAuth branding, scopes, provider quotas, or self-hosted instances.
 
 If each customer supplies different OAuth credentials, create and manage auth configs programmatically, then assign the right config when creating that customer's sessions. See [Programmatic auth configs](/docs/authentication/programmatic-auth-configs).

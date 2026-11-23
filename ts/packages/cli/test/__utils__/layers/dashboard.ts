@@ -1,6 +1,6 @@
 import { isAPIError, type ComposioClientShape } from '@composio/client/effect';
 import type { SessionExecuteMetaParams } from '@composio/client/resources/tool-router';
-import { Effect, Layer, Schema } from 'effect';
+import { Formatter, Effect, Layer, Schema } from 'effect';
 import { HttpClient, HttpClientError, HttpClientResponse } from 'effect/http';
 import { DashboardToolExecution } from 'src/services/dashboard-tool-execution';
 
@@ -92,7 +92,7 @@ export const relayThroughToolRouter =
             : dashboardProcedureError({
                 code: 'INTERNAL_SERVER_ERROR',
                 httpStatus: 500,
-                message: error instanceof Error ? error.message : `${error}`,
+                message: error instanceof Error ? error.message : Formatter.format(error),
               })
         )
       )

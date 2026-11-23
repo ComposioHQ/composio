@@ -60,6 +60,9 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
+# pnpm applies these dependency patches during install
+COPY patches/ ./patches/
+
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 

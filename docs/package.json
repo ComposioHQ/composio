@@ -11,7 +11,6 @@
     "build:kb-semantic": "bun run generate:kb && fumadocs-mdx && bun scripts/build-kb-semantic-index.ts",
     "check:kb-semantic": "bun run check:kb && fumadocs-mdx && bun scripts/build-kb-semantic-index.ts --check",
     "verify:kb": "bun scripts/verify-kb.ts",
-    "import:kb": "bun scripts/import-support-knowledge.ts",
     "generate:kb": "bun scripts/generate-kb.ts",
     "check:kb": "bun scripts/generate-kb.ts --check",
     "prebuild": "bun run generate:kb && bun scripts/build-agent-index.ts && bun run build:content-freshness",
@@ -30,8 +29,10 @@
     "eval:agent": "eve eval docs-agent --skip-report",
     "eval:agent:flows": "bun scripts/eval-agent-flows.ts",
     "eval:kb-search": "bun scripts/eval-kb-search.ts",
+    "test:kb-publish": "bun tests/e2e/kb-publish.ts",
     "generate:toolkits": "bun scripts/generate-toolkits.ts",
     "generate:toolkit-versions": "bun scripts/refresh-toolkit-versions.ts",
+    "check:toolkit-parity": "bun scripts/check-toolkit-parity.ts",
     "generate:meta-tools": "bun scripts/generate-meta-tools.ts",
     "generate:api-index": "bun scripts/generate-api-index.ts",
     "check:docs-parity": "bun scripts/check-docs-parity.ts",
@@ -88,7 +89,8 @@
     "@anthropic-ai/sdk": "^0.115.0",
     "@composio/anthropic": "0.11.8",
     "@composio/claude-agent-sdk": "0.13.1",
-    "@composio/core": "0.30.0",
+    "@composio/client": "2.1.33",
+    "@composio/core": "0.31.0",
     "@composio/google": "0.13.0",
     "@composio/langchain": "0.11.3",
     "@composio/llamaindex": "^0.11.2",
@@ -140,11 +142,14 @@
     "next@16.4.5": "patches/next@16.4.5.patch"
   },
   "overrides": {
+    "@hono/node-server": "2.1.6",
     "@mastra/mcp": "1.17.2",
-    "@modelcontextprotocol/client": "2.3.1",
-    "@modelcontextprotocol/core": "2.3.1",
+    "@modelcontextprotocol/client": "2.4.0",
+    "@modelcontextprotocol/core": "2.4.0",
+    "@modelcontextprotocol/node": "2.1.2",
     "@modelcontextprotocol/sdk": "1.32.1",
-    "@modelcontextprotocol/server": "2.3.1",
-    "@modelcontextprotocol/server-legacy": "2.3.1"
+    "@modelcontextprotocol/server": "2.4.0",
+    "@modelcontextprotocol/server-legacy": "2.4.0",
+    "katex": "0.18.2"
   }
 }

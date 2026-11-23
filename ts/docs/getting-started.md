@@ -310,7 +310,7 @@ const customTool = experimental_createTool('WEATHER_FORECAST', {
 });
 
 const session = await composio.create('default', {
-  experimental: { customTools: [customTool] },
+  experimental: { localTools: [customTool] },
 });
 
 const result = await session.execute('WEATHER_FORECAST', {

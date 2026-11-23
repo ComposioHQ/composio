@@ -19,14 +19,14 @@
  *
  * Run manually with `bun scripts/build-agent-index.ts`.
  */
-import { resolveToolkitCount } from '../lib/toolkit-count';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { resolveToolkitCount } from '../lib/toolkit-count';
+import { stripTagsOutsideCode } from '../lib/markdown-code-guard';
 
 const ROOT = process.cwd();
 const CONTENT = join(ROOT, 'content');
-const KNOWLEDGE_FILE = join(ROOT, 'agent', 'knowledge.md');
-const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits'] as const;
+const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits', 'kb'] as const;
 const LEGACY_URL_PATTERNS = [
   '/docs/tools-direct',
   '/docs/auth-configuration',
@@ -105,6 +105,7 @@ function urlFromContentPath(absPath: string): string | undefined {
   if (collection === 'docs') return `/docs/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'examples') return `/examples/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'reference') return `/reference/${parts.join('/')}`.replace(/\/index$/, '');
+  if (collection === 'kb') return `/kb/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'toolkits') {
     if (parts[0] === 'faq') return undefined;
     return `/toolkits/${parts.join('/')}`.replace(/\/index$/, '');
@@ -153,8 +154,7 @@ function toPlainText(body: string): string {
 
 function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
-    .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+  return stripTagsOutsideCode(body, /<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -212,35 +212,6 @@ function makeSearchPage(args: {
     headings,
     lowerText: `${args.title} ${args.description} ${text}`.toLowerCase(),
   };
-}
-
-function loadKnowledgePages(): BundlePage[] {
-  if (!existsSync(KNOWLEDGE_FILE)) return [];
-
-  const raw = readFileSync(KNOWLEDGE_FILE, 'utf8');
-  const pages: BundlePage[] = [];
-  const sectionRe = /^##\s+(.+?)\s*(?:\(([^)]+)\))?\s*$/gm;
-  const matches = [...raw.matchAll(sectionRe)];
-
-  for (let index = 0; index < matches.length; index++) {
-    const match = matches[index];
-    const title = match[1].trim();
-    const url = (match[2] ?? '').trim() || '/docs';
-    const bodyStart = match.index! + match[0].length;
-    const bodyEnd = index + 1 < matches.length ? matches[index + 1].index! : raw.length;
-    const body = raw.slice(bodyStart, bodyEnd).trim();
-
-    pages.push({
-      collection: 'knowledge',
-      url,
-      title,
-      description: '',
-      legacy: false,
-      markdown: body,
-    });
-  }
-
-  return pages;
 }
 
 function searchPageForToolkit(tk: BundleToolkit): SearchPage {
@@ -346,21 +317,9 @@ const contentSearchPages = pages.map(page =>
     body: page.markdown,
   })
 );
-const knowledgePages = loadKnowledgePages();
-pages.push(...knowledgePages);
-const knowledgeSearchPages = knowledgePages.map(page =>
-  makeSearchPage({
-    collection: page.collection,
-    title: page.title,
-    description: page.description,
-    url: page.url,
-    body: page.markdown,
-  })
-);
 const toolkitSearchPages = toolkits.map(searchPageForToolkit);
 const search = buildSearchIndex([
   ...contentSearchPages,
-  ...knowledgeSearchPages,
   ...toolkitSearchPages,
 ]);
 

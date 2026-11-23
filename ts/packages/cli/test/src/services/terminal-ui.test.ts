@@ -12,6 +12,7 @@ import {
   makeTerminalUI,
   TerminalUI,
 } from 'src/services/terminal-ui';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { TestLive, MockConsole } from 'test/__utils__';
 
 vi.mock('@clack/prompts', async importOriginal => {
@@ -278,6 +279,37 @@ describe('TerminalUI', () => {
     );
   });
 
+  describe('escaping external text for display', () => {
+    // Formatting fixtures: standalone controls at each range edge, CR/LF and a tab.
+    const controls = '\u0000 \u0007 \u001f \u007f \u0080 \u0085 \u009f';
+
+    it('escapes C0, DEL and C1 controls as JSON-style escapes on one line', () => {
+      expect(escapeTerminalText(`a${controls}b`)).toBe(
+        'a\\u0000 \\u0007 \\u001f \\u007f \\u0080 \\u0085 \\u009fb'
+      );
+      expect(escapeTerminalText('one\r\ntwo\tthree')).toBe('one\\u000d\\u000atwo\\u0009three');
+    });
+
+    it('keeps printable text, backslashes, combining marks and astral characters', () => {
+      const printable = 'plain C:\\temp \\u0007 e\u0301 \u{1f600} \u00a0 \u00e9';
+      expect(escapeTerminalText(printable)).toBe(printable);
+      expect(escapeTerminalLines(printable)).toBe(printable);
+    });
+
+    it('keeps LF and TAB in multiline text, folds CRLF and escapes a lone CR', () => {
+      expect(escapeTerminalLines('one\r\ntwo\tcol\rthree\n\u0007')).toBe(
+        'one\ntwo\tcol\\u000dthree\n\\u0007'
+      );
+    });
+
+    it('keeps serialized JSON decodable to the same value', () => {
+      const value = { 'key\u0085': 'v\u007f\u0007', lines: 'a\r\nb', nested: [{ c: '\u0086' }] };
+      const shown = escapeTerminalLines(JSON.stringify(value, null, 2));
+      expect(shown).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/u);
+      expect(JSON.parse(shown)).toEqual(value);
+    });
+  });
+
   describe('clampSpinnerMessage keeps live spinner messages on one terminal row', () => {
     it('leaves a message that fits untouched', () => {
       expect(clampSpinnerMessage(80, 'Checking for updates')).toBe('Checking for updates');
@@ -314,7 +346,7 @@ describe('TerminalUI', () => {
     it('measures and truncates whole grapheme clusters', () => {
       const keycap = '1\uFE0F\u20E3';
       expect(stringWidth(keycap)).toBe(2);
-      expect([...keycap].reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
+      expect(Array.from(keycap).reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
 
       const clamped = clampSpinnerMessage(20, keycap.repeat(20));
       expect(clamped).toMatch(/^(?:1\uFE0F\u20E3)*…$/u);

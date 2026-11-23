@@ -144,9 +144,9 @@ function loadWebhookSpec(): WebhookSpec | null {
 /**
  * Tag slugs contributed by the separate webhook-events spec (PLEN-2793). Its
  * operations live under the OpenAPI 3.1 `webhooks` block (not `paths`) and its
- * tag ("Webhook Events") is absent from openapi.json — so without folding these
- * into the active set, `removeStaleTagIndexes` would recursively delete the
- * hand-authored `webhook-events` overview folder on the next docs data run.
+ * tags (e.g. "Webhook Events") are absent from openapi.json — so without folding
+ * these into the active set, `removeStaleTagIndexes` would recursively delete
+ * their generated overview folders on the next docs data run.
  */
 function webhookTagSlugs(spec: WebhookSpec | null): Set<string> {
   const slugs = new Set<string>();
@@ -162,46 +162,57 @@ function webhookTagSlugs(spec: WebhookSpec | null): Set<string> {
   return slugs;
 }
 
+type WebhookEntry = [eventKey: string, operation: OpenAPIOperation];
+
 /**
- * Generates the Webhook Events overview page from the webhooks spec.
+ * Generates one overview page per webhook tag. The webhooks spec can group its
+ * events under several tags (e.g. Webhook Events and Session Webhooks), and
+ * Fumadocs files each event page under its tag, so each tag gets its own index.
  *
  * The event list MUST be derived, not hand-maintained: adding an event to the
  * Apollo registry would otherwise leave it off this page, and removing one would
  * leave a link to a page Fumadocs no longer builds (a 404). Prose lives in
- * `api-overviews/webhook-events.mdx`; everything below it is generated.
+ * `api-overviews/<tagSlug>.mdx`; everything below it is generated.
  *
  * Individual event pages are rendered by Fumadocs straight from the spec, so
- * this page only needs the index tables.
+ * these pages only need the index tables.
  */
-function generateWebhookEventsIndex(spec: WebhookSpec | null, outputDir: string) {
+function generateWebhookIndexes(spec: WebhookSpec | null, outputDir: string) {
   if (!spec) return;
 
-  const entries = Object.entries(spec.webhooks ?? {});
-  if (entries.length === 0) return;
-
-  const operationTags = new Set(
-    entries.flatMap(([, item]) => item.post?.tags ?? []),
-  );
-  if (operationTags.size !== 1) {
-    throw new Error(
-      `Expected webhook operations to share exactly one tag, found: ${[...operationTags].join(', ') || 'none'}`,
-    );
-  }
-
-  const [operationTag] = operationTags;
-  const tag = spec.tags?.find(candidate => candidate.name === operationTag);
-  if (!tag) {
-    throw new Error(`Webhook operation tag "${operationTag}" is not declared in spec.tags`);
-  }
-  const tagSlug = slugify(tag.name);
-
-  const current: string[] = [];
-  const legacy: string[] = [];
-
-  for (const [key, item] of entries) {
+  const entriesByTag = new Map<string, WebhookEntry[]>();
+  for (const [key, item] of Object.entries(spec.webhooks ?? {})) {
     const operation = item.post;
     if (!operation?.operationId) continue;
 
+    const tags = operation.tags ?? [];
+    if (tags.length === 0) {
+      throw new Error(`Webhook operation "${key}" has no tag`);
+    }
+    for (const tagName of tags) {
+      entriesByTag.set(tagName, [...(entriesByTag.get(tagName) ?? []), [key, operation]]);
+    }
+  }
+
+  for (const [tagName, entries] of entriesByTag) {
+    const tag = spec.tags?.find(candidate => candidate.name === tagName);
+    if (!tag) {
+      throw new Error(`Webhook operation tag "${tagName}" is not declared in spec.tags`);
+    }
+    generateWebhookTagIndex(tag, entries, outputDir);
+  }
+}
+
+function generateWebhookTagIndex(
+  tag: { name: string; description?: string },
+  entries: WebhookEntry[],
+  outputDir: string,
+) {
+  const tagSlug = slugify(tag.name);
+  const current: string[] = [];
+  const legacy: string[] = [];
+
+  for (const [key, operation] of entries) {
     const href = `/reference/api-reference/${tagSlug}/${operation.operationId}`;
     const label = operation.summary ?? key;
 
@@ -221,7 +232,7 @@ function generateWebhookEventsIndex(spec: WebhookSpec | null, outputDir: string)
   }
 
   const overview = readOverview(tagSlug);
-  const body = overview ?? tag?.description ?? '';
+  const body = overview ?? tag.description ?? '';
 
   const legacySection =
     legacy.length > 0
@@ -237,8 +248,8 @@ ${legacy.join('\n')}`
       : '';
 
   const content = `---
-title: ${tag?.name ?? 'Webhook Events'}
-description: "${tag?.description ?? ''}"
+title: ${tag.name}
+description: "${tag.description ?? ''}"
 ---
 
 {/* Auto-generated from openapi-webhooks.json. Edit the overview at api-overviews/${tagSlug}.mdx, not this file. */}
@@ -296,10 +307,11 @@ function generateIndexPages() {
   const outputDir = join(process.cwd(), 'content/reference/api-reference');
   const webhookSpec = loadWebhookSpec();
 
-  // `Webhook Events` is tagged only in openapi-webhooks.json, so it never appears
-  // in the openapi.json-derived active set. Without folding it in, the section is
-  // recursively deleted on every run (and immediately regenerated below) — and if
-  // that ordering ever changed, the docs would silently lose the whole section.
+  // Webhook tags (e.g. `Webhook Events`) are used only in openapi-webhooks.json,
+  // so they never appear in the openapi.json-derived active set. Without folding
+  // them in, their sections are recursively deleted on every run (and immediately
+  // regenerated below) — and if that ordering ever changed, the docs would
+  // silently lose those sections.
   removeStaleTagIndexes(
     outputDir,
     new Set([...activeTagSlugs(v31Ops), ...webhookTagSlugs(webhookSpec)]),
@@ -311,7 +323,7 @@ function generateIndexPages() {
 
   // Webhook events come from a separate 3.1 spec, so they're generated here
   // rather than in the tag loop below (which iterates openapi.json operations).
-  generateWebhookEventsIndex(webhookSpec, outputDir);
+  generateWebhookIndexes(webhookSpec, outputDir);
 
   // Get all unique tag names
   const allTags = new Set([...Object.keys(v31Ops), ...Object.keys(v3Ops)]);

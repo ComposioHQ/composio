@@ -1,0 +1,30 @@
+{
+  "slug": "dashboard-account-deletion",
+  "title": "Delete a Composio organization",
+  "description": "Current self-service path and safety checks for organization deletion.",
+  "articlePath": "dashboard-account-deletion.md",
+  "sources": [
+    {
+      "sourcePath": "dashboard/account-deletion/public.md",
+      "sourceHeading": "Organization admins can use Delete this organization"
+    }
+  ],
+  "topics": [
+    "account-and-billing"
+  ],
+  "tags": [
+    "account-deletion",
+    "dashboard",
+    "for-you",
+    "platform"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

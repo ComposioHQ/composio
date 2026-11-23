@@ -7,10 +7,11 @@ Read these when a docs change touches an existing architecture, generated-data p
 - `examples.md` - cookbook/examples restructuring plan.
 - `feedback.md` - feedback collection system.
 - `llm-guardrails.md` - LLM guardrail injection for markdown endpoints.
-- `public-knowledge-base.md` - event-driven public support publication, unified
-  search, and Composio For You snapshot rules.
+- `public-knowledge-base.md` - support-portal KB publication, unified search,
+  and Composio For You snapshot rules.
 - `toolkit-page-availability.md` - docs-sync permissions, optional KB isolation,
-  and snapshot-miss toolkit page fallback.
+  snapshot-miss toolkit page fallback, and paginated live tool lists with their
+  parity monitor.
 - `toolkits.md` - toolkit page data, rendering, and live Instant eligibility filter decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.
 - `apps-and-toolkits.md` - Apps, Composio Built toolkits, and Provider MCP toolkits: vocabulary, sibling rendering, and search-contract wording.

@@ -1,5 +1,6 @@
 import { telemetry, withCommandTelemetry } from 'src/analytics/command-input';
 import { Command, Flag } from 'effect/cli';
+import { AUTHORIZATION_TIMEOUT_SECONDS } from 'src/effects/authorization-poll';
 import { runLogin } from './login.handler';
 
 const noBrowser = Flag.Boolean('no-browser').pipe(
@@ -10,6 +11,13 @@ const noBrowser = Flag.Boolean('no-browser').pipe(
 const pollOpt = Flag.Boolean('poll').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Poll the most recent pending browser login and complete it')
+);
+
+const timeoutOpt = Flag.String('timeout').pipe(
+  Flag.withDescription(
+    `Bound the --poll wait at N seconds (1-${AUTHORIZATION_TIMEOUT_SECONDS}); default ${AUTHORIZATION_TIMEOUT_SECONDS}`
+  ),
+  Flag.optional
 );
 
 const noWait = Flag.Boolean('no-wait').pipe(
@@ -58,6 +66,8 @@ const agentOpt = Flag.Boolean('agent').pipe(
  * Use --no-wait to print login URL and session info (JSON) then exit without opening browser or waiting.
  * Use --key to complete login with a session key from --no-wait. Without --no-wait, polls until linked;
  * with --no-wait, checks once and fails if not linked.
+ * Use --timeout with --poll to bound the wait, in seconds; a wait that runs out exits non-zero with
+ * the login URL and says to run --poll again.
  * Use --user-api-key to log in directly without a browser flow, and --org to override the current org.
  * Use --agent to sign up or log in using a Composio agent identity.
  * Use -y to skip org picker and use current org.
@@ -70,6 +80,7 @@ const agentOpt = Flag.Boolean('agent').pipe(
  * composio login
  * composio login --no-browser
  * composio login --no-wait
+ * composio login --poll --timeout 120
  * composio login --key <key>
  * composio login --key <key> --no-wait
  * composio login --user-api-key <uak>
@@ -83,6 +94,7 @@ const loginCmdBase = Command.make(
   {
     noBrowser,
     poll: pollOpt,
+    timeout: timeoutOpt,
     noWait,
     key: keyOpt,
     userApiKey: userApiKeyOpt,

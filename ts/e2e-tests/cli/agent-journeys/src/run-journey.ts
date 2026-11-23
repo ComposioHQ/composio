@@ -8,7 +8,7 @@
  */
 
 import { startCliRig, type CliRig, type RigOptions } from '@e2e-tests/cli-fake-backend/rig';
-import type { JournalEntry } from '@e2e-tests/cli-fake-backend';
+import { worldHash, type JournalEntry } from '@e2e-tests/cli-fake-backend';
 import { runAgent, type ModelAdapter, type Transcript } from './agent';
 import type { Journey, JourneyRun } from './journeys';
 import { BROWSER_PATH, BROWSER_SCRIPT, personFor, type Person } from './person';
@@ -88,6 +88,7 @@ export const runJourneyWith = async (journey: Journey, driver: Driver): Promise<
         : { dashboard: rig.fake.docker.https, backend: rig.fake.docker.http }
     );
     const startingConnections = rig.fake.world.connections.map(connection => connection.id);
+    const startingWorldHash = worldHash(rig.fake.world);
 
     const mark = rig.fake.journal.mark();
     const { transcript, commandRequests, usage } = await driver.drive({
@@ -105,6 +106,7 @@ export const runJourneyWith = async (journey: Journey, driver: Driver): Promise<
       requests,
       commandRequests,
       startingConnections,
+      startingWorldHash,
       whoamiAfter: { exitCode: whoami.exitCode, stdout: whoami.stdout, stderr: whoami.stderr },
       usage,
     };
@@ -133,7 +135,7 @@ export const loopDriver = (
     const transcript = await runAgent({
       adapter,
       maxTurns: MAX_TURNS,
-      hear: person.hear,
+      hear: person.hear.bind(person),
       execute: async command => {
         const result = await rig.run(command, {
           cwd: journey.cwd,

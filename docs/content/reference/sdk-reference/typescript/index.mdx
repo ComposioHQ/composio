@@ -18,6 +18,7 @@ description: "Complete API reference for the Composio TypeScript SDK (@composio/
 | [`Keyring`](/reference/sdk-reference/typescript/keyring) | `composio.keyring` — the organization's customer-managed keyring. |
 | [`Logs`](/reference/sdk-reference/typescript/logs) | `composio.logs` — tool-execution logs. |
 | [`SessionConfigs`](/reference/sdk-reference/typescript/session-configs) | `composio.sessionConfigs` — saved, reusable Session configs. |
+| [`SessionWebhooks`](/reference/sdk-reference/typescript/session-webhooks) | `composio.sessions.webhooks` — for the endpoint at a project's session |
 | [`Experimental`](/reference/sdk-reference/typescript/experimental) | Experimental API |
 | [`MCP`](/reference/sdk-reference/typescript/mcp) | MCP (Model Control Protocol) class |
 | [`RemoteFile`](/reference/sdk-reference/typescript/remote-file) | Represents a file stored in a tool router session's file mount. |
@@ -49,6 +50,7 @@ const tools = await composio.tools.get('user-123', {
 // Execute a tool
 const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   userId: 'user-123',
-  arguments: { owner: 'composio' }
+  arguments: { owner: 'composio' },
+  version: '20250909_00'
 });
 ```

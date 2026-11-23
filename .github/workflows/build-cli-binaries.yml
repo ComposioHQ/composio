@@ -9,6 +9,7 @@ on:
       - '.github/scripts/cli-release/**'
       - '.github/workflows/build-cli-binaries.yml'
       - '.github/workflows/cli.windows.yml'
+      - '.github/workflows/cli.test-installation.yml'
       - 'install.ps1'
       - 'install.sh'
       - 'install/**'
@@ -47,6 +48,7 @@ jobs:
       release_version: ${{ steps.resolve.outputs.release_version }}
       prerelease: ${{ steps.resolve.outputs.prerelease }}
       make_latest: ${{ steps.resolve.outputs.make_latest }}
+      previous_stable_tag: ${{ steps.resolve.outputs.previous_stable_tag }}
 
     steps:
       - name: Checkout
@@ -209,6 +211,7 @@ jobs:
       RELEASE_NAME: ${{ needs.prepare.outputs.release_name }}
       PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
       MAKE_LATEST: ${{ needs.prepare.outputs.make_latest }}
+      PREVIOUS_STABLE_TAG: ${{ needs.prepare.outputs.previous_stable_tag }}
       CHECKOUT_REF: ${{ github.sha }}
       RELEASE_HELPERS_DIR: ${{ github.workspace }}/.release-workflow/.github/scripts/cli-release
 

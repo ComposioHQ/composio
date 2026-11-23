@@ -22,7 +22,7 @@ import { artifactsCmd } from './artifacts/artifacts.cmd';
 import { installCmd } from './install/install.cmd';
 import { generateCmd } from './generate/generate.cmd';
 import { buildDevCommand } from './dev.cmd';
-import { ExecuteInvocationArgs } from './tools/execute/tools.execute.parallel';
+import { ExecuteInvocationArgs } from './tools/execute/tools.execute.parallel-argv';
 import {
   buildHelpCommand,
   RootHelpMarker,
@@ -154,12 +154,13 @@ export const runWithConfig = Effect.gen(function* () {
     Effect.gen(function* () {
       const base = yield* Console.Console;
       // Node/Bun consoles carry their methods as own (bound) properties and the
-      // test MockConsole is a plain object literal, so a spread copies every
+      // test MockConsole is a plain object literal, so an own-property copy preserves every
       // method; only `log` needs overriding.
-      return yield* Effect.provideService(run(args), Console.Console, {
-        ...base,
-        log: (...rest) => base.error(...rest),
-      });
+      return yield* Effect.provideService(
+        run(args),
+        Console.Console,
+        Object.assign({}, base, { log: (...rest: ReadonlyArray<unknown>) => base.error(...rest) })
+      );
     });
 
   const EXPLICIT_STDOUT_FLAGS: ReadonlySet<string> = new Set(['--help', '-h', '--version', '-v']);

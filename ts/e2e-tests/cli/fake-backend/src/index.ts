@@ -4,3 +4,4 @@ export { errorEnvelope, FAULT_REQUEST_ID, type Fault, type FaultTarget } from '.
 export { ROUTES, AGENT_IDENTITY } from './routes';
 export type { Route, RouteContext, RouteResult } from './route';
 export * from './world';
+export { worldHash } from './world-hash';

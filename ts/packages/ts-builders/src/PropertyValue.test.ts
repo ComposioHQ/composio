@@ -1,3 +1,4 @@
+import { runInNewContext } from 'node:vm';
 import { expect, test } from 'vitest';
 
 import { objectValue } from './ObjectValue';
@@ -36,9 +37,10 @@ test('a crafted slug cannot break out of the key position', () => {
 
   // The payload text survives inside the quoted key; what matters is that
   // evaluating the generated literal does not execute it.
-  const evaluated = new Function(`return { ${out} };`)() as Record<string, unknown>;
+  const context = { __PWNED__: undefined };
+  const evaluated = runInNewContext(`({ ${out} })`, context) as Record<string, unknown>;
   expect(Object.keys(evaluated)).toEqual([malicious]);
-  expect((globalThis as Record<string, unknown>).__PWNED__).toBeUndefined();
+  expect(context.__PWNED__).toBeUndefined();
 });
 
 test('injected slug stays inert inside a generated object literal', () => {

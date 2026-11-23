@@ -152,7 +152,7 @@ export const toUnicodePattern = (pattern: string): string | undefined => {
     } else if (escaped === 'x' || escaped === 'u') {
       const length = escaped === 'x' ? 2 : 4;
       const digits = pattern.slice(index + 2, index + 2 + length);
-      if (digits.length === length && [...digits].every(digit => HEX_DIGIT.test(digit))) {
+      if (digits.length === length && Array.from(digits).every(digit => HEX_DIGIT.test(digit))) {
         rewritten += `\\${escaped}${digits}`;
         index += 2 + length;
       } else {

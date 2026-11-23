@@ -1,4 +1,4 @@
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import { trackCliCodactFailureEffect, trackCliEventEffect } from 'src/analytics/dispatch';
 import {
   getToolExecuteFailedEvent,
@@ -8,7 +8,7 @@ import {
   isMaybeToolNotFoundError,
 } from 'src/analytics/events';
 import * as constants from 'src/constants';
-import { retryHint, type RetryAdvice } from 'src/effects/retry-advice';
+import { retryAdviceFor, retryHint, type RetryAdvice } from 'src/effects/retry-advice';
 import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import {
@@ -19,7 +19,55 @@ import {
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import type { TerminalUI } from 'src/services/terminal-ui';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
+import type { ToolExecuteResponse } from 'src/services/tools-executor';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { connectionTips, formatUnknownObject, redactRequestId } from './tools.execute.format';
+
+/** The tool a failure belongs to, and where its toolkit is looked up. */
+export type ExecuteFailureScope = {
+  readonly toolSlug: string;
+  readonly surface: 'root' | 'dev';
+  readonly projectScope?: ToolkitProjectScope;
+};
+
+/**
+ * What a tool's execution failed with, before any command reports it: the original cause, its
+ * toolkit, how `mapComposioError` reads it, and whether the same request can be sent again.
+ */
+export type ExecuteFailure = {
+  readonly cause: unknown;
+  readonly toolkit: string | undefined;
+  readonly mapped: ReturnType<typeof mapComposioError>;
+  readonly retry: Option.Option<RetryAdvice>;
+};
+
+const inspect = (cause: unknown, scope: ExecuteFailureScope, retry: Option.Option<RetryAdvice>) =>
+  toolkitFromToolSlug(scope.toolSlug, scope.projectScope).pipe(
+    Effect.map((toolkit): ExecuteFailure => ({
+      cause,
+      toolkit,
+      mapped: mapComposioError({
+        error: cause,
+        toolkit,
+        toolSlug: scope.toolSlug,
+        tree: scope.surface,
+      }),
+      retry,
+    }))
+  );
+
+/**
+ * A typed failure of the execution (validation, a request, the Dashboard), with its retry advice.
+ */
+export const inspectExecuteFailure = (error: unknown, scope: ExecuteFailureScope) =>
+  inspect(error, scope, retryAdviceFor(error));
+
+/**
+ * A response the tool answered with `successful: false`: its error, or the response itself when
+ * it has none. The request was answered, so there is no retry advice.
+ */
+export const inspectFailedResponse = (response: ToolExecuteResponse, scope: ExecuteFailureScope) =>
+  inspect(response.error ?? response, scope, Option.none());
 
 export const emitExecuteFailureTelemetry = (params: {
   readonly toolSlug: string;
@@ -216,27 +264,22 @@ export const emitExecuteFailureTelemetry = (params: {
     }
   });
 
+/**
+ * Reports an inspected failure on the terminal and in telemetry, and summarizes it for the JSON
+ * result.
+ */
 export const handleExecutionError = (
   ui: TerminalUI,
-  error: unknown,
-  context: {
-    toolSlug: string;
-    args: Record<string, unknown>;
-    surface: 'root' | 'dev';
-    projectMode: 'consumer' | 'developer';
-    stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
-    logId?: string;
-    projectScope?: ToolkitProjectScope;
+  failure: ExecuteFailure,
+  context: ExecuteFailureScope & {
+    readonly args: Record<string, unknown>;
+    readonly projectMode: 'consumer' | 'developer';
+    readonly stage: 'schema_fetch' | 'dry_run' | 'validation' | 'execution';
+    readonly logId?: string;
   }
 ) =>
   Effect.gen(function* () {
-    const toolkit = yield* toolkitFromToolSlug(context.toolSlug, context.projectScope);
-    const mapped = mapComposioError({
-      error,
-      toolkit,
-      toolSlug: context.toolSlug,
-      tree: context.surface,
-    });
+    const { cause: error, toolkit, mapped } = failure;
     const normalized = mapped.normalized;
     if (normalized instanceof ToolInputValidationError) {
       yield* emitExecuteFailureTelemetry({
@@ -249,11 +292,12 @@ export const handleExecutionError = (
         logId: context.logId,
         projectScope: context.projectScope,
       });
-      yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
+      yield* ui.log.error(`Input validation failed for ${escapeTerminalText(context.toolSlug)}`);
       yield* ui.note(
-        [`Schema: ${normalized.schemaPath}`, ...normalized.issues.map(issue => `- ${issue}`)].join(
-          '\n'
-        ),
+        [
+          `Schema: ${normalized.schemaPath}`,
+          ...normalized.issues.map(issue => `- ${escapeTerminalText(issue)}`),
+        ].join('\n'),
         'Tool schema validation'
       );
       return { error: normalized.message, slug: context.toolSlug };
@@ -274,8 +318,11 @@ export const handleExecutionError = (
       mappedError: mapped,
     });
 
+    // The message and details can quote the API or the tool; the returned summary keeps them as
+    // they are for the JSON result.
+    const displayMessage = escapeTerminalText(mapped.message);
     if (normalized instanceof ComposioNoActiveConnectionError) {
-      yield* ui.log.error(mapped.message);
+      yield* ui.log.error(displayMessage);
       if (toolkit) {
         yield* ui.note(
           connectionTips({ toolkit, toolSlug: context.toolSlug, surface: context.surface }),
@@ -285,11 +332,14 @@ export const handleExecutionError = (
       return { error: mapped.message, slug: slugValue ?? context.toolSlug };
     }
 
-    yield* ui.log.error(mapped.message);
+    yield* ui.log.error(displayMessage);
 
     const detailsObject = apiDetails;
     if (detailsObject) {
-      yield* ui.note(formatUnknownObject(redactRequestId(detailsObject)), 'Error details');
+      yield* ui.note(
+        escapeTerminalLines(formatUnknownObject(redactRequestId(detailsObject))),
+        'Error details'
+      );
     }
 
     return { error: mapped.message, slug: slugValue };

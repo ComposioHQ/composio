@@ -1,5 +1,6 @@
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { cliRequestHeaders } from './client-provenance';
+import { fetchWithAgentSessionRedirects } from './agent-session-fetch';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
@@ -8,7 +9,7 @@ import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
+import { Effect, Formatter, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
@@ -40,6 +41,11 @@ export type RunHelperContext = {
   readonly debug?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
+  /**
+   * The agent session headers the parent command resolved, for `proxy()` requests. This
+   * module reads no environment variable, so the parent passes them in.
+   */
+  readonly agentSessionHeaders?: Readonly<Record<string, string>>;
 };
 
 type RunHelpersInstallParams = {
@@ -159,7 +165,7 @@ const proxyFailureDetail = (parsed: unknown, raw: string): string | undefined =>
 const executeId = () => crypto.randomUUID().slice(0, 8);
 
 const truncateDebugText = (value: unknown, max = 240) => {
-  const text = typeof value === 'string' ? value : String(value ?? '');
+  const text = value == null ? '' : typeof value === 'string' ? value : Formatter.format(value);
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 };
 
@@ -178,17 +184,17 @@ const previewDebugValue = (value: unknown): string => {
     }
     return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
   }
-  return truncateDebugText(String(value));
+  return truncateDebugText(value);
 };
 
 const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
   switch (step) {
     case 'execute.prepare':
-      return `[execute] ${details.slug}`;
+      return `[execute] ${truncateDebugText(details.slug)}`;
     case 'search.prepare':
       return `[search] ${truncateDebugText(details.query || '', 96)}`;
     case 'proxy.request':
-      return `[proxy] ${details.method} ${truncateDebugText(details.endpoint || '', 96)}`;
+      return `[proxy] ${truncateDebugText(details.method)} ${truncateDebugText(details.endpoint || '', 96)}`;
     case 'cli.result': {
       const command = typeof details.command === 'string' ? details.command : 'cli';
       const state = details.successful === false ? 'failed' : 'ok';
@@ -214,7 +220,7 @@ const stringifyForPrompt = (value: unknown): string => {
   }
   return Result.getOrElse(
     Result.try(() => JSON.stringify(value, null, 2)),
-    () => String(value)
+    () => Formatter.format(value)
   );
 };
 
@@ -768,10 +774,11 @@ const createProxyHelper = (params: {
 
   const fetchComposioJson = async (pathname: string, body: Record<string, unknown>) => {
     const auth = requireConsumerProxyContext();
-    const response = await fetch(`${composioBaseURL}${pathname}`, {
+    const response = await fetchWithAgentSessionRedirects(`${composioBaseURL}${pathname}`, {
       method: 'POST',
       headers: {
         ...cliRequestHeaders(),
+        ...helperContext.agentSessionHeaders,
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,

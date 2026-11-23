@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { Triggers } from '../../src/models/Triggers';
 import ComposioClient, { APIError } from '@composio/client';
-import logger from '../../src/utils/logger';
 import {
   TriggerSubscribeParams,
   TriggerData,
   IncomingTriggerPayload,
   IncomingTriggerPayloadSchema,
 } from '../../src/types/triggers.types';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors';
 import { PusherService } from '../../src/services/pusher/Pusher';
 import {
@@ -18,10 +16,18 @@ import {
 } from '../../src/errors/TriggerErrors';
 
 // Mock dependencies
-vi.mock('../../src/utils/logger');
+const mockedLogger = vi.hoisted(() => ({
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+}));
+vi.mock('../../src/utils/logger', () => ({ default: mockedLogger }));
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 vi.mock('../../src/services/pusher/Pusher');
@@ -265,7 +271,7 @@ describe('Triggers', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(triggers).toBeInstanceOf(Triggers);
-      expect(telemetry.instrument).toHaveBeenCalledWith(triggers, 'Triggers');
+      expect(instrument).toHaveBeenCalledWith(triggers, 'Triggers');
     });
   });
 
@@ -823,7 +829,7 @@ describe('Triggers', () => {
 
     beforeEach(() => {
       mockCallback.mockClear();
-      vi.mocked(logger.debug).mockClear();
+      mockedLogger.debug.mockClear();
     });
 
     it('should throw error if function is not provided', async () => {
@@ -836,7 +842,10 @@ describe('Triggers', () => {
       await triggers.subscribe(mockCallback);
 
       expect(mockPusherService.subscribe).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith('🔄 Subscribing to triggers with filters: ', '{}');
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
+        '🔄 Subscribing to triggers with filters: ',
+        '{}'
+      );
     });
 
     it('should pass the subscription error callback through to the pusher service', async () => {
@@ -861,7 +870,7 @@ describe('Triggers', () => {
       await triggers.subscribe(mockCallback, filters);
 
       expect(mockPusherService.subscribe).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         '🔄 Subscribing to triggers with filters: ',
         JSON.stringify(filters, null, 2)
       );
@@ -890,7 +899,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match toolkits filter',
         expect.any(String)
       );
@@ -906,7 +915,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match triggerId filter',
         expect.any(String)
       );
@@ -922,7 +931,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match connectedAccountId filter',
         expect.any(String)
       );
@@ -938,7 +947,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match triggerSlug filter',
         expect.any(String)
       );
@@ -954,7 +963,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match triggerData filter',
         expect.any(String)
       );
@@ -970,7 +979,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match userId filter',
         expect.any(String)
       );
@@ -990,7 +999,7 @@ describe('Triggers', () => {
       filterCallback(mockTriggerData);
 
       expect(mockCallback).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Trigger does not match filters',
         expect.any(String)
       );
@@ -1144,7 +1153,7 @@ describe('Triggers', () => {
 
     beforeEach(() => {
       mockCallback.mockClear();
-      vi.mocked(logger.debug).mockClear();
+      mockedLogger.debug.mockClear();
     });
 
     it('should not call callback when trigger data does not match filters', async () => {
@@ -1176,7 +1185,7 @@ describe('Triggers', () => {
       expect(() => filterCallback(mockTriggerData)).not.toThrow();
 
       expect(errorCallback).toHaveBeenCalledTimes(1);
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(mockedLogger.error).toHaveBeenCalledWith(
         '❌ Error in trigger callback:',
         'Error in user callback'
       );
@@ -1207,7 +1216,7 @@ describe('Triggers', () => {
         });
 
         expect(calls).toBe(1);
-        expect(logger.error).toHaveBeenCalledWith(
+        expect(mockedLogger.error).toHaveBeenCalledWith(
           '❌ Error in trigger callback:',
           'Async error in user callback'
         );
@@ -1218,7 +1227,7 @@ describe('Triggers', () => {
     });
 
     it('should log the details of a thrown non-Error value', async () => {
-      vi.mocked(logger.error).mockClear();
+      mockedLogger.error.mockClear();
       const failure = { message: 'Request failed', code: 429 };
 
       await triggers.subscribe(() => {
@@ -1237,9 +1246,9 @@ describe('Triggers', () => {
 
       // Once for the synchronous throw, once for the rejection.
       expect(
-        vi
-          .mocked(logger.error)
-          .mock.calls.filter(([prefix]) => prefix === '❌ Error in trigger callback:')
+        mockedLogger.error.mock.calls.filter(
+          ([prefix]) => prefix === '❌ Error in trigger callback:'
+        )
       ).toEqual([
         ['❌ Error in trigger callback:', '{"message":"Request failed","code":429}'],
         ['❌ Error in trigger callback:', '{"message":"Request failed","code":429}'],
@@ -1251,7 +1260,7 @@ describe('Triggers', () => {
       // any value, or the rejection escapes again. The logger is mocked here,
       // so these pin the string that is logged: passing a circular value to
       // the real logger would make its own JSON.stringify throw.
-      vi.mocked(logger.error).mockClear();
+      mockedLogger.error.mockClear();
       const unhandledRejection = vi.fn();
       process.on('unhandledRejection', unhandledRejection);
       try {
@@ -1275,9 +1284,9 @@ describe('Triggers', () => {
         });
 
         expect(
-          vi
-            .mocked(logger.error)
-            .mock.calls.filter(([prefix]) => prefix === '❌ Error in trigger callback:')
+          mockedLogger.error.mock.calls.filter(
+            ([prefix]) => prefix === '❌ Error in trigger callback:'
+          )
         ).toEqual([
           ['❌ Error in trigger callback:', '[object Object]'],
           ['❌ Error in trigger callback:', '{"code":429}'],
@@ -1336,8 +1345,8 @@ describe('Triggers', () => {
 
     beforeEach(() => {
       mockCallback.mockClear();
-      vi.mocked(logger.debug).mockClear();
-      vi.mocked(logger.warn).mockClear();
+      mockedLogger.debug.mockClear();
+      mockedLogger.warn.mockClear();
     });
 
     it('should parse V3 Pusher payload', async () => {
@@ -1366,7 +1375,7 @@ describe('Triggers', () => {
           }),
         })
       );
-      expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V3 format');
+      expect(mockedLogger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V3 format');
     });
 
     it('should not call callback when V3 auth config does not match', async () => {
@@ -1405,7 +1414,7 @@ describe('Triggers', () => {
           }),
         })
       );
-      expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V2 format');
+      expect(mockedLogger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V2 format');
     });
 
     it('should parse V1 Pusher payload', async () => {
@@ -1431,7 +1440,7 @@ describe('Triggers', () => {
           }),
         })
       );
-      expect(logger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V1 format');
+      expect(mockedLogger.debug).toHaveBeenCalledWith('Parsed Pusher payload as V1 format');
     });
 
     it('should parse legacy TriggerData payload for backwards compatibility', async () => {
@@ -1443,7 +1452,7 @@ describe('Triggers', () => {
 
       expect(mockCallback).toHaveBeenCalledTimes(1);
       expect(mockCallback).toHaveBeenCalledWith(mockIncomingTriggerPayload);
-      expect(logger.debug).toHaveBeenCalledWith(
+      expect(mockedLogger.debug).toHaveBeenCalledWith(
         'Parsed Pusher payload as legacy TriggerData format'
       );
     });
@@ -1460,7 +1469,7 @@ describe('Triggers', () => {
 
       // This should not throw, but should log a warning
       expect(() => filterCallback(unknownPayload)).not.toThrow();
-      expect(logger.warn).toHaveBeenCalledWith(
+      expect(mockedLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Unknown Pusher payload format')
       );
     });
@@ -1484,10 +1493,10 @@ describe('Triggers', () => {
 
       // The callback should receive a payload with string values that are safe to use with string methods
       const receivedPayload = mockCallback.mock.calls[0][0];
-      expect(typeof receivedPayload.toolkitSlug).toBe('string');
-      expect(typeof receivedPayload.triggerSlug).toBe('string');
-      expect(typeof receivedPayload.id).toBe('string');
-      expect(typeof receivedPayload.userId).toBe('string');
+      expect(receivedPayload.toolkitSlug).toBe('123');
+      expect(receivedPayload.triggerSlug).toBe('456');
+      expect(receivedPayload.id).toBe('unknown');
+      expect(receivedPayload.userId).toBe('');
 
       // Verify that calling toLowerCase() doesn't crash (this is what shouldSendTriggerAfterFilters does)
       expect(() => receivedPayload.toolkitSlug.toLowerCase()).not.toThrow();

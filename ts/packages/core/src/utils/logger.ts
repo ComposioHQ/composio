@@ -76,16 +76,9 @@ export class Logger {
       .map((arg, index) => {
         if (typeof arg === 'object') {
           return JSON.stringify(arg);
-        } else {
-          if (index === 0) {
-            if (args.length > 1) {
-              return pc.yellow(`${arg}`);
-            } else {
-              return String(arg);
-            }
-          }
-          return String(arg);
         }
+        const text = formatLogValue(arg);
+        return index === 0 && args.length > 1 ? pc.yellow(text) : text;
       })
       .join('\n');
 
@@ -123,6 +116,23 @@ export class Logger {
     if (this.shouldLog('debug')) {
       this.sink.debug(this.formatMessage(args));
     }
+  }
+}
+
+function formatLogValue(value: unknown): string {
+  switch (typeof value) {
+    case 'string':
+      return value;
+    case 'function':
+      return value.toString();
+    case 'number':
+    case 'boolean':
+    case 'bigint':
+    case 'symbol':
+    case 'undefined':
+      return String(value);
+    default:
+      return Object.prototype.toString.call(value);
   }
 }
 

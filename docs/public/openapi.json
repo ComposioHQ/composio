@@ -4457,6 +4457,19 @@
           },
           {
             "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Include the tools of the custom toolkits this user can use. Without it, only tools of custom toolkits with access \"all\" are listed.",
+              "example": "user_123"
+            },
+            "required": false,
+            "description": "Include the tools of the custom toolkits this user can use. Without it, only tools of custom toolkits with access \"all\" are listed.",
+            "name": "user_id",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "number",
               "nullable": true
             },
@@ -6049,6 +6062,16 @@
           },
           "404": {
             "description": "Not found - Resource not found or connected account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone - The toolkit is retired and can no longer be proxied to",
             "content": {
               "application/json": {
                 "schema": {
@@ -22428,7 +22451,7 @@
             }
           },
           "403": {
-            "description": "Zero Data Retention requires a paid plan.",
+            "description": "Forbidden. The org API key's owner is not an org admin, or Zero Data Retention requires a paid plan.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23115,7 +23138,7 @@
             }
           },
           "403": {
-            "description": "Forbidden. API key regeneration is not enabled for this organization.",
+            "description": "Forbidden. API key regeneration is not enabled for this organization, or the org API key's owner is not an org admin.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23314,7 +23337,7 @@
       },
       "get": {
         "summary": "List webhook subscriptions",
-        "description": "Lists all webhook subscriptions for the authenticated project with pagination. Currently limited to one subscription per project.",
+        "description": "Lists all webhook subscriptions for the authenticated project with pagination. Currently limited to one subscription per project. Viewers get a 403.",
         "tags": [
           "Webhook Subscriptions"
         ],
@@ -23451,6 +23474,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow viewing webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -23468,7 +23501,7 @@
     "/api/v3.1/webhook_subscriptions/{id}": {
       "get": {
         "summary": "Get webhook subscription",
-        "description": "Retrieves a webhook subscription by ID.",
+        "description": "Retrieves a webhook subscription by ID. Viewers get a 403.",
         "tags": [
           "Webhook Subscriptions"
         ],
@@ -23552,6 +23585,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow viewing webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {
@@ -25752,6 +25795,30 @@
                       "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                       "example": "native"
                     },
+                    "toolkit_type": {
+                      "type": "string",
+                      "enum": [
+                        "api",
+                        "mcp"
+                      ],
+                      "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                      "example": "api"
+                    },
+                    "instant": {
+                      "type": "object",
+                      "properties": {
+                        "supported": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "supported"
+                      ],
+                      "description": "Present when the latest version of this toolkit supports Instant accounts. See the tools endpoint for support on individual tools."
+                    },
                     "enabled": {
                       "type": "boolean",
                       "description": "Indicates if this toolkit is currently enabled and available for use",
@@ -26133,6 +26200,10 @@
                             "description": "URL to a page where users can obtain or configure credentials for this authentication method",
                             "example": "https://github.com/settings/tokens"
                           },
+                          "is_connection_revoke_supported": {
+                            "type": "boolean",
+                            "description": "Whether a connection made with this authentication method can be revoked at the provider"
+                          },
                           "deprecated_auth_provider_details": {
                             "type": "object",
                             "properties": {
@@ -26151,7 +26222,8 @@
                           "mode",
                           "required_scopes",
                           "fields",
-                          "name"
+                          "name",
+                          "is_connection_revoke_supported"
                         ],
                         "description": "Detailed configuration for an authentication method"
                       },
@@ -26162,6 +26234,11 @@
                       "nullable": true,
                       "description": "URL to a guide page with authentication setup instructions for this toolkit",
                       "example": "https://composio.dev/auth/github"
+                    },
+                    "docs_url": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The provider's own documentation URL for this toolkit, or null when it has none"
                     },
                     "base_url": {
                       "type": "string",
@@ -26306,9 +26383,11 @@
                     "slug",
                     "name",
                     "type",
+                    "toolkit_type",
                     "enabled",
                     "composio_managed_auth",
                     "is_local_toolkit",
+                    "docs_url",
                     "meta",
                     "deprecated"
                   ],
