@@ -301,6 +301,42 @@ describe('run-helpers-runtime', () => {
       ]);
     });
 
+    it('[Given] a proxy redirect changes origin [Then] only the backend receives the session and credentials', async () => {
+      const fetchMock = await proxyOnce(
+        { ...proxyContext, agentSessionHeaders: sessionHeaders },
+        jsonResponse({ session_id: 'session-1' }),
+        new Response(null, { status: 307, headers: { location: '/proxy-redirect' } }),
+        new Response(null, {
+          status: 302,
+          headers: { location: 'https://storage.example.test/result' },
+        }),
+        jsonResponse({ status: 200, data: { id: 1 } })
+      );
+
+      const [original, sameOrigin, crossOrigin] = fetchMock.mock.calls.slice(1);
+      expect(sameOrigin?.[0]).toBe('https://backend.composio.dev/proxy-redirect');
+      expect(sameOrigin?.[1].method).toBe('POST');
+      expect(sameOrigin?.[1].body).toBe(original?.[1].body);
+      const sameOriginHeaders = new Headers(sameOrigin?.[1].headers);
+      expect(sameOriginHeaders.get('x-cli-agent-session-id')).toBe(
+        sessionHeaders['x-cli-agent-session-id']
+      );
+      expect(sameOriginHeaders.get('x-user-api-key')).toBe('test-key');
+
+      expect(crossOrigin?.[0]).toBe('https://storage.example.test/result');
+      expect(crossOrigin?.[1].method).toBe('GET');
+      expect(crossOrigin?.[1].body).toBeUndefined();
+      const crossOriginHeaders = new Headers(crossOrigin?.[1].headers);
+      const protectedHeaders = [
+        ...Object.keys(sessionHeaders),
+        'x-user-api-key',
+        'x-org-id',
+        'x-project-id',
+        'content-type',
+      ];
+      expect(protectedHeaders.filter(name => crossOriginHeaders.has(name))).toEqual([]);
+    });
+
     it('[Given] a context without agent session headers [Then] the proxy request headers are unchanged', async () => {
       const fetchMock = await proxyOnce(
         proxyContext,

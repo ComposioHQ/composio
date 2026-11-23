@@ -289,6 +289,58 @@ describe('ComposioClientSingleton headers', () => {
     );
   });
 
+  it.effect.each([{ auth: 'authenticated' }, { auth: 'unauthenticated' }] as const)(
+    'keeps session headers on same-origin redirects only ($auth)',
+    ({ auth }) => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(null, { status: 307, headers: { location: '/redirected' } })
+        )
+        .mockResolvedValueOnce(
+          new Response(null, {
+            status: 307,
+            headers: { location: 'https://storage.example.test/tools' },
+          })
+        )
+        .mockResolvedValueOnce(okResponse());
+      const homedir = tempy.temporaryDirectory();
+      const configMap = new Map([
+        ['COMPOSIO_BASE_URL', 'https://backend.composio.dev'],
+        ...TELEMETRY_ON,
+        ['CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION],
+      ]);
+      if (auth === 'authenticated') configMap.set('COMPOSIO_USER_API_KEY', 'uak_test');
+
+      return Effect.gen(function* () {
+        const singleton = yield* ComposioClientSingleton;
+        yield* listTools(yield* singleton.get());
+
+        const hops = fetchSpy.mock.calls.map(([url, init]) => {
+          const headers = new Headers(init?.headers);
+          return [
+            String(url),
+            headers.get('x-cli-agent-session-host'),
+            headers.get('x-cli-agent-session-id'),
+          ];
+        });
+        expect(hops).toEqual([
+          [
+            expect.stringMatching(/^https:\/\/backend\.composio\.dev\//),
+            'claude',
+            CLAUDE_AGENT_SESSION_ID,
+          ],
+          ['https://backend.composio.dev/redirected', 'claude', CLAUDE_AGENT_SESSION_ID],
+          ['https://storage.example.test/tools', null, null],
+        ]);
+      }).pipe(
+        Effect.provide(
+          Layer.provide(ComposioClientSingleton.Default, withConfigLayer(configMap, homedir))
+        )
+      );
+    }
+  );
+
   // Later entries win, so each switch case is a Claude Code chat with that one switch flipped.
   const withoutAgentSession: ReadonlyArray<{
     readonly name: string;

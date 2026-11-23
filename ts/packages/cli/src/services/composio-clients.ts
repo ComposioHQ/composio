@@ -1,7 +1,7 @@
 import { Context, Effect, Layer, Option, Stream, Array, Order } from 'effect';
 import * as Str from 'effect/String';
 import type { Cause } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/http';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import {
   // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
@@ -187,6 +187,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
       onNone: () => ({}),
       onSome: agentSessionHeaders,
     });
+    const sessionHeaderNames = Object.keys(sessionHeaders);
 
     // `ctx.data` is read per call: a login or logout changes the user key.
     const getFor = (params?: ClientScope) =>
@@ -210,17 +211,26 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
             : '';
 
         const client = yield* Effect.try({
-          try: () =>
+          try: () => {
+            const baseURL = ctx.data.baseURL;
+            const origin = URL.parse(baseURL)?.origin;
+            // The SDK rebuilds default headers on each redirect hop. Scope the
+            // session headers where each request is handed to the transport.
+            const transport = HttpClient.mapRequest(httpClient, request =>
+              sessionHeaderNames.length === 0 || URL.parse(request.url, baseURL)?.origin === origin
+                ? request
+                : sessionHeaderNames.reduce(HttpClientRequest.removeHeader, request)
+            );
             // A call that passes `decode: true` has its response validated
             // against the client's schema for that operation.
-            makeComposioClient(
+            return makeComposioClient(
               {
                 auth,
                 scope:
                   orgId !== undefined && projectId !== undefined
                     ? { organizationId: orgId, projectId }
                     : undefined,
-                baseURL: ctx.data.baseURL,
+                baseURL,
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
                 // The identity headers come from here; the client refuses them
@@ -234,8 +244,9 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
                 maxRetries: 0,
                 schemas: schemaLoaders,
               },
-              httpClient
-            ),
+              transport
+            );
+          },
           // The client's own error is kept as it is; anything else thrown is
           // reported as the CLI's configuration error.
           catch: (cause): ClientBuildError =>

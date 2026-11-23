@@ -224,10 +224,10 @@
   and `x-cli-agent-session-id`. Three kinds of request carry them: requests
   made through the Composio API client, consumer `composio execute` calls sent
   to the Composio Dashboard, and `proxy()` calls made by a `composio run`
-  script. No request the CLI itself addresses to another service carries them.
-  A redirect issued by the Composio API is followed with them, as with
-  `x-cli-session-id`. Builds without a PostHog project key also send these
-  headers. The telemetry switches above remove both headers.
+  script. The API client and proxy helper keep the session headers on the
+  configured backend origin, including when a request redirects. Builds
+  without a PostHog project key also send these headers. The telemetry
+  switches above remove both headers.
 
 ### Patch Changes
 
