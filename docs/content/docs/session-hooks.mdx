@@ -45,14 +45,43 @@ Add a hook with a `webhook` handler when you create the session. This one sends 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
-<Callout type="info">
-The `webhook` handler is not yet available in the Python SDK. Use the [Create a session](/reference/api-reference/tool-router/postToolRouterSession) endpoint.
-</Callout>
+```python
+session = composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "check_outgoing_email",
+            "type": "before_execute",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "webhook",
+                "fallback_action": "block",
+            },
+        },
+    ],
+)
+```
 </Tab>
 <Tab value="TypeScript">
-<Callout type="info">
-The `webhook` handler is not yet available in the TypeScript SDK. Use the [Create a session](/reference/api-reference/tool-router/postToolRouterSession) endpoint.
-</Callout>
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  hooks: [
+    {
+      id: 'check_outgoing_email',
+      type: 'before_execute',
+      appliesTo: { toolkits: ['gmail'] },
+      handler: {
+        type: 'webhook',
+        fallbackAction: 'block',
+      },
+    },
+  ],
+});
+```
 </Tab>
 <Tab value="API">
 {/* code-example: unchecked-api rule="api-body-schema" operation="POST /api/v3.1/tool_router/session" reason="the committed OpenAPI spec doesn't list the webhook hook handler until it ships" */}
@@ -78,7 +107,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-`fallback_action` is required. It says what happens to the call when your endpoint can't answer: `block` stops the call, and `continue` lets it run unchecked. See [Fallbacks](#fallbacks) for when it applies.
+`fallback_action` (`fallbackAction` in TypeScript) is required. It says what happens to the call when your endpoint can't answer: `block` stops the call, and `continue` lets it run unchecked. See [Fallbacks](#fallbacks) for when it applies.
 
 A session can have one `webhook` hook of each type: one `before_execute` and one `after_execute`. Creating the session fails with a `400` if the project has no session webhook URL.
 
@@ -364,7 +393,7 @@ For every field of the request and of the answer, see the [Session Webhooks refe
 
 #### Timeouts
 
-Composio waits 3 seconds for your endpoint to answer. Set `timeout_ms` on the handler to change that, to anything from `100` to `5000` milliseconds. Your agent waits for the answer too, so keep the endpoint fast.
+Composio waits 3 seconds for your endpoint to answer. Set `timeout_ms` (`timeoutMs` in TypeScript) on the handler to change that, to anything from `100` to `5000` milliseconds. Your agent waits for the answer too, so keep the endpoint fast.
 
 ```json
 { "type": "webhook", "fallback_action": "block", "timeout_ms": 1000 }
