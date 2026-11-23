@@ -383,8 +383,7 @@ describe('CLI analytics dispatch', () => {
     const CODEX_SESSION = '00000000-0000-7000-8000-000000000002';
     const CODEX_AGENT_SESSION_ID = '9d27e7e4-b2ed-522c-bed8-595444e853a7';
 
-    const enqueuedEnvelope = (event: TrackEvent) => {
-      const home = tempy.temporaryDirectory();
+    const enqueuedEnvelope = (event: TrackEvent, home = tempy.temporaryDirectory()) => {
       const scriptPath = `${home}/composio.ts`;
       process.argv[1] = scriptPath;
 
@@ -410,6 +409,30 @@ describe('CLI analytics dispatch', () => {
           agent_session_host: 'claude',
           agent_session_id: CLAUDE_AGENT_SESSION_ID,
         });
+        // No plugin hook wrote a compaction file for this chat.
+        expect(envelope.properties).not.toHaveProperty('agent_compaction_count');
+      });
+    });
+
+    // An empty file is the hook saying "recording, and not compacted yet": `0` is sent.
+    it.effect.each([
+      { name: 'an empty compaction file', contents: '', expected: 0 },
+      { name: 'a compaction file with two lines', contents: 'auto\nmanual\n', expected: 2 },
+    ])('reports the number $expected for $name', ({ contents, expected }) => {
+      const home = tempy.temporaryDirectory();
+      const hostDir = path.join(home, '.composio', 'agent-compactions', 'claude');
+      mkdirSync(hostDir, { recursive: true });
+      writeFileSync(path.join(hostDir, CLAUDE_SESSION), contents);
+      enableTelemetry();
+      vi.stubEnv('CLAUDE_CODE_SESSION_ID', CLAUDE_SESSION);
+
+      return Effect.gen(function* () {
+        const envelope = yield* enqueuedEnvelope({ name: 'producer_event' }, home);
+
+        expect(envelope.properties).toMatchObject({
+          agent_session_id: CLAUDE_AGENT_SESSION_ID,
+          agent_compaction_count: expected,
+        });
       });
     });
 
@@ -424,6 +447,7 @@ describe('CLI analytics dispatch', () => {
         expect(envelope.properties).toMatchObject({ agent_host_env: 'none' });
         expect(envelope.properties).not.toHaveProperty('agent_session_host');
         expect(envelope.properties).not.toHaveProperty('agent_session_id');
+        expect(envelope.properties).not.toHaveProperty('agent_compaction_count');
       });
     });
 

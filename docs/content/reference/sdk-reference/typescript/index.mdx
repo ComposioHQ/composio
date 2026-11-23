@@ -50,6 +50,7 @@ const tools = await composio.tools.get('user-123', {
 // Execute a tool
 const result = await composio.tools.execute('GITHUB_GET_REPOS', {
   userId: 'user-123',
-  arguments: { owner: 'composio' }
+  arguments: { owner: 'composio' },
+  version: '20250909_00'
 });
 ```

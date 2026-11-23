@@ -83,18 +83,19 @@ export class MCP {
    *
    * @example
    * ```typescript
-   * const server = await composio.mcpConfig.create("personal-mcp-server", {
+   * const server = await composio.mcp.create("personal-mcp-server", {
    *   toolkits: ["github", "slack"],
-   *   allowedTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
+   *   allowedTools: ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"],
    *   manuallyManageConnections: false
-   *  }
    * });
+   * ```
    *
-   * const server = await composio.mcpConfig.create("personal-mcp-server", {
+   * @example
+   * ```typescript
+   * const server = await composio.mcp.create("personal-mcp-server", {
    *   toolkits: [{ toolkit: "gmail", authConfigId: "ac_243434343" }],
    *   allowedTools: ["GMAIL_FETCH_EMAILS"],
    *   manuallyManageConnections: false
-   *  }
    * });
    * ```
    */
@@ -174,22 +175,31 @@ export class MCP {
    *
    * @example
    * ```typescript
-   * // List all MCP servers
-   * const allServers = await composio.experimental.mcp.list({});
+   * // List the first page of MCP servers
+   * const allServers = await composio.mcp.list({ page: 1, limit: 10, toolkits: [], authConfigs: [] });
    *
    * // List with pagination
-   * const pagedServers = await composio.experimental.mcp.list({
+   * const pagedServers = await composio.mcp.list({
    *   page: 2,
-   *   limit: 5
+   *   limit: 5,
+   *   toolkits: [],
+   *   authConfigs: []
    * });
    *
    * // Filter by toolkit
-   * const githubServers = await composio.experimental.mcp.list({
-   *   toolkits: ['github', 'slack']
+   * const githubServers = await composio.mcp.list({
+   *   page: 1,
+   *   limit: 10,
+   *   toolkits: ['github', 'slack'],
+   *   authConfigs: []
    * });
    *
    * // Filter by name
-   * const namedServers = await composio.experimental.mcp.list({
+   * const namedServers = await composio.mcp.list({
+   *   page: 1,
+   *   limit: 10,
+   *   toolkits: [],
+   *   authConfigs: [],
    *   name: 'personal'
    * });
    * ```
@@ -246,7 +256,7 @@ export class MCP {
    * @example
    * ```typescript
    * // Get a specific MCP server by ID
-   * const server = await composio.experimental.mcp.get("mcp_12345");
+   * const server = await composio.mcp.get("mcp_12345");
    *
    * console.log(server.name); // "My Personal MCP Server"
    * console.log(server.allowedTools); // ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"]
@@ -280,7 +290,7 @@ export class MCP {
    * @example
    * ```typescript
    * // Delete an MCP server by ID
-   * const result = await composio.experimental.mcp.delete("mcp_12345");
+   * const result = await composio.mcp.delete("mcp_12345");
    *
    * if (result.deleted) {
    *   console.log(`Server ${result.id} has been successfully deleted`);
@@ -290,15 +300,15 @@ export class MCP {
    *
    * // Example with error handling
    * try {
-   *   const result = await composio.experimental.mcp.delete("mcp_12345");
+   *   const result = await composio.mcp.delete("mcp_12345");
    *   console.log("Deletion successful:", result);
    * } catch (error) {
-   *   console.error("Failed to delete MCP server:", error.message);
+   *   console.error("Failed to delete MCP server:", error);
    * }
    *
    * // Delete and verify from list
-   * await composio.experimental.mcp.delete("mcp_12345");
-   * const servers = await composio.experimental.mcp.list({});
+   * await composio.mcp.delete("mcp_12345");
+   * const servers = await composio.mcp.list({ page: 1, limit: 10, toolkits: [], authConfigs: [] });
    * const serverExists = servers.items.some(server => server.id === "mcp_12345");
    * console.log("Server still exists:", serverExists); // Should be false
    * ```
@@ -333,34 +343,32 @@ export class MCP {
    * @example
    * ```typescript
    * // Update server name only
-   * const updatedServer = await composio.experimental.mcp.update("mcp_12345", {
+   * const updatedServer = await composio.mcp.update("mcp_12345", {
    *   name: "My Updated MCP Server"
    * });
    *
    * // Update toolkits and tools
-   * const serverWithNewTools = await composio.experimental.mcp.update("mcp_12345", {
+   * const serverWithNewTools = await composio.mcp.update("mcp_12345", {
    *   toolkits: [
-   *     {
-   *       toolkit: "github",
-   *       authConfigId: "auth_abc123",
-   *       allowedTools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_REPOS"]
-   *     },
-   *     {
-   *       toolkit: "slack",
-   *       authConfigId: "auth_xyz789",
-   *       allowedTools: ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]
-   *     }
+   *     { toolkit: "github", authConfigId: "auth_abc123" },
+   *     { toolkit: "slack", authConfigId: "auth_xyz789" }
+   *   ],
+   *   allowedTools: [
+   *     "GITHUB_CREATE_AN_ISSUE",
+   *     "GITHUB_LIST_REPOS",
+   *     "SLACK_SEND_MESSAGE",
+   *     "SLACK_LIST_CHANNELS"
    *   ]
    * });
    *
    * // Update connection management setting
-   * const serverWithManualAuth = await composio.experimental.mcp.update("mcp_12345", {
+   * const serverWithManualAuth = await composio.mcp.update("mcp_12345", {
    *   name: "Manual Auth Server",
    *   manuallyManageConnections: true
    * });
    *
    * // Complete update example
-   * const fullyUpdatedServer = await composio.experimental.mcp.update("mcp_12345", {
+   * const fullyUpdatedServer = await composio.mcp.update("mcp_12345", {
    *   name: "Production MCP Server",
    *   toolkits: [
    *     {
@@ -368,7 +376,7 @@ export class MCP {
    *       authConfigId: "auth_gmail_prod",
    *     }
    *   ],
-   *   allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
+   *   allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
    *   manuallyManageConnections: false
    * });
    *
@@ -443,10 +451,10 @@ export class MCP {
    *
    * @example
    * ```typescript
-   * import { Composio } from "@composio/code";
+   * import { Composio } from "@composio/core";
    *
    * const composio = new Composio();
-   * const mcp = await composio.experimental.mcp.generate("default", "<mcp_config_id>");
+   * const mcp = await composio.mcp.generate("default", "<mcp_config_id>");
    * ```
    *
    * @param userId {string} external user id from your database for whom you want the server for

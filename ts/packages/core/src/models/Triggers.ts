@@ -104,6 +104,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
+   * const APP_URL = 'https://your-app.com';
+   *
    * await composio.triggers.setWebhookSubscription({
    *   webhookUrl: `${APP_URL}/webhooks/composio`,
    * });
@@ -124,7 +126,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   * const triggers = await triggers.listActive({
+   * const activeTriggers = await composio.triggers.listActive({
    *   authConfigIds: ['123'],
    *   connectedAccountIds: ['456'],
    * });
@@ -484,10 +486,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   *
-   * triggers.subscribe((data) => {
+   * await composio.triggers.subscribe((data) => {
    *   console.log(data);
-   * }, );
+   * });
    * ```
    */
   async subscribe(
@@ -654,11 +655,11 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   * composio.trigger.subscribe((data) => {
+   * await composio.triggers.subscribe((data) => {
    *   console.log(data);
    * });
    *
-   * await triggers.unsubscribe();
+   * await composio.triggers.unsubscribe();
    * ```
    */
   async unsubscribe() {
@@ -689,7 +690,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @throws {ComposioWebhookPayloadError} If the payload cannot be parsed
    *
    * @example
-   * ```ts
+   * ```ts nocheck="Express route handler; the checker has no express types"
    * // Express with express.raw (verify the signature)
    * app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
    *   try {
@@ -727,7 +728,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *     return new Response('Unauthorized', { status: 401 });
    *   }
    * }
+   * ```
    *
+   * @example
+   * ```ts
    * // Next.js App Router — parse only (no verification)
    * export async function POST(request: Request) {
    *   const result = await composio.triggers.parse(request);
@@ -824,26 +828,26 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   * // In an Express.js webhook handler
-   * app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+   * // In a webhook route that receives a Fetch API Request (Next.js App Router, Hono, Remix)
+   * export async function POST(request: Request) {
    *   try {
    *     const result = await composio.triggers.verifyWebhook({
-   *       payload: req.body.toString(),
-   *       signature: req.headers['webhook-signature'] as string,
-   *       webhookId: req.headers['webhook-id'] as string,
-   *       webhookTimestamp: req.headers['webhook-timestamp'] as string,
+   *       payload: await request.text(),
+   *       signature: request.headers.get('webhook-signature') ?? '',
+   *       id: request.headers.get('webhook-id') ?? '',
+   *       timestamp: request.headers.get('webhook-timestamp') ?? '',
    *       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
    *     });
    *
    *     // Process the verified payload
    *     console.log('Webhook version:', result.version);
    *     console.log('Received trigger:', result.payload.triggerSlug);
-   *     res.status(200).send('OK');
+   *     return new Response('OK', { status: 200 });
    *   } catch (error) {
    *     console.error('Webhook verification failed:', error);
-   *     res.status(401).send('Unauthorized');
+   *     return new Response('Unauthorized', { status: 401 });
    *   }
-   * });
+   * }
    * ```
    */
   async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult> {

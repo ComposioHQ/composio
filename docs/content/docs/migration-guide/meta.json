@@ -3,6 +3,7 @@
   "pages": [
     "no-auth-to-instant",
     "managed-to-own-app",
+    "slack-legacy-to-standard",
     "direct-to-sessions",
     "mcp-servers-to-sessions",
     "tool-router-beta",

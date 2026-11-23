@@ -195,9 +195,29 @@ export class ToolRouter<
    *
    * @example
    * ```typescript
-   * import { Composio } from '@composio/core';
+   * import { Composio, experimental_createTool, experimental_createToolkit } from '@composio/core';
+   * import { z } from 'zod';
    *
    * const composio = new Composio();
+   *
+   * const myLocalTool = experimental_createTool('GET_WEATHER', {
+   *   name: 'Get Weather',
+   *   description: 'Get the weather for a city',
+   *   inputParams: z.object({ city: z.string() }),
+   *   execute: async ({ city }) => ({ city, forecast: 'sunny' }),
+   * });
+   * const myLocalToolkit = experimental_createToolkit('DEV_TOOLS', {
+   *   name: 'Dev Tools',
+   *   description: 'Local developer utilities',
+   *   tools: [
+   *     experimental_createTool('ECHO', {
+   *       name: 'Echo',
+   *       description: 'Return the input text',
+   *       inputParams: z.object({ text: z.string() }),
+   *       execute: async ({ text }) => ({ text }),
+   *     }),
+   *   ],
+   * });
    *
    * const session = await composio.sessions.create('user_123', {
    *   toolkits: ['gmail'],
@@ -376,7 +396,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    * const id = 'session_123';
-   * const session = await composio.sessions.use(id);
+   * const session = await composio.sessions.use(id, { mcp: true });
    *
    * console.log(session.mcp.url);
    * console.log(session.mcp.headers);
