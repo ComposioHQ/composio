@@ -292,7 +292,7 @@ export const handleExecutionError = (
         logId: context.logId,
         projectScope: context.projectScope,
       });
-      yield* ui.log.error(`Input validation failed for ${context.toolSlug}`);
+      yield* ui.log.error(`Input validation failed for ${escapeTerminalText(context.toolSlug)}`);
       yield* ui.note(
         [
           `Schema: ${normalized.schemaPath}`,

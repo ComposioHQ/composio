@@ -990,6 +990,26 @@ describe('CLI: composio execute', () => {
         expect(recordedExecuteParams[0]?.account).toBe('ca_1');
       })
     );
+
+    it.effect('escapes the toolkit and slug in cached connection failure messages', () =>
+      Effect.gen(function* () {
+        connectedToolkitsCache(['gmail']);
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const slug = 'FIXTURE\tLABEL_LOOKUP';
+        yield* cli(['execute', slug, '-d', '{}']).pipe(Effect.provide(terminal.layer), Effect.flip);
+
+        const stderr = terminal.stderr();
+        expect(stderr).toContain('Toolkit "fixture\\u0009label" is not connected');
+        expect(stderr).toContain('composio link fixture\\u0009label');
+        expect(stderr).toContain('composio execute "FIXTURE\\u0009LABEL_LOOKUP"');
+        expect(JSON.parse(terminal.stdout())).toMatchObject({
+          successful: false,
+          slug,
+          error: expect.stringContaining('Toolkit "fixture\tlabel" is not connected'),
+        });
+        expect(recordedSessionCreateParams).toHaveLength(0);
+      })
+    );
   });
 
   layer(

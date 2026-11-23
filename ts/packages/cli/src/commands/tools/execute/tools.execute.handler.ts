@@ -58,7 +58,7 @@ const runConnectedToolkitFailFast = (
     if (Option.isNone(missing)) return;
 
     const { toolkit, message } = missing.value;
-    yield* ui.log.error(message);
+    yield* ui.log.error(escapeTerminalText(message));
     yield* ui.note(
       connectionTips({ toolkit, toolSlug: call.slug, surface: params.surface }),
       'Tips'
