@@ -1,0 +1,429 @@
+---
+title: "Session"
+description: "A Composio session — the object returned by `composio.sessions.create(...)` and `composio.sessions.use(...)` (also reachable via the top-level `composio.create(...)` / `composio.use(...)` aliases).  This is the canonical session surface. Use it to fetch session-scoped tools, authorize toolkits, search, and execute tools. The public return type is `Session` (with `mcp` surfaced, returned when `{ mcp: true }` is passed) or `SessionWithoutMcp` (the default, with `mcp` omitted from the type); this class is the concrete runtime form behind both."
+---
+
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `config` | `\{ auth_configs?: object; connected_accounts?: object; execute: \{ enable_multi_execute?: boolean \}; hooks?: \{ applies_to: 'all' \| \{ toolkits: ... \}; handler: \{ action: 'block'; condition: string; type: 'condition_check' \}; id: string; name?: string; type: 'before_execute' \} \| \{ applies_to: 'all' \| \{ toolkits: ... \}; handler: \{ action: ...; condition: ...; type: ... \} \| \{ action: ...; type: ... \}; id: string; name?: string; type: 'after_execute' \}[]; instant: false \| \{ return_instant_charge: boolean; return_prices_in_search: boolean; toolkits?: \{ enabled: ...[] \} \| \{ disabled: ...[] \}; tools?: object \}; manage_connections?: \{ callback_url?: string; enable_connection_removal?: boolean; enable_wait_for_connections?: boolean; enabled?: boolean \}; multi_account?: \{ enable?: boolean; max_accounts_per_toolkit?: number; require_explicit_selection?: boolean \}; preload: \{ tools: string[] \| 'all' \}; proxy_execute?: \{ enable: boolean \}; search: \{ enable?: boolean \}; tags?: \{ disabled?: 'readOnlyHint' \| 'createHint' \| 'updateHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; enabled?: 'readOnlyHint' \| 'createHint' \| 'updateHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[]; require_approval?: 'readOnlyHint' \| 'createHint' \| 'updateHint' \| 'destructiveHint' \| 'idempotentHint' \| 'openWorldHint'[] \}; toolkits?: \{ enabled: string[]; require_approval?: string[] \} \| \{ disabled: string[]; require_approval?: string[] \} \| \{ require_approval: string[] \}; tools?: object; user_id: string; workbench?: \{ auto_offload_threshold?: number; enable?: boolean; proxy_execution_enabled?: boolean; sandbox_size?: 'standard' \| 'medium' \| 'large' \| 'xlarge'; tool_execution_enabled?: boolean \} \}` | The session's current configuration (policy snapshot and runtime settings). Refreshed in place by `update()`. For saved, reusable Session configs, see `composio.sessionConfigs`. |
+| `configVersion` | `number` | Version of the server-side configuration this object last observed. Refreshed in place by `update()`. Pass it as `expectedConfigVersion` to make an update conditional. |
+| `experimental` | `SessionExperimental` |  |
+| `mcp` | `\{ headers?: Record<string, string>; type: 'http' \| 'sse'; url: string \}` | Hosted MCP endpoint (`session.mcp.url` / `session.mcp.headers`). Exists on every session at runtime, but only surfaced in the type when the session is created with `\{ mcp: true \}` (which returns `Session`); the default `SessionWithoutMcp` omits `mcp`, so MCP is an explicit opt-in. See https://docs.composio.dev/docs/sessions-via-mcp |
+| `preload` | `\{ tools: string[] \| 'all' \}` |  |
+| `sandbox` | `\{ auto_offload_threshold?: number; enable?: boolean; proxy_execution_enabled?: boolean; sandbox_size?: 'standard' \| 'medium' \| 'large' \| 'xlarge'; tool_execution_enabled?: boolean \}` | Resolved sandbox (code-execution) config returned by the API. `enable` defaults to `true` server-side. |
+| `sessionId` | `string` |  |
+| `warnings` | `\{ code: 'PRELOAD_TOOLS_HIGH_CONTEXT_USAGE'; message: string \}[]` |  |
+
+## Methods
+
+### authorize()
+
+Initiate an authorization flow for a toolkit.
+Returns a ConnectionRequest with a redirect URL for the user.
+
+Pass `experimental: { accountType: 'SHARED', aclConfigForShared }` to
+create a SHARED connection with a per-user ACL in one flow. Default
+behaviour (omit the block) creates a PRIVATE connection.
+
+Experimental — shape may change in future releases.
+
+`aclConfigForShared` is validated against the same caps as
+`composio.connectedAccounts.link()` (≤1000 entries per list, each
+`userId` 1..256 characters). Invalid input throws `ValidationError`
+at the SDK boundary.
+
+```typescript signature
+async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: string; experimental?: { accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; }; }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `string` |
+| `options?` | `\{ callbackUrl?: string; alias?: string; experimental?: \{ accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; \}; \}` |
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ConnectionRequest>`
+
+---
+
+### customToolkits() (deprecated)
+
+<Callout type="warn" title="Deprecated">
+Use `localToolkits()` instead.
+</Callout>
+
+```typescript signature
+customToolkits(): RegisteredLocalToolkit[]
+```
+
+**Returns**
+
+`RegisteredLocalToolkit[]`
+
+---
+
+### customTools() (deprecated)
+
+<Callout type="warn" title="Deprecated">
+Use `localTools()` instead.
+</Callout>
+
+```typescript signature
+customTools(options?: { toolkit?: string }): RegisteredLocalTool[]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `options?` | `\{ toolkit?: string \}` |
+
+**Returns**
+
+`RegisteredLocalTool[]`
+
+---
+
+### delete()
+
+Delete this session.
+
+Deleted sessions immediately stop being retrievable or executable. Deleting
+an already-deleted session surfaces the backend 404.
+
+```typescript signature
+async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ToolRouterSessionDeleteResponse>`
+
+---
+
+### ensureConnected()
+
+Ensure a toolkit has an active connection in this session, reconciling
+`authorize()`/`session.link` with the session's active connection state.
+
+If the session already resolves an ACTIVE connection (or the toolkit is
+no-auth), this returns immediately without creating a link — unlike
+`authorize()`, which always starts a new link flow, even when one is
+already connected. Otherwise it starts the authorization flow and waits
+for the new connection to become ACTIVE.
+
+For interactive flows that should surface the redirect URL instead of
+blocking, use `authorize()` and its `waitForConnection()` directly.
+
+```typescript signature
+async ensureConnected(toolkit: string, options?: ToolRouterSessionEnsureConnectedOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionEnsureConnectedResult>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `string` | The toolkit slug to ensure a connection for (e.g. 'github') |
+| `options?` | `ToolRouterSessionEnsureConnectedOptions` | Optional authorization options plus `timeout` (ms to wait for a newly-initiated connection, default 60000) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionEnsureConnectedResult>` — The toolkit's canonical slug, whether it was already connected,
+  and the active connected account (omitted for no-auth toolkits)
+
+**Example**
+
+```typescript
+const session = await composio.sessions.create('user_123', { toolkits: ['github'] });
+const { wasConnected, connectedAccount } = await session.ensureConnected('github');
+if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
+```
+
+---
+
+### execute()
+
+Execute a tool within the session.
+
+For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the
+original slug (e.g. "GREP") when that original slug is unique across
+the session's custom tools and toolkits. Custom tools are executed
+in-process; remote tools are sent to the Composio backend.
+
+```typescript signature
+async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolSlug` | `string` | The tool slug to execute |
+| `arguments_?` | `Record<string, unknown>` | Optional tool arguments |
+| `options?` | `ToolRouterSessionExecuteOptions` | Optional execution options |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result. `resultType: 'blocked'` means a session hook blocked the call; `error` then holds the hook's message
+
+---
+
+### executeMeta()
+
+Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+
+`session.execute()` also runs meta tools. This method only accepts meta
+tool slugs, so a typo is a type error instead of a failed request. The call
+is sent to the Composio backend as is: custom tools named in a
+`COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
+
+```typescript signature
+async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteMetaOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slug` | `ToolRouterSessionMetaToolSlug` | The meta tool slug to execute |
+| `arguments_?` | `Record<string, unknown>` | Optional meta tool arguments |
+| `options?` | `ToolRouterSessionExecuteMetaOptions` | Experimental. The user's answers to an earlier `ComposioToolInputRequiredError` (`inputResponses`) and its `requestState`, as in `session.execute()` |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionExecuteResponse>` — The tool execution result, in the same shape as `session.execute()`
+
+**Example**
+
+```typescript
+const { data, resultType } = await session.executeMeta('COMPOSIO_SEARCH_TOOLS', {
+  queries: [{ use_case: 'send an email' }],
+});
+```
+
+---
+
+### listConfigHistory()
+
+Page through this session's configuration history, newest first. The
+first page starts with the live config (`isCurrent: true`); every
+`session.update()` archives the previous version as a history row.
+
+```typescript signature
+async listConfigHistory(options?: ToolRouterSessionListConfigHistoryOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionListConfigHistoryResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `options?` | `ToolRouterSessionListConfigHistoryOptions` | Optional `cursor` and `limit` (max 100) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionListConfigHistoryResponse>` — The config versions on this page plus pagination info
+
+**Example**
+
+```typescript
+const { items, nextCursor } = await session.listConfigHistory({ limit: 10 });
+console.log(items[0].version, items[0].isCurrent); // e.g. 3, true
+console.log(items[1].config.toolkits);
+```
+
+---
+
+### localToolkits()
+
+List all toolkits of local tools registered in this session.
+Returns toolkits with their tools showing final slugs.
+
+```typescript signature
+localToolkits(): RegisteredLocalToolkit[]
+```
+
+**Returns**
+
+`RegisteredLocalToolkit[]` — Array of registered toolkits of local tools
+
+---
+
+### localTools()
+
+List all local tools registered in this session.
+Returns tools with their final slugs, schemas, and resolved toolkit.
+
+```typescript signature
+localTools(options?: { toolkit?: string }): RegisteredLocalTool[]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `options?` | `\{ toolkit?: string \}` |
+
+**Returns**
+
+`RegisteredLocalTool[]` — Array of registered local tools
+
+---
+
+### proxyExecute()
+
+Proxy an API call through Composio's auth layer using the session's connected account.
+The backend resolves the connected account from the toolkit within the session.
+
+```typescript signature
+async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `SessionProxyExecuteParams` | Proxy request parameters (toolkit, endpoint, method, body, headers/query params) |
+| `requestOptions?` | `ComposioRequestOptions` |  |
+
+**Returns**
+
+`Promise<ToolRouterSessionProxyExecuteResponse>` — The proxied API response with status, data and headers (`resultType: 'completed'`), or `resultType: 'blocked'` with the hook's message when a session hook blocked the request
+
+---
+
+### search()
+
+Search for tools by semantic use case.
+Returns relevant tools for the given query with schemas and guidance.
+
+```typescript signature
+async search(params: { query: string; toolkits?: string[]; }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionSearchResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params` | `\{ query: string; toolkits?: string[]; \}` |
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ToolRouterSessionSearchResponse>`
+
+---
+
+### toolkits()
+
+Query the connection state of toolkits in the session.
+Supports pagination and filtering by toolkit slugs.
+
+```typescript signature
+async toolkits(options?: ToolRouterToolkitsOptions, requestOptions?: ComposioRequestOptions): Promise<{ cursor: string | undefined; items: { connection?: { authConfig?: ... | ...; connectedAccount?: { id: ...; status: ... }; isActive: boolean }; isNoAuth: boolean; logo?: string; name: string; slug: string }[]; totalPages: number }>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `options?` | `ToolRouterToolkitsOptions` |
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<\{ cursor: string \| undefined; items: \{ connection?: \{ authConfig?: ... \| ...; connectedAccount?: \{ id: ...; status: ... \}; isActive: boolean \}; isNoAuth: boolean; logo?: string; name: string; slug: string \}[]; totalPages: number \}>`
+
+---
+
+### tools()
+
+Get the tools available in the session, formatted for your AI framework.
+Requires a provider to be configured in the Composio constructor.
+
+When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL
+is intercepted: local tools are executed in-process, remote tools are sent to the backend.
+
+```typescript signature
+async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType<TProvider['wrapTools']>>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `modifiers?` | `SessionMetaToolOptions` |
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ReturnType<TProvider['wrapTools']>>`
+
+---
+
+### update()
+
+Partially update the session configuration.
+
+Only the fields provided are changed; omitted fields are preserved. For
+each policy block `null` removes the stored override (which can increase
+access: `toolkits: null` restores the unrestricted default, while
+`toolkits: []` denies every app toolkit and is sent as-is). Supplied
+`tools`, `authConfigs` and `connectedAccounts` maps replace the stored
+map entirely. `manageConnections.callbackUrl: null` removes only the
+stored callback URL.
+
+By default the request carries no precondition: the last writer wins.
+Pass `expectedConfigVersion` (for example `session.configVersion`) to make
+the update conditional: the API then applies it only when the stored
+version still matches, and a concurrent change surfaces as
+ComposioSessionConfigConflictError (HTTP 409) instead of being
+overwritten. The API must support the `expected_config_version` field;
+otherwise it rejects the request with a 400. `expectedConfigVersion: false`
+is the same as omitting it. The PATCH is never retried by the transport,
+so a 409 is reported exactly once. On conflict this object is left
+unchanged: re-fetch the session with `sessions.use(sessionId)` and retry
+against the fresh `configVersion`.
+
+`experimental.sessionConfigId` applies a saved Session config: it
+replaces the session's toolkit, tool and tag access and cannot be combined
+with `toolkits`, `tools` or `tags` (a `ValidationError` is thrown before
+any request). A 409 while applying it means the session or the config
+changed; re-fetch the session and retry. Backend 400, 403 and 404 errors,
+for example for an archived or missing config, surface unchanged.
+
+`config`, `configVersion`, `preload`, `sandbox`, `warnings` and
+`experimental.sourceSessionConfig` are refreshed in place only after a
+successful response, and the updated `config` is returned.
+
+```typescript signature
+async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionConfig>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `config` | `ToolRouterUpdateSessionConfig` |
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<ToolRouterSessionConfig>`
+
+---

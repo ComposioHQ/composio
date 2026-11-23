@@ -1210,7 +1210,7 @@ class Triggers(Resource):
 
         Example:
             composio.triggers.set_webhook_subscription(
-                webhook_url=f"{APP_URL}/webhooks/composio",
+                webhook_url="https://example.com/webhooks/composio",
             )
         """
         return WebhookSubscriptions(client=self._client).set(
@@ -1427,24 +1427,18 @@ class Triggers(Resource):
         :raises WebhookPayloadError: If the payload cannot be parsed or is invalid
 
         Example:
-            # In a Flask webhook handler
-            @app.route('/webhook', methods=['POST'])
-            def webhook():
-                try:
-                    result = composio.triggers.verify_webhook(
-                        id=request.headers.get('webhook-id', ''),
-                        payload=request.get_data(as_text=True),
-                        signature=request.headers.get('webhook-signature', ''),
-                        timestamp=request.headers.get('webhook-timestamp', ''),
-                        secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
-                    )
+            from collections.abc import Mapping
 
-                    # Process the verified payload
-                    print(f"Version: {result['version']}")
-                    print(f"Received trigger: {result['payload']['trigger_slug']}")
-                    return 'OK', 200
-                except WebhookSignatureVerificationError:
-                    return 'Unauthorized', 401
+            def verify_trigger(body: str, headers: Mapping[str, str], secret: str):
+                # Pass the raw body and headers from your HTTP handler.
+                result = composio.triggers.verify_webhook(
+                    id=headers["webhook-id"],
+                    payload=body,
+                    signature=headers["webhook-signature"],
+                    timestamp=headers["webhook-timestamp"],
+                    secret=secret,
+                )
+                return result["payload"]
         """
         # Validate timestamp if tolerance is set
         if tolerance > 0:
@@ -1505,26 +1499,16 @@ class Triggers(Resource):
         :raises WebhookPayloadError: If the payload cannot be parsed
 
         Example:
-            # Flask: verify the signature
-            @app.route('/webhooks/composio', methods=['POST'])
-            def webhook():
-                try:
-                    result = composio.triggers.parse(
-                        request,
-                        verify_secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
-                    )
-                    print(f"Trigger: {result['payload']['trigger_slug']}")
-                    print(f"Event data: {result['payload']['payload']}")
-                    return 'OK', 200
-                except exceptions.WebhookSignatureVerificationError:
-                    return 'Unauthorized', 401
+            from collections.abc import Mapping
 
-            # FastAPI: parse without verifying after reading the async body
-            @app.post('/webhooks/composio')
-            async def webhook(request: Request):
-                raw = await request.body()
-                result = composio.triggers.parse(body=raw, headers=request.headers)
-                return {'trigger': result['payload']['trigger_slug']}
+            def parse_trigger(body: bytes, headers: Mapping[str, str], secret: str):
+                # Pass the raw body and headers from your HTTP handler.
+                result = composio.triggers.parse(
+                    body=body,
+                    headers=headers,
+                    verify_secret=secret,
+                )
+                return result["payload"]
         """
         raw_body = body if body is not None else extract_request_body(request)
         raw_headers = (

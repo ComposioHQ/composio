@@ -383,6 +383,19 @@ test(
 
       await put('dist/index.d.mts', 'export declare class Composio { sourceOnly(): void }');
       expect((await check(pages, options)).violations).toEqual([]);
+
+      await put(packedPage, REFERENCE_EXAMPLE + '\n');
+      const installed = { installedPackage: root, compilerOptions: { types: [] } };
+      expect((await check(pages, installed)).violations).toEqual([]);
+      await put('dist/index.d.mts', 'export declare class Composio {}');
+      expect((await check(pages, installed)).violations).toContainEqual(
+        expect.objectContaining({
+          rule: 'type',
+          message: expect.stringContaining("Property 'sourceOnly' does not exist"),
+        })
+      );
+
+      await put(packedPage, REFERENCE_EXAMPLE);
       await put('dist/index.d.mts', "export { Composio } from './missing';");
       expect((await check(pages, options)).violations).toContainEqual(
         expect.objectContaining({

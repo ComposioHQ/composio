@@ -506,12 +506,11 @@ export function listCodeExampleFiles(docsRoot: string): CodeExampleFile[] {
 
 export const PYTHON_REFERENCE_DIR = 'content/reference/sdk-reference/python';
 
-export function listPythonReferenceFiles(docsRoot: string): CodeExampleFile[] {
-  const directory = join(docsRoot, PYTHON_REFERENCE_DIR);
+export function listPythonReferenceFiles(docsRoot: string, directory = join(docsRoot, PYTHON_REFERENCE_DIR)): CodeExampleFile[] {
   return readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.mdx'))
     .map(({ name }) => ({
-      path: `${PYTHON_REFERENCE_DIR}/${name}`,
+      path: relative(docsRoot, join(directory, name)).split(sep).join('/'),
       source: readFileSync(join(directory, name), 'utf8'),
     }))
     .sort((a, b) => a.path.localeCompare(b.path));

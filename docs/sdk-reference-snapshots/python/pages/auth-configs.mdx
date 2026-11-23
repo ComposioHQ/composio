@@ -1,0 +1,159 @@
+---
+title: "AuthConfigs"
+description: "Manage authentication configurations."
+---
+
+## Methods
+
+### list()
+
+Lists authentication configurations based on provided filter criteria.
+
+```python signature
+def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_config_list_response.AuthConfigListResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `query?` | `Unpack[auth_config_list_params.AuthConfigListParams]` |
+
+**Returns**
+
+`auth_config_list_response.AuthConfigListResponse`
+
+---
+
+### create()
+
+Create a new auth config
+
+```python signature
+def create(toolkit: str, options: Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]) -> auth_config_create_response.AuthConfig
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit` | `str` | The toolkit to create the auth config for. |
+| `options` | `Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]` | The options to create the auth config with. For a Composio-managed auth config, `managed_app_id` picks the app. |
+
+**Returns**
+
+`auth_config_create_response.AuthConfig` — The created auth config.
+
+**Example**
+
+```python
+toolkit = composio.toolkits.get("slack")
+app = next(a for a in toolkit.composio_managed_auth if not a.is_default)
+composio.auth_configs.create(
+    "slack",
+    {"type": "use_composio_managed_auth", "managed_app_id": app.managed_app_id},
+)
+```
+
+---
+
+### get()
+
+Retrieves a specific authentication configuration by its ID
+
+```python signature
+def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to retrieve. |
+
+**Returns**
+
+`auth_config_retrieve_response.AuthConfigRetrieveResponse` — The retrieved auth config.
+
+---
+
+### update()
+
+Updates an existing authentication configuration.  This method allows you to modify properties of an auth config such as credentials, scopes, or tool restrictions. The update type (custom or default) determines which fields can be updated.
+
+```python signature
+def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to update. |
+| `options` | `auth_config_update_params.AuthConfigUpdateParams` | The options to update the auth config with. |
+
+**Returns**
+
+`auth_config_update_response.AuthConfigUpdateResponse` — The update result with success and message fields.
+
+---
+
+### delete()
+
+Deletes an existing authentication configuration.
+
+```python signature
+def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to delete. |
+
+**Returns**
+
+`auth_config_delete_response.AuthConfigDeleteResponse` — The deletion result with success and message fields.
+
+---
+
+### enable()
+
+Enables an existing authentication configuration.
+
+```python signature
+def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to enable. |
+
+**Returns**
+
+`auth_config_update_status_response.AuthConfigUpdateStatus...` — The status update result with success and message fields.
+
+---
+
+### disable()
+
+Disables an existing authentication configuration.
+
+```python signature
+def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `nanoid` | `str` | The ID of the auth config to disable. |
+
+**Returns**
+
+`auth_config_update_status_response.AuthConfigUpdateStatus...` — The status update result with success and message fields.
+
+---

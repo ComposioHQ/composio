@@ -1,0 +1,59 @@
+---
+title: "Keyring"
+description: "`composio.keyring` — the organization's customer-managed keyring."
+---
+
+## Usage
+
+Access this class through the `composio.keyring` property:
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+const keyring = composio.keyring;
+```
+
+## Methods
+
+### listTransferKeys()
+
+Lists the public transfer keys of the organization's active customer
+keyring, the keys a secret is sealed to before it is sent to Composio.
+
+Always seal new secrets to the key whose `kid` is `activeKid`: a JWE with
+`RSA-OAEP-256` key management, `A256GCM` content encryption, and the
+`kid` in the protected header. Older keys stay listed so values sealed to
+them remain openable.
+
+The organization behind the API key must have an ACTIVE customer keyring
+instance; otherwise the API answers 404.
+
+```typescript signature
+async listTransferKeys(requestOptions?: ComposioRequestOptions): Promise<KeyringTransferKeysResponse>
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `requestOptions?` | `ComposioRequestOptions` |
+
+**Returns**
+
+`Promise<KeyringTransferKeysResponse>` — The active key ID and every accepted public JWK, newest first
+
+**Example**
+
+```typescript nocheck="Seals with the jose library, whose types the checker does not load"
+import { CompactEncrypt, importJWK } from 'jose';
+
+const secret = 'my-client-secret';
+const { activeKid, keys } = await composio.keyring.listTransferKeys();
+const jwk = keys.find(key => key.kid === activeKid)!;
+const sealed = await new CompactEncrypt(new TextEncoder().encode(secret))
+  .setProtectedHeader({ alg: 'RSA-OAEP-256', enc: 'A256GCM', kid: activeKid })
+  .encrypt(await importJWK(jwk, 'RSA-OAEP-256'));
+```
+
+---

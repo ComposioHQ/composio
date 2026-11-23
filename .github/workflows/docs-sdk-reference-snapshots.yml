@@ -1,0 +1,78 @@
+name: Docs - Stable SDK reference
+
+on:
+  pull_request:
+    branches: [next]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Stable SDK reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Keep the check visible on every PR so next can require it.
+      - name: Scope the stable reference checks
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          if ! git diff --quiet "$BASE_SHA" HEAD -- \
+            docs/sdk-reference-snapshots \
+            docs/content/reference/sdk-reference/meta.json \
+            docs/lib/sdk-reference-snapshot.ts docs/lib/sdk-reference-content.ts \
+            docs/lib/code-examples.ts docs/lib/example-document.ts docs/lib/llm-guardrails \
+            'docs/scripts/*sdk-reference-snapshot*.ts' docs/scripts/vercel-build.sh \
+            docs/source.config.ts docs/vercel.json docs/package.json docs/bun.lock docs/agent/lib/docs.ts \
+            docs/scripts/check-python-snippets.ts docs/scripts/python-snippets docs/scripts/build-agent-index.ts docs/scripts/build-content-freshness.ts \
+            scripts/docs-reference-check scripts/sdk-release/reference-snapshot.ts docs/tests/static/sdk-reference-snapshot.test.ts \
+            package.json pnpm-lock.yaml uv.lock mise.toml mise.lock \
+            .github/actions/setup-node-pnpm-bun .github/actions/setup-python-uv \
+            .github/workflows/docs-sdk-reference-snapshots.yml .github/workflows/sdk.release.yml; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+
+      - if: steps.scope.outputs.affected == 'true'
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - if: steps.scope.outputs.affected == 'true'
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - if: steps.scope.outputs.affected == 'true'
+        working-directory: docs
+        run: bun test tests/static/sdk-reference-snapshot.test.ts
+
+      - name: Check versions and examples against installed packages
+        if: steps.scope.outputs.affected == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bun docs/scripts/check-sdk-reference-snapshots.ts "$BASE_SHA"
+
+      - name: Exercise the production reference selection
+        if: steps.scope.outputs.affected == 'true'
+        working-directory: docs
+        env:
+          VERCEL_ENV: production
+        run: sh scripts/vercel-build.sh
