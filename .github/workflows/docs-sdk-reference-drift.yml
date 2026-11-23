@@ -2,15 +2,48 @@ name: Docs - SDK reference drift
 
 # Regenerates both SDK references from the PR's sources and fails when the committed
 # output differs, so generator changes and stale references surface here rather than in
-# a release PR. It runs the generators against PR code, so it gets read-only contents
-# access and no secrets.
+# a release PR. It then type-checks every TypeScript code block on the generated
+# TypeScript reference against the workspace @composio/core source. Pushes to next run
+# it too, so two green PRs that combine into broken reference code fail on next before
+# anyone requests a release. It runs the generators against PR code, so it gets
+# read-only contents access and no secrets.
 on:
+  push:
+    branches: [next]
+    paths:
+      - 'ts/packages/core/src/**'
+      - 'ts/packages/core/scripts/generate-docs.ts'
+      - 'ts/packages/core/package.json'
+      - 'ts/packages/json-schema-to-zod/**'
+      - 'scripts/docs-reference-check/**'
+      - 'test/docs-reference-check.test.ts'
+      - 'test/fixtures/docs-reference-check/**'
+      - 'tsconfig.docs-reference-check.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'patches/**'
+      - 'python/composio/**'
+      - 'python/scripts/generate-docs.py'
+      - 'python/pyproject.toml'
+      - 'uv.lock'
+      - 'docs/content/reference/sdk-reference/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/actions/setup-python-uv/action.yml'
+      - '.github/workflows/docs-sdk-reference-drift.yml'
+      - 'mise.toml'
+      - 'mise.lock'
   pull_request:
     branches: [next]
     paths:
       - 'ts/packages/core/src/**'
       - 'ts/packages/core/scripts/generate-docs.ts'
       - 'ts/packages/core/package.json'
+      - 'ts/packages/json-schema-to-zod/**'
+      - 'scripts/docs-reference-check/**'
+      - 'test/docs-reference-check.test.ts'
+      - 'test/fixtures/docs-reference-check/**'
+      - 'tsconfig.docs-reference-check.json'
+      - 'package.json'
       - 'pnpm-lock.yaml'
       - 'patches/**'
       - 'python/composio/**'
@@ -72,3 +105,11 @@ jobs:
             echo "Regenerate with: pnpm --filter @composio/core generate:docs && (cd python && uv run --frozen --only-group docs-reference python scripts/generate-docs.py)"
             exit 1
           fi
+
+      - name: Test the TypeScript reference checker
+        run: |
+          pnpm run typecheck:docs-reference-check
+          pnpm run test:docs-reference-check
+
+      - name: Type-check the TypeScript reference code blocks
+        run: pnpm run check:docs-reference

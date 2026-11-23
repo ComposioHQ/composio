@@ -154,6 +154,11 @@ jobs:
           path: sdk-candidate/typescript
       - name: Install the docs against the candidate packages
         run: bun scripts/sdk-release/candidate-registry.ts sdk-candidate/typescript
+      # The generated TypeScript reference ships on the docs site and inside the npm
+      # tarball, and the docs build skips its code blocks, so check them here against
+      # the release's own @composio/core source.
+      - name: Type-check the TypeScript reference code blocks
+        run: pnpm run check:docs-reference
       - name: Lint TypeScript
         working-directory: docs
         run: bun run lint
