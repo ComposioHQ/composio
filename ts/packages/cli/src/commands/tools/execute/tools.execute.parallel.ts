@@ -108,12 +108,13 @@ const runParallelSchemaFetch = (params: ParallelExecuteParams) =>
     );
 
     for (const result of results) {
+      const slugLabel = escapeTerminalText(result.slug);
       if (!result.successful) {
-        yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(result.error)}`);
+        yield* ui.log.error(`[${slugLabel}] ${escapeTerminalText(result.error)}`);
         continue;
       }
 
-      yield* ui.log.step(`[${result.slug}] Schema fetched: ${result.schemaPath}`);
+      yield* ui.log.step(`[${slugLabel}] Schema fetched: ${result.schemaPath}`);
     }
 
     const successful = results.every(result => result.successful);
@@ -225,32 +226,33 @@ const runParallelBatch = (params: ParallelExecuteParams) =>
     );
 
     for (const result of results) {
+      const slugLabel = escapeTerminalText(result.slug);
       if (!result.successful) {
         const logId =
           'logId' in result && typeof result.logId === 'string' && result.logId.length > 0
             ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
             : '';
-        yield* ui.log.error(`[${result.slug}] ${escapeTerminalText(`${result.error}${logId}`)}`);
+        yield* ui.log.error(`[${slugLabel}] ${escapeTerminalText(`${result.error}${logId}`)}`);
         continue;
       }
 
       if ('dryRun' in result) {
-        yield* ui.log.step(`[${result.slug}] Dry run successful`);
+        yield* ui.log.step(`[${slugLabel}] Dry run successful`);
         continue;
       }
 
       if ('storedInFile' in result && result.storedInFile) {
         yield* ui.log.step(
-          `[${result.slug}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
+          `[${slugLabel}] Response stored in ${result.outputFilePath} (${describeStoredOutputSize(result)})`
         );
         continue;
       }
 
-      yield* ui.log.step(`[${result.slug}] Execution successful${executionSuccessSuffix(result)}`);
+      yield* ui.log.step(`[${slugLabel}] Execution successful${executionSuccessSuffix(result)}`);
       if ('data' in result) {
         yield* ui.note(
           escapeTerminalLines(serializeExecuteOutput(result)),
-          `Response: ${result.slug}`
+          `Response: ${slugLabel}`
         );
       }
     }

@@ -3632,6 +3632,22 @@ describe('CLI: composio execute without a resolvable acting user', () => {
         expect(terminal.stderr()).not.toMatch(/[\u0007\u007f\u0085]/u);
       })
     );
+
+    it.effect('escapes whitespace in parallel tool labels and preserves the slug in JSON', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const slug = 'GMAIL_SEND_EMAIL\tlabel';
+        yield* cli(['execute', '--parallel', '--skip-checks', slug, '-d', '{}']).pipe(
+          Effect.provide(terminal.layer)
+        );
+
+        expect(terminal.stderr()).toContain('[GMAIL_SEND_EMAIL\\u0009label] Execution successful');
+        expect(terminal.stderr()).toContain('Response: GMAIL_SEND_EMAIL\\u0009label');
+        expect(JSON.parse(terminal.stdout())).toMatchObject({
+          results: [{ slug, successful: true }],
+        });
+      })
+    );
   });
 
   layer(

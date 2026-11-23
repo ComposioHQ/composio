@@ -94,7 +94,7 @@ const runExecuteWithSpinner = (
     const { slug, args, resolvedProject } = call;
     const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
 
-    yield* ui.useMakeSpinner(`Executing tool "${slug}"...`, spinner =>
+    yield* ui.useMakeSpinner(`Executing tool "${escapeTerminalText(slug)}"...`, spinner =>
       Effect.gen(function* () {
         if (params.dryRun) {
           const summary = yield* previewPreparedCall(call, verificationDisabled).pipe(
@@ -237,7 +237,7 @@ const runExecuteWithSpinner = (
             `The tool executed successfully but the response may contain an error: ${escapeTerminalText(inBandWarning)}`
           );
         }
-        const output = yield* prepareExecuteOutput(slug, result);
+        const output = yield* prepareExecuteOutput(slug, result, call.executeOutputDir);
         if (output.kind === 'file') {
           yield* ui.log.message(
             `Response stored in ${output.summary.outputFilePath} (${describeStoredOutputSize(output.summary)})`
