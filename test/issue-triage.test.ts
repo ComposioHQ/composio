@@ -72,6 +72,7 @@ test('permissions, environments, secrets, triggers, and checkout settings are st
   expect(applyStep.env?.PLAIN_API_KEY).toBe('${{ secrets.PLAIN_API_KEY }}');
   expect(rawWorkflow).not.toContain('ANTHROPIC_API_KEY');
   expect(rawWorkflow).not.toContain('api.anthropic.com');
+  expect(rawWorkflow).not.toMatch(/import\(\s*["']\.\//);
   expect(workflow.on.issues.types).toEqual(['opened', 'reopened', 'edited', 'labeled']);
   expect(workflow.on.issue_comment.types).toEqual(['created']);
   expect(workflow.on.workflow_dispatch.inputs.issue_number.required).toBe(false);
@@ -132,15 +133,14 @@ test('authorize requires write access for labels, edits, reopens, and dispatch, 
 test('classify rejects invalid issue numbers and pull requests, and emits sweep on blank dispatch', async () => {
   const routeMod = await import('../.github/scripts/issue-triage/route.ts');
   const jevMod = await import('../.github/scripts/issue-triage/jev.ts');
-  const script = String(classifyStep.with?.script).replace(
-    /await import\("\.\/\.github\/scripts\/issue-triage\/(route|jev)\.ts"\)/g,
-    'await __import("$1")'
-  );
-  async function runClassify(opts: { issueNumber?: string; eventName?: string; pullRequest?: boolean }) {
+  const script = String(classifyStep.with?.script)
+    .replace(/const \[\{ pathToFileURL \}, \{ resolve \}\] = .+;\n/, '')
+    .replace(/const load = .+;/, 'const load = p => __load(p);');
+  async function runClassify(opts: { issueNumber?: string; eventName?: string; pullRequest?: boolean; state?: string }) {
     const outputs: Record<string, string> = {};
     let issueReads = 0;
     await runInNewContext(`(async () => {\n${script}\n})()`, {
-      __import: async (name: string) => (name === 'route' ? routeMod : jevMod),
+      __load: async (p: string) => (p.endsWith('route.ts') ? routeMod : jevMod),
       process: { env: { ISSUE_NUMBER: opts.issueNumber ?? '', TYPESAFE_API_KEY: 'key' } },
       context: { eventName: opts.eventName ?? 'workflow_dispatch', repo: { owner: 'ComposioHQ', repo: 'composio' }, payload: {} },
       github: {
@@ -148,7 +148,7 @@ test('classify rejects invalid issue numbers and pull requests, and emits sweep 
           issues: {
             get: async () => {
               issueReads++;
-              return { data: { title: 't', body: 'b', labels: [], ...(opts.pullRequest ? { pull_request: {} } : {}) } };
+              return { data: { title: 't', body: 'b', state: opts.state ?? 'open', labels: [], ...(opts.pullRequest ? { pull_request: {} } : {}) } };
             },
           },
         },
@@ -162,6 +162,7 @@ test('classify rejects invalid issue numbers and pull requests, and emits sweep 
     outputs: { mode: 'sweep', issue_number: '' },
     issueReads: 0,
   });
+  expect((await runClassify({ issueNumber: '42', state: 'closed' })).outputs).toEqual({});
   for (const bad of ['abc', '0', '-1', '1.5']) {
     await expect(runClassify({ issueNumber: bad })).rejects.toThrow('Invalid issue_number');
   }

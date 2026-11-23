@@ -79,8 +79,10 @@ jobs:
           ISSUE_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.issue_number || github.event.issue.number }}
         with:
           script: |
-            const { needsClassification, parseEvent } = await import("./.github/scripts/issue-triage/route.ts");
-            const { classifyWithJev } = await import("./.github/scripts/issue-triage/jev.ts");
+            const [{ pathToFileURL }, { resolve }] = await Promise.all([import("node:url"), import("node:path")]);
+            const load = p => import(pathToFileURL(resolve(p)).href);
+            const { needsClassification, parseEvent } = await load(".github/scripts/issue-triage/route.ts");
+            const { classifyWithJev } = await load(".github/scripts/issue-triage/jev.ts");
             const raw = (process.env.ISSUE_NUMBER || "").trim();
             if (context.eventName === "workflow_dispatch" && !raw) {
               core.setOutput("mode", "sweep");
@@ -91,9 +93,11 @@ jobs:
             if (!Number.isSafeInteger(issue_number) || issue_number <= 0) throw new Error("Invalid issue_number");
             const { data: issue } = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number });
             if (issue.pull_request) throw new Error("Cannot triage a pull request as an issue");
+            const event = parseEvent(context.eventName, context.payload);
+            if (issue.state === "closed" && event.type !== "author-comment") return;
             const labels = (issue.labels || []).map(l => (typeof l === "string" ? l : l.name));
             core.setOutput("issue_number", String(issue_number));
-            if (!needsClassification(parseEvent(context.eventName, context.payload), labels)) {
+            if (!needsClassification(event, labels)) {
               core.setOutput("mode", "none");
               return;
             }
@@ -134,8 +138,10 @@ jobs:
           PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}
         with:
           script: |
-            const { LABEL_METADATA, SUPPORT_STATE_LABELS, parseEvent, route } = await import("./.github/scripts/issue-triage/route.ts");
-            const { forwardIssueToPlain } = await import("./.github/scripts/issue-triage/plain.ts");
+            const [{ pathToFileURL }, { resolve }] = await Promise.all([import("node:url"), import("node:path")]);
+            const load = p => import(pathToFileURL(resolve(p)).href);
+            const { LABEL_METADATA, SUPPORT_STATE_LABELS, parseEvent, route } = await load(".github/scripts/issue-triage/route.ts");
+            const { forwardIssueToPlain } = await load(".github/scripts/issue-triage/plain.ts");
             const { owner, repo } = context.repo;
             const plainApiKey = process.env.PLAIN_API_KEY || "";
 
