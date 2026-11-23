@@ -63,32 +63,37 @@ function renderVersion(source: string, language: Language, snapshot: Snapshot): 
   return `${frontmatter}\n> SDK version \`${snapshot.version}\`. Install with \`${install}\`.\n\n${body}`;
 }
 
+export interface StableReferencePage {
+  name: string;
+  source: string;
+}
+
+/** Read one verified snapshot's pages as the stable collection publishes them. */
+export function renderStableReferencePages(docsRoot: string, language: Language): StableReferencePage[] {
+  const directory = snapshotDirectory(docsRoot, language);
+  const snapshot = verifySnapshot(directory);
+  const pages = join(directory, 'pages');
+  return pageNames(pages)
+    .filter(name => name.endsWith('.mdx'))
+    .map(name => ({ name, source: renderVersion(readFileSync(join(pages, name), 'utf8'), language, snapshot) }));
+}
+
 /** Assemble one Fumadocs reference collection for all public output formats. */
 export function prepareStableReference(docsRoot: string, destination: string): void {
   if (readdirSync(destination).length !== 0) {
     throw new Error(`Stable reference destination must be empty: ${destination}`);
   }
   const workspace = join(docsRoot, 'content/reference');
-  const plans = languages.map(language => {
-    const directory = snapshotDirectory(docsRoot, language);
-    return { language, directory, snapshot: verifySnapshot(directory) };
-  });
+  const plans = languages.map(language => ({ language, pages: renderStableReferencePages(docsRoot, language) }));
   const workspaceSdk = join(workspace, 'sdk-reference');
   cpSync(workspace, destination, {
     recursive: true,
     filter: path => !languages.some(language => path === join(workspaceSdk, language)),
   });
-  for (const { language, directory, snapshot } of plans) {
+  for (const { language, pages } of plans) {
     const target = join(destination, 'sdk-reference', language);
     mkdirSync(target, { recursive: true });
-    const pages = join(directory, 'pages');
-    for (const name of pageNames(pages)) {
-      const source = join(pages, name);
-      if (name.endsWith('.mdx')) {
-        writeFileSync(join(target, name), renderVersion(readFileSync(source, 'utf8'), language, snapshot));
-      } else {
-        cpSync(source, join(target, name));
-      }
-    }
+    cpSync(join(snapshotDirectory(docsRoot, language), 'pages/meta.json'), join(target, 'meta.json'));
+    for (const { name, source } of pages) writeFileSync(join(target, name), source);
   }
 }

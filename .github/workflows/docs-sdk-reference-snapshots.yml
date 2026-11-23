@@ -64,11 +64,14 @@ jobs:
         working-directory: docs
         run: bun test tests/static/sdk-reference-snapshot.test.ts
 
+      # Compare against live next, not the PR's recorded base: next can move
+      # forward (for example through a release promotion) after the PR opened,
+      # and a snapshot must never regress below what next already publishes.
       - name: Check versions and examples against installed packages
         if: steps.scope.outputs.affected == 'true'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bun docs/scripts/sdk-reference-snapshot.ts check "$BASE_SHA"
+        run: |
+          git fetch --no-tags --depth=1 origin next
+          bun docs/scripts/sdk-reference-snapshot.ts check "$(git rev-parse FETCH_HEAD)"
 
       - name: Exercise the production reference selection
         if: steps.scope.outputs.affected == 'true'
