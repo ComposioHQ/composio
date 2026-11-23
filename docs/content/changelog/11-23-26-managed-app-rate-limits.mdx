@@ -1,0 +1,39 @@
+---
+title: 'Rate limits on Composio managed apps'
+description: 'Composio managed apps and instant tools now have per-organization rate limits, returned as HTTP 429 with a Retry-After header and error code 7800.'
+date: '2026-11-23'
+---
+
+Composio now applies rate limits to Composio managed apps and instant tools, which are toolkits that use Composio's managed credentials. Limits are per organization, so one organization can no longer use up the shared provider quota for the others.
+
+### What's new
+
+- **Per-organization limits.** Each organization has its own counters for a managed app. Limits can differ per tool group within a toolkit.
+- **A specific 429 response.** When you hit a limit, the API returns HTTP `429` with a `Retry-After` header (in seconds) and `x-ratelimit-scope: managed_app`. The error body has code `7800` and slug `ManagedAppRateLimit_Exceeded`.
+- **Essential calls are not counted.** Calls such as token refresh and teardown don't count against limits.
+- **Progressive rollout.** Limits are being enabled progressively for managed apps. The exact limits vary by toolkit and aren't listed here.
+
+```http
+HTTP/2 429
+retry-after: 52
+x-ratelimit-scope: managed_app
+
+{
+  "error": {
+    "message": "Managed app rate limit reached for toolkit \"GMAIL\" for this operation: 5 requests per minute. Retry after 52s.",
+    "code": 7800,
+    "slug": "ManagedAppRateLimit_Exceeded",
+    "status": 429,
+    "request_id": "38cc2dcc-92e0-4e92-8782-4057fe0bf0a0",
+    "suggested_fix": "Wait the number of seconds in the Retry-After header before retrying. The limit shares a Composio managed app's quota fairly across orgs; use your own auth config to avoid it, or contact support to raise it. See docs: https://docs.composio.dev/errors/error-handling#error-7800"
+  }
+}
+```
+
+### What to do when you hit a limit
+
+- **Wait for `Retry-After`.** Wait the number of seconds in the header before you retry the request.
+- **Use your own auth config.** Your own OAuth app and credentials avoid managed app limits. See [Custom app vs. managed app](/docs/authentication/custom-app-vs-managed-app).
+- **Contact support.** If your use case needs a higher limit, contact support to raise it.
+
+For retry patterns, see [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits) and [Errors](/reference/errors).
