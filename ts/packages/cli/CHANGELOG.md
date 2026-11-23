@@ -219,6 +219,16 @@
   `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED` and `CI` turn both off
   with the rest of telemetry.
 
+- Requests the CLI sends to Composio from inside a Claude Code or Codex chat
+  now carry the same agent session as two headers, `x-cli-agent-session-host`
+  and `x-cli-agent-session-id`. Three kinds of request carry them: requests
+  made through the Composio API client, consumer `composio execute` calls sent
+  to the Composio Dashboard, and `proxy()` calls made by a `composio run`
+  script. The API client and proxy helper keep the session headers on the
+  configured backend origin, including when a request redirects. Builds
+  without a PostHog project key also send these headers. The telemetry
+  switches above remove both headers.
+
 ### Patch Changes
 
 - Command telemetry now derives option types and effective defaults from each

@@ -1,5 +1,6 @@
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { cliRequestHeaders } from './client-provenance';
+import { fetchWithAgentSessionRedirects } from './agent-session-fetch';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
@@ -40,6 +41,11 @@ export type RunHelperContext = {
   readonly debug?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
+  /**
+   * The agent session headers the parent command resolved, for `proxy()` requests. This
+   * module reads no environment variable, so the parent passes them in.
+   */
+  readonly agentSessionHeaders?: Readonly<Record<string, string>>;
 };
 
 type RunHelpersInstallParams = {
@@ -768,10 +774,11 @@ const createProxyHelper = (params: {
 
   const fetchComposioJson = async (pathname: string, body: Record<string, unknown>) => {
     const auth = requireConsumerProxyContext();
-    const response = await fetch(`${composioBaseURL}${pathname}`, {
+    const response = await fetchWithAgentSessionRedirects(`${composioBaseURL}${pathname}`, {
       method: 'POST',
       headers: {
         ...cliRequestHeaders(),
+        ...helperContext.agentSessionHeaders,
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,
