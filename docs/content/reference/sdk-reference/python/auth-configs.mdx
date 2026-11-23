@@ -9,7 +9,7 @@ description: "Manage authentication configurations."
 
 Lists authentication configurations based on provided filter criteria.
 
-```python
+```python signature
 def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_config_list_response.AuthConfigListResponse
 ```
 
@@ -29,7 +29,7 @@ def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_
 
 Create a new auth config
 
-```python
+```python signature
 def create(toolkit: str, options: Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]) -> auth_config_create_response.AuthConfig
 ```
 
@@ -61,7 +61,7 @@ composio.auth_configs.create(
 
 Retrieves a specific authentication configuration by its ID
 
-```python
+```python signature
 def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 ```
 
@@ -81,7 +81,7 @@ def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
 
 Updates an existing authentication configuration.  This method allows you to modify properties of an auth config such as credentials, scopes, or tool restrictions. The update type (custom or default) determines which fields can be updated.
 
-```python
+```python signature
 def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
 ```
 
@@ -102,7 +102,7 @@ def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdatePa
 
 Deletes an existing authentication configuration.
 
-```python
+```python signature
 def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
 ```
 
@@ -122,7 +122,7 @@ def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
 
 Enables an existing authentication configuration.
 
-```python
+```python signature
 def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
 ```
 
@@ -142,7 +142,7 @@ def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateSt
 
 Disables an existing authentication configuration.
 
-```python
+```python signature
 def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
 ```
 

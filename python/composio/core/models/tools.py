@@ -506,7 +506,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             print(meta_tools)
 
             # Get meta tools with schema modifiers
-            from composio.core.models import schema_modifier
+            from composio import schema_modifier
 
             @schema_modifier
             def modify_schema(tool: str, toolkit: str, schema):
