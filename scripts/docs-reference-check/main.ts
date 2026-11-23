@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { parseArgs } from 'node:util';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Cause, Console, Data, Effect, FileSystem, Path, Stdio } from 'effect';
@@ -19,6 +20,7 @@ export type { CheckResult } from './report';
 
 export interface CheckOptions {
   readonly builtPackage?: string;
+  readonly installedPackage?: string;
   readonly compilerOptions?: ts.CompilerOptions;
 }
 
@@ -83,8 +85,9 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       .filter(name => name.endsWith('.mdx'))
       .sort();
 
-    const built =
-      options.builtPackage === undefined ? undefined : path.resolve(options.builtPackage);
+    const packageDirectory = options.builtPackage ?? options.installedPackage;
+    const installed = packageDirectory === undefined ? undefined : path.resolve(packageDirectory);
+    const built = options.builtPackage === undefined ? undefined : installed;
     const violations =
       built === undefined
         ? []
@@ -180,13 +183,13 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       });
     }
 
-    const coreRoot = built ?? path.resolve(REPO_ROOT, 'ts/packages/core');
+    const coreRoot = installed ?? path.resolve(REPO_ROOT, 'ts/packages/core');
     violations.push(
       ...(yield* checkSnippets(
         snippets,
         coreRoot,
         options.compilerOptions,
-        built === undefined ? 'workspace' : 'built'
+        installed === undefined ? 'workspace' : 'built'
       ))
     );
     return {
@@ -198,25 +201,32 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
   });
 
 const USAGE =
-  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--built-package <package-directory>] [directory]';
+  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--built-package <dir> | --installed-package <dir>] [directory]';
 
 const main = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args;
-  const json = args.includes('--json');
-  const rest = args.filter(arg => arg !== '--json');
-  const builtFlag = rest.indexOf('--built-package');
-  const builtPackage = builtFlag < 0 ? undefined : rest[builtFlag + 1];
-  if (builtFlag >= 0) {
-    if (!builtPackage || builtPackage.startsWith('-'))
-      return yield* new UsageError({ message: USAGE });
-    rest.splice(builtFlag, 2);
-  }
-  if (rest.length > 1 || rest.some(arg => arg.startsWith('-'))) {
+  const { values, positionals } = yield* Effect.try({
+    try: () => parseArgs({
+      args: [...args],
+      allowPositionals: true,
+      options: {
+        json: { type: 'boolean' },
+        'built-package': { type: 'string' },
+        'installed-package': { type: 'string' },
+      },
+    }),
+    catch: cause => new UsageError({ message: `${String(cause)}\n${USAGE}` }),
+  });
+  const builtPackage = values['built-package'];
+  const installedPackage = values['installed-package'];
+  if (positionals.length > 1 || (builtPackage !== undefined && installedPackage !== undefined)) {
     return yield* new UsageError({ message: USAGE });
   }
   const path = yield* Path.Path;
-  const result = yield* checkReferencePages(rest[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
+  const json = values.json ?? false;
+  const result = yield* checkReferencePages(positionals[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
     builtPackage,
+    installedPackage,
   });
   yield* Console.log(json ? JSON.stringify(result, null, 2) : formatText(result));
   if (result.violations.length > 0) {

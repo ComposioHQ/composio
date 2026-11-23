@@ -135,7 +135,7 @@ const historicalMdxOptions = applyMdxPreset({
 });
 
 export const reference = defineDocs({
-  dir: 'content/reference',
+  dir: process.env.COMPOSIO_STABLE_REFERENCE_DIR || 'content/reference',
   docs: {
     schema: docsSchema,
     postprocess: {

@@ -1,0 +1,235 @@
+---
+title: "Toolkits"
+description: "Toolkits are a collectiono of tools that can be used to perform various tasks. They're conceptualized as a set of tools. Ex: Github toolkit can per..."
+---
+
+## Methods
+
+### list()
+
+List all toolkits.
+
+```python signature
+def list(*, category: str | None = ..., cursor: str | None = ..., limit: float | None = ..., sort_by: Literal['usage', 'alphabetically'] | None = ..., managed_by: Literal['composio', 'all', 'project'] | None = ...) -> toolkit_list_response.ToolkitListResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `category?` | `str \| None` |
+| `cursor?` | `str \| None` |
+| `limit?` | `float \| None` |
+| `sort_by?` | `Literal['usage', 'alphabetically'] \| None` |
+| `managed_by?` | `Literal['composio', 'all', 'project'] \| None` |
+
+**Returns**
+
+`toolkit_list_response.ToolkitListResponse`
+
+---
+
+### get()
+
+```python signature
+def get(slug: str | None = ..., *, query: toolkit_list_params.ToolkitListParams | None = ...) -> Union[toolkit_retrieve_response.ToolkitRetrieveResponse, ...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug?` | `str \| None` |
+| `query?` | `toolkit_list_params.ToolkitListParams \| None` |
+
+**Returns**
+
+`Union[toolkit_retrieve_response.ToolkitRetrieveResponse, ...`
+
+---
+
+### get_many()
+
+Fetch several toolkits by slug in one request.
+
+```python signature
+def get_many(slugs: Sequence[str], *, category: str | None = ..., managed_by: Literal['composio', 'all', 'project'] | None = ..., sort_by: Literal['usage', 'alphabetically'] | None = ..., limit: float | None = ..., cursor: str | None = ...) -> List[Any]
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `slugs` | `Sequence[str]` | The toolkit slugs to fetch. |
+| `category?` | `str \| None` | Only return toolkits in this category. |
+| `managed_by?` | `Literal['composio', 'all', 'project'] \| None` | Filter by who manages the toolkit. |
+| `sort_by?` | `Literal['usage', 'alphabetically'] \| None` | Sort order of the returned toolkits. |
+| `limit?` | `float \| None` | Maximum number of toolkits to return. |
+| `cursor?` | `str \| None` | Pagination cursor from a previous response. |
+
+**Returns**
+
+`List[Any]` — The matching toolkits.
+
+**Example**
+
+```python
+toolkits = composio.toolkits.get_many(["github", "slack"])
+for toolkit in toolkits:
+    print(toolkit.slug, toolkit.name)
+```
+
+---
+
+### changelog()
+
+Retrieve the toolkit changelog (the last 10 versions per toolkit).
+
+```python signature
+def changelog() -> toolkit_retrieve_changelog_response.ToolkitRetrieveChange...
+```
+
+**Returns**
+
+`toolkit_retrieve_changelog_response.ToolkitRetrieveChange...` — The changelog entries under `.items`.
+
+**Example**
+
+```python
+changelog = composio.toolkits.changelog()
+for entry in changelog.items:
+    print(entry.slug, [v.version for v in entry.versions])
+```
+
+---
+
+### recommend_scopes()
+
+Recommend the OAuth scopes to request so a connection can run the given tools. Experimental — the API marks this endpoint beta.
+
+```python signature
+def recommend_scopes(toolkit_slug: str, **params: Unpack[toolkit_recommend_scopes_params.ToolkitRecommendScopesParams]) -> toolkit_recommend_scopes_response.ToolkitRecommendScopesR...
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit_slug` | `str` | The toolkit to recommend scopes for. |
+| `params?` | `Unpack[toolkit_recommend_scopes_params.ToolkitRecommendScopesParams]` |  |
+
+**Returns**
+
+`toolkit_recommend_scopes_response.ToolkitRecommendScopesR...` — The `least_privilege` and `fewest` scope sets plus the `conditional` scopes, under `.scopes`.
+
+**Example**
+
+```python
+recommendation = composio.toolkits.recommend_scopes(
+    "gmail",
+    tools=["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+)
+print(recommendation.scopes.least_privilege)
+```
+
+---
+
+### list_grant_contexts()
+
+List the grant-context dimensions a toolkit's scope recommendation depends on, with their allowed values and the default the API assumes. Experimental — the API marks this endpoint beta.
+
+```python signature
+def list_grant_contexts(toolkit_slug: str, **params: Unpack[toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams]) -> toolkit_retrieve_scopes_grant_context_response.ToolkitRet...
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit_slug` | `str` | The toolkit to list grant contexts for. |
+| `params?` | `Unpack[toolkit_retrieve_scopes_grant_context_params.ToolkitRetrieveScopesGrantContextParams]` |  |
+
+**Returns**
+
+`toolkit_retrieve_scopes_grant_context_response.ToolkitRet...` — `grant_context_dimensions` and `default_grant_context`.
+
+**Example**
+
+```python
+contexts = composio.toolkits.list_grant_contexts("gmail")
+for dimension in contexts.grant_context_dimensions:
+    print(dimension.dimension, dimension.values)
+```
+
+---
+
+### list_categories()
+
+List all categories of toolkits.
+
+```python signature
+def list_categories()
+```
+
+---
+
+### authorize()
+
+Authorize a user to a toolkit  If auth config is not found, it will be created using composio managed auth.
+
+```python signature
+def authorize(*, user_id: str, toolkit: str)
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `user_id` | `str` | The ID of the user to authorize. |
+| `toolkit` | `str` | The slug of the toolkit to authorize. |
+
+---
+
+### get_connected_account_initiation_fields()
+
+Get the required property for a given toolkit and auth scheme.
+
+```python signature
+def get_connected_account_initiation_fields(toolkit: str, auth_scheme: AuthSchemeL, required_only: bool = ...) -> AuthFieldsT
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `str` |
+| `auth_scheme` | `AuthSchemeL` |
+| `required_only?` | `bool` |
+
+**Returns**
+
+`AuthFieldsT`
+
+---
+
+### get_auth_config_creation_fields()
+
+Get the required property for a given toolkit and auth scheme.
+
+```python signature
+def get_auth_config_creation_fields(toolkit: str, auth_scheme: AuthSchemeL, required_only: bool = ...) -> AuthFieldsT
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `str` |
+| `auth_scheme` | `AuthSchemeL` |
+| `required_only?` | `bool` |
+
+**Returns**
+
+`AuthFieldsT`
+
+---

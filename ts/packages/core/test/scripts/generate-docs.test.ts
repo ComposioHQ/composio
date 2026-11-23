@@ -629,7 +629,7 @@ it('executes the generated Quick Start with the real SDK and a stub client', asy
   expect(example).toContain("import { Composio } from '@composio/core';");
   const tool = {
     ...toolMocks.rawTool,
-    slug: 'GITHUB_GET_REPOS',
+    slug: 'GITHUB_LIST_STARGAZERS',
     toolkit: { ...toolMocks.rawTool.toolkit, slug: 'github' },
   };
   const execute = vi.fn().mockResolvedValue(toolMocks.rawToolExecuteResponse);
@@ -652,9 +652,9 @@ it('executes the generated Quick Start with the real SDK and a stub client', asy
   expect(list).toHaveBeenCalledOnce();
   expect(retrieve).toHaveBeenCalledOnce();
   expect(execute.mock.calls[0]?.slice(0, 2)).toEqual([
-    'GITHUB_GET_REPOS',
+    'GITHUB_LIST_STARGAZERS',
     expect.objectContaining({
-      arguments: { owner: 'composio' },
+      arguments: { owner: 'ComposioHQ', repo: 'composio' },
       user_id: 'user-123',
       version: '20250909_00',
     }),
