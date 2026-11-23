@@ -62,6 +62,7 @@ import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { ToolRouterSession } from './ToolRouterSession';
+import { SessionWebhooks } from './SessionWebhooks';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
@@ -132,10 +133,17 @@ export class ToolRouter<
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
+  /**
+   * Read the events Composio sends to the project's session webhook URL, for
+   * session hooks with a `webhook` handler.
+   */
+  webhooks: SessionWebhooks;
+
   constructor(
     private client: ComposioClient,
     private config?: ComposioConfig<TProvider>
   ) {
+    this.webhooks = new SessionWebhooks();
     telemetry.instrument(this, 'ToolRouter');
   }
 

@@ -65,7 +65,7 @@ export const parseString = <S>(
   return result;
 };
 
-const codePointLength = (value: string): number => [...value].length;
+const codePointLength = (value: string): number => Array.from(value).length;
 
 const isBase64Encoding = (encoding: unknown): boolean =>
   typeof encoding === 'string' && encoding.toLowerCase() === 'base64';

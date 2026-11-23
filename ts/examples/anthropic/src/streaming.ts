@@ -29,7 +29,7 @@ async function main() {
   console.log(`✅ Fetched ${tools.length} tools`);
 
   console.log('🔄 Creating message with Anthropic...');
-  const stream = await anthropic.messages
+  const stream = anthropic.messages
     .stream({
       model: 'claude-sonnet-5',
       max_tokens: 1024,
@@ -68,7 +68,7 @@ async function main() {
     /**
      * Send a follow-up message with the tool results
      */
-    const followUpStream = await anthropic.messages
+    const followUpStream = anthropic.messages
       .stream({
         model: 'claude-sonnet-5',
         max_tokens: 1024,
@@ -104,4 +104,4 @@ async function main() {
   }
 }
 
-main();
+await main();

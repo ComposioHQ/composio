@@ -162,8 +162,7 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
 
 const decodeJsonOption = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown));
 
-const parseJson = (value: string): unknown | undefined =>
-  Option.getOrUndefined(decodeJsonOption(value));
+const parseJson = (value: string): unknown => Option.getOrUndefined(decodeJsonOption(value));
 
 const isRecord = Predicate.isObject;
 

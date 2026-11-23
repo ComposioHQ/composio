@@ -8,7 +8,7 @@ import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
+import { Effect, Formatter, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
@@ -159,7 +159,7 @@ const proxyFailureDetail = (parsed: unknown, raw: string): string | undefined =>
 const executeId = () => crypto.randomUUID().slice(0, 8);
 
 const truncateDebugText = (value: unknown, max = 240) => {
-  const text = typeof value === 'string' ? value : String(value ?? '');
+  const text = value == null ? '' : typeof value === 'string' ? value : Formatter.format(value);
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 };
 
@@ -178,17 +178,17 @@ const previewDebugValue = (value: unknown): string => {
     }
     return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
   }
-  return truncateDebugText(String(value));
+  return truncateDebugText(value);
 };
 
 const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
   switch (step) {
     case 'execute.prepare':
-      return `[execute] ${details.slug}`;
+      return `[execute] ${truncateDebugText(details.slug)}`;
     case 'search.prepare':
       return `[search] ${truncateDebugText(details.query || '', 96)}`;
     case 'proxy.request':
-      return `[proxy] ${details.method} ${truncateDebugText(details.endpoint || '', 96)}`;
+      return `[proxy] ${truncateDebugText(details.method)} ${truncateDebugText(details.endpoint || '', 96)}`;
     case 'cli.result': {
       const command = typeof details.command === 'string' ? details.command : 'cli';
       const state = details.successful === false ? 'failed' : 'ok';
@@ -214,7 +214,7 @@ const stringifyForPrompt = (value: unknown): string => {
   }
   return Result.getOrElse(
     Result.try(() => JSON.stringify(value, null, 2)),
-    () => String(value)
+    () => Formatter.format(value)
   );
 };
 

@@ -15,7 +15,7 @@ vi.mock('node:fs', async importOriginal => {
 });
 
 const invertAsciiCase = (value: string): string =>
-  [...value]
+  Array.from(value)
     .map(character => {
       const upper = character.toUpperCase();
       return character === upper ? character.toLowerCase() : upper;

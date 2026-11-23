@@ -13,7 +13,7 @@ import {
 import { docsPinSpecs } from '../scripts/sdk-release/report';
 import { CommandError, sha256Hex } from '../scripts/sdk-release/runtime';
 import { batch, head } from './sdk-release-controller-fixture';
-import { runOnTestClock, runRelease, type Fetch } from './sdk-release-harness';
+import { fetchInputUrl, runOnTestClock, runRelease, type Fetch } from './sdk-release-harness';
 
 const distribution = async (file: string, language: Language = 'python'): Promise<Distribution> => {
   const bytes = new TextEncoder().encode(`original ${file}`);
@@ -40,7 +40,7 @@ function registry(
   return {
     reads,
     fetcher: (async (input: string | URL | Request) => {
-      const url = String(input);
+      const url = fetchInputUrl(input);
       reads.push(url);
       const json = (value: unknown, status = 200) =>
         new Response(JSON.stringify(value), { status });
@@ -132,7 +132,7 @@ describe('registry reconciliation', () => {
     const fake = registry([tarball]);
     let lookups = 0;
     const lagging: Fetch = async input => {
-      const url = String(input);
+      const url = fetchInputUrl(input);
       if (url.endsWith('/latest')) return new Response(JSON.stringify({ version: '1.0.0' }));
       if (url.startsWith('https://registry.npmjs.org/') && lookups++ === 0)
         return new Response('{}', { status: 404 });
@@ -151,7 +151,7 @@ describe('registry reconciliation', () => {
     const beta = { ...tarball, version: '1.0.1-beta.8', file: 'composio-core-1.0.1-beta.8.tgz' };
     const requested: string[] = [];
     const fetch: Fetch = async input => {
-      const url = String(input);
+      const url = fetchInputUrl(input);
       requested.push(url);
       if (url.endsWith('/next')) return new Response(JSON.stringify({ version: '0.1.36-next.13' }));
       if (url.endsWith('/1.0.1-beta.8')) return new Response('{}', { status: 404 });
@@ -173,7 +173,7 @@ describe('registry reconciliation', () => {
     const fake = registry([wheel, sdist]);
     const sameLength: Fetch = async input => {
       const response = await fake.fetcher(input);
-      if (!String(input).endsWith(wheel.file)) return response;
+      if (!fetchInputUrl(input).endsWith(wheel.file)) return response;
       const bytes = new Uint8Array(await response.arrayBuffer());
       bytes[0] ^= 0xff;
       return new Response(bytes);
@@ -197,7 +197,7 @@ describe('waiting out npm’s publish-time scan', () => {
     const fetch = (now: () => number): Fetch => {
       clock = now;
       return async input => {
-        const url = String(input);
+        const url = fetchInputUrl(input);
         if (url.endsWith('/latest')) return new Response(JSON.stringify({ version: '1.0.0' }));
         if (url.startsWith('https://registry.npmjs.org/%40')) {
           reads.push(url);
@@ -236,7 +236,9 @@ describe('waiting out npm’s publish-time scan', () => {
     const unauthorized =
       (now: () => number): Fetch =>
       async input =>
-        String(input) === versionUrl ? new Response('{}', { status: 401 }) : npm.fetch(now)(input);
+        fetchInputUrl(input) === versionUrl
+          ? new Response('{}', { status: 401 })
+          : npm.fetch(now)(input);
     await expect(
       runOnTestClock(waitForRegistry([tarball], { channelTags: false }), unauthorized)
     ).rejects.toThrow(`Registry lookup failed: ${versionUrl} (401)`);
@@ -272,7 +274,7 @@ describe('pinned candidate download', () => {
   ])('a pinned artifact with %s is refused before download', async (_name, overrides, message) => {
     const reads: string[] = [];
     const fetcher: Fetch = async input => {
-      const path = new URL(String(input)).pathname;
+      const path = new URL(fetchInputUrl(input)).pathname;
       reads.push(path);
       if (path === '/repos/ComposioHQ/composio/actions/artifacts/77')
         return new Response(JSON.stringify(listed(overrides)));

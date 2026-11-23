@@ -12,6 +12,12 @@ const composio = new Composio({ apiKey: 'your-api-key' });
 const result = await composio.sessions.list();
 ```
 
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `webhooks` | `SessionWebhooks` | Read the events Composio sends to the project's session webhook URL, for session hooks with a `webhook` handler. |
+
 ## Methods
 
 ### create()

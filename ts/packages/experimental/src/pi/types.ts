@@ -101,7 +101,7 @@ export interface PiSessionToolOptions extends PiProviderOptions {
     requestedToolkits?: string[];
     value: unknown;
     context?: PiBaseToolContext;
-  }) => unknown | Promise<unknown>;
+  }) => unknown;
 }
 
 export interface PiComposioSessionLike<

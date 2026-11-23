@@ -870,7 +870,7 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
       !deletions[0].includes('composio-windows-x64.zip')
     ) {
       throw new Error(
-        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions}`
+        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions.join('\n')}`
       );
     }
   } finally {
@@ -1215,7 +1215,7 @@ esac
     JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
   ) {
     throw new Error(
-      `release script must run build → provider compatibility → publish: ${commands}`
+      `release script must run build → provider compatibility → publish: ${commands.join('\n')}`
     );
   }
 

@@ -20,7 +20,7 @@ import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel';
+import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel-argv';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -241,8 +241,6 @@ describe('CLI: composio execute', () => {
   it.effect('returns a CLI validation error for malformed parallel arguments', () =>
     Effect.gen(function* () {
       const failure = yield* parseParallelExecuteArgs(['--parallel', '--data', '{}'], {
-        surface: 'root',
-        projectMode: 'consumer',
         allowUserId: false,
         allowProjectName: false,
       }).pipe(Effect.flip);
@@ -990,6 +988,26 @@ describe('CLI: composio execute', () => {
         yield* cli(['execute', 'CUSTOM_GRAIN_SEARCH_PERSONS', '-d', '{"query":"ada"}']);
 
         expect(recordedExecuteParams[0]?.account).toBe('ca_1');
+      })
+    );
+
+    it.effect('escapes the toolkit and slug in cached connection failure messages', () =>
+      Effect.gen(function* () {
+        connectedToolkitsCache(['gmail']);
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const slug = 'FIXTURE\tLABEL_LOOKUP';
+        yield* cli(['execute', slug, '-d', '{}']).pipe(Effect.provide(terminal.layer), Effect.flip);
+
+        const stderr = terminal.stderr();
+        expect(stderr).toContain('Toolkit "fixture\\u0009label" is not connected');
+        expect(stderr).toContain('composio link fixture\\u0009label');
+        expect(stderr).toContain('composio execute "FIXTURE\\u0009LABEL_LOOKUP"');
+        expect(JSON.parse(terminal.stdout())).toMatchObject({
+          successful: false,
+          slug,
+          error: expect.stringContaining('Toolkit "fixture\tlabel" is not connected'),
+        });
+        expect(recordedSessionCreateParams).toHaveLength(0);
       })
     );
   });
@@ -3632,6 +3650,22 @@ describe('CLI: composio execute without a resolvable acting user', () => {
           'the response may contain an error: first\\u000d\\u000asecond\\u0009col\\u0007 \\u007f \\u0085 end'
         );
         expect(terminal.stderr()).not.toMatch(/[\u0007\u007f\u0085]/u);
+      })
+    );
+
+    it.effect('escapes whitespace in parallel tool labels and preserves the slug in JSON', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const slug = 'GMAIL_SEND_EMAIL\tlabel';
+        yield* cli(['execute', '--parallel', '--skip-checks', slug, '-d', '{}']).pipe(
+          Effect.provide(terminal.layer)
+        );
+
+        expect(terminal.stderr()).toContain('[GMAIL_SEND_EMAIL\\u0009label] Execution successful');
+        expect(terminal.stderr()).toContain('Response: GMAIL_SEND_EMAIL\\u0009label');
+        expect(JSON.parse(terminal.stdout())).toMatchObject({
+          results: [{ slug, successful: true }],
+        });
       })
     );
   });

@@ -346,7 +346,7 @@ describe('TerminalUI', () => {
     it('measures and truncates whole grapheme clusters', () => {
       const keycap = '1\uFE0F\u20E3';
       expect(stringWidth(keycap)).toBe(2);
-      expect([...keycap].reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
+      expect(Array.from(keycap).reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
 
       const clamped = clampSpinnerMessage(20, keycap.repeat(20));
       expect(clamped).toMatch(/^(?:1\uFE0F\u20E3)*…$/u);

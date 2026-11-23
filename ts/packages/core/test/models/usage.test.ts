@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ComposioClient from '@composio/client';
 import { Experimental } from '../../src/models/Experimental';
 import { Usage } from '../../src/models/Usage';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -37,8 +38,8 @@ describe('Experimental.usage', () => {
 
   it('mounts usage on the experimental namespace and instruments it', () => {
     expect(experimental.usage).toBeInstanceOf(Usage);
-    expect(telemetry.instrument).toHaveBeenCalledWith(experimental.usage, 'Usage');
-    expect(telemetry.instrument).toHaveBeenCalledWith(experimental, 'Experimental');
+    expect(instrument).toHaveBeenCalledWith(experimental.usage, 'Usage');
+    expect(instrument).toHaveBeenCalledWith(experimental, 'Experimental');
   });
 
   describe('summary', () => {

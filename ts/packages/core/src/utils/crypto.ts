@@ -3,9 +3,11 @@ import { arrayBufferToBase64 } from './buffer';
 /**
  * Computes HMAC-SHA256 using Web Crypto API
  */
-export async function hmacSha256Base64(secret: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
+export async function hmacSha256Base64(
+  secret: string,
+  message: Uint8Array<ArrayBuffer>
+): Promise<string> {
+  const keyData = new TextEncoder().encode(secret);
   const key = await globalThis.crypto.subtle.importKey(
     'raw',
     keyData,
@@ -13,8 +15,7 @@ export async function hmacSha256Base64(secret: string, message: string): Promise
     false,
     ['sign']
   );
-  const signatureData = encoder.encode(message);
-  const signatureBuffer = await globalThis.crypto.subtle.sign('HMAC', key, signatureData);
+  const signatureBuffer = await globalThis.crypto.subtle.sign('HMAC', key, message);
 
   return arrayBufferToBase64(signatureBuffer);
 }

@@ -25,8 +25,7 @@ import { ConnectionStatuses } from '../../src/types/connectedAccountAuthStates.t
 import logger from '../../src/utils/logger';
 
 // Extend the mock client object for ConnectedAccounts testing
-const extendedMockClient = {
-  ...mockClient,
+const extendedMockClient = Object.assign({}, mockClient, {
   connectedAccounts: {
     ...mockClient.connectedAccounts,
     create: vi.fn(),
@@ -46,7 +45,7 @@ const extendedMockClient = {
     list: vi.fn(),
     create: vi.fn(),
   },
-};
+});
 
 describe('ConnectedAccounts', () => {
   let connectedAccounts: ConnectedAccounts;

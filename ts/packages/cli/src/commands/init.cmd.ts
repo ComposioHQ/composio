@@ -1,6 +1,6 @@
 import { isAPIError } from '@composio/client/effect';
 import { Command as CliCommand, Flag } from 'effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Formatter, Option } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -213,7 +213,7 @@ const logEnvCreationDecodingError = (ui: TerminalUI) => (e: { cause?: unknown })
   Effect.gen(function* () {
     yield* ui.log.warn('Could not decode API key response; skipping .env.local creation.');
     if (e.cause) {
-      yield* ui.log.error(String(e.cause));
+      yield* ui.log.error(typeof e.cause === 'string' ? e.cause : Formatter.format(e.cause));
     }
   });
 

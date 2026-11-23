@@ -12,7 +12,7 @@ const session = await composio.create('user_123', { toolkits: ['gmail'] });
 
 const tools = await session.tools(modifiers);
 
-const stream = await streamText({
+const stream = streamText({
   model: openai('gpt-4o-mini'),
   prompt: 'Find my last email from gmail?',
   stopWhen: stepCountIs(10),

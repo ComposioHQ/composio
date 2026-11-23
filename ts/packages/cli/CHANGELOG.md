@@ -6,6 +6,8 @@
 
 ### Patch Changes
 
+- Keep compiler-host callbacks bound during TypeScript generation and format structured errors in CLI output.
+
 - Update @composio/client to 2.1.36 to include the latest API changes.
 
 - Release archives now include a `release-manifest.json` that lists the support files they ship. `composio upgrade` installs exactly what the manifest lists, so later releases can drop a support file without breaking upgrades. Files a release no longer lists stay in place. A release can name the oldest CLI version that may upgrade to it; an older CLI refuses it before changing anything and prints the install command to run instead.
@@ -207,6 +209,15 @@
   none is aliased `default`, and no `--account` is passed. Scripts that relied
   on the implicit newest-account pick now fail. To migrate, pass
   `--account <id|alias>`, or alias one account `default`.
+
+- CLI telemetry events now carry `agent_session_host` (`claude` or `codex`)
+  and `agent_session_id` when the CLI can identify the Claude Code or Codex
+  chat it runs in, so the commands one chat ran can be grouped. The ID is a
+  UUID v5 the CLI derives from the host name and the host's session ID. The
+  host's own session ID is never sent. When the CLI cannot identify the chat,
+  neither property is sent, and `COMPOSIO_CLI_TELEMETRY_DISABLED`,
+  `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED` and `CI` turn both off
+  with the rest of telemetry.
 
 ### Patch Changes
 

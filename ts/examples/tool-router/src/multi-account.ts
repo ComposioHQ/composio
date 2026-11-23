@@ -36,7 +36,7 @@ await connectionRequest.waitForConnection();
 
 const tools = await session.tools();
 
-const stream = await streamText({
+const stream = streamText({
   model: openai('gpt-4o-mini'),
   prompt: 'Find my last email from my work Gmail account',
   stopWhen: stepCountIs(10),

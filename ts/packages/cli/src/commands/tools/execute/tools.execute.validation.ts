@@ -4,12 +4,9 @@ import * as Path from 'effect/Path';
 import { rejectLocalFilesWithoutUpload } from 'src/services/tool-file-uploads';
 import {
   getOrFetchToolInputDefinition,
-  ToolInputValidationError,
-  validateToolInputArguments,
   validateToolInputArgumentsWithDefinition,
 } from 'src/services/tool-input-validation';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
-import { perfDebugLog } from './tools.execute.debug';
 
 // What a dry run checks, matching the real call: the arguments against the
 // schema unless checks are skipped, then any local file the tool cannot upload.
@@ -47,24 +44,3 @@ export const checkDryRunArguments = (params: {
     }
     return verificationDisabled ? null : definition;
   });
-
-// Gates the tool call: the request is only sent once the arguments pass. A
-// schema that cannot be loaded does not block the call, the server validates too.
-export const validateToolInputBeforeExecute = (params: {
-  readonly slug: string;
-  readonly args: Record<string, unknown>;
-  readonly resolvedProject: {
-    readonly orgId: string;
-    readonly projectId: string;
-  };
-}) =>
-  validateToolInputArguments(params.slug, params.args, {
-    orgId: params.resolvedProject.orgId,
-    projectId: params.resolvedProject.projectId,
-  }).pipe(
-    Effect.asVoid,
-    Effect.catchIf(
-      error => !(error instanceof ToolInputValidationError),
-      () => perfDebugLog('execute.validation.schema_unavailable', { slug: params.slug })
-    )
-  );

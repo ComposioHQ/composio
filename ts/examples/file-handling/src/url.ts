@@ -9,9 +9,7 @@
  */
 
 import { Composio } from '@composio/core';
-import { file } from 'bun';
 import 'dotenv/config';
-import path from 'path';
 
 /**
  * Initialize Composio

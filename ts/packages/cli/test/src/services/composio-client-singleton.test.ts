@@ -305,7 +305,9 @@ describe('ComposioClientSingleton headers', () => {
       yield* client.auth.session.retrieveInfo();
 
       const [input, init] = fetchSpy.mock.calls[0]!;
-      expect(String(input)).toContain('/api/v3.1/auth/session/info');
+      expect(input instanceof Request ? input.url : input.toString()).toContain(
+        '/api/v3.1/auth/session/info'
+      );
       const headers = new Headers((init as RequestInit).headers);
       expect(headers.get('x-user-api-key')).toBe('uak_single');
       expect(headers.has('x-api-key')).toBe(false);
@@ -331,7 +333,9 @@ describe('ComposioClientSingleton headers', () => {
 
       expect(fetchSpy).toHaveBeenCalledOnce();
       const [input, init] = fetchSpy.mock.calls[0]!;
-      expect(String(input)).toContain('http://host.docker.internal:9900/');
+      expect(input instanceof Request ? input.url : input.toString()).toContain(
+        'http://host.docker.internal:9900/'
+      );
       expect(new Headers((init as RequestInit).headers).get('x-user-api-key')).toBe('uak_insecure');
     }).pipe(
       Effect.provide(
@@ -608,7 +612,10 @@ describe('ComposioClientSingleton client', () => {
       yield* listTools(client);
 
       const call = fetchSpy.mock.calls[0]!;
-      expect(String(call[0])).toContain('https://backend.composio.dev/');
+      const [input] = call;
+      expect(input instanceof Request ? input.url : input.toString()).toContain(
+        'https://backend.composio.dev/'
+      );
       const headers = sentHeaders(call);
       expect(headers.get('x-user-api-key')).toBe('uak_scope');
       expect(headers.has('x-api-key')).toBe(false);

@@ -5,6 +5,14 @@ from .core.models.custom_tool_types import (
     LocalTool,
     SessionContext,
 )
+from .core.models.session_webhooks import (
+    SessionWebhookAfterExecuteEvent,
+    SessionWebhookAfterExecuteResponse,
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+    SessionWebhookEvent,
+    SessionWebhookEventType,
+)
 from .core.models.tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .core.models.tool_router_session_files import RemoteFile
 from .core.models.tools import (
@@ -43,6 +51,12 @@ __all__ = (
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",
+    "SessionWebhookAfterExecuteEvent",
+    "SessionWebhookAfterExecuteResponse",
+    "SessionWebhookBeforeExecuteEvent",
+    "SessionWebhookBeforeExecuteResponse",
+    "SessionWebhookEvent",
+    "SessionWebhookEventType",
     "ConnectionExpiredEvent",
     "ConnectionState",
     "ConnectionStatusEnum",
