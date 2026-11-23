@@ -250,14 +250,14 @@ export type SessionWebhookHttpResponseOverride = {
 /**
  * The answer to a `before_execute` event: let the call run, run it with
  * changes, or block it. Use `tool_call` to change a tool call and
- * `http_request` to change a proxy call.
+ * `http_request` to change a proxy call, never both.
  */
 export type SessionWebhookBeforeExecuteResponse =
   | {
       action: 'continue';
       override?:
-        | { tool_call: { arguments: Record<string, unknown> } }
-        | { http_request: SessionWebhookHttpRequestOverride }
+        | { tool_call: { arguments: Record<string, unknown> }; http_request?: null }
+        | { http_request: SessionWebhookHttpRequestOverride; tool_call?: null }
         | null;
     }
   | SessionWebhookBlockResponse;
@@ -265,14 +265,14 @@ export type SessionWebhookBeforeExecuteResponse =
 /**
  * The answer to an `after_execute` event: pass the result on to the agent,
  * pass on a changed result, or block it. Use `tool_response` to change a tool
- * call's result and `http_response` to change a proxy call's.
+ * call's result and `http_response` to change a proxy call's, never both.
  */
 export type SessionWebhookAfterExecuteResponse =
   | {
       action: 'continue';
       override?:
-        | { tool_response: { data: Record<string, unknown> } }
-        | { http_response: SessionWebhookHttpResponseOverride }
+        | { tool_response: { data: Record<string, unknown> }; http_response?: null }
+        | { http_response: SessionWebhookHttpResponseOverride; tool_response?: null }
         | null;
     }
   | SessionWebhookBlockResponse;

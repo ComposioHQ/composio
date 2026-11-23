@@ -223,3 +223,12 @@ def test_names_invalid_fields_without_their_values(webhooks: SessionWebhooks) ->
     assert "data.tool_execute.tool_call.arguments" in str(error.value)
     assert "http_request" not in str(error.value)
     assert "a secret the agent typed" not in str(error.value)
+
+
+def test_rejects_a_field_of_the_wrong_type(webhooks: SessionWebhooks) -> None:
+    payload = copy.deepcopy(AFTER_PROXY_CALL)
+    payload["data"]["http_response"]["status"] = "200"
+    body, headers = signed(payload)
+
+    with pytest.raises(exceptions.WebhookPayloadError, match="http_response.status"):
+        webhooks.parse(body=body, headers=headers, verify_secret=SECRET)

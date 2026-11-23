@@ -63,9 +63,19 @@ async function sessionWebhook(): Promise<void> {
     // @ts-expect-error not a field of the answer
     overide: null,
   };
+  const bothCalls: SessionWebhookBeforeExecuteResponse = {
+    action: 'continue',
+    // @ts-expect-error an answer changes the tool call or the proxy call, not both
+    override: { tool_call: { arguments: {} }, http_request: { endpoint: '/user' } },
+  };
+  const bothResults: SessionWebhookAfterExecuteResponse = {
+    action: 'continue',
+    // @ts-expect-error an answer changes the tool result or the proxy response, not both
+    override: { tool_response: { data: {} }, http_response: { data: null } },
+  };
   // @ts-expect-error a block needs a message for the agent
   const silent: SessionWebhookAfterExecuteResponse = { action: 'block' };
-  void [misplaced, misspelled, silent];
+  void [misplaced, misspelled, bothCalls, bothResults, silent];
 }
 
 void sessionWebhook;

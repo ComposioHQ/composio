@@ -393,7 +393,9 @@ class SessionWebhooks:
                 f"'{SessionWebhookEventType.AFTER_EXECUTE.value}' event."
             )
         try:
-            adapter.validate_python(event)
+            # Strict: the event is returned as sent, so a field must already have its
+            # declared type. Lax mode would accept `"200"` for an int and hand it back.
+            adapter.validate_python(event, strict=True)
         except pydantic.ValidationError as e:
             # Name the fields, never their values: the event carries the call's data.
             fields = sorted(
