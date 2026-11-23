@@ -559,7 +559,7 @@ export class ToolRouterSession<
    *
    * @example
    * ```typescript
-   * const session = await composio.sessions.create({ toolkits: ['github'] });
+   * const session = await composio.sessions.create('user_123', { toolkits: ['github'] });
    * const { wasConnected, connectedAccount } = await session.ensureConnected('github');
    * if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
    * ```

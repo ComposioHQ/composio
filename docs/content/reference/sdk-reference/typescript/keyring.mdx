@@ -8,8 +8,10 @@ description: "`composio.keyring` — the organization's customer-managed keyring
 Access this class through the `composio.keyring` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.keyring.list();
+const keyring = composio.keyring;
 ```
 
 ## Methods
@@ -27,7 +29,7 @@ them remain openable.
 The organization behind the API key must have an ACTIVE customer keyring
 instance; otherwise the API answers 404.
 
-```typescript
+```typescript signature
 async listTransferKeys(requestOptions?: ComposioRequestOptions): Promise<KeyringTransferKeysResponse>
 ```
 
@@ -43,9 +45,10 @@ async listTransferKeys(requestOptions?: ComposioRequestOptions): Promise<Keyring
 
 **Example**
 
-```typescript
+```typescript nocheck="Seals with the jose library, whose types the checker does not load"
 import { CompactEncrypt, importJWK } from 'jose';
 
+const secret = 'my-client-secret';
 const { activeKid, keys } = await composio.keyring.listTransferKeys();
 const jwk = keys.find(key => key.kid === activeKid)!;
 const sealed = await new CompactEncrypt(new TextEncoder().encode(secret))

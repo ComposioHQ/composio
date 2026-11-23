@@ -8,6 +8,7 @@
  */
 
 import { resolveToolkitCount } from '../../lib/toolkit-count';
+import { stripTagsOutsideCode } from '../../lib/markdown-code-guard';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -231,8 +232,7 @@ function toPlainText(body: string): string {
 /** Clean MDX into Markdown the model can read: drop frontmatter and bare JSX tags. */
 export function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
-    .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+  return stripTagsOutsideCode(body, /<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

@@ -43,9 +43,10 @@ export class Keyring {
    * @returns {Promise<KeyringTransferKeysResponse>} The active key ID and every accepted public JWK, newest first
    *
    * @example
-   * ```typescript
+   * ```typescript nocheck="Seals with the jose library, whose types the checker does not load"
    * import { CompactEncrypt, importJWK } from 'jose';
    *
+   * const secret = 'my-client-secret';
    * const { activeKid, keys } = await composio.keyring.listTransferKeys();
    * const jwk = keys.find(key => key.kid === activeKid)!;
    * const sealed = await new CompactEncrypt(new TextEncoder().encode(secret))

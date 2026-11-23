@@ -22,6 +22,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { resolveToolkitCount } from '../lib/toolkit-count';
+import { stripTagsOutsideCode } from '../lib/markdown-code-guard';
 
 const ROOT = process.cwd();
 const CONTENT = join(ROOT, 'content');
@@ -153,8 +154,7 @@ function toPlainText(body: string): string {
 
 function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
-    .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+  return stripTagsOutsideCode(body, /<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }

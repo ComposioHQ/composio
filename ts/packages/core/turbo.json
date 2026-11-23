@@ -1,0 +1,18 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "$TURBO_ROOT$/docs/content/reference/sdk-reference/typescript/**"
+      ]
+    },
+    "test": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "$TURBO_ROOT$/scripts/docs-reference-check/**",
+        "$TURBO_ROOT$/docs/content/reference/sdk-reference/typescript/index.mdx"
+      ]
+    }
+  }
+}

@@ -139,7 +139,7 @@ describe('source tag', () => {
     expect(await issueOf({ branchSetter: 'writer' })).toEqual(Option.none());
   });
 
-  test('a beta is tagged without either docs check, which never run on a plan-only PR', async () => {
+  test('a beta is tagged without either docs check, which never run on a plan-only PR, but with the reference check', async () => {
     const { fetcher, writes } = fakeController({
       beta: true,
       docs: 'missing',
@@ -187,6 +187,19 @@ describe('source tag', () => {
     ['the docs check failed', { docs: 'failure' }, 'SDK candidate docs'],
     ['the docs check is pending', { docs: 'pending' }, 'SDK candidate docs'],
     ['the docs check is missing', { docs: 'missing' }, 'SDK candidate docs'],
+    ['the reference check failed', { reference: 'failure' }, 'SDK candidate reference'],
+    ['the reference check is pending', { reference: 'pending' }, 'SDK candidate reference'],
+    ['the reference check is missing', { reference: 'missing' }, 'SDK candidate reference'],
+    [
+      'a beta reference check failed',
+      { beta: true, docs: 'missing', reference: 'failure' },
+      'SDK candidate reference',
+    ],
+    [
+      'a beta reference check is missing',
+      { beta: true, docs: 'missing', reference: 'missing' },
+      'SDK candidate reference',
+    ],
     [
       'a re-run of a passed check failed',
       { rerunFailed: 'SDK candidate (typescript)' },

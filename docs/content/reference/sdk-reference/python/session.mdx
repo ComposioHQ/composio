@@ -19,7 +19,7 @@ description: "A Composio session \u2014 the object returned by `composio.create(
 
 Get provider-wrapped tools for execution with your AI framework.  Returns tools configured for this session, wrapped in the format expected by your AI provider (OpenAI, Anthropic, LangChain, etc.).  When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL is intercepted: local tools are executed in-process, remote tools are sent to the backend.
 
-```python
+```python signature
 def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
 ```
 
@@ -39,7 +39,7 @@ def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
 
 Authorize a toolkit for the user and get a connection request.  Initiates the OAuth flow and returns a ConnectionRequest with redirect URL.
 
-```python
+```python signature
 def authorize(toolkit: str, *, callback_url: str | None = ..., alias: str | None = ..., experimental: session_link_params.Experimental | None = ...) -> ConnectionRequest
 ```
 
@@ -62,7 +62,7 @@ def authorize(toolkit: str, *, callback_url: str | None = ..., alias: str | None
 
 Get toolkit connection states for the session.
 
-```python
+```python signature
 def toolkits(*, toolkits: List[str] | None = ..., next_cursor: str | None = ..., limit: int | None = ..., is_connected: bool | None = ..., search: str | None = ...) -> ToolkitConnectionsDetails
 ```
 
@@ -86,7 +86,7 @@ def toolkits(*, toolkits: List[str] | None = ..., next_cursor: str | None = ...,
 
 Search for tools by semantic use case.  Returns relevant tools for the given query with schemas and guidance.
 
-```python
+```python signature
 def search(*, query: str, model: str | None = ...) -> ToolRouterSessionSearchResponse
 ```
 
@@ -107,7 +107,7 @@ def search(*, query: str, model: str | None = ...) -> ToolRouterSessionSearchRes
 
 Execute a tool within the session.  Use `tool_slug=...` (not the direct Tools API's `slug=...`) and `arguments={...}`. The return value is a Pydantic model: read `result.result_type == "completed"` for execution success, `result.model_dump(mode="json")` for a JSON-compatible dictionary, or `result.model_dump_json()` for a JSON string. Unlike provider helper results and `after_execute` modifier dictionaries, it has no `successful` key. This call has no model tool-call ID; retain that ID separately when building provider messages.  For custom tools, accepts the full slug (e.g. "LOCAL_GREP") or the original slug (e.g. "GREP") when that original slug is unique across the session's custom tools and toolkits. Custom tools are executed in-process; remote tools are sent to the Composio backend.
 
-```python
+```python signature
 def execute(tool_slug: str, *, arguments: Dict[str, Any] | None = ..., account: str | None = ..., input_responses: Dict[str, ToolRouterInputResponse] | None = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
@@ -136,7 +136,7 @@ def execute(tool_slug: str, *, arguments: Dict[str, Any] | None = ..., account: 
 
 Execute a Composio meta tool (`COMPOSIO_*`) within the session.  `execute` also runs meta tools. This method only accepts meta tool slugs, so a typo is a type error instead of a failed request. The call is sent to the Composio backend as is: custom tools named in a `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
 
-```python
+```python signature
 def execute_meta(slug: ToolRouterSessionMetaToolSlug, *, arguments: Dict[str, Any] | None = ..., input_responses: Dict[str, ToolRouterInputResponse] | None = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
 ```
 
@@ -174,7 +174,7 @@ print(result.result_type, result.data)
 
 List all local tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
 
-```python
+```python signature
 def local_tools(*, toolkit: str | None = ...) -> List[RegisteredLocalTool]
 ```
 
@@ -194,7 +194,7 @@ def local_tools(*, toolkit: str | None = ...) -> List[RegisteredLocalTool]
 
 List all toolkits of local tools registered in this session.  Returns toolkits with their tools showing final slugs.
 
-```python
+```python signature
 def local_toolkits() -> List[RegisteredLocalToolkit]
 ```
 
@@ -208,7 +208,7 @@ def local_toolkits() -> List[RegisteredLocalToolkit]
 
 Deprecated alias for `local_tools`.
 
-```python
+```python signature
 def custom_tools(*, toolkit: str | None = ...) -> List[RegisteredCustomTool]
 ```
 
@@ -228,7 +228,7 @@ def custom_tools(*, toolkit: str | None = ...) -> List[RegisteredCustomTool]
 
 Deprecated alias for `local_toolkits`.
 
-```python
+```python signature
 def custom_toolkits() -> List[RegisteredCustomToolkit]
 ```
 
@@ -242,7 +242,7 @@ def custom_toolkits() -> List[RegisteredCustomToolkit]
 
 Proxy an API call through Composio's auth layer.
 
-```python
+```python signature
 def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any]] | None = ...) -> ToolRouterSessionProxyExecuteResponse
 ```
 
@@ -270,7 +270,7 @@ def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST',
 
 Partially update the session configuration.  Only the fields provided are changed; omitted fields are preserved. For each policy block `None` removes the stored override (which can increase access: `toolkits=None` restores the unrestricted default, while `toolkits={"enable": []}` denies every app toolkit and is sent as-is). Supplied `tools`, `auth_configs` and `connected_accounts` maps replace the stored map entirely. Inside `manage_connections`, `callback_url=None` removes only the stored callback URL. Experimental `instant` accepts `False` to disable billed access or an object to set its filters; it does not accept `None`. Any object, even one that only sets `return_instant_charge` or `return_prices_in_search`, re-enables Instant usage on a Session set to `False`. `proxy_execute` takes a bool or `{"enable": bool}`; `True` exposes the `COMPOSIO_PROXY_EXECUTE` meta tool, `False` also turns off the sandbox `proxy_execute()` helper, and `None` removes the stored block. `hooks` replaces the whole list of hooks, and `None` removes every hook. `hooks` cannot be combined with `experimental={'session_config_id': ...}` (`hooks=None` counts).  By default the request carries no precondition: the last writer wins. Pass `expected_config_version` (for example this object's `config_version`) to make the update conditional: the API then applies it only when the stored version still matches, and a concurrent change raises `SessionConfigConflictError` (HTTP 409) instead of being overwritten. The API must support the `expected_config_version` field; otherwise it rejects the request with a 400. `expected_config_version=False` is the same as omitting it. The PATCH is never retried by the transport, so a 409 is reported exactly once. On conflict this object stays unchanged: re-fetch the session with `composio.sessions.use(session_id)` and retry against the fresh `config_version`.  `config`, `config_version` and `preload` are refreshed in place only after a successful response, and the updated `config` is returned.  `workbench` is a backwards-compatible alias for `sandbox`. Prefer `sandbox` in new code.  All other parameters use the same types as the generated `client.tool_router.session.patch()` method.
 
-```python
+```python signature
 def update(*, toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., instant: Union[Literal[False], ToolRouterInstantConfig, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools] | None, 'Omit'] = ..., tags: Union[session_patch_params.Tags | None, 'Omit'] = ..., auth_configs: Union[Dict[str, str] | None, 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str]] | None, 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, ToolRouterUpdateManageConnectionsConfig | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, ToolRouterUpdateMultiAccountConfig | None, 'Omit'] = ..., proxy_execute: Union[Union[bool, ToolRouterProxyExecuteConfig] | None, 'Omit'] = ..., hooks: Union[List[ToolRouterHook] | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload | None, 'Omit'] = ..., search: Union[session_patch_params.Search | None, 'Omit'] = ..., execute: Union[session_patch_params.Execute | None, 'Omit'] = ..., experimental: Union[session_patch_params.Experimental | None, ToolRouterUpdateExperimentalConfig | None, 'Omit'] = ..., expected_config_version: Union[int, None, Literal[False]] = ...) -> ToolRouterSessionConfig
 ```
 
@@ -306,7 +306,7 @@ def update(*, toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..
 
 List the configuration history of this session, newest first.  Every `update()` records a new config version; this returns those versions with cursor-based pagination.
 
-```python
+```python signature
 def list_config_history(**query: Unpack[session_config_history_params.SessionConfigHistoryParams]) -> session_config_history_response.SessionConfigHistoryResponse
 ```
 
@@ -334,7 +334,7 @@ for entry in history.items:
 
 Delete this session.  Deleted sessions immediately stop being retrievable or executable. An already-deleted session surfaces the backend 404.
 
-```python
+```python signature
 def delete() -> ToolRouterSessionDeleteResponse
 ```
 
