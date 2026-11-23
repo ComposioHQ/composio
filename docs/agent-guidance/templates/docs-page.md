@@ -68,5 +68,5 @@ the action too. Do not add a section just to say that support might vary.]
 For a reference page, move the lookup details ahead of the mechanism. For a
 how-to or tutorial, keep steps and visible results together and move background
 to links. Existing sections and anchors can supply the slots without adopting
-these headings. See the [Toolkits example](../examples/toolkits.mdx) for an
+these headings. See the [Toolkits page](../../content/docs/toolkits.mdx) for an
 overview that uses a sequence diagram and omits a lifecycle table.
