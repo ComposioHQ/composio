@@ -130,6 +130,48 @@ jobs:
 
   # Type-checks and builds the docs against the packages this release publishes, not the published
   # ones the pull-request docs workflows install. Like the smoke job it runs third-party code with
+
+  # Compiles the TypeScript reference that ships in the @composio/core tarball under dist/docs
+  # against that candidate package, and checks the packed pages match the repository. Both
+  # channels publish it, so the gate requires this check for stable and beta alike. It has no
+  # channel or language condition and always reports: a skipped job reports no success, and the
+  # gate would then refuse a release that publishes no core candidate. Like the docs job it runs
+  # third-party code with this run's runtime token, so it has no upload step and no credentials.
+  reference:
+    name: SDK candidate reference
+    needs: [select-candidates, candidate]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Pass when the release publishes no core candidate
+        if: needs.select-candidates.outputs.core != 'true'
+        run: echo "This release publishes no @composio/core candidate, so no reference ships."
+      - if: needs.select-candidates.outputs.core == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - if: needs.select-candidates.outputs.core == 'true'
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+      - if: needs.select-candidates.outputs.core == 'true'
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - if: needs.select-candidates.outputs.core == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: sdk-candidate-typescript
+          path: sdk-candidate/typescript
+      - name: Install the candidate packages
+        if: needs.select-candidates.outputs.core == 'true'
+        run: bun scripts/sdk-release/candidate-registry.ts sdk-candidate/typescript
+      - name: Check the packaged TypeScript reference against the installed candidate
+        if: needs.select-candidates.outputs.core == 'true'
+        run: pnpm run check:docs-reference --built-package docs/node_modules/@composio/core
+
   # this run's runtime token, so it has no upload step and no credentials.
   docs:
     # The release merge requires this check name to pass on the approved head of a stable release.
@@ -157,9 +199,6 @@ jobs:
           path: sdk-candidate/typescript
       - name: Install the docs against the candidate packages
         run: bun scripts/sdk-release/candidate-registry.ts sdk-candidate/typescript
-      - name: Check the packaged TypeScript reference against the installed candidate
-        if: needs.select-candidates.outputs.core == 'true'
-        run: pnpm run check:docs-reference --built-package docs/node_modules/@composio/core
       - name: Lint TypeScript
         working-directory: docs
         run: bun run lint
