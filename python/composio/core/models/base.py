@@ -45,7 +45,7 @@ def _trace_invocation(name: str, provider: str) -> t.Iterator[None]:
         timestamp=time.time(),
         props={},
         source={
-            "environment": _environment,  # type: ignore
+            "environment": _environment,  # type: ignore[typeddict-item]  # Preserve deployment-provided environment labels.
             "language": "python",
             "service": "sdk",
             "version": __version__,
@@ -110,7 +110,7 @@ class _ResourceBase(WithLogger, metaclass=ResourceMeta):
         return allow_tracking.get()
 
     def sanitize_payload(self, payload: PayloadT) -> PayloadT:
-        return {k: v for k, v in payload.items()}  # type: ignore
+        return t.cast(PayloadT, dict(payload))
 
 
 class AsyncResource(_ResourceBase):
