@@ -27,8 +27,8 @@ describe('Docs product navigation', () => {
       product: 'Platform',
       switcherDescription: 'Build agents with the Composio SDK.',
       landingRoute: '/docs/quickstart',
-      theme: 'dark',
-      themeColor: '#131211',
+      theme: 'light',
+      themeColor: '#ffffff',
     });
   });
 

@@ -118,8 +118,8 @@ export const DOCS_PRODUCTS = {
     product: 'Platform',
     switcherDescription: 'Build agents with the Composio SDK.',
     landingRoute: '/docs/quickstart',
-    theme: 'dark',
-    themeColor: '#131211',
+    theme: 'light',
+    themeColor: '#ffffff',
     routePrefixes: [
       '/docs/agent-setup',
       '/docs/quickstart',
