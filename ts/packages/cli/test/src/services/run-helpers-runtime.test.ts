@@ -302,8 +302,9 @@ describe('run-helpers-runtime', () => {
     });
 
     it('[Given] a proxy redirect changes origin [Then] only the backend receives the session and credentials', async () => {
+      const redirectSessionHeaders = { ...sessionHeaders, 'x-cli-agent-compaction-count': '2' };
       const fetchMock = await proxyOnce(
-        { ...proxyContext, agentSessionHeaders: sessionHeaders },
+        { ...proxyContext, agentSessionHeaders: redirectSessionHeaders },
         jsonResponse({ session_id: 'session-1' }),
         new Response(null, { status: 307, headers: { location: '/proxy-redirect' } }),
         new Response(null, {
@@ -321,6 +322,7 @@ describe('run-helpers-runtime', () => {
       expect(sameOriginHeaders.get('x-cli-agent-session-id')).toBe(
         sessionHeaders['x-cli-agent-session-id']
       );
+      expect(sameOriginHeaders.get('x-cli-agent-compaction-count')).toBe('2');
       expect(sameOriginHeaders.get('x-user-api-key')).toBe('test-key');
 
       expect(crossOrigin?.[0]).toBe('https://storage.example.test/result');
@@ -328,7 +330,7 @@ describe('run-helpers-runtime', () => {
       expect(crossOrigin?.[1].body).toBeUndefined();
       const crossOriginHeaders = new Headers(crossOrigin?.[1].headers);
       const protectedHeaders = [
-        ...Object.keys(sessionHeaders),
+        ...Object.keys(redirectSessionHeaders),
         'x-user-api-key',
         'x-org-id',
         'x-project-id',
