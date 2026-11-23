@@ -1,0 +1,150 @@
+---
+title: "AsyncAuthConfigs"
+description: "Async counterpart to AuthConfigs."
+---
+
+## Methods
+
+### list()
+
+Lists authentication configurations based on provided filter criteria.
+
+```python signature
+async def list(**query: Unpack[auth_config_list_params.AuthConfigListParams]) -> auth_config_list_response.AuthConfigListResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `query?` | `Unpack[auth_config_list_params.AuthConfigListParams]` |
+
+**Returns**
+
+`auth_config_list_response.AuthConfigListResponse`
+
+---
+
+### create()
+
+Create a new auth config
+
+```python signature
+async def create(toolkit: str, options: Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]) -> auth_config_create_response.AuthConfig
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `str` |
+| `options` | `Union[auth_config_create_params.AuthConfig, ComposioManagedAuthConfigOptions]` |
+
+**Returns**
+
+`auth_config_create_response.AuthConfig`
+
+---
+
+### get()
+
+Retrieves a specific authentication configuration by its ID
+
+```python signature
+async def get(nanoid: str) -> auth_config_retrieve_response.AuthConfigRetrieveResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+
+**Returns**
+
+`auth_config_retrieve_response.AuthConfigRetrieveResponse`
+
+---
+
+### update()
+
+Updates an existing authentication configuration.
+
+```python signature
+async def update(nanoid: str, *, options: auth_config_update_params.AuthConfigUpdateParams) -> auth_config_update_response.AuthConfigUpdateResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `options` | `auth_config_update_params.AuthConfigUpdateParams` |
+
+**Returns**
+
+`auth_config_update_response.AuthConfigUpdateResponse`
+
+---
+
+### delete()
+
+Deletes an existing authentication configuration.
+
+```python signature
+async def delete(nanoid: str) -> auth_config_delete_response.AuthConfigDeleteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+
+**Returns**
+
+`auth_config_delete_response.AuthConfigDeleteResponse`
+
+---
+
+### enable()
+
+Enables an existing authentication configuration.
+
+```python signature
+async def enable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+
+**Returns**
+
+`auth_config_update_status_response.AuthConfigUpdateStatus...`
+
+---
+
+### disable()
+
+Disables an existing authentication configuration.
+
+```python signature
+async def disable(nanoid: str) -> auth_config_update_status_response.AuthConfigUpdateStatus...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+
+**Returns**
+
+`auth_config_update_status_response.AuthConfigUpdateStatus...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/auth_configs.py#L23)

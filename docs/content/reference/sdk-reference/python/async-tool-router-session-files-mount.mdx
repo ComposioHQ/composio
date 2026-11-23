@@ -1,0 +1,96 @@
+---
+title: "AsyncToolRouterSessionFilesMount"
+description: "Async counterpart to ToolRouterSessionFilesMount."
+---
+
+## Methods
+
+### list()
+
+List files and directories at the specified path on the session's file mount.
+
+```python signature
+async def list(*, path: str | None = ..., mount_id: str = ..., cursor: str | None = ..., limit: int | None = ...) -> FileListResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `path?` | `str \| None` |
+| `mount_id?` | `str` |
+| `cursor?` | `str \| None` |
+| `limit?` | `int \| None` |
+
+**Returns**
+
+`FileListResponse`
+
+---
+
+### upload()
+
+Upload a file to the session's file mount.
+
+```python signature
+async def upload(input: Union[str, Path, bytes, bytearray], *, remote_path: str | None = ..., mimetype: str | None = ..., mount_id: str = ...) -> AsyncRemoteFile
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `input` | `Union[str, Path, bytes, bytearray]` |
+| `remote_path?` | `str \| None` |
+| `mimetype?` | `str \| None` |
+| `mount_id?` | `str` |
+
+**Returns**
+
+`AsyncRemoteFile`
+
+---
+
+### download()
+
+Download a file from the session's file mount.
+
+```python signature
+async def download(file_path: str, *, mount_id: str = ...) -> AsyncRemoteFile
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `file_path` | `str` |
+| `mount_id?` | `str` |
+
+**Returns**
+
+`AsyncRemoteFile`
+
+---
+
+### delete()
+
+Delete a file or directory at the specified path on the session's file mount.
+
+```python signature
+async def delete(remote_path: str, *, mount_id: str = ...) -> FileDeleteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `remote_path` | `str` |
+| `mount_id?` | `str` |
+
+**Returns**
+
+`FileDeleteResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/tool_router_session_files.py#L31)

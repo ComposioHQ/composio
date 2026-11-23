@@ -1,0 +1,92 @@
+---
+title: "AsyncTriggerSubscription"
+description: "A realtime listener bound to the event loop that created it."
+---
+
+## Methods
+
+### handle()
+
+Register a callback and preserve its type when used as a decorator.
+
+```python signature
+def handle(**filters: Unpack[TriggerEventFilters]) -> Callable[[HandlerT], HandlerT]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `filters?` | `Unpack[TriggerEventFilters]` |
+
+**Returns**
+
+`Callable[[HandlerT], HandlerT]`
+
+---
+
+### connect()
+
+```python signature
+async def connect(timeout: float) -> None
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `timeout` | `float` |
+
+---
+
+### is_alive()
+
+```python signature
+def is_alive() -> bool
+```
+
+**Returns**
+
+`bool`
+
+---
+
+### has_errored()
+
+```python signature
+def has_errored() -> bool
+```
+
+**Returns**
+
+`bool`
+
+---
+
+### wait_forever()
+
+```python signature
+async def wait_forever() -> None
+```
+
+---
+
+### restart()
+
+```python signature
+async def restart() -> None
+```
+
+---
+
+### stop()
+
+Disconnect the websocket and cancel pending handler tasks.
+
+```python signature
+async def stop() -> None
+```
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/subscription.py#L32)

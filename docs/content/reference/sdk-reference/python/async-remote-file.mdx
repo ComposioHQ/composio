@@ -1,0 +1,78 @@
+---
+title: "AsyncRemoteFile"
+description: "AsyncRemoteFile class"
+---
+
+## Properties
+
+| Name | Type |
+|------|------|
+| `expires_at` | `Any` |
+| `mount_relative_path` | `Any` |
+| `sandbox_mount_prefix` | `Any` |
+| `download_url` | `Any` |
+| `filename` | `str` |
+
+## Methods
+
+### buffer()
+
+```python signature
+async def buffer() -> bytes
+```
+
+**Returns**
+
+`bytes`
+
+---
+
+### text()
+
+```python signature
+async def text() -> str
+```
+
+**Returns**
+
+`str`
+
+---
+
+### save()
+
+```python signature
+async def save(path: str | Path | None = ...) -> str
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `path?` | `str \| Path \| None` |
+
+**Returns**
+
+`str`
+
+---
+
+### from_api_response()
+
+```python signature
+def from_api_response(data: FileCreateDownloadURLResponse) -> AsyncRemoteFile
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `data` | `FileCreateDownloadURLResponse` |
+
+**Returns**
+
+`AsyncRemoteFile`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/files.py#L14)

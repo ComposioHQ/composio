@@ -1,0 +1,38 @@
+---
+title: "AsyncExperimentalAPI"
+description: "Async counterpart to ExperimentalAPI."
+---
+
+## Properties
+
+| Name | Type |
+|------|------|
+| [`usage`](/reference/sdk-reference/python/async-experimental-usage) | `AsyncExperimentalUsage` |
+| [`custom_toolkits`](/reference/sdk-reference/python/async-custom-toolkits) | `AsyncCustomToolkits` |
+
+## Methods
+
+### update_acl()
+
+Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.
+
+```python signature
+async def update_acl(nanoid: str, *, allow_all_users: bool | None = ..., allowed_user_ids: List[str] | None = ..., not_allowed_user_ids: List[str] | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `allow_all_users?` | `bool \| None` |
+| `allowed_user_ids?` | `List[str] \| None` |
+| `not_allowed_user_ids?` | `List[str] \| None` |
+
+**Returns**
+
+`connected_account_patch_response.ConnectedAccountPatchRes...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/experimental.py#L136)

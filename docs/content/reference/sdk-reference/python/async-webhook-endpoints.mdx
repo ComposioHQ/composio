@@ -1,0 +1,111 @@
+---
+title: "AsyncWebhookEndpoints"
+description: "Async counterpart to WebhookEndpoints."
+---
+
+## Methods
+
+### list()
+
+List webhook endpoints, optionally filtered by toolkit.
+
+```python signature
+async def list(*, toolkit_slug: str | None = ...) -> webhook_endpoint_list_response.WebhookEndpointListResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit_slug?` | `str \| None` |
+
+**Returns**
+
+`webhook_endpoint_list_response.WebhookEndpointListResponse`
+
+---
+
+### get()
+
+Retrieve a webhook endpoint by id.
+
+```python signature
+async def get(nano_id: str) -> webhook_endpoint_retrieve_response.WebhookEndpointRetriev...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nano_id` | `str` |
+
+**Returns**
+
+`webhook_endpoint_retrieve_response.WebhookEndpointRetriev...`
+
+---
+
+### create()
+
+Create a webhook endpoint for a toolkit and OAuth app.
+
+```python signature
+async def create(*, toolkit_slug: str, client_id: str) -> webhook_endpoint_create_response.WebhookEndpointCreateRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit_slug` | `str` |
+| `client_id` | `str` |
+
+**Returns**
+
+`webhook_endpoint_create_response.WebhookEndpointCreateRes...`
+
+---
+
+### replace()
+
+Replace the stored data of a webhook endpoint (full replacement).
+
+```python signature
+async def replace(nano_id: str, *, data: Dict[str, Any]) -> webhook_endpoint_replace_response.WebhookEndpointReplaceR...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nano_id` | `str` |
+| `data` | `Dict[str, Any]` |
+
+**Returns**
+
+`webhook_endpoint_replace_response.WebhookEndpointReplaceR...`
+
+---
+
+### update()
+
+Merge new data into a webhook endpoint (partial update).
+
+```python signature
+async def update(nano_id: str, *, data: Dict[str, Any]) -> webhook_endpoint_update_response.WebhookEndpointUpdateRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nano_id` | `str` |
+| `data` | `Dict[str, Any]` |
+
+**Returns**
+
+`webhook_endpoint_update_response.WebhookEndpointUpdateRes...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/webhooks.py#L124)
