@@ -136,6 +136,23 @@ export const parsePage = (page: string, source: string) =>
     return fences;
   });
 
+const hasFenceAtLineStart = (line: string) => {
+  let cursor = 0;
+  while (cursor < line.length) {
+    if (' \t>-+*'.includes(line[cursor])) {
+      cursor++;
+      continue;
+    }
+    if (line.startsWith('```', cursor) || line.startsWith('~~~', cursor)) return true;
+
+    const start = cursor;
+    while (line[cursor] >= '0' && line[cursor] <= '9') cursor++;
+    if (cursor === start || (line[cursor] !== '.' && line[cursor] !== ')')) return false;
+    cursor++;
+  }
+  return false;
+};
+
 export const renderAuthoredExample = (example: string, owner: string) =>
   Effect.gen(function* () {
     const body = example.trim();
@@ -147,7 +164,7 @@ export const renderAuthoredExample = (example: string, owner: string) =>
       });
     }
     // Bare JSDoc examples contain TypeScript expressions that need a fence before MDX parses them.
-    const hasFence = /^[ \t]*(?:(?:>|[-+*]|\d+[.)])[ \t]*)*(?:`{3,}|~{3,})/m.test(body);
+    const hasFence = body.split(/[\r\n\u2028\u2029]/).some(hasFenceAtLineStart);
     const source = hasFence ? body : ['```typescript', body, '```'].join('\n');
     const tree = yield* parseTree(owner, source);
     const blocks: Code[] = [];

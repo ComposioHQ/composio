@@ -1,12 +1,14 @@
 import { isAbsolute } from 'node:path';
 import ts from 'typescript6';
 
+const CORE_NAME = '@composio/core';
+
 /**
  * Workspace packages the checker resolves from source. CI installs without building, and a stale
  * local build could pass broken code, so their built output is hidden rather than used as a fallback.
  */
 const sourcePackages = (coreRoot: string) => [
-  { name: '@composio/core', root: ts.sys.resolvePath(coreRoot) },
+  { name: CORE_NAME, root: ts.sys.resolvePath(coreRoot) },
   {
     name: '@composio/json-schema-to-zod',
     root: ts.sys.resolvePath(`${coreRoot}/../json-schema-to-zod`),
@@ -42,7 +44,11 @@ const exportPaths = (name: string, root: string) => {
   for (const [subpath, target] of Object.entries(exports)) {
     const types = exportedTypes(target);
     if (types === undefined) continue;
-    const source = types.replace(/^\.\/dist\/(.*)\.d\.mts$/, './src/$1.ts');
+    // The core build copies the declaration stubs from pack/generated to generated.
+    const source =
+      name === CORE_NAME && types.startsWith('./generated/')
+        ? `./pack/${types.slice(2)}`
+        : types.replace(/^\.\/dist\/(.*)\.d\.mts$/, './src/$1.ts');
     paths[subpath === '.' ? name : `${name}/${subpath.slice(2)}`] = [
       ts.sys.resolvePath(`${root}/${source}`),
     ];
@@ -85,7 +91,6 @@ export const referenceCompilerOptions = (
   types: ['node'],
 });
 
-const CORE_NAME = '@composio/core';
 const isPackageImport = (specifier: string, name: string) =>
   specifier === name || specifier.startsWith(`${name}/`);
 

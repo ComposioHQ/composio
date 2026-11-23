@@ -609,6 +609,12 @@ describe('authored reference fence validation', () => {
       { meta: null, code: 'const valid = true;' },
     ]);
   });
+
+  it('preserves a tilde fence in an ordered list inside a blockquote', () => {
+    const example = '> 12) ~~~ts\n>     const valid = true;\n>     ~~~';
+    const page = classMdxWithMethod([example]);
+    expect(page).toContain('> 12) ~~~typescript\n>     const valid = true;\n>     ~~~');
+  });
 });
 
 it('executes the generated Quick Start with the real SDK and a stub client', async () => {
