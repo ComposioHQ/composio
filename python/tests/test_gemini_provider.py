@@ -10,6 +10,7 @@ Verifies:
 - _process_execution_result helper
 """
 
+import asyncio
 import inspect
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
 
@@ -1008,6 +1009,52 @@ class TestHandleResponseUser:
         )
         assert executed is True
         return [part.function_response.response["user_id"] for part in parts]
+
+    def test_async_manual_execution_uses_selected_fetch_and_schema(self):
+        from composio import AsyncComposio
+        from composio_gemini import GeminiProvider
+        from pydantic import ValidationError
+
+        async def run():
+            async with AsyncComposio(
+                provider=GeminiProvider(), api_key="test-key", allow_tracking=False
+            ) as composio:
+                with (
+                    patch.object(
+                        composio.tools,
+                        "get_raw_composio_tools",
+                        return_value=[self._tool(self.GMAIL)],
+                    ),
+                    patch.object(composio.tools, "execute") as execute,
+                ):
+                    execute.return_value = {"data": {"ok": True}, "successful": True}
+                    await composio.tools.get("alice", tools=[self.GMAIL])
+                    await composio.tools.get("bob", tools=[self.GMAIL])
+                    response = self._response(self.GMAIL)
+
+                    with pytest.raises(ValueError, match="ambiguous"):
+                        await composio.provider.ahandle_response(response)
+                    invalid = self._response(self.GMAIL)
+                    invalid.candidates[0].content.parts[0].function_call.args = {}
+                    with pytest.raises(ValidationError):
+                        await composio.provider.ahandle_response(
+                            invalid, user_id="alice"
+                        )
+                    execute.assert_not_awaited()
+
+                    parts, ran = await composio.provider.ahandle_response(
+                        response, user_id="alice"
+                    )
+                    assert ran and parts[0].function_response.response == {"ok": True}
+                    execute.assert_awaited_once_with(
+                        slug=self.GMAIL,
+                        arguments={"query": "is:unread"},
+                        modifiers=None,
+                        user_id="alice",
+                        dangerously_skip_version_check=True,
+                    )
+
+        asyncio.run(run())
 
     def test_explicit_user_wins_over_last_fetch(self, composio):
         composio.tools.get(user_id="alice", tools=[self.GMAIL])

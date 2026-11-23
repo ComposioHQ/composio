@@ -306,3 +306,20 @@ def test_execute_tool_call_requires_exactly_one_target() -> None:
         provider.execute_tool_call(
             user_id="user_123", session=_session(), function_call=function_call
         )
+
+
+def test_async_vertex_response_awaits_session_and_retains_execution_details() -> None:
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    provider = GoogleProvider()
+    session = _session()
+    session.execute = AsyncMock(return_value=session.execute.return_value)
+    results = asyncio.run(
+        provider.ahandle_response(response=_function_call_response(), session=session)
+    )
+    session.execute.assert_awaited_once_with(
+        tool_slug="COMPOSIO_SEARCH_TOOLS", arguments={"query": "send an email"}
+    )
+    assert results[0]["successful"]
+    assert results[0]["log_id"] == "log-session"

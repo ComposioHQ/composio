@@ -1313,6 +1313,57 @@ class TestExecute:
         self.execute_tool = Mock(return_value=RESPONSE)
         self.provider.set_execute_tool_fn(self.execute_tool)
 
+    def test_async_decision_uses_bound_client_and_preserves_execution_guards(self):
+        from composio import AsyncComposio
+        from composio.core.models._async_tools import AsyncTools
+
+        async def run():
+            with patch.object(AsyncTools, "execute", return_value=RESPONSE) as execute:
+                async with AsyncComposio(
+                    provider=self.provider, api_key="test-key", allow_tracking=False
+                ) as composio:
+                    provider = composio.provider
+                    assert isinstance(provider, TypesafeProvider)
+                    with pytest.raises(TypesafeConfirmationRequiredError):
+                        await provider.aexecute("alice", DESTRUCTIVE)
+                    with pytest.raises(TypesafeIncompleteDecisionError):
+                        await provider.aexecute("alice", PARTIAL)
+                    with pytest.raises(TypesafeAbstainedDecisionError):
+                        await provider.aexecute("alice", ABSTAIN)
+                    execute.assert_not_awaited()
+
+                    assert (
+                        await provider.aexecute("alice", DESTRUCTIVE, confirm=True)
+                        is RESPONSE
+                    )
+                    execute.assert_awaited_once_with(
+                        slug="REPOS_DELETE",
+                        arguments={"priority": "low"},
+                        modifiers=None,
+                        user_id="alice",
+                        dangerously_skip_version_check=True,
+                    )
+                    session = Mock()
+                    session.execute = AsyncMock(
+                        return_value=Mock(
+                            data={"ok": True},
+                            error=None,
+                            result_type="completed",
+                            log_id="log_1",
+                        )
+                    )
+                    result = await provider.aexecute(
+                        session=session, decision=PARTIAL, arguments={"body": "new"}
+                    )
+                    session.execute.assert_awaited_once_with(
+                        tool_slug="ISSUES_CREATE",
+                        arguments={"priority": "low", "body": "new"},
+                    )
+                    assert result["data"] == {"ok": True} and result["successful"]
+                    self.execute_tool.assert_not_called()
+
+        asyncio.run(run())
+
     def test_executes_a_deserialized_call(self) -> None:
         stored = json.loads(json.dumps(CALL))
         assert self.provider.execute("user_1", stored) is RESPONSE

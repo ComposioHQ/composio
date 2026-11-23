@@ -38,6 +38,21 @@ class ConfigToolkit(te.TypedDict, total=False):
     """Specific auth configuration ID for this toolkit."""
 
 
+def _toolkit_ids(
+    toolkits: t.List[t.Union[ConfigToolkit, str]],
+) -> tuple[list[str], list[str]]:
+    """Collect unique toolkit names and auth config IDs in request order."""
+    names: list[str] = []
+    ids: list[str] = []
+    for item in toolkits:
+        config = ConfigToolkit(toolkit=item) if isinstance(item, str) else item
+        if "toolkit" in config and config["toolkit"] not in names:
+            names.append(config["toolkit"])
+        if "auth_config_id" in config and config["auth_config_id"] not in ids:
+            ids.append(config["auth_config_id"])
+    return names, ids
+
+
 class MCPCreateResponse(CustomCreateResponse):
     """MCP Create Response with generate method (extends CustomCreateResponse)."""
 
@@ -201,35 +216,7 @@ class MCP(Resource):
             raise ValidationError("At least one toolkit configuration is required")
 
         try:
-            # Normalize toolkits to MCPToolkitConfig format
-            normalized_toolkit_configs: t.List[ConfigToolkit] = []
-            for toolkit in toolkits:
-                if isinstance(toolkit, str):
-                    # Convert string to MCPToolkitConfig
-                    normalized_toolkit_configs.append(ConfigToolkit(toolkit=toolkit))
-                else:
-                    # Already MCPToolkitConfig, use as-is
-                    normalized_toolkit_configs.append(toolkit)
-
-            # Extract toolkits and prepare for API call
-            toolkit_configs = normalized_toolkit_configs
-
-            # Get unique toolkits and auth config IDs
-            toolkit_names = []
-            auth_config_ids = []
-
-            for toolkit_config in toolkit_configs:
-                if (
-                    "toolkit" in toolkit_config
-                    and toolkit_config["toolkit"] not in toolkit_names
-                ):
-                    toolkit_names.append(toolkit_config["toolkit"])
-
-                if (
-                    "auth_config_id" in toolkit_config
-                    and toolkit_config["auth_config_id"] not in auth_config_ids
-                ):
-                    auth_config_ids.append(toolkit_config["auth_config_id"])
+            toolkit_names, auth_config_ids = _toolkit_ids(toolkits)
 
             # Use the allowed_tools parameter instead of individual toolkit configs
             # (`custom_tools` is the deprecated create-time alias)
@@ -381,35 +368,7 @@ class MCP(Resource):
                 update_params["name"] = name
 
             if toolkits is not None:
-                # Normalize toolkits to ConfigToolkit format (same as create method)
-                normalized_toolkit_configs: t.List[ConfigToolkit] = []
-                for toolkit in toolkits:
-                    if isinstance(toolkit, str):
-                        # Convert string to ConfigToolkit
-                        normalized_toolkit_configs.append(
-                            ConfigToolkit(toolkit=toolkit)
-                        )
-                    else:
-                        # Already ConfigToolkit, use as-is
-                        normalized_toolkit_configs.append(toolkit)
-
-                # Extract toolkits and prepare for API call
-                toolkit_names = []
-                auth_config_ids = []
-
-                for toolkit_config in normalized_toolkit_configs:
-                    if (
-                        "toolkit" in toolkit_config
-                        and toolkit_config["toolkit"] not in toolkit_names
-                    ):
-                        toolkit_names.append(toolkit_config["toolkit"])
-
-                    if (
-                        "auth_config_id" in toolkit_config
-                        and toolkit_config["auth_config_id"] not in auth_config_ids
-                    ):
-                        auth_config_ids.append(toolkit_config["auth_config_id"])
-
+                toolkit_names, auth_config_ids = _toolkit_ids(toolkits)
                 update_params["toolkits"] = toolkit_names
                 update_params["auth_config_ids"] = auth_config_ids
 

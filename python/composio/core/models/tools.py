@@ -335,6 +335,28 @@ def tool_execution_response_from_session(
     return result
 
 
+def _prepare_tool_schemas(
+    raw_tools: list[Tool],
+    cache: dict[str, Tool],
+    modifiers: Modifiers | None,
+) -> list[Tool]:
+    """Cache pristine execution schemas and apply discovery modifiers to independent copies."""
+    cache.update({tool.slug: tool.model_copy(deep=True) for tool in raw_tools})
+    tools = [tool.model_copy(deep=True) for tool in raw_tools]
+    if modifiers is None:
+        return tools
+    return [
+        apply_modifier_by_type(
+            modifiers=modifiers,
+            toolkit=_toolkit_slug(tool, "unknown"),
+            tool=tool.slug,
+            type="schema",
+            schema=tool,
+        )
+        for tool in tools
+    ]
+
+
 class Tools(Resource, t.Generic[TTool, TToolCollection]):
     """
     Tools class definition
@@ -536,31 +558,7 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             if not cursor:
                 break
 
-        self._tool_schemas.update(
-            {tool.slug: tool.model_copy(deep=True) for tool in tools_list}
-        )
-
-        tools_list = [tool.model_copy(deep=True) for tool in tools_list]
-
-        # Apply schema modifiers if provided
-        if modifiers is not None:
-            from composio.core.models._modifiers import apply_modifier_by_type
-
-            tools_list = [
-                t.cast(
-                    Tool,
-                    apply_modifier_by_type(
-                        modifiers=modifiers,
-                        toolkit=_toolkit_slug(tool, "unknown"),
-                        tool=tool.slug,
-                        type="schema",
-                        schema=tool,
-                    ),
-                )
-                for tool in tools_list
-            ]
-
-        return tools_list
+        return _prepare_tool_schemas(tools_list, self._tool_schemas, modifiers)
 
     def _get(
         self,
@@ -580,25 +578,8 @@ class Tools(Resource, t.Generic[TTool, TToolCollection]):
             scopes=scopes,
             limit=limit,
         )
-        self._tool_schemas.update(
-            {tool.slug: tool.model_copy(deep=True) for tool in raw_tools}
-        )
+        tools_list = _prepare_tool_schemas(raw_tools, self._tool_schemas, modifiers)
 
-        tools_list = [tool.model_copy(deep=True) for tool in raw_tools]
-        if modifiers is not None:
-            tools_list = [
-                apply_modifier_by_type(
-                    modifiers=modifiers,
-                    toolkit=_toolkit_slug(tool, "unknown"),
-                    tool=tool.slug,
-                    type="schema",
-                    schema=tool,
-                )
-                for tool in tools_list
-            ]
-
-        # Always enhance schema descriptions (type hints and required notes)
-        # regardless of dangerously_allow_auto_upload_download_files
         for tool in tools_list:
             tool.input_parameters = self._file_helper.enhance_schema_descriptions(
                 schema=tool.input_parameters,

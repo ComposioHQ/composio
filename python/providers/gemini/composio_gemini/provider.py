@@ -29,6 +29,10 @@ from composio.utils.shared import (
     validate_and_serialize_tool_arguments,
 )
 
+if t.TYPE_CHECKING:
+    from composio.core.provider.base import AsyncToolCallSession
+
+
 # google-genai is only needed for handle_response (backward compat)
 try:
     from google.genai import types as genai_types
@@ -136,6 +140,12 @@ class _WrappedTool(t.NamedTuple):
     aliases: ToolSchemaAliases
     args_schema: t.Type[BaseModel]
 
+    def arguments_for(self, kwargs: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+        arguments = validate_and_serialize_tool_arguments(
+            self.args_schema, normalize_tool_arguments(_to_serializable(kwargs))
+        )
+        return self.aliases.restore_arguments(arguments)
+
 
 def _process_execution_result(result: t.Any) -> t.Dict:
     """Process a tool execution result into a dict suitable for Gemini function responses."""
@@ -155,6 +165,14 @@ def _process_execution_result(result: t.Any) -> t.Dict:
     return result
 
 
+def _response_part(name: str, result: t.Any) -> t.Any:
+    return genai_types.Part(
+        function_response=genai_types.FunctionResponse(
+            name=name, response=_process_execution_result(result)
+        )
+    )
+
+
 class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini"):
     """Composio toolset for Google AI Python Gemini framework.
 
@@ -163,6 +181,8 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
     ``GenerateContentConfig(tools=...)`` and the SDK will auto-execute tool
     calls in the ``chat.send_message()`` loop.
     """
+
+    async_tool_execution = "native"
 
     __schema_skip_defaults__ = True
 
@@ -175,6 +195,12 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # fetched for, so ``handle_response`` runs a call as the caller's user,
         # with the caller's schema, rather than whoever fetched the tool last.
         self._wrapped_tools: t.Dict[object, t.Dict[str, _WrappedTool]] = {}
+
+    def _for_async_client(self) -> "GeminiProvider":
+        bound = super()._for_async_client()
+        bound._lock = threading.Lock()
+        bound._wrapped_tools = {}
+        return bound
 
     def wrap_tool(
         self,
@@ -195,29 +221,26 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # would be required.
         args_schema = json_schema_to_model(aliases.schema, skip_default=False)
         context = _execution_context(execute_tool)
+        wrapped = _WrappedTool(execute_tool, aliases, args_schema)
         with self._lock:
-            self._wrapped_tools.setdefault(context, {})[tool.slug] = _WrappedTool(
-                execute_tool, aliases, args_schema
-            )
+            self._wrapped_tools.setdefault(context, {})[tool.slug] = wrapped
 
         def function(**kwargs: t.Any) -> t.Dict:
-            """Composio tool execution wrapper."""
-            kwargs = _to_serializable(kwargs)
-            kwargs = validate_and_serialize_tool_arguments(
-                args_schema,
-                normalize_tool_arguments(kwargs),
+            return _process_execution_result(
+                execute_tool(tool.slug, wrapped.arguments_for(kwargs))
             )
-            kwargs = aliases.restore_arguments(kwargs)
-            result = execute_tool(tool.slug, kwargs)
+
+        async_execute = getattr(type(execute_tool), "aexecute", None)
+
+        async def async_function(**kwargs: t.Any) -> t.Dict:
+            assert async_execute is not None
+            result = await async_execute(
+                execute_tool, tool.slug, wrapped.arguments_for(kwargs)
+            )
             return _process_execution_result(result)
 
-        # Create a real function object (passes inspect.isfunction)
-        action_func = pytypes.FunctionType(
-            function.__code__,
-            globals=globals(),
-            name=tool.slug,
-            closure=function.__closure__,
-        )
+        action_func = async_function if async_execute is not None else function
+        action_func.__name__ = tool.slug
 
         # Build typed signature from JSON schema.
         # Uses get_pydantic_signature_format_from_schema_params (not
@@ -285,6 +308,42 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
             are ``genai_types.Part`` objects ready to send back, and *executed*
             is ``True`` if any functions were executed.
         """
+        parts = [
+            _response_part(name, execute_tool(slug=name, arguments=arguments))
+            for name, execute_tool, arguments in self._response_calls(
+                response, user_id=user_id, session=session
+            )
+        ]
+        return parts, bool(parts)
+
+    async def ahandle_response(
+        self,
+        response: t.Any,
+        *,
+        user_id: t.Optional[str] = None,
+        session: t.Optional["AsyncToolCallSession"] = None,
+    ) -> tuple[list, bool]:
+        """Execute a Gemini response using the tools fetched from AsyncComposio."""
+        parts = []
+        for name, execute_tool, arguments in self._response_calls(
+            response, user_id=user_id, session=session
+        ):
+            async_execute = getattr(type(execute_tool), "aexecute", None)
+            if async_execute is None:
+                raise RuntimeError(
+                    "Fetch tools with AsyncComposio before calling ahandle_response()."
+                )
+            result = await async_execute(execute_tool, slug=name, arguments=arguments)
+            parts.append(_response_part(name, result))
+        return parts, bool(parts)
+
+    def _response_calls(
+        self,
+        response: t.Any,
+        *,
+        user_id: t.Optional[str],
+        session: t.Optional[ToolCallSession],
+    ) -> t.Iterator[tuple[str, AgenticProviderExecuteFn, t.Dict[str, t.Any]]]:
         target = (
             None
             if user_id is None and session is None
@@ -294,14 +353,14 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         )
 
         if not HAS_GENAI:
-            return [], False
+            return
 
         if not (hasattr(response, "candidates") and response.candidates):
-            return [], False
+            return
 
         candidate = response.candidates[0]
         if not (hasattr(candidate, "content") and candidate.content.parts):
-            return [], False
+            return
 
         function_calls = [
             part.function_call
@@ -318,34 +377,16 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
                 for fc in function_calls
                 for wrapped in self._wrapped_tools.values()
             ):
-                return [], False
+                return
             wrapped_tools = self._wrapped_tools_for(target)
             calls = [
-                (fc, *wrapped_tools[fc.name])
+                (fc, wrapped_tools[fc.name])
                 for fc in function_calls
                 if fc.name in wrapped_tools
             ]
 
-        function_responses: list = []
-        for fc, execute_tool, aliases, args_schema in calls:
-            # Same validate -> serialize -> alias sequence as the AFC callable.
-            arguments = validate_and_serialize_tool_arguments(
-                args_schema,
-                normalize_tool_arguments(_to_serializable(dict(fc.args))),
-            )
-            arguments = aliases.restore_arguments(arguments)
-            result = execute_tool(slug=fc.name, arguments=arguments)
-            processed = _process_execution_result(result)
-
-            function_responses.append(
-                genai_types.Part(
-                    function_response=genai_types.FunctionResponse(
-                        name=fc.name, response=processed
-                    )
-                )
-            )
-
-        return function_responses, bool(function_responses)
+        for fc, wrapped in calls:
+            yield fc.name, wrapped.execute_tool, wrapped.arguments_for(dict(fc.args))
 
     def _wrapped_tools_for(
         self,

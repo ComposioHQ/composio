@@ -19,12 +19,16 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
     Composio toolset for CrewiAI framework.
     """
 
+    async_tool_execution = "native"
+
     def wrap_tool(
         self,
         tool: Tool,
         execute_tool: AgenticProviderExecuteFn,
     ) -> BaseTool:
         """Wrap a tool as a CrewAI tool."""
+
+        async_execute = getattr(type(execute_tool), "aexecute", None)
 
         class Wrapper(BaseTool):
             def _validate_kwargs(
@@ -58,6 +62,21 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
                         "data": None,
                     }
 
+        class AsyncWrapper(Wrapper):
+            def to_structured_tool(self):
+                # CrewAI converts tools to this form before an agent invokes them.
+                structured = super().to_structured_tool()
+                structured.func = self._arun
+                return structured
+
+            async def _arun(self, **kwargs):
+                assert async_execute is not None
+                return await async_execute(
+                    execute_tool,
+                    slug=tool.slug,
+                    arguments=normalize_tool_arguments(kwargs),
+                )
+
         # Inline internal $ref/$defs before building the Pydantic model. The
         # converter types a referenced property as Any, so CrewAI would show the
         # model an untyped argument. Dangling references degrade to a permissive
@@ -66,7 +85,8 @@ class CrewAIProvider(AgenticProvider[BaseTool, list[BaseTool]], name="crewai"):
             tool.input_parameters,
             on_unresolved="sentinel",
         )
-        return Wrapper(
+        wrapper_type = AsyncWrapper if async_execute is not None else Wrapper
+        return wrapper_type(
             name=tool.slug,
             description=tool.description,
             args_schema=json_schema_to_model(

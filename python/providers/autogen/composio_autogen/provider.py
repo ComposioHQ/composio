@@ -100,6 +100,8 @@ class AutogenProvider(
     Composio toolset for Autogen framework.
     """
 
+    async_tool_execution = "worker_thread"
+
     def _process_function_name_for_registration(
         self,
         input_string: str,

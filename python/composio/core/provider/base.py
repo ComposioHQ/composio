@@ -7,6 +7,7 @@ Defines the barebones provider metaclass that needs to be subclassed for every p
 from __future__ import annotations
 
 import typing as t
+from copy import copy
 
 import typing_extensions as te
 
@@ -35,6 +36,26 @@ class ExecuteToolFn(t.Protocol):
             - successful: Whether the tool was successful.
         """
         ...
+
+
+class AsyncExecuteToolFn(t.Protocol):
+    async def __call__(
+        self,
+        slug: str,
+        arguments: dict,
+        *,
+        modifiers: Modifiers | None = None,
+        user_id: str | None = None,
+    ) -> ToolExecutionResponse: ...
+
+
+class AsyncToolCallSession(t.Protocol):
+    async def execute(
+        self,
+        tool_slug: str,
+        *,
+        arguments: dict[str, t.Any] | None = None,
+    ) -> t.Any: ...
 
 
 class ToolCallSession(t.Protocol):
@@ -81,6 +102,44 @@ class BaseProvider(t.Generic[TTool, TToolCollection]):
     def __init__(self, **kwargs: te.Unpack[BaseProviderConfig]) -> None:
         self.skip_default = kwargs.get("schema_config", {}).get(
             "skip_defaults", self.__schema_skip_defaults__
+        )
+
+    def _for_async_client(self) -> te.Self:
+        """Copy provider configuration while binding execution to a single client.
+
+        Stateful providers can override this hook to start with empty tool
+        registries. A sync execution callback belongs to its original client.
+        """
+        bound = copy(self)
+        bound.__dict__.pop("execute_tool", None)
+        return bound
+
+    aexecute_tool: AsyncExecuteToolFn
+
+    async def aexecute_tool_for_target(
+        self,
+        *,
+        user_id: str | None,
+        session: AsyncToolCallSession | None,
+        slug: str,
+        arguments: dict[str, t.Any],
+        modifiers: Modifiers | None = None,
+    ) -> ToolExecutionResponse:
+        if (user_id is None) == (session is None):
+            raise ValueError("Provide exactly one of user_id or session")
+        if session is None:
+            return await self.aexecute_tool(
+                slug=slug, arguments=arguments, modifiers=modifiers, user_id=user_id
+            )
+        if modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
+
+        from composio.core.models.tools import tool_execution_response_from_session
+
+        return tool_execution_response_from_session(
+            await session.execute(tool_slug=slug, arguments=arguments)
         )
 
     def set_execute_tool_fn(self, execute_tool_fn: ExecuteToolFn) -> None:
