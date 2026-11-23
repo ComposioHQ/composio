@@ -50,6 +50,18 @@ function transformOutsideInlineCode(text: string, transform: (segment: string) =
   return out;
 }
 
+export function stripTagsOutsideCode(markdown: string, pattern: RegExp): string {
+  return replaceOutsideCode(markdown, segment => {
+    let current = segment;
+    let next = current.replace(pattern, '');
+    while (next !== current) {
+      current = next;
+      next = current.replace(pattern, '');
+    }
+    return current;
+  });
+}
+
 export function replaceOutsideCode(
   markdown: string,
   transform: (segment: string) => string
