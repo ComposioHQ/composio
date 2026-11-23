@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
 import { NavVersionSelector } from '@/components/version-selector';
 import { ProductNavTitle } from '@/components/product-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -11,7 +12,7 @@ export function baseOptions(): BaseLayoutProps {
       transparentMode: 'top',
     },
     slots: { navTitle: ProductNavTitle },
-    themeSwitch: { enabled: false },
+    themeSwitch: { component: <ThemeToggle /> },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,

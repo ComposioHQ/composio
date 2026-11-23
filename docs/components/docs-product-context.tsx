@@ -14,7 +14,6 @@ import { flushSync } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   classifyDocsProduct,
-  DOCS_PRODUCTS,
   serializeDocsProductCookie,
   shouldAnimateDocsProductSwitch,
   type DocsProduct,
@@ -46,23 +45,6 @@ function writeProductCookie(product: DocsProduct): void {
   document.cookie = serializeDocsProductCookie(product);
 }
 
-/**
- * The product theme is derived state, not a user preference: apply it directly
- * to the document element instead of routing it through next-themes' shared
- * `theme` localStorage key, whose cross-tab storage events would repaint other
- * tabs that are viewing the other product.
- */
-function applyProductTheme(product: DocsProduct): void {
-  const { theme, themeColor } = DOCS_PRODUCTS[product];
-  const root = document.documentElement;
-  root.classList.remove('light', 'dark');
-  root.classList.add(theme);
-  root.style.colorScheme = theme;
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', themeColor);
-}
-
 export function DocsProductProvider({
   initialProduct,
   children,
@@ -81,10 +63,6 @@ export function DocsProductProvider({
 
   const inferredProduct = classifyDocsProduct(pathname);
   const product = pendingProduct ?? inferredProduct ?? persistedProduct;
-
-  useEffect(() => {
-    applyProductTheme(product);
-  }, [product]);
 
   const persistProduct = useCallback((nextProduct: DocsProduct) => {
     writeProductCookie(nextProduct);
@@ -123,7 +101,6 @@ export function DocsProductProvider({
         flushSync(() => {
           setPersistedProduct(nextProduct);
           setPendingProduct(nextProduct);
-          applyProductTheme(nextProduct);
         });
         if (href !== pathname) router.push(href);
       };
