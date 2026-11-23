@@ -8,8 +8,10 @@ description: "Toolkits class  Toolkits are a collection of tools that can be use
 Access this class through the `composio.toolkits` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.toolkits.get({});
+const toolkits = composio.toolkits;
 ```
 
 ## Methods
@@ -19,7 +21,7 @@ const result = await composio.toolkits.get({});
 Authorizes a user to use a toolkit.
 This method will create an auth config if one doesn't exist and initiate a connection request.
 
-```typescript
+```typescript signature
 async authorize(userId: string, toolkitSlug: string, authConfigId?: string, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
@@ -39,6 +41,7 @@ async authorize(userId: string, toolkitSlug: string, authConfigId?: string, requ
 **Example**
 
 ```typescript
+const userId = 'user_123';
 const connectionRequest = await composio.toolkits.authorize(userId, 'github');
 ```
 
@@ -49,7 +52,7 @@ const connectionRequest = await composio.toolkits.authorize(userId, 'github');
 Retrieves the version changelog of every toolkit (the last 10 versions
 per toolkit).
 
-```typescript
+```typescript signature
 async changelog(requestOptions?: ComposioRequestOptions): Promise<ToolkitChangelogResponse>
 ```
 
@@ -79,7 +82,7 @@ Retrieves a specific toolkit by its slug identifier.
 
 **Overload 1**
 
-```typescript
+```typescript signature
 async get(slug: string, requestOptions?: ComposioRequestOptions): Promise<ToolkitRetrieveResponse>
 ```
 
@@ -96,7 +99,7 @@ async get(slug: string, requestOptions?: ComposioRequestOptions): Promise<Toolki
 
 **Overload 2**
 
-```typescript
+```typescript signature
 async get(query?: ToolkitListParams, requestOptions?: ComposioRequestOptions): Promise<ToolKitListResponse>
 ```
 
@@ -126,7 +129,7 @@ console.log(githubToolkit.authConfigDetails); // Authentication configuration de
 
 Retrieves the fields required for creating an auth config for a toolkit.
 
-```typescript
+```typescript signature
 async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
@@ -148,7 +151,7 @@ async getAuthConfigCreationFields(toolkitSlug: string, authScheme: AuthSchemeTyp
 
 Retrieves the fields required for initiating a connected account for a toolkit.
 
-```typescript
+```typescript signature
 async getConnectedAccountInitiationFields(toolkitSlug: string, authScheme: AuthSchemeType, options?: { requiredOnly?: boolean }): Promise<ToolkitAuthFieldsResponse>
 ```
 
@@ -173,7 +176,7 @@ Retrieves several toolkits by slug in a single request.
 Returns the same transformed shape as `composio.toolkits.get({ ... })`.
 Unknown slugs are simply absent from the result.
 
-```typescript
+```typescript signature
 async getMany(slugs: string[], params?: ToolkitGetManyParams, requestOptions?: ComposioRequestOptions): Promise<ToolKitListResponse>
 ```
 
@@ -205,7 +208,7 @@ Retrieves all toolkit categories available in the Composio SDK.
 This method fetches the complete list of categories from the Composio API
 and transforms the response to use camelCase property naming.
 
-```typescript
+```typescript signature
 async listCategories(requestOptions?: ComposioRequestOptions): Promise<ToolkitRetrieveCategoriesResponse>
 ```
 
@@ -239,7 +242,7 @@ values and the default the API assumes.
 Pass a dimension and a value as `grantContext` to
 `composio.toolkits.recommendScopes()` to tailor the recommendation.
 
-```typescript
+```typescript signature
 async listGrantContexts(toolkitSlug: string, params?: ToolkitListGrantContextsParams, requestOptions?: ComposioRequestOptions): Promise<ToolkitListGrantContextsResponse>
 ```
 
@@ -278,7 +281,7 @@ The answer comes in two variants: `leastPrivilege` (narrowest documented
 scope per requirement) and `fewest` (smallest set covering everything).
 Pass `toolkitVersion` from a previous answer to pin the computation.
 
-```typescript
+```typescript signature
 async recommendScopes(toolkitSlug: string, params: ToolkitRecommendScopesParams, requestOptions?: ComposioRequestOptions): Promise<ToolkitRecommendScopesResponse>
 ```
 

@@ -38,7 +38,8 @@ tools = composio.tools.get("user-123", toolkits=["github"])
 result = composio.tools.execute(
     "GITHUB_GET_REPOS",
     arguments={"owner": "composio"},
-    user_id="user-123"
+    user_id="user-123",
+    version="20250909_00",
 )
 ```
 
@@ -48,7 +49,7 @@ result = composio.tools.execute(
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L288)
 
-```python
+```python signature
 @before_execute(modifier: BeforeExecute | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
@@ -60,7 +61,7 @@ Build an execution-result modifier.  Your callback receives `(tool, toolkit, res
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L239)
 
-```python
+```python signature
 @after_execute(modifier: AfterExecute | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
@@ -72,7 +73,7 @@ Build a `Modifier` for the file-upload hook (same scoping pattern as `before_exe
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L327)
 
-```python
+```python signature
 @before_file_upload(modifier: BeforeFileUploadLike | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...
@@ -82,7 +83,7 @@ def my_modifier(...):
 
 [View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_modifiers.py#L385)
 
-```python
+```python signature
 @schema_modifier(modifier: SchemaModifier | None = ..., tools: List[str] | None = ..., toolkits: List[str] | None = ...)
 def my_modifier(...):
     ...

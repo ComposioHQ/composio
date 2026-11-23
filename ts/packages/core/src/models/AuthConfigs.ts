@@ -104,15 +104,19 @@ export class AuthConfigs {
    * @returns {Promise<CreateAuthConfigResponse>} Created auth config
    *
    * @example
+   * import { AuthConfigTypes } from '@composio/core';
+   *
    * // Use a specific Composio-managed app; omit managedAppId for the toolkit's default
    * const { composioManagedAuth } = await composio.toolkits.get('slack');
-   * const slackAuthConfig = await authConfigs.create('slack', {
+   * const slackAuthConfig = await composio.authConfigs.create('slack', {
    *   type: AuthConfigTypes.COMPOSIO_MANAGED,
    *   managedAppId: composioManagedAuth?.find(app => !app.isDefault)?.managedAppId,
    * });
    *
    * @example
-   * const authConfig = await authConfigs.create('my-toolkit', {
+   * import { AuthConfigTypes, AuthSchemeTypes } from '@composio/core';
+   *
+   * const authConfig = await composio.authConfigs.create('my-toolkit', {
    *   type: AuthConfigTypes.CUSTOM,
    *   name: 'My Custom Auth Config',
    *   authScheme: AuthSchemeTypes.API_KEY,
@@ -232,11 +236,14 @@ export class AuthConfigs {
    *     apiKey: 'new-api-key-value'
    *   }
    * });
+   * ```
    *
+   * @example
+   * ```typescript
    * // Update a default auth config with new scopes
    * const updatedConfig = await composio.authConfigs.update('auth_abc123', {
    *   type: 'default',
-   *   scopes: ['read:user', 'repo']
+   *   scopes: 'read:user,repo'
    * });
    * ```
    */

@@ -1,0 +1,29 @@
+---
+title: "Suppressions"
+---
+
+## Methods
+
+### tsNoCheck()
+
+```typescript
+// @ts-nocheck
+const count: number = 'not a number';
+```
+
+### noErrors()
+
+```typescript
+// @noErrors
+const label: string = 42;
+```
+
+```typescript
+// @ts-ignore
+composio.ignoredMember();
+```
+
+```typescript
+// @ts-expect-error
+composio.expectedErrorMember();
+```

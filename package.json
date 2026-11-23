@@ -46,7 +46,7 @@
     "typecheck": "turbo typecheck --filter=./ts/packages/**",
     "typecheck:examples": "turbo typecheck --filter='./ts/examples/*'",
     "lint:examples": "turbo lint --filter='./ts/examples/*'",
-    "lint": "effect-tsgo oxlint --type-aware -c .oxlintrc.json ts test tools/oxlint tsdown.config.base.ts && pnpm run lint:antislop",
+    "lint": "effect-tsgo oxlint --type-aware -c .oxlintrc.json ts test tools/oxlint scripts/docs-reference-check tsdown.config.base.ts && pnpm run lint:antislop",
     "lint:antislop": "node scripts/check-antislop.mjs && pnpm run lint:effect-rules",
     "lint:effect-rules": "oxlint ts/packages/cli/src",
     "lint:antislop:scan": "ast-grep scan --config sgconfig.yml --error=no-suppress-all --error=unused-suppression",
@@ -78,7 +78,10 @@
     "clean:workspace": "pnpm turbo clean",
     "typecheck:agent-workflow": "bun node_modules/typescript/bin/tsc -p tsconfig.agent-workflow.json",
     "test:sdk-release": "bun test test/sdk-release-*.test.ts",
-    "typecheck:sdk-release": "bun node_modules/typescript/bin/tsc -p tsconfig.sdk-release.json"
+    "typecheck:sdk-release": "bun node_modules/typescript/bin/tsc -p tsconfig.sdk-release.json",
+    "check:docs-reference": "bun scripts/docs-reference-check/main.ts",
+    "test:docs-reference-check": "bun test test/docs-reference-check.test.ts",
+    "typecheck:docs-reference-check": "bun node_modules/typescript/bin/tsc -p tsconfig.docs-reference-check.json"
   },
   "devEngines": {
     "runtime": {
@@ -102,8 +105,10 @@
     "@effect/platform-bun": "catalog:",
     "@effect/tsgo": "0.70.0",
     "@manypkg/get-packages": "3.1.0",
+    "@mdx-js/mdx": "^3.1.1",
     "@oxlint/plugins": "1.94.0",
     "@types/bun": "catalog:",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^26.6.6",
     "@types/semver": "^7.8.0",
     "@vitest/ui": "catalog:",
@@ -115,12 +120,14 @@
     "oxlint-tsgolint": "7.0.2007",
     "prettier": "^3.10.1",
     "publint": "catalog:",
+    "remark-gfm": "^4.0.1",
     "semver": "^7.8.6",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "turbo": "^2.11.11",
     "typescript": "catalog:",
     "typescript6": "catalog:ts6",
+    "unist-util-visit": "^5.1.0",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
