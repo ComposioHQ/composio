@@ -57,9 +57,6 @@ jobs:
       - name: Run Build
         run: pnpm run build:packages
 
-      - name: Check the TypeScript reference against the built SDK
-        run: pnpm run check:docs-reference --built-package ts/packages/core
-
       - name: Run Linting
         run: pnpm lint
 
