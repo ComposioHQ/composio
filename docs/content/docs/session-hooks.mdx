@@ -1,0 +1,401 @@
+---
+title: Hooks
+experimental: true
+description: Check, block, or change a session's tool calls before they run and after they return
+keywords: [hooks, session hooks, webhook, session webhook, before_execute, after_execute, fallback_action, guardrails]
+---
+
+A **hook** is attached to a session and runs when your agent calls a tool. It can run before the tool call (`before_execute`) or after it (`after_execute`), and it decides whether the call or its result goes through.
+
+Each hook has a handler, which is what does the checking. There are three:
+
+| Handler | What it does | Runs |
+|---|---|---|
+| `condition_check` | Blocks a call or result that matches a condition you write in natural language | Before or after |
+| `prompt_injection_check` | Blocks a result that contains a prompt injection | After |
+| `webhook` | Sends the call to your own endpoint, which can let it run, block it, or change it | Before or after |
+
+Composio evaluates the first two for you, and [Firewall](/docs/firewall) covers them. This page covers the `webhook` handler.
+
+## Webhooks
+
+With a `webhook` handler, Composio sends each tool call to an endpoint you run and waits for its answer. Your endpoint can let the call run, block it, or change it. Use it when a check needs your own code or data, for example:
+
+- blocking emails to anyone who isn't in your CRM
+- adding a compliance address to every outgoing email
+- removing API keys from results before your agent reads them
+
+<Callout type="info">
+Webhooks are available on the Enterprise plan.
+</Callout>
+
+### Setting up a webhook URL
+
+A project has one session webhook URL. Every `webhook` hook in the project's sessions sends its requests there.
+
+An organization admin sets the URL in the dashboard, under [Sessions → Webhooks](https://dashboard.composio.dev/~/project/sessions/webhook?utm_source=docs&utm_medium=content&utm_campaign=session-hooks). When you save the URL, the dashboard shows a signing secret. Copy it then, because the dashboard shows it only once.
+
+Composio signs every request with that secret, and your endpoint uses it to check that a request really came from Composio. If the secret leaks, rotate it from the same page. The old secret stops working right away.
+
+### Adding a webhook hook to a session
+
+Add a hook with a `webhook` handler when you create the session. This one sends every Gmail call to your endpoint before it runs:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+<Callout type="info">
+The `webhook` handler is not yet available in the Python SDK. Use the [Create a session](/reference/api-reference/tool-router/postToolRouterSession) endpoint.
+</Callout>
+</Tab>
+<Tab value="TypeScript">
+<Callout type="info">
+The `webhook` handler is not yet available in the TypeScript SDK. Use the [Create a session](/reference/api-reference/tool-router/postToolRouterSession) endpoint.
+</Callout>
+</Tab>
+<Tab value="API">
+{/* code-example: unchecked-api rule="api-body-schema" operation="POST /api/v3.1/tool_router/session" reason="the committed OpenAPI spec doesn't list the webhook hook handler until it ships" */}
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "check_outgoing_email",
+        "type": "before_execute",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "webhook",
+          "fallback_action": "block"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
+
+`fallback_action` is required. It says what happens to the call when your endpoint can't answer: `block` stops the call, and `continue` lets it run unchecked. See [Fallbacks](#fallbacks) for when it applies.
+
+A session can have one `webhook` hook of each type: one `before_execute` and one `after_execute`. Creating the session fails with a `400` if the project has no session webhook URL.
+
+### Receiving webhooks
+
+Composio sends your endpoint a `POST` request for each call the hook applies to. Here's the request for a `before_execute` hook on a tool call:
+
+```json
+{
+  "id": "msg_3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90",
+  "type": "composio.session_hook.before_execute",
+  "timestamp": "2026-11-20T12:00:00.000Z",
+  "metadata": {
+    "project_id": "pr_123",
+    "session_id": "trs_123",
+    "user_id": "user_123",
+    "hook_id": "check_outgoing_email"
+  },
+  "data": {
+    "type": "tool_execute",
+    "tool_call": {
+      "toolkit_slug": "gmail",
+      "tool_slug": "GMAIL_SEND_EMAIL",
+      "toolkit_version": "20261101_00",
+      "connected_account_id": "ca_123",
+      "arguments": {
+        "recipient_email": "jane@customer.com",
+        "subject": "Pricing"
+      }
+    }
+  }
+}
+```
+
+An `after_execute` request has the type `composio.session_hook.after_execute`, and `data` also carries what the tool returned, in `tool_response`.
+
+In your endpoint, pass the raw body and headers to `sessions.webhooks.parse()`. It verifies the signature with your secret and returns the typed request. Then answer with HTTP `200` and a JSON body that says what to do with the call.
+
+This endpoint lets every call run:
+
+{/* code-example: no-api reason="parse() runs inside your webhook endpoint; it verifies and types the incoming request in the SDK" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import os
+
+from composio import (
+    Composio,
+    SessionWebhookAfterExecuteEvent,
+    SessionWebhookAfterExecuteResponse,
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+)
+
+composio = Composio()
+
+
+def before_execute(
+    hook: SessionWebhookBeforeExecuteEvent,
+) -> SessionWebhookBeforeExecuteResponse:
+    return {"action": "continue"}
+
+
+def after_execute(
+    hook: SessionWebhookAfterExecuteEvent,
+) -> SessionWebhookAfterExecuteResponse:
+    return {"action": "continue"}
+
+
+@app.post("/composio/session-webhook")
+async def session_webhook(request: Request):
+    # Pass the raw body: the signature covers its exact bytes.
+    hook = composio.sessions.webhooks.parse(
+        body=await request.body(),
+        headers=request.headers,
+        verify_secret=os.environ["COMPOSIO_SESSION_WEBHOOK_SECRET"],
+    )
+
+    if hook["type"] == "composio.session_hook.before_execute":
+        return before_execute(hook)
+    return after_execute(hook)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import {
+  Composio,
+  type SessionWebhookAfterExecuteEvent,
+  type SessionWebhookAfterExecuteResponse,
+  type SessionWebhookBeforeExecuteEvent,
+  type SessionWebhookBeforeExecuteResponse,
+} from '@composio/core';
+
+const composio = new Composio();
+
+function beforeExecute(hook: SessionWebhookBeforeExecuteEvent): SessionWebhookBeforeExecuteResponse {
+  return { action: 'continue' };
+}
+
+function afterExecute(hook: SessionWebhookAfterExecuteEvent): SessionWebhookAfterExecuteResponse {
+  return { action: 'continue' };
+}
+
+// Next.js App Router, Hono, or any Fetch-style handler
+export async function POST(request: Request) {
+  // Pass the raw body: the signature covers its exact bytes.
+  const hook = await composio.sessions.webhooks.parse({
+    body: await request.text(),
+    headers: request.headers,
+    verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
+  });
+
+  if (hook.type === 'composio.session_hook.before_execute') {
+    return Response.json(beforeExecute(hook));
+  }
+  return Response.json(afterExecute(hook));
+}
+```
+</Tab>
+</Tabs>
+
+If the signature doesn't match, `parse()` raises an error. Your framework then answers with an error status, and the hook's `fallback_action` applies.
+
+The sections below fill in `before_execute` and `after_execute`.
+
+#### Blocking a call
+
+To stop a call, answer with `action: "block"` and a `message`. Your agent sees the message, so say why the call was stopped.
+
+{/* code-example: no-api reason="builds the answer your webhook endpoint returns; it runs in your own server, not through the API" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import (
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+)
+
+
+def before_execute(
+    hook: SessionWebhookBeforeExecuteEvent,
+) -> SessionWebhookBeforeExecuteResponse:
+    data = hook["data"]
+    if data["type"] == "tool_execute" and data["tool_call"]["tool_slug"] == "GMAIL_SEND_EMAIL":
+        recipient = data["tool_call"]["arguments"]["recipient_email"]
+        if not recipient.endswith("@acme.com"):
+            return {"action": "block", "message": f"{recipient} is outside acme.com"}
+    return {"action": "continue"}
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import type {
+  SessionWebhookBeforeExecuteEvent,
+  SessionWebhookBeforeExecuteResponse,
+} from '@composio/core';
+
+function beforeExecute(hook: SessionWebhookBeforeExecuteEvent): SessionWebhookBeforeExecuteResponse {
+  const { data } = hook;
+  if (data.type === 'tool_execute' && data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL') {
+    const recipient = String(data.tool_call.arguments.recipient_email);
+    if (!recipient.endsWith('@acme.com')) {
+      return { action: 'block', message: `${recipient} is outside acme.com` };
+    }
+  }
+  return { action: 'continue' };
+}
+```
+</Tab>
+</Tabs>
+
+The blocked call looks like any other call a hook blocked, with your `message` in `error`. See the [result of a blocked call](/docs/firewall#custom-prompt-checks) in Firewall. An `after_execute` hook can block the same way: the tool has already run, and your agent doesn't get its result.
+
+#### Changing a tool's arguments
+
+To run the call with different arguments, answer with `action: "continue"` and an `override`. The arguments you send replace the original ones in full, so start from the originals and change what you need.
+
+{/* code-example: no-api reason="builds the answer your webhook endpoint returns; it runs in your own server, not through the API" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+from composio import (
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+)
+
+
+def before_execute(
+    hook: SessionWebhookBeforeExecuteEvent,
+) -> SessionWebhookBeforeExecuteResponse:
+    data = hook["data"]
+    if data["type"] == "tool_execute" and data["tool_call"]["tool_slug"] == "GMAIL_SEND_EMAIL":
+        arguments = {**data["tool_call"]["arguments"], "bcc": ["compliance@acme.com"]}
+        return {"action": "continue", "override": {"tool_call": {"arguments": arguments}}}
+    return {"action": "continue"}
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import type {
+  SessionWebhookBeforeExecuteEvent,
+  SessionWebhookBeforeExecuteResponse,
+} from '@composio/core';
+
+function beforeExecute(hook: SessionWebhookBeforeExecuteEvent): SessionWebhookBeforeExecuteResponse {
+  const { data } = hook;
+  if (data.type === 'tool_execute' && data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL') {
+    const args = { ...data.tool_call.arguments, bcc: ['compliance@acme.com'] };
+    return { action: 'continue', override: { tool_call: { arguments: args } } };
+  }
+  return { action: 'continue' };
+}
+```
+</Tab>
+</Tabs>
+
+The tool runs with the changed arguments, and any `after_execute` hook sees them too.
+
+#### Changing a tool's response
+
+In an `after_execute` hook, the `override` replaces what the tool returned before your agent reads it. This removes anything that looks like an API key from every tool result:
+
+{/* code-example: no-api reason="builds the answer your webhook endpoint returns; it runs in your own server, not through the API" */}
+<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
+<Tab value="Python">
+```python
+import json
+import re
+
+from composio import (
+    SessionWebhookAfterExecuteEvent,
+    SessionWebhookAfterExecuteResponse,
+)
+
+
+def after_execute(
+    hook: SessionWebhookAfterExecuteEvent,
+) -> SessionWebhookAfterExecuteResponse:
+    data = hook["data"]
+    if data["type"] != "tool_execute":
+        return {"action": "continue"}
+
+    result = json.dumps(data["tool_response"]["data"])
+    redacted = re.sub(r"sk-[A-Za-z0-9]{20,}", "[redacted]", result)
+    return {
+        "action": "continue",
+        "override": {"tool_response": {"data": json.loads(redacted)}},
+    }
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import type {
+  SessionWebhookAfterExecuteEvent,
+  SessionWebhookAfterExecuteResponse,
+} from '@composio/core';
+
+function afterExecute(hook: SessionWebhookAfterExecuteEvent): SessionWebhookAfterExecuteResponse {
+  const { data } = hook;
+  if (data.type !== 'tool_execute') {
+    return { action: 'continue' };
+  }
+
+  const result = JSON.stringify(data.tool_response.data);
+  const redacted = result.replace(/sk-[A-Za-z0-9]{20,}/g, '[redacted]');
+  return { action: 'continue', override: { tool_response: { data: JSON.parse(redacted) } } };
+}
+```
+</Tab>
+</Tabs>
+
+#### Proxy calls
+
+A hook also runs on [proxy calls](/docs/extending-sessions/proxy-execute) to a toolkit's API. For those, `data.type` is `proxy_execute`, and the call is in `http_request` instead of `tool_call`. You change it with `override.http_request`, and change its result with `override.http_response`.
+
+For every field of the request and of the answer, see the [Session Webhooks reference](/reference/api-reference/session-webhooks).
+
+### Other details
+
+#### Timeouts
+
+Composio waits 3 seconds for your endpoint to answer. Set `timeout_ms` on the handler to change that, to anything from `100` to `5000` milliseconds. Your agent waits for the answer too, so keep the endpoint fast.
+
+```json
+{ "type": "webhook", "fallback_action": "block", "timeout_ms": 1000 }
+```
+
+#### Fallbacks
+
+The hook's `fallback_action` applies when Composio gets no usable answer. That happens when your endpoint:
+
+- takes longer than the timeout
+- can't be reached
+- answers with a status other than `200`, including a redirect
+- sends a body Composio can't read as an answer, such as a misspelled field
+- sends a body over 1 MB
+
+It also applies when the call itself is over 1 MB, because Composio doesn't send it.
+
+Composio sends each request once and doesn't retry it. When the fallback applies, the hook shows as `unavailable` in the call's hook results, with the reason in `detail`:
+
+```json
+{ "id": "check_outgoing_email", "status": "unavailable", "detail": "The webhook endpoint timed out" }
+```
+
+Use `block` when a missed check must never let a call through, and `continue` when your agent should keep working while your endpoint is down.
+
+#### Order of execution
+
+A call can have a `webhook` hook and Firewall checks of the same type. The `webhook` hook runs first, both before and after the call. The Firewall checks then run on the call or result as your endpoint left it, so a change you make is checked too.
+
+A `webhook` hook runs on the same calls as any other hook. See [which tool calls are checked](/docs/firewall#which-tool-calls-are-checked).
+
+#### Verifying a request without the SDK
+
+Each request carries three headers: `webhook-id`, `webhook-timestamp`, and `webhook-signature`. To verify one yourself, compute an HMAC-SHA256 of `{webhook-id}.{webhook-timestamp}.{raw body}` with your secret, and base64-encode it. The request is authentic if `v1,` followed by that value appears in `webhook-signature`.
+
+The header can hold more than one signature, separated by spaces. Accept the request if any one of them matches.

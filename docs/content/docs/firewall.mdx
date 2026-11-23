@@ -24,6 +24,8 @@ Firewall is available on paid plans, with [usage-based pricing](https://composio
 
 You can build custom prompt checks with **hooks**. A hook is attached to a session and runs when your agent calls a tool. It can run before the tool call (`before_execute`) or after it (`after_execute`).
 
+Firewall's checks are evaluated by Composio. To run a check in your own code instead, see the `webhook` handler in [Hooks](/docs/session-hooks).
+
 To write a custom prompt check, use the `condition_check` hook. It lets you block a tool call or its result if it matches a condition you write in natural language.
 
 Here's a `before_execute` hook that stops your agent from sharing internal pricing with customers:
