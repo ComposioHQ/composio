@@ -8,9 +8,7 @@ import { ComposioClientSingleton } from 'src/services/composio-clients';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { resolveConnectedAccountForToolkit } from 'src/services/connected-account-selection';
 import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
-import { TerminalUI } from 'src/services/terminal-ui';
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
-import { ToolsExecutor } from 'src/services/tools-executor';
 import type { ToolExecuteParams } from 'src/services/tools-executor';
 import { injectSingleFileArgument, parseArguments, resolveInput } from './tools.execute.arguments';
 
@@ -29,11 +27,8 @@ export type RunToolsExecuteParams = {
   skipChecks: boolean;
 };
 
-export type SharedRunToolsExecuteParams = Omit<RunToolsExecuteParams, 'slug' | 'data' | 'file'>;
-
-export type ResolvedExecuteContext = {
-  readonly ui: TerminalUI;
-  readonly executor: ToolsExecutor;
+export type PreparedExecuteCall = {
+  readonly slug: string;
   readonly resolvedProject: {
     readonly orgId: string;
     readonly projectId: string;
@@ -56,24 +51,12 @@ export const toolkitProjectScope = (resolvedProject: ToolkitProjectScope): Toolk
   projectId: resolvedProject.projectId,
 });
 
-type ResolvedSchemaContext = {
-  readonly ui: TerminalUI;
-  readonly resolvedProject: {
-    readonly orgId: string;
-    readonly projectId: string;
-    readonly projectType: 'CONSUMER' | 'DEVELOPER';
-    readonly consumerUserId?: string;
-  };
-};
-
-export const resolveExecuteContext = (
-  params: RunToolsExecuteParams,
+export const prepareExecuteCall = (
+  params: Pick<RunToolsExecuteParams, 'slug' | 'data' | 'file' | 'account' | 'surface'>,
   /** The acting user; `--parallel` resolves it once for all its tools. */
   user: ReturnType<typeof actingUser> = actingUser()
 ) =>
   Effect.gen(function* () {
-    const ui = yield* TerminalUI;
-    const executor = yield* ToolsExecutor;
     const input = yield* resolveInput(params.data);
     const parsedArgs = yield* parseArguments(input);
     const runOutputDirectory = yield* APP_CONFIG.RUN_OUTPUT_DIR;
@@ -128,8 +111,7 @@ export const resolveExecuteContext = (
       params.surface === 'root' && (yield* resolveConsumerExecutionTransport) === 'dashboard';
 
     return {
-      ui,
-      executor,
+      slug: params.slug,
       resolvedProject,
       args,
       resolvedUserId,
@@ -161,20 +143,13 @@ export const resolveExecuteContext = (
               }
             : undefined,
       },
-    } satisfies ResolvedExecuteContext;
+    } satisfies PreparedExecuteCall;
   });
 
-export const resolveSchemaContext = (params: SharedRunToolsExecuteParams) =>
-  Effect.gen(function* () {
-    const resolvedProject = yield* resolveCommandProject({
-      mode: params.projectMode,
-      projectName:
-        params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
-    });
-    const ui = yield* TerminalUI;
-
-    return {
-      ui,
-      resolvedProject,
-    } satisfies ResolvedSchemaContext;
+export const resolveExecuteSchemaProject = (
+  params: Pick<RunToolsExecuteParams, 'projectName' | 'surface' | 'projectMode'>
+) =>
+  resolveCommandProject({
+    mode: params.projectMode,
+    projectName: params.surface === 'root' ? undefined : Option.getOrUndefined(params.projectName),
   });
