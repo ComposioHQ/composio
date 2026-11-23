@@ -8,8 +8,10 @@ description: "Experimental class reference"
 Access this class through the `composio.experimental` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.experimental.list();
+const experimental = composio.experimental;
 ```
 
 ## Properties
@@ -45,7 +47,7 @@ Resolution rule (deny wins):
  3. requesting `userId` in `allowedUserIds` → ALLOW
  4. otherwise → DENY
 
-```typescript
+```typescript signature
 async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
 ```
 
@@ -96,6 +98,5 @@ list **replaces** the list, it does not extend it:
 - `notAllowedUserIds: []` → **clears the deny list**, which silently
   re-grants access to users you previously blocked. Always pair an
   empty deny list with a deliberate audit of the allow side.
-```
 
 ---

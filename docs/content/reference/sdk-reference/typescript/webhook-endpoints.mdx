@@ -5,11 +5,13 @@ description: "`composio.webhooks.endpoints` — inbound webhook endpoints. Each 
 
 ## Usage
 
-Access this class through the `composio.webhookEndpoints` property:
+Access this class through the `composio.webhooks.endpoints` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.webhookEndpoints.list();
+const endpoints = composio.webhooks.endpoints;
 ```
 
 ## Methods
@@ -19,7 +21,7 @@ const result = await composio.webhookEndpoints.list();
 Create a webhook endpoint for a toolkit + OAuth app pair. Returns the
 existing endpoint when one already exists for that pair.
 
-```typescript
+```typescript signature
 async create(params: WebhookEndpointCreateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
@@ -49,7 +51,7 @@ const endpoint = await composio.webhooks.endpoints.create({
 
 Retrieve a webhook endpoint by its nano id.
 
-```typescript
+```typescript signature
 async get(nanoId: string, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
@@ -77,7 +79,7 @@ console.log(endpoint.webhookUrl);
 
 List webhook endpoints, optionally filtered by toolkit.
 
-```typescript
+```typescript signature
 async list(query?: WebhookEndpointListParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpointListResponse>
 ```
 
@@ -105,7 +107,7 @@ const { items } = await composio.webhooks.endpoints.list({ toolkitSlug: 'slack' 
 Replace the setup fields of a webhook endpoint. All required setup fields
 for the toolkit must be provided — this is the initial configuration.
 
-```typescript
+```typescript signature
 async replace(nanoId: string, params: WebhookEndpointReplaceParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 
@@ -135,7 +137,7 @@ await composio.webhooks.endpoints.replace('we_abc123', {
 
 Merge setup fields into a webhook endpoint. Omitted fields are preserved.
 
-```typescript
+```typescript signature
 async update(nanoId: string, params: WebhookEndpointUpdateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookEndpoint>
 ```
 

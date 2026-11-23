@@ -5,11 +5,13 @@ description: "`composio.experimental.usage` — metering for the project the API
 
 ## Usage
 
-Access this class through the `composio.usage` property:
+Access this class through the `composio.experimental.usage` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.usage.list();
+const usage = composio.experimental.usage;
 ```
 
 ## Methods
@@ -19,7 +21,7 @@ const result = await composio.usage.list();
 Usage for one metering entity type, grouped by a dimension.
 **Experimental — shape may change in future releases.**
 
-```typescript
+```typescript signature
 async breakdown(entityType: string, params?: UsageBreakdownParams, requestOptions?: ComposioRequestOptions): Promise<UsageBreakdownResponse>
 ```
 
@@ -51,7 +53,7 @@ const byUser = await composio.experimental.usage.breakdown('sessions', {
 Usage totals per metering entity type for a time range.
 **Experimental — shape may change in future releases.**
 
-```typescript
+```typescript signature
 async summary(params?: UsageSummaryParams, requestOptions?: ComposioRequestOptions): Promise<UsageSummaryResponse>
 ```
 

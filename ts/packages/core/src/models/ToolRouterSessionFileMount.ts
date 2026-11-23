@@ -200,12 +200,14 @@ export class ToolRouterSessionFilesMount {
    * @example
    * ```typescript
    * // From native File (e.g. from input[type=file])
-   * await session.experimental.files.upload(fileInput.files[0]);
+   * const file = new File(['hello world'], 'hello.txt', { type: 'text/plain' });
+   * await session.experimental.files.upload(file);
    * ```
    *
    * @example
    * ```typescript
    * // From raw buffer
+   * const buffer = new TextEncoder().encode(JSON.stringify({ hello: 'world' }));
    * await session.experimental.files.upload(buffer, { remotePath: 'data.json', mimetype: 'application/json' });
    * ```
    */

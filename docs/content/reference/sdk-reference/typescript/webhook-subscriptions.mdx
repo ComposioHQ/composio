@@ -5,11 +5,13 @@ description: "`composio.webhooks.subscriptions` — the project's outbound webho
 
 ## Usage
 
-Access this class through the `composio.webhookSubscriptions` property:
+Access this class through the `composio.webhooks.subscriptions` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.webhookSubscriptions.list();
+const subscriptions = composio.webhooks.subscriptions;
 ```
 
 ## Methods
@@ -18,7 +20,7 @@ const result = await composio.webhookSubscriptions.list();
 
 Delete a webhook subscription. Deliveries stop immediately.
 
-```typescript
+```typescript signature
 async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscriptionDeleteResponse>
 ```
 
@@ -45,7 +47,7 @@ await composio.webhooks.subscriptions.delete('whs_abc123');
 
 Retrieve a webhook subscription by id.
 
-```typescript
+```typescript signature
 async get(id: string, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscription>
 ```
 
@@ -73,7 +75,7 @@ console.log(subscription.enabledEvents);
 
 List the project's webhook subscriptions.
 
-```typescript
+```typescript signature
 async list(query?: WebhookSubscriptionListParams, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscriptionListResponse>
 ```
 
@@ -102,7 +104,7 @@ console.log(items[0]?.webhookUrl);
 List the event types a subscription can enable, with the payload
 versions each one supports.
 
-```typescript
+```typescript signature
 async listEventTypes(requestOptions?: ComposioRequestOptions): Promise<WebhookSubscriptionEventTypesResponse>
 ```
 
@@ -130,7 +132,7 @@ console.log(items.map(item => item.eventType));
 Rotate the signing secret of a webhook subscription. The previous secret
 stops validating, so update your verifier with the returned `secret`.
 
-```typescript
+```typescript signature
 async rotateSecret(id: string, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscriptionRotateSecretResponse>
 ```
 
@@ -160,7 +162,7 @@ Create or update the project webhook subscription.
 If a subscription already exists it is updated in place, otherwise a new
 one is created. By default this subscribes to V3 trigger message events.
 
-```typescript
+```typescript signature
 async set(params: WebhookSubscriptionSetParams, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscription>
 ```
 
@@ -178,6 +180,8 @@ async set(params: WebhookSubscriptionSetParams, requestOptions?: ComposioRequest
 **Example**
 
 ```typescript
+const APP_URL = 'https://your-app.com';
+
 const subscription = await composio.webhooks.subscriptions.set({
   webhookUrl: `${APP_URL}/webhooks/composio`,
   enabledEvents: ['composio.trigger.message', 'composio.connected_account.expired'],
@@ -191,7 +195,7 @@ process.env.COMPOSIO_WEBHOOK_SECRET = subscription.secret;
 
 Update an existing webhook subscription. Only the provided fields change.
 
-```typescript
+```typescript signature
 async update(id: string, params: WebhookSubscriptionUpdateParams, requestOptions?: ComposioRequestOptions): Promise<WebhookSubscription>
 ```
 

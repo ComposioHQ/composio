@@ -609,12 +609,6 @@ export class Tools<
    *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
    * });
    *
-   * // Get tools from specific toolkits
-   * const githubTools = await composio.tools.getRawComposioTools({
-   *   toolkits: ['github'],
-   *   limit: 10
-   * });
-   *
    * // Get tools with schema transformation
    * const customizedTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
@@ -1326,6 +1320,8 @@ export class Tools<
    *
    * @example Execute with SDK-level toolkit versions configuration
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // If toolkitVersions are set during Composio initialization, no need to pass version
    * const composio = new Composio({ toolkitVersions: { github: '20250909_00' } });
    * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
@@ -1518,7 +1514,7 @@ export class Tools<
    * ```typescript
    * // Get all available tools as an enum
    * const toolsEnum = await composio.tools.getToolsEnum();
-   * console.log(toolsEnum.items);
+   * console.log(toolsEnum); // ['GITHUB_GET_REPOS', ...]
    * ```
    */
   async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {

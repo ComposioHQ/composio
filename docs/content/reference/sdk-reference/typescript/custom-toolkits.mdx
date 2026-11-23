@@ -8,8 +8,10 @@ description: "`composio.customToolkits` — toolkits your project registers from
 Access this class through the `composio.customToolkits` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.customToolkits.list();
+const customToolkits = composio.customToolkits;
 ```
 
 ## Methods
@@ -24,7 +26,7 @@ project, or to a user ID to make it private to that user. `mcpUrl`,
 toolkit instead. For a private toolkit, `connectLink` is where to send
 that user to connect.
 
-```typescript
+```typescript signature
 async create(params: CustomToolkitCreateParams, requestOptions?: ComposioRequestOptions): Promise<CustomToolkitCreateResponse>
 ```
 
@@ -62,7 +64,7 @@ accounts are revoked in background jobs (`revokeJobIds`).
 
 Composio-managed toolkits cannot be deleted; the API answers 403.
 
-```typescript
+```typescript signature
 async delete(slug: string, requestOptions?: ComposioRequestOptions): Promise<CustomToolkitDeleteResponse>
 ```
 
@@ -91,7 +93,7 @@ console.log(result.connectedAccountsDeleted);
 Re-fetches the tool definitions of a custom toolkit from its remote MCP
 server. Call it when automatic sync fails or the remote tools change.
 
-```typescript
+```typescript signature
 async sync(slug: string, params?: CustomToolkitSyncParams, requestOptions?: ComposioRequestOptions): Promise<CustomToolkitSyncResponse>
 ```
 
@@ -126,7 +128,7 @@ fields keep their current value.
 On a project with 2FA enabled, updating a private toolkit requires the
 `userId` it is private to.
 
-```typescript
+```typescript signature
 async update(slug: string, params: CustomToolkitUpdateParams, requestOptions?: ComposioRequestOptions): Promise<CustomToolkitUpdateResponse>
 ```
 
@@ -168,7 +170,7 @@ field copy) when the project already owns a toolkit with this slug.
 re-sending them unchanged is a no-op, and changing them fails with a 409.
 Delete and re-register the toolkit instead, which revokes its connections.
 
-```typescript
+```typescript signature
 async upsert(params: CustomToolkitUpsertParams, requestOptions?: ComposioRequestOptions): Promise<CustomToolkitUpsertResponse>
 ```
 
