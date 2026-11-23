@@ -113,14 +113,33 @@ function readPage(url: string): string {
 function anchors(text: string): string[] {
   const slugger = new GithubSlugger();
   let fenced = false;
-  return text.split('\n').flatMap(line => {
+  const headings = text.split('\n').flatMap(line => {
     if (line.startsWith('```')) fenced = !fenced;
     const heading = !fenced && line.match(/^#{1,6} (.+)$/);
     return heading ? [slugger.slug(heading[1])] : [];
   });
+  return [...headings, ...Array.from(text.matchAll(/<span id="([^"]+)"/g), match => match[1])];
 }
 
 describe('Sessions task pages', () => {
+  test('the brief overview retains section bookmarks leading to their task pages', () => {
+    const overview = readPage('/docs/sessions');
+    expect(overview.match(/^## .+$/gm)).toEqual(['## Choose a task']);
+    for (const [hash, destination] of Object.entries({
+      'what-comes-in-a-session': '/docs/sessions/create-and-reuse#what-comes-in-a-session',
+      users: '/docs/sessions/create-and-reuse#users',
+      authentication: '/docs/sessions/connections#authentication',
+      'tools-and-toolkits': '/docs/sessions/tool-access#tools-and-toolkits',
+      'meta-tools': '/docs/sessions/loading-tools#meta-tools',
+      sandbox: '/docs/sessions/sandbox-settings#sandbox',
+    })) {
+      const [path, section] = destination.split('#');
+      expect(anchors(overview)).toContain(hash);
+      expect(overview).toContain(`](${path})`);
+      expect(anchors(readPage(path))).toContain(section);
+    }
+  });
+
   test('the canonical folder route is not shadowed by a legacy redirect', () => {
     const config = readFileSync(join(import.meta.dir, '../../next.config.mjs'), 'utf8');
     expect(config).not.toMatch(/source:\s*['"]\/docs\/sessions['"]/);

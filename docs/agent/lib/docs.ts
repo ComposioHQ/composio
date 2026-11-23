@@ -239,7 +239,7 @@ export function toCleanMarkdown(raw: string): string {
 
 /**
  * Extract a page's section anchors from its Markdown headings, so the assistant
- * can link a specific section (e.g. `/docs/sessions#users`) instead
+ * can link a specific section (e.g. `/docs/sessions/create-and-reuse#users`) instead
  * of just the page. Anchor slugs match the docs' heading-id convention.
  */
 export function extractSections(markdown: string): { title: string; anchor: string }[] {

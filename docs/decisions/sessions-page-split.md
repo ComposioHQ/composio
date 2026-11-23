@@ -12,12 +12,17 @@ The reader-facing name describes a reusable access policy. The SDK and API still
 
 Palash requested an overview linking to every Sessions task, reached by clicking the **Sessions** folder header rather than a separate **What is a session?** child. The folder now uses its native Fumadocs index link, with eight task pages beneath it. The existing index page is titled **Sessions overview** and adds a task directory.
 
-Pending Brendan's decisions, the conceptual content and existing URLs, anchors, and inbound links have not been removed or rewritten. The page previously labeled **What is a session?** already lives at `/docs/sessions`; it has no separate task URL in this PR. Its pre-split URL, `/docs/how-composio-works`, still serves the existing bookmark map.
+Brendan chose a brief introduction with task links and kept `/docs/sessions` as the overview URL. The detailed concepts move into the existing task pages:
 
-Open questions for Brendan:
+| Former overview section | Destination |
+| --- | --- |
+| Definition, What comes in a session (including diagram), Users | Create and reuse |
+| Authentication and managed authentication for your own tools | Select connections |
+| Tools and Toolkits | Restrict tool access |
+| Meta tools and SessionFlow | Load tools |
+| Sandbox | Set sandbox options |
 
-- How much conceptual content should remain on the overview: all current sections, only the definition and diagram, or a short introduction with task links?
-- Should the legacy `/docs/how-composio-works` URL redirect to the overview, or keep its bookmark map? Should remaining inbound links be updated? If overview content is shortened, where should the existing section bookmarks lead?
+Existing `/docs/sessions` section hashes remain as anchors on their corresponding task links. Its pre-split URL, `/docs/how-composio-works`, still serves the existing bookmark map. No new redirect is needed for the retained overview URL. Agent guidance points directly to the relocated details; the search dialog's configuration suggestion points to Restrict tool access instead of the old configuration bookmark page.
 
 ## Content and navigation before the split
 

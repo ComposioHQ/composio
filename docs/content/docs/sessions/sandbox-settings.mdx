@@ -4,6 +4,12 @@ description: Disable the sandbox or choose its compute tier for a session
 keywords: [session, tools, toolkits, configuration]
 ---
 
+## Sandbox
+
+Handle large responses and bulk operations in the remote sandbox. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
+
+The sandbox is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task. Learn more about [sandboxes here](/docs/sandbox/remote).
+
 ## Disabling the sandbox
 
 By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:

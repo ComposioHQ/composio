@@ -8,7 +8,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 
 ## Core model
 
-- **Session** — the runtime context for one user. \`composio.create(userId)\` (or the canonical \`composio.sessions.create(...)\`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [What is a session?](/docs/sessions)
+- **Session** — the runtime context for one user. \`composio.create(userId)\` (or the canonical \`composio.sessions.create(...)\`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [Session concepts](/docs/sessions/create-and-reuse#what-comes-in-a-session)
 - **Tool access**: filter toolkits, tools, and tags, or require approval. → [Restrict tool access](/docs/sessions/tool-access)
 - **Saved session policies**: start or update a session from a named access policy created in Dashboard Sessions → Configs. SDK/API names such as \`sessionConfigId\` are unchanged. → [Saved session policies](/docs/sessions/saved-session-policies)
 - **Tool loading**: preload tools, use the direct-tools preset, or read the provider-formatted list with \`session.tools()\`. → [Load tools](/docs/sessions/loading-tools)

@@ -4,6 +4,45 @@ description: Create, resume, or delete a session for your user
 keywords: [session, tools, toolkits, configuration]
 ---
 
+A **session** is the runtime context for an agentic run: the scoped environment an AI agent works in while it acts for one of your users. You create it with `composio.create(userId)`, and it ties together the user, the toolkits available, authentication, and connected accounts. By default it gives the agent meta tools to discover, authenticate, and execute app tools at runtime, instead of loading hundreds of tool definitions into context.
+
+## What comes in a session
+By default, a session gives your agent meta tools to discover and execute app tools and manage connections for your user. All toolkits are discoverable, and search includes skill guidance when a matching skill exists. Standard sessions also include a [sandbox](/docs/sessions/sandbox-settings#sandbox) for processing files and large responses outside the model's context window. You can restrict tool access or disable the sandbox through [session configuration](/docs/sessions/tool-access).
+
+Use [tool access rules](/docs/sessions/tool-access), [tool loading](/docs/sessions/loading-tools), [connection selection](/docs/sessions/connections), and [sandbox options](/docs/sessions/sandbox-settings) to configure a session for your task.
+
+```mermaid
+architecture-beta
+    group session(lucide:box)[Composio Session]
+
+    service toolsearch(lucide:book-search)[Tool Search] in session
+    service toolkits(lucide:toolbox)[Toolkits] in session
+    service tools(lucide:wrench)[Tools] in session
+    service sandbox(lucide:scan-box)[Sandbox] in session
+
+    service user(lucide:user)[User Context] in session
+    service auth(lucide:lock)[Authentication] in session
+
+    user:R -- L:auth
+    toolsearch:R -- L:toolkits
+    toolkits:B -- T:tools
+```
+
+## Users
+
+A user is an identifier from your app. Composio stores connections under that ID, so tools run with the right account and stay isolated from other users. Use a stable identifier like your database ID, never one that can change.
+
+<Accordions>
+<Accordion title="userID best practices">
+- **Recommended:** database UUID or primary key (`user.id`)
+- **Acceptable:** unique username (`user.username`)
+- **Avoid:** email addresses (they can change)
+- **Never:** `default` in production (it exposes other users' data)
+</Accordion>
+</Accordions>
+
+A user can connect multiple accounts for the same toolkit, like work and personal Gmail. Use the same userID, then select the connected account when a session needs a specific one. See [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts).
+
 ## Creating a session
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
