@@ -7,6 +7,7 @@ import hmac
 import json
 import time
 import typing as t
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -16,75 +17,45 @@ from composio.core.models.session_webhooks import SessionWebhooks
 from composio.core.models.tool_router import ToolRouter
 
 SECRET = "session-webhook-secret"
-WEBHOOK_ID = "msg_3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90"
-
-METADATA = {
-    "project_id": "pr_123",
-    "session_id": "trs_123",
-    "user_id": "user_123",
-    "hook_id": "check_outgoing_email",
-}
-
-TOOL_CALL = {
-    "toolkit_slug": "gmail",
-    "tool_slug": "GMAIL_SEND_EMAIL",
-    "toolkit_version": "20261101_00",
-    "connected_account_id": "ca_123",
-    "arguments": {"recipient_email": "jane@customer.com"},
-}
-
-BEFORE_TOOL_CALL: t.Dict[str, t.Any] = {
-    "id": WEBHOOK_ID,
-    "type": "composio.session_hook.before_execute",
-    "timestamp": "2026-11-20T12:00:00.000Z",
-    "metadata": METADATA,
-    "data": {"type": "tool_execute", "tool_call": TOOL_CALL},
-}
-
-AFTER_PROXY_CALL: t.Dict[str, t.Any] = {
-    "id": WEBHOOK_ID,
-    "type": "composio.session_hook.after_execute",
-    "timestamp": "2026-11-20T12:00:00.000Z",
-    "metadata": METADATA,
-    "data": {
-        "type": "proxy_execute",
-        "http_request": {
-            "toolkit_slug": "github",
-            "method": "GET",
-            "endpoint": "/user/repos",
-            "parameters": [{"name": "per_page", "value": "10", "type": "query"}],
-        },
-        "http_response": {
-            "status": 200,
-            "headers": {"content-type": "application/json"},
-            "data": [{"name": "composio"}],
-        },
-    },
-}
+FIXTURES = json.loads(
+    (
+        Path(__file__).with_name("fixtures") / "webhook" / "session-hook-events.json"
+    ).read_text(encoding="utf-8")
+)
+ENVELOPE = FIXTURES["envelope"]
+EVENTS = {name: {**ENVELOPE, **event} for name, event in FIXTURES["events"].items()}
+WEBHOOK_ID = ENVELOPE["id"]
+METADATA = ENVELOPE["metadata"]
+BEFORE_TOOL_CALL = EVENTS["beforeToolCall"]
+AFTER_PROXY_CALL = EVENTS["afterProxyJson"]
 
 
 def now() -> str:
     return str(int(time.time()))
 
 
-def sign(timestamp: str, body: str, secret: str = SECRET) -> str:
-    """The signature Composio sends: v1,<base64 HMAC-SHA256(secret, id.timestamp.body)>."""
+def sign(timestamp: str, body: t.Union[str, bytes], secret: str = SECRET) -> str:
+    """Compute the signature over the original request body."""
+    raw = body.encode("utf-8") if isinstance(body, str) else body
     digest = hmac.new(
-        secret.encode(), f"{WEBHOOK_ID}.{timestamp}.{body}".encode(), hashlib.sha256
+        secret.encode(), f"{WEBHOOK_ID}.{timestamp}.".encode() + raw, hashlib.sha256
     ).digest()
     return f"v1,{base64.b64encode(digest).decode()}"
+
+
+def signature_headers(body: t.Union[str, bytes], timestamp: str) -> t.Dict[str, str]:
+    return {
+        "webhook-id": WEBHOOK_ID,
+        "webhook-timestamp": timestamp,
+        "webhook-signature": sign(timestamp, body),
+    }
 
 
 def signed(
     payload: t.Any, timestamp: t.Optional[str] = None
 ) -> t.Tuple[str, t.Dict[str, str]]:
-    timestamp = timestamp or now()
-    body = json.dumps(payload)
-    return body, {
-        "webhook-id": WEBHOOK_ID,
-        "webhook-timestamp": timestamp,
-        "webhook-signature": sign(timestamp, body),
-    }
+    body = json.dumps(payload, ensure_ascii=False)
+    return body, signature_headers(body, timestamp or now())
 
 
 @pytest.fixture
@@ -96,28 +67,35 @@ def test_reachable_at_sessions_webhooks() -> None:
     assert isinstance(ToolRouter(client=MagicMock()).webhooks, SessionWebhooks)
 
 
-def test_returns_a_verified_before_execute_tool_call_as_sent(
-    webhooks: SessionWebhooks,
+@pytest.mark.parametrize("payload", list(EVENTS.values()), ids=list(EVENTS))
+def test_returns_a_verified_event_from_raw_bytes(
+    webhooks: SessionWebhooks, payload: t.Dict[str, t.Any]
 ) -> None:
-    body, headers = signed(BEFORE_TOOL_CALL)
-
-    hook = webhooks.parse(body=body, headers=headers, verify_secret=SECRET)
-
-    assert hook == BEFORE_TOOL_CALL
-
-
-def test_returns_a_verified_after_execute_proxy_call_from_raw_bytes(
-    webhooks: SessionWebhooks,
-) -> None:
-    body, headers = signed(AFTER_PROXY_CALL)
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    headers = signature_headers(body, now())
 
     hook = webhooks.parse(
-        body=body.encode(),
+        body=body,
         headers={name.title(): value for name, value in headers.items()},
         verify_secret=SECRET,
     )
 
-    assert hook == AFTER_PROXY_CALL
+    assert hook == payload
+
+
+@pytest.mark.parametrize("body", ["invalid JSON", b"\xff"], ids=["json", "utf8"])
+def test_rejects_a_malformed_signed_body(
+    webhooks: SessionWebhooks, body: t.Union[str, bytes]
+) -> None:
+    with pytest.raises(
+        exceptions.WebhookPayloadError,
+        match="Failed to parse session webhook payload as JSON",
+    ) as error:
+        webhooks.parse(
+            body=body, headers=signature_headers(body, now()), verify_secret=SECRET
+        )
+
+    assert error.value.__cause__ is None
 
 
 def test_keeps_fields_the_sdk_does_not_know_yet(webhooks: SessionWebhooks) -> None:
@@ -154,7 +132,8 @@ def test_rejects_a_request_signed_with_a_different_secret(
 def test_rejects_a_body_changed_after_signing(webhooks: SessionWebhooks) -> None:
     _, headers = signed(BEFORE_TOOL_CALL)
     tampered = json.dumps(
-        {**BEFORE_TOOL_CALL, "metadata": {**METADATA, "user_id": "x"}}
+        {**BEFORE_TOOL_CALL, "metadata": {**METADATA, "user_id": "x"}},
+        ensure_ascii=False,
     )
 
     with pytest.raises(exceptions.WebhookSignatureVerificationError):

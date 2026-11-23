@@ -1,16 +1,5 @@
 import { z } from 'zod/v3';
 
-// =============================================================================
-// SESSION WEBHOOK EVENTS
-//
-// What Composio sends to a project's session webhook URL for a session hook
-// with a `webhook` handler, and what the endpoint answers with. Both keep the
-// field names of the webhook reference (snake_case): the endpoint reads the
-// event and writes its answer as plain JSON, so one spelling serves both.
-//
-// Every schema uses .passthrough() to accept fields the API may add later.
-// =============================================================================
-
 export const SessionWebhookEventTypes = {
   BEFORE_EXECUTE: 'composio.session_hook.before_execute',
   AFTER_EXECUTE: 'composio.session_hook.after_execute',
@@ -78,6 +67,21 @@ const SessionWebhookHttpParameterSchema = z
   })
   .passthrough();
 
+const BinaryBodyUrlSchema = z.object({
+  url: z.string(),
+  content_type: z.string().optional(),
+  base64: z.never().optional(),
+});
+const BinaryBodyBase64Schema = z.object({
+  base64: z.string(),
+  content_type: z.string().optional(),
+  url: z.never().optional(),
+});
+const BinaryBodySchema = z.union([
+  BinaryBodyUrlSchema.passthrough(),
+  BinaryBodyBase64Schema.passthrough(),
+]);
+
 const SessionWebhookHttpRequestSchema = z
   .object({
     /** Slug of the toolkit whose API is called (for example `github`) */
@@ -89,8 +93,10 @@ const SessionWebhookHttpRequestSchema = z
     endpoint: z.string(),
     /** Headers and query parameters the agent added. The credentials Composio adds are not included. */
     parameters: z.array(SessionWebhookHttpParameterSchema),
-    /** The request body. Omitted when there is none or when it is binary. */
+    /** The request body. Omitted when there is none or the request uploads a file. */
     body: z.unknown().optional(),
+    /** The file the request uploads, as a URL or base64-encoded bytes. */
+    binary_body: BinaryBodySchema.optional(),
   })
   .passthrough();
 
@@ -133,7 +139,7 @@ const sessionWebhookEnvelopeFields = {
  * Sent before a call runs. `data.type` says whether it is a tool call
  * (`tool_call`) or a proxy call (`http_request`).
  */
-export const SessionWebhookBeforeExecuteEventSchema = z
+const SessionWebhookBeforeExecuteEventSchema = z
   .object({
     ...sessionWebhookEnvelopeFields,
     type: z.literal(SessionWebhookEventTypes.BEFORE_EXECUTE),
@@ -156,7 +162,7 @@ export type SessionWebhookBeforeExecuteEvent = z.infer<
  * Sent after a call ran, with what it returned: `tool_response` for a tool
  * call, `http_response` for a proxy call.
  */
-export const SessionWebhookAfterExecuteEventSchema = z
+const SessionWebhookAfterExecuteEventSchema = z
   .object({
     ...sessionWebhookEnvelopeFields,
     type: z.literal(SessionWebhookEventTypes.AFTER_EXECUTE),
@@ -212,13 +218,8 @@ export type ParseSessionWebhookParams = {
   tolerance?: number;
 };
 
-// =============================================================================
-// ANSWERS: what the endpoint sends back, with HTTP status 200
-//
 // Composio rejects an answer with a field it doesn't know, except on a block,
-// and then applies the hook's `fallback_action`. Type the answer with these so
-// a misspelled field is caught at compile time.
-// =============================================================================
+// and then applies the hook's `fallback_action`.
 
 /** Stops the call. `message` is shown to the agent. */
 export type SessionWebhookBlockResponse = {
@@ -228,14 +229,19 @@ export type SessionWebhookBlockResponse = {
 
 /**
  * Fields of a proxy request to replace. Fields left out keep their original
- * value. The toolkit cannot be changed.
+ * value. Set at most one of `body` and `binary_body`. The toolkit cannot be changed.
  */
 export type SessionWebhookHttpRequestOverride = {
   method?: z.infer<typeof SessionWebhookHttpMethodSchema>;
   endpoint?: string;
   parameters?: Array<{ name: string; value: string; type: 'header' | 'query' }>;
-  body?: unknown;
-};
+} & (
+  | { body?: unknown; binary_body?: never }
+  | {
+      body?: never;
+      binary_body: z.infer<typeof BinaryBodyUrlSchema> | z.infer<typeof BinaryBodyBase64Schema>;
+    }
+);
 
 /**
  * Fields of a proxy response to replace. Fields left out keep their original

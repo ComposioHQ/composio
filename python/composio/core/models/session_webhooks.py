@@ -21,7 +21,6 @@ import typing_extensions as te
 
 from composio import exceptions
 from composio.utils.webhook_verification import (
-    body_to_str,
     get_header,
     validate_webhook_timestamp,
     verify_webhook_signature,
@@ -33,11 +32,6 @@ class SessionWebhookEventType(str, Enum):
 
     BEFORE_EXECUTE = "composio.session_hook.before_execute"
     AFTER_EXECUTE = "composio.session_hook.after_execute"
-
-
-# =============================================================================
-# EVENTS: what Composio sends
-# =============================================================================
 
 
 class SessionWebhookMetadata(te.TypedDict):
@@ -78,13 +72,27 @@ class SessionWebhookHttpParameter(te.TypedDict):
     type: t.Literal["header", "query"]
 
 
+class SessionWebhookBinaryUrl(te.TypedDict):
+    url: str
+    content_type: te.NotRequired[str]
+
+
+class SessionWebhookBinaryBase64(te.TypedDict):
+    base64: str
+    content_type: te.NotRequired[str]
+
+
+SessionWebhookBinaryBody = t.Union[SessionWebhookBinaryUrl, SessionWebhookBinaryBase64]
+
+
 class SessionWebhookHttpRequest(te.TypedDict):
     """A proxy call: an HTTP request to a toolkit's API.
 
     ``endpoint`` is as the agent gave it: a path relative to the toolkit's API
     base URL, or a full URL. ``parameters`` are the headers and query
     parameters the agent added; the credentials Composio adds are not
-    included. ``body`` is omitted when there is none or when it is binary.
+    included. ``body`` is omitted when there is none or the request uploads a
+    file. ``binary_body`` carries a file upload as a URL or base64-encoded bytes.
     """
 
     toolkit_slug: str
@@ -93,6 +101,7 @@ class SessionWebhookHttpRequest(te.TypedDict):
     endpoint: str
     parameters: t.List[SessionWebhookHttpParameter]
     body: te.NotRequired[t.Any]
+    binary_body: te.NotRequired[SessionWebhookBinaryBody]
 
 
 class SessionWebhookBinaryData(te.TypedDict):
@@ -177,12 +186,8 @@ SessionWebhookEvent = t.Union[
 ``composio.sessions.webhooks.parse``."""
 
 
-# =============================================================================
-# ANSWERS: what the endpoint sends back, with HTTP status 200
-#
 # Composio rejects an answer with a field it doesn't know, except on a block,
 # and then applies the hook's ``fallback_action``.
-# =============================================================================
 
 
 class SessionWebhookBlockResponse(te.TypedDict):
@@ -198,14 +203,39 @@ class SessionWebhookToolCallOverride(te.TypedDict):
     arguments: t.Dict[str, t.Any]
 
 
-class SessionWebhookHttpRequestOverride(te.TypedDict, total=False):
-    """Fields of a proxy request to replace. Fields left out keep their
-    original value. The toolkit cannot be changed."""
-
+class _SessionWebhookHttpRequestOverrideFields(te.TypedDict, total=False):
     method: SessionWebhookHttpMethod
     endpoint: str
     parameters: t.List[SessionWebhookHttpParameter]
-    body: t.Any
+
+
+class _SessionWebhookProxyBodyOverride(
+    _SessionWebhookHttpRequestOverrideFields, closed=True
+):
+    body: te.NotRequired[t.Any]
+
+
+class _SessionWebhookBinaryUrlOverride(SessionWebhookBinaryUrl, closed=True):
+    pass
+
+
+class _SessionWebhookBinaryBase64Override(SessionWebhookBinaryBase64, closed=True):
+    pass
+
+
+class _SessionWebhookProxyFileOverride(
+    _SessionWebhookHttpRequestOverrideFields, closed=True
+):
+    binary_body: t.Union[
+        _SessionWebhookBinaryUrlOverride, _SessionWebhookBinaryBase64Override
+    ]
+
+
+SessionWebhookHttpRequestOverride = t.Union[
+    _SessionWebhookProxyBodyOverride, _SessionWebhookProxyFileOverride
+]
+"""Fields of a proxy request to replace. Fields left out keep their original
+value. Set at most one of ``body`` and ``binary_body``."""
 
 
 class SessionWebhookToolResponseOverride(te.TypedDict):
@@ -225,18 +255,22 @@ class SessionWebhookHttpResponseOverride(te.TypedDict, total=False):
 
 class SessionWebhookToolCallChange(te.TypedDict):
     tool_call: SessionWebhookToolCallOverride
+    http_request: te.NotRequired[None]
 
 
 class SessionWebhookHttpRequestChange(te.TypedDict):
     http_request: SessionWebhookHttpRequestOverride
+    tool_call: te.NotRequired[None]
 
 
 class SessionWebhookToolResponseChange(te.TypedDict):
     tool_response: SessionWebhookToolResponseOverride
+    http_response: te.NotRequired[None]
 
 
 class SessionWebhookHttpResponseChange(te.TypedDict):
     http_response: SessionWebhookHttpResponseOverride
+    tool_response: te.NotRequired[None]
 
 
 class SessionWebhookBeforeExecuteContinueResponse(te.TypedDict):
@@ -272,10 +306,6 @@ SessionWebhookAfterExecuteResponse = t.Union[
 ]
 """The answer to an ``after_execute`` event."""
 
-
-# =============================================================================
-# PARSE
-# =============================================================================
 
 _EVENT_ADAPTERS: t.Dict[str, pydantic.TypeAdapter[t.Any]] = {
     SessionWebhookEventType.BEFORE_EXECUTE.value: pydantic.TypeAdapter(
@@ -335,8 +365,6 @@ class SessionWebhooks:
                     return {'action': 'block', 'message': 'Project Titan is confidential'}
                 return {'action': 'continue'}
         """
-        payload = body_to_str(body)
-
         if not verify_secret:
             raise exceptions.ValidationError(
                 "Cannot verify session webhook: `verify_secret` is empty — your "
@@ -367,20 +395,24 @@ class SessionWebhooks:
 
         if tolerance > 0:
             validate_webhook_timestamp(timestamp, tolerance)
+        raw_body = body if isinstance(body, str) else bytes(body)
         verify_webhook_signature(
             webhook_id=webhook_id,
             webhook_timestamp=timestamp,
-            payload=payload,
+            payload=raw_body,
             signature=signature,
             secret=verify_secret,
         )
 
         try:
+            payload = (
+                raw_body.decode("utf-8") if isinstance(raw_body, bytes) else raw_body
+            )
             event = json.loads(payload)
-        except json.JSONDecodeError as e:
+        except (UnicodeDecodeError, json.JSONDecodeError):
             raise exceptions.WebhookPayloadError(
-                f"Failed to parse session webhook payload as JSON: {e}"
-            ) from e
+                "Failed to parse session webhook payload as JSON"
+            ) from None
 
         event_type = event.get("type") if isinstance(event, dict) else None
         adapter = (
@@ -397,7 +429,6 @@ class SessionWebhooks:
             # declared type. Lax mode would accept `"200"` for an int and hand it back.
             adapter.validate_python(event, strict=True)
         except pydantic.ValidationError as e:
-            # Name the fields, never their values: the event carries the call's data.
             fields = sorted(
                 {".".join(str(part) for part in error["loc"]) for error in e.errors()}
             )

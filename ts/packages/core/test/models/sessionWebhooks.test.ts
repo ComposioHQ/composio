@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createHmac } from 'node:crypto';
 import ComposioClient from '@composio/client';
+import fixtures from '../../../../../python/tests/fixtures/webhook/session-hook-events.json';
 import { Sessions } from '../../src/models/Sessions';
 import { SessionWebhooks } from '../../src/models/SessionWebhooks';
 import { ValidationError } from '../../src/errors/ValidationErrors';
@@ -10,69 +11,31 @@ import {
 } from '../../src/errors/TriggerErrors';
 
 const secret = 'session-webhook-secret';
-const webhookId = 'msg_3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90';
-
-const metadata = {
-  project_id: 'pr_123',
-  session_id: 'trs_123',
-  user_id: 'user_123',
-  hook_id: 'check_outgoing_email',
-};
-
-const toolCall = {
-  toolkit_slug: 'gmail',
-  tool_slug: 'GMAIL_SEND_EMAIL',
-  toolkit_version: '20261101_00',
-  connected_account_id: 'ca_123',
-  arguments: { recipient_email: 'jane@customer.com' },
-};
-
-const beforeToolCall = {
-  id: webhookId,
-  type: 'composio.session_hook.before_execute',
-  timestamp: '2026-11-20T12:00:00.000Z',
-  metadata,
-  data: { type: 'tool_execute', tool_call: toolCall },
-};
-
-const afterProxyCall = {
-  id: webhookId,
-  type: 'composio.session_hook.after_execute',
-  timestamp: '2026-11-20T12:00:00.000Z',
-  metadata,
-  data: {
-    type: 'proxy_execute',
-    http_request: {
-      toolkit_slug: 'github',
-      method: 'GET',
-      endpoint: '/user/repos',
-      parameters: [{ name: 'per_page', value: '10', type: 'query' }],
-    },
-    http_response: {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-      data: [{ name: 'composio' }],
-    },
-  },
-};
+const { id: webhookId, metadata } = fixtures.envelope;
+const beforeToolCall = { ...fixtures.envelope, ...fixtures.events.beforeToolCall };
+const { tool_call: toolCall } = beforeToolCall.data;
 
 const now = () => String(Math.floor(Date.now() / 1000));
 
-// The signature Composio sends: v1,<base64 HMAC-SHA256(secret, `${id}.${timestamp}.${body}`)>
-const sign = (timestamp: string, body: string, withSecret = secret) =>
-  `v1,${createHmac('sha256', withSecret).update(`${webhookId}.${timestamp}.${body}`).digest('base64')}`;
-
-const signed = (payload: unknown, timestamp = now()) => {
-  const body = JSON.stringify(payload);
-  return {
-    body,
-    headers: {
-      'webhook-id': webhookId,
-      'webhook-timestamp': timestamp,
-      'webhook-signature': sign(timestamp, body),
-    },
-  };
+const sign = (timestamp: string, body: string | Uint8Array, withSecret = secret) => {
+  const digest = createHmac('sha256', withSecret)
+    .update(`${webhookId}.${timestamp}.`)
+    .update(body)
+    .digest('base64');
+  return `v1,${digest}`;
 };
+
+const signedBody = (body: string | Uint8Array, timestamp = now()) => ({
+  body,
+  headers: {
+    'webhook-id': webhookId,
+    'webhook-timestamp': timestamp,
+    'webhook-signature': sign(timestamp, body),
+  },
+});
+
+const signed = (payload: unknown, timestamp = now()) =>
+  signedBody(JSON.stringify(payload), timestamp);
 
 describe('SessionWebhooks.parse', () => {
   const webhooks = new SessionWebhooks();
@@ -82,22 +45,28 @@ describe('SessionWebhooks.parse', () => {
     expect(sessions.webhooks).toBeInstanceOf(SessionWebhooks);
   });
 
-  it('returns a verified before_execute tool call as Composio sent it', async () => {
-    const hook = await webhooks.parse({ ...signed(beforeToolCall), verifySecret: secret });
-
-    expect(hook).toEqual(beforeToolCall);
-  });
-
-  it('returns a verified after_execute proxy call from raw bytes and a Headers object', async () => {
-    const { body, headers } = signed(afterProxyCall);
+  it.each(Object.entries(fixtures.events))('returns the signed %s event', async (_, event) => {
+    const payload = { ...fixtures.envelope, ...event };
+    const { body, headers } = signedBody(new TextEncoder().encode(JSON.stringify(payload)));
 
     const hook = await webhooks.parse({
-      body: new TextEncoder().encode(body),
+      body,
       headers: new Headers(headers),
       verifySecret: secret,
     });
 
-    expect(hook).toEqual(afterProxyCall);
+    expect(hook).toEqual(payload);
+  });
+
+  it.each([
+    { name: 'malformed JSON', body: 'invalid JSON' },
+    { name: 'invalid UTF-8', body: Uint8Array.of(255) },
+  ])('rejects signed $name with a sanitized payload error', async ({ body }) => {
+    const parsed = webhooks.parse({ ...signedBody(body), verifySecret: secret });
+
+    await expect(parsed).rejects.toThrow(ComposioWebhookPayloadError);
+    await expect(parsed).rejects.toThrow('Failed to parse session webhook payload as JSON');
+    await expect(parsed).rejects.not.toHaveProperty('cause');
   });
 
   it('keeps fields the SDK does not know yet', async () => {

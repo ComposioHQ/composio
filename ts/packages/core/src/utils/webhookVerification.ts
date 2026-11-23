@@ -14,9 +14,6 @@ export const WEBHOOK_HEADERS = {
   signature: 'webhook-signature',
 } as const;
 
-/**
- * Returns true if the value is a Fetch API `Request`.
- */
 const isFetchRequest = (request: WebhookRequestLike): request is Request =>
   typeof Request !== 'undefined' && request instanceof Request;
 
@@ -88,12 +85,13 @@ export const getHeader = (headers: unknown, name: string): string | undefined =>
 /**
  * Verifies the HMAC-SHA256 signature of a webhook payload.
  * The signature format used by Composio is: `v1,base64EncodedSignature`
- * The signing input is: `${msgId}.${timestamp}.${payload}`
+ * The signing input is the UTF-8 prefix `${msgId}.${timestamp}.` followed by
+ * the original payload bytes.
  */
 export async function verifyWebhookSignature(
   webhookId: string,
   webhookTimestamp: string,
-  payload: string,
+  payload: string | Uint8Array,
   signature: string,
   secret: string
 ): Promise<void> {
@@ -143,20 +141,20 @@ export async function verifyWebhookSignature(
     );
   }
 
-  // Compute expected signature: HMAC-SHA256(msgId.timestamp.payload, secret) -> base64
-  const toSign = `${webhookId}.${webhookTimestamp}.${payload}`;
+  const encoder = new TextEncoder();
+  const prefix = `${webhookId}.${webhookTimestamp}.`;
+  let toSign: Uint8Array<ArrayBuffer>;
+  if (typeof payload === 'string') {
+    toSign = encoder.encode(prefix + payload);
+  } else {
+    const prefixBytes = encoder.encode(prefix);
+    toSign = new Uint8Array(prefixBytes.length + payload.length);
+    toSign.set(prefixBytes);
+    toSign.set(payload, prefixBytes.length);
+  }
   const expectedSignature = await hmacSha256Base64(secret, toSign);
 
-  // Check if any of the provided signatures match
-  let isValid = false;
-  for (const providedSignature of v1Signatures) {
-    if (timingSafeEqual(providedSignature, expectedSignature)) {
-      isValid = true;
-      break;
-    }
-  }
-
-  if (!isValid) {
+  if (!v1Signatures.some(candidate => timingSafeEqual(candidate, expectedSignature))) {
     throw new ComposioWebhookSignatureVerificationError(
       'The signature provided is invalid. Please ensure you are using the correct webhook secret.'
     );

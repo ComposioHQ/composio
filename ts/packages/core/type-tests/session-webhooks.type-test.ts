@@ -31,7 +31,10 @@ async function sessionWebhook(): Promise<void> {
     } else {
       const request: SessionWebhookHttpRequest = hook.data.http_request;
       const endpoint: string = request.endpoint;
-      void endpoint;
+      const uploadedFile = request.binary_body;
+      const url: string | undefined = uploadedFile?.url;
+      const base64: string | undefined = uploadedFile?.base64;
+      void [endpoint, url, base64];
     }
   } else if (hook.data.type === 'tool_execute') {
     const error: string | null = hook.data.tool_response.error;
@@ -46,12 +49,16 @@ async function sessionWebhook(): Promise<void> {
     action: 'continue',
     override: { tool_call: { arguments: { bcc: ['compliance@acme.com'] } } },
   };
+  const upload: SessionWebhookBeforeExecuteResponse = {
+    action: 'continue',
+    override: { http_request: { binary_body: { base64: 'Zm9v' } }, tool_call: null },
+  };
   const redact: SessionWebhookAfterExecuteResponse = {
     action: 'continue',
     override: { http_response: { data: null } },
   };
   const block: SessionWebhookAfterExecuteResponse = { action: 'block', message: 'Not allowed' };
-  void [allow, change, redact, block];
+  void [allow, change, upload, redact, block];
 
   const misplaced: SessionWebhookBeforeExecuteResponse = {
     action: 'continue',
@@ -73,9 +80,21 @@ async function sessionWebhook(): Promise<void> {
     // @ts-expect-error an answer changes the tool result or the proxy response, not both
     override: { tool_response: { data: {} }, http_response: { data: null } },
   };
+  const bothBodies: SessionWebhookBeforeExecuteResponse = {
+    action: 'continue',
+    // @ts-expect-error a proxy override sets the JSON body or the file
+    override: { http_request: { body: {}, binary_body: { url: 'https://example.com/file' } } },
+  };
+  const bothFileInputs: SessionWebhookBeforeExecuteResponse = {
+    action: 'continue',
+    override: {
+      // @ts-expect-error a file uses a URL or base64
+      http_request: { binary_body: { url: 'https://example.com/file', base64: 'Zm9v' } },
+    },
+  };
   // @ts-expect-error a block needs a message for the agent
   const silent: SessionWebhookAfterExecuteResponse = { action: 'block' };
-  void [misplaced, misspelled, bothCalls, bothResults, silent];
+  void [misplaced, misspelled, bothCalls, bothResults, bothBodies, bothFileInputs, silent];
 }
 
 void sessionWebhook;

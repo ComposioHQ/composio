@@ -67,7 +67,24 @@ export * from './types/toolkit.types';
 export * from './types/triggers.types';
 export * from './types/webhookEvents.types';
 export * from './types/webhooks.types';
-export * from './types/sessionWebhooks.types';
+export { SessionWebhookEventTypes } from './types/sessionWebhooks.types';
+export type {
+  ParseSessionWebhookParams,
+  SessionWebhookAfterExecuteEvent,
+  SessionWebhookAfterExecuteResponse,
+  SessionWebhookBeforeExecuteEvent,
+  SessionWebhookBeforeExecuteResponse,
+  SessionWebhookBlockResponse,
+  SessionWebhookEvent,
+  SessionWebhookEventType,
+  SessionWebhookHttpRequest,
+  SessionWebhookHttpRequestOverride,
+  SessionWebhookHttpResponse,
+  SessionWebhookHttpResponseOverride,
+  SessionWebhookMetadata,
+  SessionWebhookToolCall,
+  SessionWebhookToolResponse,
+} from './types/sessionWebhooks.types';
 export * from './types/logs.types';
 export * from './types/usage.types';
 export * from './types/keyring.types';

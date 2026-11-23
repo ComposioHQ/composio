@@ -71,7 +71,6 @@ def get_header(headers: t.Any, name: str) -> t.Optional[str]:
         if value is not None:
             return str(value)
 
-    # Fall back to a manual case-insensitive scan for plain mappings.
     try:
         items = headers.items()
     except AttributeError:
@@ -88,7 +87,7 @@ def verify_webhook_signature(
     *,
     webhook_id: str,
     webhook_timestamp: str,
-    payload: str,
+    payload: t.Union[str, bytes],
     signature: str,
     secret: str,
 ) -> None:
@@ -134,14 +133,12 @@ def verify_webhook_signature(
             "Please pass the value of the 'webhook-timestamp' header."
         )
 
-    # Parse signature header - format is "v1,base64Sig" or "v1,sig1 v1,sig2"
-    # Split by space to handle multiple signatures
     signature_parts = signature.split(" ")
     v1_signatures: t.List[str] = []
 
     for part in signature_parts:
         if part.startswith("v1,"):
-            v1_signatures.append(part[3:])  # Remove "v1," prefix
+            v1_signatures.append(part[3:])
 
     if not v1_signatures:
         raise exceptions.WebhookSignatureVerificationError(
@@ -149,24 +146,17 @@ def verify_webhook_signature(
             "Expected format: 'v1,base64EncodedSignature'"
         )
 
-    # Construct the string to sign: webhookId.webhookTimestamp.payload
-    to_sign = f"{webhook_id}.{webhook_timestamp}.{payload}"
+    digest = hmac.new(secret.encode("utf-8"), digestmod=hashlib.sha256)
+    digest.update(f"{webhook_id}.{webhook_timestamp}.".encode("utf-8"))
+    digest.update(payload.encode("utf-8") if isinstance(payload, str) else payload)
+    expected_signature_b64 = base64.b64encode(digest.digest()).decode("utf-8")
 
-    # Compute expected signature
-    expected_signature_bytes = hmac.new(
-        key=secret.encode("utf-8"),
-        msg=to_sign.encode("utf-8"),
-        digestmod=hashlib.sha256,
-    ).digest()
-    expected_signature_b64 = base64.b64encode(expected_signature_bytes).decode("utf-8")
-
-    # Check if any of the provided signatures match (timing-safe)
     for provided_sig in v1_signatures:
         try:
             if hmac.compare_digest(provided_sig, expected_signature_b64):
-                return  # Signature is valid
+                return
         except Exception:
-            continue  # Invalid signature format, try next
+            continue
 
     raise exceptions.WebhookSignatureVerificationError(
         "The signature provided is invalid."

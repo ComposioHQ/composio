@@ -72,9 +72,7 @@ export class SessionWebhooks {
    * ```
    */
   async parse(params: ParseSessionWebhookParams): Promise<SessionWebhookEvent> {
-    const { headers, verifySecret: secret } = params;
-    const body =
-      typeof params.body === 'string' ? params.body : new TextDecoder().decode(params.body);
+    const { body: rawBody, headers, verifySecret: secret } = params;
 
     if (!secret) {
       throw new ValidationError(
@@ -107,20 +105,23 @@ export class SessionWebhooks {
     if (tolerance > 0) {
       validateWebhookTimestamp(timestamp, tolerance);
     }
+    // Verification and parsing must use the same bytes across the await.
+    const body = typeof rawBody === 'string' ? rawBody : new Uint8Array(rawBody);
     await verifyWebhookSignature(id, timestamp, body, signature, secret);
 
     let json: unknown;
     try {
-      json = JSON.parse(body);
-    } catch (error) {
-      throw new ComposioWebhookPayloadError('Failed to parse session webhook payload as JSON', {
-        cause: error,
-      });
+      const text =
+        typeof body === 'string'
+          ? body
+          : new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(body);
+      json = JSON.parse(text);
+    } catch {
+      throw new ComposioWebhookPayloadError('Failed to parse session webhook payload as JSON');
     }
 
     const event = SessionWebhookEventSchema.safeParse(json);
     if (!event.success) {
-      // Name the fields, never their values: the event carries the call's data.
       const fields = [...new Set(event.error.issues.map(issue => issue.path.join('.')))].sort();
       const isAnotherPayload = fields.includes('') || fields.includes('type');
       throw new ComposioWebhookPayloadError(

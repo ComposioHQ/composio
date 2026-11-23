@@ -1,0 +1,167 @@
+{
+  "envelope": {
+    "id": "msg_3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90",
+    "timestamp": "2026-11-20T12:00:00.000Z",
+    "metadata": {
+      "project_id": "pr_123",
+      "session_id": "trs_123",
+      "user_id": "user_123",
+      "hook_id": "check_outgoing_email"
+    }
+  },
+  "events": {
+    "beforeToolCall": {
+      "type": "composio.session_hook.before_execute",
+      "data": {
+        "type": "tool_execute",
+        "tool_call": {
+          "toolkit_slug": "gmail",
+          "tool_slug": "GMAIL_SEND_EMAIL",
+          "toolkit_version": "20261101_00",
+          "connected_account_id": "ca_123",
+          "arguments": {
+            "recipient_email": "jane@example.com",
+            "subject": "Caffè"
+          }
+        }
+      }
+    },
+    "beforeProxyJson": {
+      "type": "composio.session_hook.before_execute",
+      "data": {
+        "type": "proxy_execute",
+        "http_request": {
+          "toolkit_slug": "github",
+          "method": "POST",
+          "endpoint": "/repos/example/fixtures/issues",
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json",
+              "type": "header"
+            }
+          ],
+          "body": {
+            "title": "Caffè"
+          }
+        }
+      }
+    },
+    "beforeProxyFileUrl": {
+      "type": "composio.session_hook.before_execute",
+      "data": {
+        "type": "proxy_execute",
+        "http_request": {
+          "toolkit_slug": "github",
+          "method": "PUT",
+          "endpoint": "/fixture/upload",
+          "parameters": [],
+          "binary_body": {
+            "url": "https://example.com/fixture.txt",
+            "content_type": "text/plain"
+          }
+        }
+      }
+    },
+    "afterToolSuccess": {
+      "type": "composio.session_hook.after_execute",
+      "data": {
+        "type": "tool_execute",
+        "tool_call": {
+          "toolkit_slug": "gmail",
+          "tool_slug": "GMAIL_SEND_EMAIL",
+          "toolkit_version": "20261101_00",
+          "connected_account_id": "ca_123",
+          "arguments": {
+            "recipient_email": "jane@example.com",
+            "subject": "Caffè"
+          }
+        },
+        "tool_response": {
+          "data": {
+            "message_id": "msg_123"
+          },
+          "error": null
+        }
+      }
+    },
+    "afterToolFailure": {
+      "type": "composio.session_hook.after_execute",
+      "data": {
+        "type": "tool_execute",
+        "tool_call": {
+          "toolkit_slug": "gmail",
+          "tool_slug": "GMAIL_SEND_EMAIL",
+          "toolkit_version": "20261101_00",
+          "connected_account_id": "ca_123",
+          "arguments": {
+            "recipient_email": "jane@example.com",
+            "subject": "Caffè"
+          }
+        },
+        "tool_response": {
+          "data": {},
+          "error": "The mailbox is unavailable."
+        }
+      }
+    },
+    "afterProxyJson": {
+      "type": "composio.session_hook.after_execute",
+      "data": {
+        "type": "proxy_execute",
+        "http_request": {
+          "toolkit_slug": "github",
+          "method": "POST",
+          "endpoint": "/repos/example/fixtures/issues",
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json",
+              "type": "header"
+            }
+          ],
+          "body": {
+            "title": "Caffè"
+          }
+        },
+        "http_response": {
+          "status": 200,
+          "headers": {
+            "content-type": "application/json"
+          },
+          "data": [
+            {
+              "name": "fixture"
+            }
+          ]
+        }
+      }
+    },
+    "afterProxyFile": {
+      "type": "composio.session_hook.after_execute",
+      "data": {
+        "type": "proxy_execute",
+        "http_request": {
+          "toolkit_slug": "github",
+          "method": "PUT",
+          "endpoint": "/fixture/upload",
+          "parameters": [],
+          "binary_body": {
+            "base64": "Zm9v"
+          }
+        },
+        "http_response": {
+          "status": 200,
+          "headers": {
+            "content-type": "text/plain"
+          },
+          "binary_data": {
+            "url": "https://example.com/output.txt",
+            "content_type": "text/plain",
+            "size": 3
+          }
+        }
+      }
+    }
+  }
+}
