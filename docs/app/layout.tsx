@@ -87,6 +87,12 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
     >
       <head>
         <meta name="theme-color" content="#ffffff" />
+        {/* Match the browser chrome to a stored dark/system-dark choice before first paint; ThemeColorSync keeps it in step afterwards. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('composio-docs-theme');if(t==='system')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t==='dark')document.querySelector('meta[name="theme-color"]').setAttribute('content','#131211')}catch(e){}`,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
