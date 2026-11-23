@@ -482,3 +482,104 @@ test(
   },
   TIMEOUT
 );
+
+describe('the SDK reference drift workflow', () => {
+  type Step = { name?: string; id?: string; if?: string; run?: string };
+  type Workflow = {
+    on: { push: { paths: string[] }; pull_request: Record<string, unknown> };
+    jobs: { drift: { name: string; steps: Step[] } };
+  };
+  const workflow = async () =>
+    Bun.YAML.parse(
+      await Bun.file(`${REPO}/.github/workflows/docs-sdk-reference-drift.yml`).text()
+    ) as Workflow;
+  const scopeStep = (steps: Step[]) => steps.find(step => step.id === 'scope');
+  /** The quoted entries of the scope step's `inputs=( ... )` array. */
+  const scopeInputs = (run: string) =>
+    [...(/inputs=\(([\s\S]*?)\n\s*\)/.exec(run)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
+      match => match[1]
+    );
+
+  test('reports on every pull request, so next can require it', async () => {
+    const { on, jobs } = await workflow();
+    expect(jobs.drift.name).toBe('SDK reference drift');
+    // A path filter would leave the required check pending forever on unrelated PRs.
+    expect(on.pull_request).not.toHaveProperty('paths');
+    expect(on.pull_request).not.toHaveProperty('paths-ignore');
+  });
+
+  test('scopes pull requests by the same inputs as the push filter', async () => {
+    const { on, jobs } = await workflow();
+    const scope = scopeStep(jobs.drift.steps);
+    expect(scope?.run).toBeDefined();
+    expect(scopeInputs(scope?.run ?? '')).toEqual(on.push.paths);
+    expect(on.push.paths.length).toBeGreaterThan(0);
+  });
+
+  test('skips every step after the scope decision when no input changed', async () => {
+    const { jobs } = await workflow();
+    const steps = jobs.drift.steps;
+    const after = steps.slice(steps.findIndex(step => step.id === 'scope') + 1);
+    expect(after.length).toBeGreaterThan(0);
+    for (const step of after) expect(step.if).toBe("steps.scope.outputs.affected == 'true'");
+  });
+
+  test(
+    'the scope step marks a PR affected only when it touches a reference input',
+    async () => {
+      const { jobs } = await workflow();
+      const run = scopeStep(jobs.drift.steps)?.run ?? '';
+      const repo = await mkdtemp(join(tmpdir(), 'drift-scope-'));
+      const git = (...args: string[]) =>
+        Bun.spawnSync(['git', '-C', repo, ...args], { stderr: 'pipe' });
+      const write = async (path: string, text: string) => {
+        await mkdir(join(repo, path, '..'), { recursive: true });
+        await writeFile(join(repo, path), text);
+      };
+      const decide = async (path: string) => {
+        git('checkout', '-q', '-B', 'base', 'main');
+        git('checkout', '-q', '-B', 'pr');
+        await write(path, String(Math.random()));
+        git('add', '-A');
+        git('commit', '-q', '-m', 'change');
+        const base = git('rev-parse', 'main').stdout.toString().trim();
+        const output = join(repo, '.output');
+        await writeFile(output, '');
+        // The workflow fetches the base from origin; here the base commit is already local.
+        const script = run.replace(/^\s*git fetch .*$/m, ':');
+        const result = Bun.spawnSync(['bash', '-c', script], {
+          cwd: repo,
+          env: {
+            ...process.env,
+            EVENT_NAME: 'pull_request',
+            BASE_SHA: base,
+            GITHUB_OUTPUT: output,
+          },
+        });
+        expect(result.exitCode).toBe(0);
+        return (await Bun.file(output).text()).trim();
+      };
+      try {
+        git('init', '-q', '-b', 'main');
+        git('config', 'user.email', 'test@example.com');
+        git('config', 'user.name', 'test');
+        git('config', 'commit.gpgsign', 'false');
+        await write('README.md', 'base');
+        git('add', '-A');
+        git('commit', '-q', '-m', 'base');
+        expect(await decide('ts/packages/core/src/models/Tools.ts')).toBe('affected=true');
+        expect(await decide('docs/content/reference/sdk-reference/typescript/tools.mdx')).toBe(
+          'affected=true'
+        );
+        expect(await decide('package.json')).toBe('affected=true');
+        expect(await decide('ts/packages/cli/src/index.ts')).toBe('affected=false');
+        expect(await decide('docs/content/docs/quickstart.mdx')).toBe('affected=false');
+        // Only the root manifest is an input, not every package.json.
+        expect(await decide('ts/packages/cli/package.json')).toBe('affected=false');
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+    TIMEOUT
+  );
+});
