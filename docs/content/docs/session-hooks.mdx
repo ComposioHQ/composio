@@ -35,6 +35,8 @@ A project has one session webhook URL. Every `webhook` hook in the project's ses
 
 An organization admin sets the URL in the dashboard, under [Sessions → Webhooks](https://dashboard.composio.dev/~/project/sessions/webhook?utm_source=docs&utm_medium=content&utm_campaign=session-hooks). When you save the URL, the dashboard shows a signing secret. Copy it then, because the dashboard shows it only once.
 
+<Figure src="/images/session-webhook-settings.png" alt="The Webhooks tab under Sessions in the Composio dashboard, with the session webhook endpoint URL and its masked signing secret" caption="The session webhook URL and its signing secret, under Sessions → Webhooks" />
+
 Composio signs every request with that secret, and your endpoint uses it to check that a request really came from Composio. If the secret leaks, rotate it from the same page. The old secret stops working right away.
 
 ### Adding a webhook hook to a session
