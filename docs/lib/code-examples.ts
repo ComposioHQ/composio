@@ -510,7 +510,7 @@ export type CodeExampleInventoryEntry = {
   kind: string;
   language?: string;
   options: string[];
-  validation: 'maintained' | 'generated-copy' | 'symbol-reference' | 'historical' | 'framework-source';
+  validation: 'maintained' | 'generated-copy' | 'symbol-reference' | 'workspace-checked' | 'historical' | 'framework-source';
   reason?: string;
 };
 
@@ -530,10 +530,12 @@ export function inventoryCodeExamples(docsRoot: string): CodeExampleInventoryEnt
           if (unit.type !== 'fence' && unit.type !== 'external' && unit.type !== 'package-install') return;
           const group = ancestors.findLast((ancestor) => ancestor.type === 'tabs' && ancestor.groupId === 'language');
           const validation = maintained.has(path) ? 'maintained' : path.startsWith('content/changelog/') ? 'historical' :
+            path.startsWith('content/reference/sdk-reference/typescript/') ? 'workspace-checked' :
             path.startsWith('content/reference/sdk-reference/') ? 'symbol-reference' : 'generated-copy';
           const marker = unit.markers.find((item) => item.reason) ?? (pageReason?.type === 'marker' ? pageReason : undefined);
           const reason = marker?.reason ?? (validation === 'symbol-reference'
             ? 'Language-specific SDK symbol documentation includes signatures and partial API usage; maintained cross-language operation examples live in the guides'
+            : validation === 'workspace-checked' ? 'Generated from SDK JSDoc; the repository-root check:docs-reference command type-checks these blocks against the workspace @composio/core source'
             : validation === 'historical' ? 'Immutable release history is inventoried, not rewritten as current API guidance'
             : validation === 'generated-copy' ? 'Generated presentation; canonical api-overviews or kb/source content is checked' : undefined);
           entries.push({ path, line: unit.line, kind: unit.type === 'external' ? unit.name ?? 'external' : unit.type,

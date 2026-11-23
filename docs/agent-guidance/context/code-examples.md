@@ -90,14 +90,14 @@ Run `bun run inventory:code-examples` for JSON records with source path, line, k
 
 - Authored guides, examples, reference overviews, toolkit FAQs, KB source and curated KB articles.
 - Generated API/KB presentation copies and every OpenAPI path/webhook operation.
-- Generated language-specific SDK symbol references, including signatures and partial usage fragments.
+- Generated language-specific SDK symbol references, including signatures and partial usage fragments. TypeScript reference fences are labeled `workspace-checked`; Python ones stay `symbol-reference`.
 - Historical changelog fences.
 - `PackageInstall`, `FileBuildup`, and `RepoBrowser` invocations and their committed source files/stages. Shared source-runtime reasons live in `lib/example-sources.ts`; new sources require an explicit classification.
 - Agent-only Markdown examples injected from `lib/llm-guardrails`. The checks use `#rendered.md` projections with source-line padding, not the TypeScript template-literal syntax.
 
 The maintained-file checks read `content/docs`, `content/examples`, authored `content/reference`, `content/toolkits`, `api-overviews`, `kb/source`, `kb/articles`, and the injected guardrail projections. Generated API overview and KB copies are checked through their maintained inputs, not treated as independent editable examples.
 
-Generated SDK symbol references remain language-specific: signatures and partial fragments are inventoried, not translated or certified by the maintained-example gates. Historical release examples are also inventoried rather than rewritten against today's API. These are explicit validation limits, not proof that every rendered fence offers three runnable equivalents. Edit reference generators/SDK docstrings or historical source deliberately; do not hand-edit generated pages to satisfy a gate.
+Generated SDK symbol references remain language-specific and are not translated into other languages. The TypeScript reference's code blocks are type-checked against the workspace `@composio/core` source by `pnpm run check:docs-reference` at the repository root (see `twoslash.md`); its method signatures are skipped. Python reference examples are inventoried but not checked. Historical release examples are also inventoried rather than rewritten against today's API. These are explicit validation limits, not proof that every rendered fence offers three runnable equivalents. Edit reference generators/SDK docstrings or historical source deliberately; do not hand-edit generated pages to satisfy a gate.
 
 Component-backed complete applications use runtime-specific source classifications, not invisible parser exclusions. A Pi, Vercel AI SDK, local-workbench, or eve/macOS application does not acquire a second runtime merely because its source browser is indexed. Shared SDK operations elsewhere on those pages still need counterparts.
 

@@ -162,7 +162,7 @@ describe('maintained and rendered surfaces', () => {
 
   test('inventory includes generated, historical, and component-backed code with explicit reasons', () => {
     const inventory = inventoryCodeExamples(root);
-    for (const validation of ['generated-copy', 'symbol-reference', 'historical', 'framework-source']) {
+    for (const validation of ['generated-copy', 'symbol-reference', 'workspace-checked', 'historical', 'framework-source']) {
       const entries = inventory.filter((entry) => entry.validation === validation);
       expect(entries.map((entry) => entry.validation)).toContain(validation);
       expect(entries.every((entry) => Boolean(entry.reason))).toBe(true);

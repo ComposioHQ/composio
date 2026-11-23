@@ -22,6 +22,8 @@ Auto-generated SDK documentation from source code.
 
 ## CI Integration
 
-On PRs to `next` that change either SDK source or generator, `.github/workflows/docs-sdk-reference-drift.yml` regenerates both references and fails if the committed output differs. Regenerate with the commands above and commit the result.
+On PRs to `next` and pushes to `next` that change either SDK source or generator, `.github/workflows/docs-sdk-reference-drift.yml` regenerates both references and fails if the committed output differs. Regenerate with the commands above and commit the result.
+
+The same workflow then type-checks every TypeScript code block on the TypeScript reference with `pnpm run check:docs-reference` (repository root) against the workspace `@composio/core` source. Fix a failure in the JSDoc `@example` it names, then regenerate; never edit the generated page. A framework-integration example whose types the checker cannot load may opt out with `nocheck="<reason>"` on its JSDoc fence. Usage blocks come from the real `composio` property path, so a class reachable only through return values has none.
 
 The SDK release workflow (`.github/workflows/sdk.release.yml`) also regenerates both references in each release PR, so the published reference always matches the released packages.
