@@ -1,7 +1,7 @@
 import { Context, Effect, Layer, Option, Stream, Array, Order } from 'effect';
 import * as Str from 'effect/String';
 import type { Cause } from 'effect';
-import { FetchHttpClient, HttpClient } from 'effect/http';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import {
   // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
@@ -24,6 +24,7 @@ import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { cliClientIdentity } from './client-provenance';
 import { sha256Hex } from 'src/utils/checksums';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
+import { agentSessionHeaders, resolveAgentSession } from './agent-session';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
@@ -180,6 +181,14 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
       getCurrentCwdSessionId().pipe(Effect.provideContext(sessionIdServices))
     );
 
+    // Resolved once, with the configuration this singleton is built with: the session
+    // variables and the telemetry switches do not change while a process runs.
+    const sessionHeaders = Option.match(yield* resolveAgentSession, {
+      onNone: () => ({}),
+      onSome: agentSessionHeaders,
+    });
+    const sessionHeaderNames = Object.keys(sessionHeaders);
+
     // `ctx.data` is read per call: a login or logout changes the user key.
     const getFor = (params?: ClientScope) =>
       Effect.gen(function* () {
@@ -202,30 +211,42 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
             : '';
 
         const client = yield* Effect.try({
-          try: () =>
+          try: () => {
+            const baseURL = ctx.data.baseURL;
+            const origin = URL.parse(baseURL)?.origin;
+            // The SDK rebuilds default headers on each redirect hop. Scope the
+            // session headers where each request is handed to the transport.
+            const transport = HttpClient.mapRequest(httpClient, request =>
+              sessionHeaderNames.length === 0 || URL.parse(request.url, baseURL)?.origin === origin
+                ? request
+                : sessionHeaderNames.reduce(HttpClientRequest.removeHeader, request)
+            );
             // A call that passes `decode: true` has its response validated
             // against the client's schema for that operation.
-            makeComposioClient(
+            return makeComposioClient(
               {
                 auth,
                 scope:
                   orgId !== undefined && projectId !== undefined
                     ? { organizationId: orgId, projectId }
                     : undefined,
-                baseURL: ctx.data.baseURL,
+                baseURL,
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
                 // The identity headers come from here; the client refuses them
                 // in `defaultHeaders`.
                 identity: cliClientIdentity(),
-                defaultHeaders:
-                  cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : undefined,
+                defaultHeaders: {
+                  ...(cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : {}),
+                  ...sessionHeaders,
+                },
                 // Only a call that passes `idempotent` is retried.
                 maxRetries: 0,
                 schemas: schemaLoaders,
               },
-              httpClient
-            ),
+              transport
+            );
+          },
           // The client's own error is kept as it is; anything else thrown is
           // reported as the CLI's configuration error.
           catch: (cause): ClientBuildError =>
