@@ -12,7 +12,7 @@ on:
     branches: [next]
     paths:
       - 'ts/packages/core/src/**'
-      - 'ts/packages/core/generated/**'
+      - 'ts/packages/core/pack/generated/**'
       - 'ts/packages/core/scripts/generate-docs.ts'
       - 'ts/packages/core/package.json'
       - 'ts/packages/core/tsconfig.json'
@@ -76,7 +76,7 @@ jobs:
         run: |
           inputs=(
             'ts/packages/core/src/**'
-            'ts/packages/core/generated/**'
+            'ts/packages/core/pack/generated/**'
             'ts/packages/core/scripts/generate-docs.ts'
             'ts/packages/core/package.json'
             'ts/packages/core/tsconfig.json'

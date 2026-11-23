@@ -209,35 +209,39 @@ describe('blanket suppression detection', () => {
 });
 
 describe('module resolution', () => {
-  test('every public export has a canonical workspace target', () => {
-    const exports = {
-      '': 'src/index.ts',
-      '/experimental': 'src/experimental/index.ts',
-      '/platform': 'src/platform/node.ts',
-      '/utils/json-schema': 'src/utils/json-schema.ts',
-      '/utils/ssrf-guard': 'src/utils/ssrfGuard.node.ts',
-      '/generated': 'generated/index.d.ts',
-    };
-    const from = `${REPO}/.reference-check/snippet.ts`;
-    const code = Object.keys(exports)
-      .map(suffix => `import '@composio/core${suffix}';`)
-      .join('\n');
-    const { program, fileDiagnostics } = compile(
-      new Map([[from, code]]),
-      referenceCompilerOptions(),
-      CORE
-    );
-    expect(fileDiagnostics.get(from)).toEqual([]);
-    const imports = program.getSourceFile(from)?.statements.filter(ts.isImportDeclaration) ?? [];
-    const checker = program.getTypeChecker();
-    expect(
-      imports.map(
-        node =>
-          checker.getSymbolAtLocation(node.moduleSpecifier)?.declarations?.[0]?.getSourceFile()
-            .fileName
-      )
-    ).toEqual(Object.values(exports).map(target => `${CORE}/${target}`));
-  });
+  test(
+    'every public export has a canonical workspace target',
+    () => {
+      const exports = {
+        '': 'src/index.ts',
+        '/experimental': 'src/experimental/index.ts',
+        '/platform': 'src/platform/node.ts',
+        '/utils/json-schema': 'src/utils/json-schema.ts',
+        '/utils/ssrf-guard': 'src/utils/ssrfGuard.node.ts',
+        '/generated': 'pack/generated/index.d.ts',
+      };
+      const from = `${REPO}/.reference-check/snippet.ts`;
+      const code = Object.keys(exports)
+        .map(suffix => `import '@composio/core${suffix}';`)
+        .join('\n');
+      const { program, fileDiagnostics } = compile(
+        new Map([[from, code]]),
+        referenceCompilerOptions(),
+        CORE
+      );
+      expect(fileDiagnostics.get(from)).toEqual([]);
+      const imports = program.getSourceFile(from)?.statements.filter(ts.isImportDeclaration) ?? [];
+      const checker = program.getTypeChecker();
+      expect(
+        imports.map(
+          node =>
+            checker.getSymbolAtLocation(node.moduleSpecifier)?.declarations?.[0]?.getSourceFile()
+              .fileName
+        )
+      ).toEqual(Object.values(exports).map(target => `${CORE}/${target}`));
+    },
+    TIMEOUT
+  );
 });
 
 const PACKAGE_MANIFEST = JSON.stringify({
