@@ -1,0 +1,48 @@
+---
+title: "AsyncLogs"
+description: "Async counterpart to Logs."
+---
+
+## Methods
+
+### search()
+
+Search tool execution logs with filters, pagination, and a time range.
+
+```python signature
+async def search(**params: Unpack[log_create_tool_execution_params.LogCreateToolExecutionParams]) -> log_create_tool_execution_response.LogCreateToolExecution...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `params?` | `Unpack[log_create_tool_execution_params.LogCreateToolExecutionParams]` |
+
+**Returns**
+
+`log_create_tool_execution_response.LogCreateToolExecution...`
+
+---
+
+### get()
+
+Retrieve a single tool execution log by id.
+
+```python signature
+async def get(id: str) -> log_retrieve_tool_execution_response.LogRetrieveToolExecu...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+
+**Returns**
+
+`log_retrieve_tool_execution_response.LogRetrieveToolExecu...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/logs.py#L13)

@@ -1,0 +1,135 @@
+---
+title: "AsyncMCP"
+description: "Async counterpart to MCP."
+---
+
+## Methods
+
+### create()
+
+Create a new MCP server configuration with specified toolkits and authentication settings.
+
+```python signature
+async def create(name: str, toolkits: List[Union[ConfigToolkit, str]], manually_manage_connections: bool = ..., allowed_tools: List[str] | None = ...) -> AsyncMCPCreateResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `name` | `str` |
+| `toolkits` | `List[Union[ConfigToolkit, str]]` |
+| `manually_manage_connections?` | `bool` |
+| `allowed_tools?` | `List[str] \| None` |
+
+**Returns**
+
+`AsyncMCPCreateResponse`
+
+---
+
+### list()
+
+List MCP servers with optional filtering and pagination.
+
+```python signature
+async def list(page_no: int | None = ..., limit: int | None = ..., toolkits: str | None = ..., auth_config_ids: str | None = ..., name: str | None = ..., order_by: Literal['created_at', 'updated_at'] | None = ..., order_direction: Literal['asc', 'desc'] | None = ...) -> MCPListResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `page_no?` | `int \| None` |
+| `limit?` | `int \| None` |
+| `toolkits?` | `str \| None` |
+| `auth_config_ids?` | `str \| None` |
+| `name?` | `str \| None` |
+| `order_by?` | `Literal['created_at', 'updated_at'] \| None` |
+| `order_direction?` | `Literal['asc', 'desc'] \| None` |
+
+**Returns**
+
+`MCPListResponse`
+
+---
+
+### get()
+
+Retrieve detailed information about a specific MCP server/config.
+
+```python signature
+async def get(server_id: str)
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `server_id` | `str` |
+
+---
+
+### update()
+
+Update an existing MCP server configuration.
+
+```python signature
+async def update(server_id: str, name: str | None = ..., toolkits: List[Union[ConfigToolkit, str]] | None = ..., manually_manage_connections: bool | None = ..., allowed_tools: List[str] | None = ...)
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `server_id` | `str` |
+| `name?` | `str \| None` |
+| `toolkits?` | `List[Union[ConfigToolkit, str]] \| None` |
+| `manually_manage_connections?` | `bool \| None` |
+| `allowed_tools?` | `List[str] \| None` |
+
+---
+
+### delete()
+
+Permanently delete an MCP server configuration.
+
+```python signature
+async def delete(server_id: str) -> Dict[str, Any]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `server_id` | `str` |
+
+**Returns**
+
+`Dict[str, Any]`
+
+---
+
+### generate()
+
+Get server URLs for an existing MCP server.
+
+```python signature
+async def generate(user_id: str, mcp_config_id: str, manually_manage_connections: bool | None = ...) -> MCPServerInstance
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `mcp_config_id` | `str` |
+| `manually_manage_connections?` | `bool \| None` |
+
+**Returns**
+
+`MCPServerInstance`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/mcp.py#L38)

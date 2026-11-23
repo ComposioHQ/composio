@@ -1,0 +1,186 @@
+---
+title: "AsyncConnectedAccounts"
+description: "Async counterpart to ConnectedAccounts."
+---
+
+## Methods
+
+### refresh()
+
+Refresh the credentials of a connected account.
+
+```python signature
+async def refresh(nanoid: str, **params: Unpack[connected_account_refresh_params.ConnectedAccountRefreshParams]) -> connected_account_refresh_response.ConnectedAccountRefres...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `params?` | `Unpack[connected_account_refresh_params.ConnectedAccountRefreshParams]` |
+
+**Returns**
+
+`connected_account_refresh_response.ConnectedAccountRefres...`
+
+---
+
+### revoke()
+
+Revoke a connected account's upstream tokens (best effort) and mark the connection `REVOKED`.
+
+```python signature
+async def revoke(nanoid: str) -> connected_account_revoke_response.ConnectedAccountRevokeR...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+
+**Returns**
+
+`connected_account_revoke_response.ConnectedAccountRevokeR...`
+
+---
+
+### complete_auth()
+
+Complete a deferred OAuth connection once you have verified the user's identity.
+
+```python signature
+async def complete_auth(*, user_id: str, session_uri: str) -> connected_account_complete_auth_response.ConnectedAccount...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `session_uri` | `str` |
+
+**Returns**
+
+`connected_account_complete_auth_response.ConnectedAccount...`
+
+---
+
+### update()
+
+Update a connected account's alias and/or credentials.
+
+```python signature
+async def update(nanoid: str, *, alias: str | None = ..., connection: connected_account_patch_params.Connection | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `alias?` | `str \| None` |
+| `connection?` | `connected_account_patch_params.Connection \| None` |
+
+**Returns**
+
+`connected_account_patch_response.ConnectedAccountPatchRes...`
+
+---
+
+### update_acl()
+
+Update the per-user ACL on a SHARED connected account. Experimental — shape may change in future releases.
+
+```python signature
+async def update_acl(nanoid: str, *, allow_all_users: bool | None = ..., allowed_user_ids: List[str] | None = ..., not_allowed_user_ids: List[str] | None = ...) -> connected_account_patch_response.ConnectedAccountPatchRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `nanoid` | `str` |
+| `allow_all_users?` | `bool \| None` |
+| `allowed_user_ids?` | `List[str] \| None` |
+| `not_allowed_user_ids?` | `List[str] \| None` |
+
+**Returns**
+
+`connected_account_patch_response.ConnectedAccountPatchRes...`
+
+---
+
+### initiate()
+
+Compound function to create a new connected account. This function creates a new connected account and returns a connection request.
+
+```python signature
+async def initiate(user_id: str, auth_config_id: str, *, callback_url: str | None = ..., allow_multiple: bool = ..., config: connected_account_create_params.ConnectionState | None = ..., alias: str | None = ...) -> AsyncConnectionRequest
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `auth_config_id` | `str` |
+| `callback_url?` | `str \| None` |
+| `allow_multiple?` | `bool` |
+| `config?` | `connected_account_create_params.ConnectionState \| None` |
+| `alias?` | `str \| None` |
+
+**Returns**
+
+`AsyncConnectionRequest`
+
+---
+
+### link()
+
+Create a Composio Connect Link for a user to connect their account to a given auth config.
+
+```python signature
+async def link(user_id: str, auth_config_id: str, *, callback_url: str | None = ..., alias: str | None = ..., allow_multiple: bool = ..., experimental: link_create_params.Experimental | None = ...) -> AsyncConnectionRequest
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `auth_config_id` | `str` |
+| `callback_url?` | `str \| None` |
+| `alias?` | `str \| None` |
+| `allow_multiple?` | `bool` |
+| `experimental?` | `link_create_params.Experimental \| None` |
+
+**Returns**
+
+`AsyncConnectionRequest`
+
+---
+
+### wait_for_connection()
+
+Wait for connected account with given ID to be active
+
+```python signature
+async def wait_for_connection(id: str, timeout: float | None = ...) -> connected_account_retrieve_response.ConnectedAccountRetri...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+| `timeout?` | `float \| None` |
+
+**Returns**
+
+`connected_account_retrieve_response.ConnectedAccountRetri...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/connected_accounts.py#L102)

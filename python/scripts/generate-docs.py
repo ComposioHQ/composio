@@ -81,6 +81,16 @@ EXPECTED_CLASSES = {
 # appear in the public SDK reference.
 ADDITIONAL_CLASSES = {
     "ToolRouterSession": "core.models.tool_router_session",
+    "AsyncToolRouterSession": "core.models._async_sessions",
+    "AsyncToolRouterSessionExperimental": "core.models._async_sessions",
+    "AsyncToolRouterSessionFilesMount": "core.models._async_resources.tool_router_session_files",
+    "AsyncRemoteFile": "core.models._async_resources.files",
+    "AsyncTriggerSubscription": "core.models._async_resources.subscription",
+    "AsyncConnectionRequest": "core.models._async_resources.connected_accounts",
+    "AsyncWebhookSubscriptions": "core.models._async_resources.webhooks",
+    "AsyncWebhookEndpoints": "core.models._async_resources.webhooks",
+    "AsyncCustomToolkits": "core.models._async_resources.experimental",
+    "AsyncExperimentalUsage": "core.models._async_resources.experimental",
 }
 
 # Modules to search for classes
@@ -409,8 +419,14 @@ def extract_class_info(
         "methods": [],
     }
 
+    members = dict(cls.members)
+    # Local session registration is shared by both session classes. Publish
+    # its methods under each public owner while keeping internal bases private.
+    for base in cls.resolved_bases:
+        if getattr(base, "name", None) == "_LocalSessionTools":
+            members = {**base.members, **members}
     # Extract properties/attributes
-    for name, member in cls.members.items():
+    for name, member in members.items():
         if name.startswith("_"):
             continue
         if isinstance(member, griffe_module.Attribute):
@@ -426,7 +442,7 @@ def extract_class_info(
             )
 
     # Extract methods
-    for name, member in cls.members.items():
+    for name, member in members.items():
         if name.startswith("_"):
             continue
         if isinstance(member, griffe_module.Function):
@@ -457,6 +473,7 @@ def extract_class_info(
                 {
                     "name": name,
                     "source_link": get_source_link(member),
+                    "is_async": "async" in member.labels,
                     "description": method_doc["description"],
                     "parameters": params,
                     "return_type": format_type(member.returns),
@@ -541,9 +558,7 @@ def generate_class_mdx(
                 prop_name = prop["name"]
                 if prop_name in prop_to_class:
                     class_name = prop_to_class[prop_name]
-                    link = (
-                        f"/reference/sdk-reference/python/{to_kebab_case(class_name)}"
-                    )
+                    link = f"/reference/sdk-reference/python/{slug_for(class_name)}"
                     property_rows.append(
                         {
                             "name": f"[`{prop_name}`]({link})",
@@ -595,7 +610,8 @@ def generate_class_mdx(
             # Signature
             params_str = format_method_parameters(method["parameters"])
             ret_type = method["return_type"] if method["return_type"] != "Any" else ""
-            sig = f"def {method['name']}({params_str})"
+            prefix = "async def" if method.get("is_async") else "def"
+            sig = f"{prefix} {method['name']}({params_str})"
             if ret_type:
                 sig += f" -> {ret_type}"
 
@@ -734,15 +750,38 @@ Complete API reference for the `composio` Python package.
 
 ## Quick Start
 
+### Async Python
+
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        session = await composio.create(user_id="user-123")
+        tools = await session.tools()
+        print(len(tools))
+        result = await composio.tools.execute(
+            "GITHUB_LIST_STARGAZERS",
+            arguments={{"owner": "ComposioHQ", "repo": "composio"}},
+            user_id="user-123",
+            version="20250909_00",
+        )
+
+
+asyncio.run(main())
+```
+
+### Sync Python
+
 ```python
 from composio import Composio
 
-composio = Composio(api_key="your-api-key")
-
-# Get tools for a user
-tools = composio.tools.get("user-123", toolkits=["github"])
-
-# Execute a tool
+composio = Composio()
+session = composio.create(user_id="user-123")
+tools = session.tools()
+print(len(tools))
 result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
     arguments={{"owner": "ComposioHQ", "repo": "composio"}},
@@ -825,6 +864,53 @@ def main():
         except (KeyError, AttributeError):
             continue
 
+    # The async facade imports its public resource classes. Resolve those
+    # first-party aliases so documentation follows the types actually shipped.
+    async_module = package.members["async_sdk"]
+    async_props = {
+        "AsyncTools": "tools",
+        "AsyncToolkits": "toolkits",
+        "AsyncToolRouter": "sessions",
+        "AsyncConnectedAccounts": "connected_accounts",
+        "AsyncAuthConfigs": "auth_configs",
+        "AsyncTriggers": "triggers",
+        "AsyncMCP": "mcp",
+        "AsyncWebhooks": "webhooks",
+        "AsyncLogs": "logs",
+        "AsyncKeyring": "keyring",
+        "AsyncExperimentalAPI": "experimental",
+    }
+    classes_to_doc["AsyncComposio"] = {
+        "cls": async_module.members["AsyncComposio"],
+        "access": None,
+    }
+    for name, prop in async_props.items():
+        classes_to_doc[name] = {
+            "cls": async_module.members[name].final_target,
+            "access": f"composio.{prop}",
+        }
+    property_links = {
+        "Composio": prop_to_class,
+        "AsyncComposio": {
+            **{prop: name for name, prop in async_props.items()},
+            "custom_toolkits": "AsyncCustomToolkits",
+        },
+        "AsyncWebhooks": {
+            "endpoints": "AsyncWebhookEndpoints",
+            "subscriptions": "AsyncWebhookSubscriptions",
+        },
+        "AsyncExperimentalAPI": {
+            "custom_toolkits": "AsyncCustomToolkits",
+            "usage": "AsyncExperimentalUsage",
+        },
+        "AsyncToolRouterSession": {
+            "experimental": "AsyncToolRouterSessionExperimental"
+        },
+        "AsyncToolRouterSessionExperimental": {
+            "files": "AsyncToolRouterSessionFilesMount"
+        },
+    }
+
     # Generate docs for each class
     documented_classes = []
 
@@ -834,11 +920,7 @@ def main():
 
         info = extract_class_info(cls, class_name, {"access": config["access"]})
 
-        # Only Composio gets prop_to_class for linking
-        if class_name == "Composio":
-            mdx = generate_class_mdx(info, prop_to_class)
-        else:
-            mdx = generate_class_mdx(info, None)
+        mdx = generate_class_mdx(info, property_links.get(class_name))
 
         file_path = OUTPUT_DIR / f"{slug_for(class_name)}.mdx"
         file_path.write_text(mdx)

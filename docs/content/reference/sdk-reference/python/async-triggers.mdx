@@ -1,0 +1,193 @@
+---
+title: "AsyncTriggers"
+description: "Async counterpart to Triggers."
+---
+
+## Methods
+
+### set_webhook_subscription()
+
+Create or update the project webhook subscription used for webhook delivery.
+
+```python signature
+async def set_webhook_subscription(*, webhook_url: str, enabled_events: Sequence[str] | None = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `webhook_url` | `str` |
+| `enabled_events?` | `Sequence[str] \| None` |
+| `version?` | `Union[WebhookVersion, str]` |
+
+**Returns**
+
+`WebhookSubscription`
+
+---
+
+### get_type()
+
+Get a trigger type by its slug Uses the global toolkit version provided when initializing composio instance to fetch trigger for specific toolkit version
+
+```python signature
+async def get_type(slug: str) -> TriggersTypeRetrieveResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug` | `str` |
+
+**Returns**
+
+`TriggersTypeRetrieveResponse`
+
+---
+
+### list_active()
+
+List all active triggers
+
+```python signature
+async def list_active(trigger_ids: list[str] | None = ..., trigger_names: list[str] | None = ..., auth_config_ids: list[str] | None = ..., connected_account_ids: list[str] | None = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `trigger_ids?` | `list[str] \| None` |
+| `trigger_names?` | `list[str] \| None` |
+| `auth_config_ids?` | `list[str] \| None` |
+| `connected_account_ids?` | `list[str] \| None` |
+| `show_disabled?` | `bool \| None` |
+| `limit?` | `int \| None` |
+| `cursor?` | `str \| None` |
+
+---
+
+### list()
+
+List all the trigger types.
+
+```python signature
+async def list(*, cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[str] | None = ...)
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `cursor?` | `str \| None` |
+| `limit?` | `int \| None` |
+| `toolkit_slugs?` | `list[str] \| None` |
+
+---
+
+### create()
+
+Create a trigger instance
+
+```python signature
+async def create(slug: str, *, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any] | None = ..., type: Literal['webhook', 'poll'] | None = ..., polling_interval: int | None = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug` | `str` |
+| `user_id?` | `str \| None` |
+| `connected_account_id?` | `str \| None` |
+| `trigger_config?` | `Dict[str, Any] \| None` |
+| `type?` | `Literal['webhook', 'poll'] \| None` |
+| `polling_interval?` | `int \| None` |
+
+**Returns**
+
+`trigger_instance_upsert_response.TriggerInstanceUpsertRes...`
+
+---
+
+### subscribe()
+
+Open a realtime subscription and deliver coroutine handlers on this loop.
+
+```python signature
+async def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorHandler | None = ...) -> AsyncTriggerSubscription
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `timeout?` | `float` |
+| `on_subscription_error?` | `SubscriptionErrorHandler \| None` |
+
+**Returns**
+
+`AsyncTriggerSubscription`
+
+---
+
+### aclose()
+
+```python signature
+async def aclose() -> None
+```
+
+---
+
+### verify_webhook()
+
+Verify an incoming webhook payload and signature.
+
+```python signature
+def verify_webhook(*, id: str, payload: str, secret: str, signature: str, timestamp: str, tolerance: int = ...) -> VerifyWebhookResult
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+| `payload` | `str` |
+| `secret` | `str` |
+| `signature` | `str` |
+| `timestamp` | `str` |
+| `tolerance?` | `int` |
+
+**Returns**
+
+`VerifyWebhookResult`
+
+---
+
+### parse()
+
+Parse an incoming webhook request into a typed, normalized trigger payload.
+
+```python signature
+def parse(request: Any = ..., *, body: Union[str, bytes, Mapping[str, Any], None] = ..., headers: Union[Mapping[str, Any], None] = ..., verify_secret: Union[str, None, Omit] = ..., tolerance: int = ...) -> VerifyWebhookResult
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `request?` | `Any` |
+| `body?` | `Union[str, bytes, Mapping[str, Any], None]` |
+| `headers?` | `Union[Mapping[str, Any], None]` |
+| `verify_secret?` | `Union[str, None, Omit]` |
+| `tolerance?` | `int` |
+
+**Returns**
+
+`VerifyWebhookResult`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/triggers.py#L27)

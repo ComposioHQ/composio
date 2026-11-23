@@ -23,18 +23,63 @@ Complete API reference for the `composio` Python package.
 | [`AuthConfigs`](/reference/sdk-reference/python/auth-configs) | Manage authentication configurations. |
 | [`MCP`](/reference/sdk-reference/python/mcp) | MCP (Model Control Protocol) class. Provides enhanced MCP server operations  Thi... |
 | [`Session`](/reference/sdk-reference/python/session) | A Composio session — the object returned by `composio.create(...)` / `composio.u... |
+| [`AsyncToolRouterSession`](/reference/sdk-reference/python/async-tool-router-session) | An async session bound to one user, its provider tools and optional MCP endpoint... |
+| [`AsyncToolRouterSessionExperimental`](/reference/sdk-reference/python/async-tool-router-session-experimental) | AsyncToolRouterSessionExperimental class |
+| [`AsyncToolRouterSessionFilesMount`](/reference/sdk-reference/python/async-tool-router-session-files-mount) | Async counterpart to ToolRouterSessionFilesMount. |
+| [`AsyncRemoteFile`](/reference/sdk-reference/python/async-remote-file) | AsyncRemoteFile class |
+| [`AsyncTriggerSubscription`](/reference/sdk-reference/python/async-trigger-subscription) | A realtime listener bound to the event loop that created it. |
+| [`AsyncConnectionRequest`](/reference/sdk-reference/python/async-connection-request) | Async counterpart to ConnectionRequest. |
+| [`AsyncWebhookSubscriptions`](/reference/sdk-reference/python/async-webhook-subscriptions) | Async counterpart to WebhookSubscriptions. |
+| [`AsyncWebhookEndpoints`](/reference/sdk-reference/python/async-webhook-endpoints) | Async counterpart to WebhookEndpoints. |
+| [`AsyncCustomToolkits`](/reference/sdk-reference/python/async-custom-toolkits) | Async counterpart to CustomToolkits. |
+| [`AsyncExperimentalUsage`](/reference/sdk-reference/python/async-experimental-usage) | Async counterpart to ExperimentalUsage. |
+| [`AsyncComposio`](/reference/sdk-reference/python/async-composio) | Asynchronous Composio SDK. Use one client per application event loop.  Enter an ... |
+| [`AsyncTools`](/reference/sdk-reference/python/async-tools) | Discover provider tools and execute API calls with native async I/O. |
+| [`AsyncToolkits`](/reference/sdk-reference/python/async-toolkits) | Async counterpart to Toolkits. |
+| [`AsyncToolRouter`](/reference/sdk-reference/python/async-tool-router) | AsyncToolRouter class |
+| [`AsyncConnectedAccounts`](/reference/sdk-reference/python/async-connected-accounts) | Async counterpart to ConnectedAccounts. |
+| [`AsyncAuthConfigs`](/reference/sdk-reference/python/async-auth-configs) | Async counterpart to AuthConfigs. |
+| [`AsyncTriggers`](/reference/sdk-reference/python/async-triggers) | Async counterpart to Triggers. |
+| [`AsyncMCP`](/reference/sdk-reference/python/async-mcp) | Async counterpart to MCP. |
+| [`AsyncWebhooks`](/reference/sdk-reference/python/async-webhooks) | Async counterpart to Webhooks. |
+| [`AsyncLogs`](/reference/sdk-reference/python/async-logs) | Async counterpart to Logs. |
+| [`AsyncKeyring`](/reference/sdk-reference/python/async-keyring) | Async counterpart to Keyring. |
+| [`AsyncExperimentalAPI`](/reference/sdk-reference/python/async-experimental-api) | Async counterpart to ExperimentalAPI. |
 
 ## Quick Start
+
+### Async Python
+
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        session = await composio.create(user_id="user-123")
+        tools = await session.tools()
+        print(len(tools))
+        result = await composio.tools.execute(
+            "GITHUB_LIST_STARGAZERS",
+            arguments={"owner": "ComposioHQ", "repo": "composio"},
+            user_id="user-123",
+            version="20250909_00",
+        )
+
+
+asyncio.run(main())
+```
+
+### Sync Python
 
 ```python
 from composio import Composio
 
-composio = Composio(api_key="your-api-key")
-
-# Get tools for a user
-tools = composio.tools.get("user-123", toolkits=["github"])
-
-# Execute a tool
+composio = Composio()
+session = composio.create(user_id="user-123")
+tools = session.tools()
+print(len(tools))
 result = composio.tools.execute(
     "GITHUB_LIST_STARGAZERS",
     arguments={"owner": "ComposioHQ", "repo": "composio"},
