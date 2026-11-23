@@ -56,12 +56,13 @@ export function SearchAndAskAI() {
         <button
           type="button"
           data-search-full=""
-          className="inline-flex items-center gap-2 rounded-none border bg-fd-secondary/50 p-1.5 ps-2.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground w-full max-w-[240px]"
+          className="inline-flex min-w-0 items-center gap-2 whitespace-nowrap rounded-none border bg-fd-secondary/50 p-1.5 ps-2.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground max-[1360px]:pe-2.5 min-[1360px]:w-full min-[1360px]:max-w-[240px]"
           onClick={() => setOpenSearch(true)}
         >
-          <Search className="size-4" />
-          {t('Search')}
-          <div className="ms-auto inline-flex gap-0.5">
+          <Search className="size-4 shrink-0" />
+          <span className="sr-only min-[1360px]:not-sr-only">{t('Search')}</span>
+          {/* Shortcut hints need room the crowded header below 1360px does not have. */}
+          <div className="ms-auto hidden gap-0.5 min-[1360px]:inline-flex">
             {hotKey.map((k, i) => (
               <kbd key={i} className="rounded-md border bg-fd-background px-1.5">
                 {k.display}
@@ -75,10 +76,10 @@ export function SearchAndAskAI() {
         onClick={() => {
           toggleEveChat();
         }}
-        className="inline-flex items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10 shrink-0"
+        className="inline-flex items-center gap-2 rounded-lg border border-[var(--composio-orange)]/20 bg-[var(--composio-orange)]/5 p-1.5 ps-2.5 text-sm text-[var(--composio-orange)] transition-colors hover:bg-[var(--composio-orange)]/10 shrink-0 whitespace-nowrap"
       >
         Ask AI
-        <div className="hidden lg:inline-flex gap-0.5">
+        <div className="hidden min-[1360px]:inline-flex gap-0.5">
           <kbd className="rounded-md border bg-fd-background px-1.5">{isMac ? '⌘' : 'Ctrl'}</kbd>
           <kbd className="rounded-md border bg-fd-background px-1.5">I</kbd>
         </div>

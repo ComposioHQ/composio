@@ -1346,3 +1346,20 @@ html.docs-product-transition .docs-product-shell {
     transform: translateX(12px);
   }
 }
+
+/*
+ * Desktop header (fumadocs HomeLayout, #nd-nav): nav labels such as
+ * "Knowledge Base" must not wrap, and below 1360px the primary link list
+ * gives back its 24px side padding and inter-item gap so it never overlaps the
+ * logo and product switcher (Reference adds a version selector).
+ */
+#nd-nav ul.px-6 > li > a {
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) and (max-width: 1359.98px) {
+  #nd-nav ul.px-6 {
+    gap: 0;
+    padding-inline: 0.5rem;
+  }
+}

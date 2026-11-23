@@ -76,7 +76,8 @@ export function baseOptions(): BaseLayoutProps {
         text: (
           <span className="inline-flex items-center gap-1.5">
             <Play className="size-4" style={{ color: 'var(--composio-orange)' }} />
-            Playground
+            {/* Icon-only below 1360px, where the header has no room for the label. */}
+            <span className="sr-only min-[1360px]:not-sr-only">Playground</span>
           </span>
         ),
         url: 'https://dashboard.composio.dev/~/project/playground?utm_source=docs&utm_medium=navbar&utm_campaign=playground',
