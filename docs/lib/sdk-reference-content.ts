@@ -34,7 +34,7 @@ function pinInstallWidgets(source: string, language: Language, version: string):
 
   const { ecosystem, requirement, separator } = installations[language];
   const changes: { start: number; end: number; packages: string }[] = [];
-  visit(parseExampleDocument(source, 'page.mdx'), ['mdxJsxFlowElement', 'mdxJsxTextElement'], node => {
+  visit(parseExampleDocument(source, 'page.mdx'), ['mdxJsxFlowElement', 'mdxJsxTextElement'] as const, node => {
     if (node.name !== 'PackageInstall' || (attributeValue(node, 'ecosystem') ?? 'node') !== ecosystem) return;
     const packages = attributeValue(node, 'packages');
     if (typeof packages !== 'string') return;
