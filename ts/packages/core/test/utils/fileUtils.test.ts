@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import { getFileDataAfterUploadingToS3, downloadFileFromS3 } from '../../src/utils/fileUtils.node';
+import {
+  getFileDataAfterUploadingToS3,
+  downloadFileFromS3,
+  getComposioDir,
+  getComposioTempFilesDir,
+  saveFile,
+} from '../../src/utils/fileUtils.node';
 import ComposioClient from '@composio/client';
-import { ComposioSensitiveFilePathBlockedError } from '../../src/errors/FileModifierErrors';
+import {
+  ComposioFileDownloadError,
+  ComposioSensitiveFilePathBlockedError,
+} from '../../src/errors/FileModifierErrors';
 
 // Mock the uuid module
 vi.mock('../../src/utils/uuid', () => ({
@@ -81,6 +90,9 @@ describe('fileUtils', () => {
     } as unknown as ComposioClient;
 
     vi.clearAllMocks();
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.mocked(fs.mkdirSync).mockReset();
+    vi.mocked(fs.writeFileSync).mockReset();
 
     // Mock Date.now to return a consistent timestamp
     vi.spyOn(Date, 'now').mockReturnValue(1640995200000); // 2022-01-01 00:00:00
@@ -357,6 +369,153 @@ describe('fileUtils', () => {
       ).rejects.toThrow('Failed to download file: Not Found');
     });
 
+    it('throws a typed ComposioFileDownloadError on an unsuccessful HTTP response', async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 403, statusText: 'Forbidden' });
+
+      const error = await downloadFileFromS3({
+        toolSlug: 'test-tool',
+        s3Url: 'https://s3.example.com/forbidden.txt',
+        mimeType: 'text/plain',
+      }).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ComposioFileDownloadError);
+      const typed = error as ComposioFileDownloadError;
+      expect(typed.code).toBe('TS-SDK::FILE_DOWNLOAD_FAILED');
+      expect(typed.statusCode).toBe(403);
+      expect(typed.meta).toMatchObject({
+        s3Url: 'https://s3.example.com/forbidden.txt',
+        statusText: 'Forbidden',
+      });
+    });
+
+    it('rejects when the downloaded file cannot be saved', async () => {
+      mockFetch.mockResolvedValue(downloadedFileResponse());
+      const diskFull = new Error('disk full');
+      vi.mocked(fs.writeFileSync).mockImplementationOnce(() => {
+        throw diskFull;
+      });
+
+      const error = await downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.txt',
+        mimeType: 'text/plain',
+      }).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ComposioFileDownloadError);
+      const typed = error as ComposioFileDownloadError;
+      expect(typed.message).toBe(
+        'Failed to save downloaded file: github_1640995200000abc12345.txt'
+      );
+      expect(typed.code).toBe('TS-SDK::FILE_DOWNLOAD_FAILED');
+      expect(typed.cause).toBe(diskFull);
+      expect(typed.meta).toMatchObject({
+        s3Url: 'https://s3.example.com/file.txt',
+        fileName: 'github_1640995200000abc12345.txt',
+      });
+    });
+
+    it('preserves the original error when the default download directory cannot be created', async () => {
+      mockFetch.mockResolvedValue(downloadedFileResponse());
+      const permissionDenied = Object.assign(new Error('permission denied'), {
+        code: 'EACCES',
+        path: '/home/test/.composio/files',
+        syscall: 'mkdir',
+      });
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+      vi.mocked(fs.mkdirSync).mockImplementationOnce(() => {
+        throw permissionDenied;
+      });
+
+      const download = downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.txt',
+        mimeType: 'text/plain',
+      });
+
+      await expect(download).rejects.toBeInstanceOf(ComposioFileDownloadError);
+      await expect(download).rejects.toMatchObject({
+        code: 'TS-SDK::FILE_DOWNLOAD_FAILED',
+        cause: permissionDenied,
+        meta: {
+          s3Url: 'https://s3.example.com/file.txt',
+          fileName: 'github_1640995200000abc12345.txt',
+        },
+      });
+      await expect(download).rejects.toHaveProperty('cause', permissionDenied);
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('preserves the fallback directory error when both download directories fail', async () => {
+      mockFetch.mockResolvedValue(downloadedFileResponse());
+      const customDirectoryError = new Error('custom directory is read-only');
+      const fallbackDirectoryError = Object.assign(new Error('default directory is not writable'), {
+        code: 'EACCES',
+        path: '/home/test/.composio/files',
+      });
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+      vi.mocked(fs.mkdirSync)
+        .mockImplementationOnce(() => {
+          throw customDirectoryError;
+        })
+        .mockImplementationOnce(() => {
+          throw fallbackDirectoryError;
+        });
+
+      const download = downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.txt',
+        mimeType: 'text/plain',
+        fileDownloadDir: '/downloads',
+      });
+
+      await expect(download).rejects.toBeInstanceOf(ComposioFileDownloadError);
+      await expect(download).rejects.toHaveProperty('cause', fallbackDirectoryError);
+      expect(fs.mkdirSync).toHaveBeenNthCalledWith(1, '/downloads', { recursive: true });
+      expect(fs.mkdirSync).toHaveBeenNthCalledWith(2, '/home/test/.composio/files', {
+        recursive: true,
+      });
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('still downloads into the default directory when creating a custom directory fails', async () => {
+      const body = new Uint8Array([1, 2, 3]);
+      mockFetch.mockResolvedValue(downloadedFileResponse(body));
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+      vi.mocked(fs.mkdirSync).mockImplementationOnce(() => {
+        throw new Error('custom directory is read-only');
+      });
+
+      const result = await downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.txt',
+        mimeType: 'text/plain',
+        fileDownloadDir: '/downloads',
+      });
+
+      expect(result.filePath).toBe('/home/test/.composio/files/github_1640995200000abc12345.txt');
+      expect(fs.mkdirSync).toHaveBeenNthCalledWith(2, '/home/test/.composio/files', {
+        recursive: true,
+      });
+      expect(fs.writeFileSync).toHaveBeenCalledWith(result.filePath, body);
+    });
+
+    it('creates and uses the configured download directory when it is writable', async () => {
+      const body = new Uint8Array([1, 2, 3]);
+      mockFetch.mockResolvedValue(downloadedFileResponse(body));
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+
+      const result = await downloadFileFromS3({
+        toolSlug: 'github',
+        s3Url: 'https://s3.example.com/file.txt',
+        mimeType: 'text/plain',
+        fileDownloadDir: '/downloads',
+      });
+
+      expect(result.filePath).toBe('/downloads/github_1640995200000abc12345.txt');
+      expect(fs.mkdirSync).toHaveBeenCalledExactlyOnceWith('/downloads', { recursive: true });
+      expect(fs.writeFileSync).toHaveBeenCalledWith(result.filePath, body);
+    });
+
     it('synthesizes the filename server-side and ignores the s3Url path', async () => {
       // Regression: lock the invariant that the saved filename comes from
       // (toolSlug, mimeType, timestamp, random id) — never from the s3Url.
@@ -434,6 +593,60 @@ describe('fileUtils', () => {
 
       expect(result.filePath).toBeDefined();
       expect(fs.writeFileSync).toHaveBeenCalledWith(result.filePath, body);
+    });
+  });
+
+  describe('nullable file helpers', () => {
+    it.each([
+      ['Composio', getComposioDir],
+      ['temporary files', getComposioTempFilesDir],
+    ] as const)(
+      'keeps the %s directory helper nullable on mkdir failure',
+      (_name, getDirectory) => {
+        vi.mocked(fs.existsSync).mockReturnValue(false);
+        vi.mocked(fs.mkdirSync).mockImplementationOnce(() => {
+          throw new Error('permission denied');
+        });
+
+        expect(getDirectory(true)).toBeNull();
+      }
+    );
+
+    it.each([
+      true,
+      false,
+      { isTempFile: true },
+      { isTempFile: false },
+      { outputDir: '/downloads' },
+    ])('keeps saveFile nullable on directory failure with options %j', options => {
+      vi.mocked(fs.existsSync).mockReturnValue(false);
+      vi.mocked(fs.mkdirSync).mockImplementation(() => {
+        throw new Error('permission denied');
+      });
+
+      expect(saveFile('example.txt', 'contents', options)).toBeNull();
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('keeps saveFile nullable on write failure', () => {
+      vi.mocked(fs.writeFileSync).mockImplementationOnce(() => {
+        throw new Error('disk full');
+      });
+
+      expect(saveFile('example.txt', 'contents', true)).toBeNull();
+    });
+
+    it('still supports the legacy boolean saveFile option', () => {
+      expect(saveFile('example.txt', 'contents', true)).toBe(
+        '/home/test/.composio/files/example.txt'
+      );
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        '/home/test/.composio/files/example.txt',
+        'contents',
+        {
+          encoding: 'utf8',
+        }
+      );
     });
   });
 
