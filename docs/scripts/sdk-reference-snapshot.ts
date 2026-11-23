@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { prepareStableReference } from '../lib/sdk-reference-content';
 import {
   languages,
-  prepareStableReference,
   promoteSnapshot,
   reviseSnapshot,
   snapshotDirectory,
