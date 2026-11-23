@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { prepareStableReference } from '../../lib/sdk-reference-content';
 import {
   assertForwardSnapshot,
+  pageNames,
   promoteSnapshot,
+  resolveStableReferenceSource,
   reviseSnapshot,
   snapshotDirectory,
   verifySnapshot,
@@ -121,5 +123,32 @@ test('the production collection uses both verified snapshots at the canonical re
     expect(readFileSync(join(sdk, 'typescript/index.mdx'), 'utf8')).toBe(indexHeader + nodeWidget);
     expect(existsSync(join(output, 'sdk-reference/typescript/unreleased.mdx'))).toBe(false);
     expect(existsSync(join(sdk, 'typescript/unreleased.mdx'))).toBe(true);
+    expect(() => prepareStableReference(root, output)).toThrow('must be empty');
+
+    expect(
+      resolveStableReferenceSource(root, output, join(output, 'sdk-reference/typescript/tools.mdx'))
+    ).toBe(join(ts, 'pages/tools.mdx'));
+    expect(
+      resolveStableReferenceSource(root, output, join(output, 'limits.mdx'))
+    ).toBe(join(worktreeReference, 'limits.mdx'));
+  });
+});
+
+test('snapshot verification rejects unchanged tampering, unexpected files, and meta.json drift', () => {
+  withReference((root, pages) => {
+    const dir = snapshotDirectory(root, 'typescript');
+    promoteSnapshot(dir, pages, '0.31.0', RELEASE);
+    const current = verifySnapshot(dir);
+    expect(() => assertForwardSnapshot(current, current)).not.toThrow();
+    expect(() =>
+      assertForwardSnapshot(current, { ...current, digest: 'f'.repeat(64) })
+    ).toThrow('Invalid SDK reference promotion');
+
+    writeFileSync(join(pages, 'extra.mdx'), '---\ntitle: Extra\n---\n');
+    expect(() => pageNames(pages)).toThrow('do not match meta.json');
+    rmSync(join(pages, 'extra.mdx'));
+
+    mkdirSync(join(pages, 'nested'));
+    expect(() => pageNames(pages)).toThrow('Unexpected SDK reference file');
   });
 });

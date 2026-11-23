@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { z } from 'zod';
 
 export const languages = ['typescript', 'python'] as const;
@@ -16,6 +16,18 @@ export type Snapshot = z.infer<typeof Manifest>;
 
 export const snapshotDirectory = (docsRoot: string, language: Language) =>
   join(docsRoot, 'sdk-reference-snapshots', language);
+
+export function resolveStableReferenceSource(
+  docsRoot: string,
+  assembledDir: string,
+  absolutePath: string
+): string {
+  const relativePath = relative(assembledDir, absolutePath).replaceAll('\\', '/');
+  const language = languages.find(item => relativePath.startsWith(`sdk-reference/${item}/`));
+  return language !== undefined
+    ? join(snapshotDirectory(docsRoot, language), 'pages', relativePath.slice(`sdk-reference/${language}/`.length))
+    : join(docsRoot, 'content/reference', relativePath);
+}
 
 const manifestPath = (directory: string) => join(directory, 'manifest.json');
 

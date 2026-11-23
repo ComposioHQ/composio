@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import {
   source, getReferenceSource, examplesSource, toolkitsSource,
   changelogEntries, dateToChangelogUrl,
 } from '../lib/source';
-import { languages, snapshotDirectory } from '../lib/sdk-reference-snapshot';
+import { resolveStableReferenceSource } from '../lib/sdk-reference-snapshot';
 import {
   buildContentFreshness, getExplicitLastUpdated, type FreshnessPage,
 } from '../lib/content-freshness-build';
@@ -40,12 +40,7 @@ for (const page of reference.getPages()) {
     authored(page.url, path);
     continue;
   }
-  const relativePath = relative(assembled, path);
-  const language = languages.find(language => relativePath.startsWith(`sdk-reference/${language}/`));
-  const backingPath = language !== undefined
-    ? join(snapshotDirectory(root, language), 'pages', relativePath.slice(`sdk-reference/${language}/`.length))
-    : join(root, 'content/reference', relativePath);
-  authored(page.url, backingPath);
+  authored(page.url, resolveStableReferenceSource(root, assembled, path));
 }
 
 for (const entry of changelogEntries) {

@@ -19,8 +19,8 @@ import { formatText, type CheckResult, type OptOut } from './report';
 export type { CheckResult } from './report';
 
 export interface CheckOptions {
-  readonly builtPackage?: string;
-  readonly installedPackage?: string;
+  readonly packageDir?: string;
+  readonly comparePackaged?: boolean;
   readonly compilerOptions?: ts.CompilerOptions;
 }
 
@@ -85,15 +85,13 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       .filter(name => name.endsWith('.mdx'))
       .sort();
 
-    const packageDirectory = options.builtPackage ?? options.installedPackage;
-    const installed = packageDirectory === undefined ? undefined : path.resolve(packageDirectory);
-    const built = options.builtPackage === undefined ? undefined : installed;
+    const packageDir = options.packageDir === undefined ? undefined : path.resolve(options.packageDir);
     const violations =
-      built === undefined
+      packageDir === undefined || !options.comparePackaged
         ? []
         : yield* packagedViolations(
             root,
-            path.join(built, 'dist/docs/reference/sdk-reference/typescript'),
+            path.join(packageDir, 'dist/docs/reference/sdk-reference/typescript'),
             names
           );
     const optedOut: OptOut[] = [];
@@ -183,13 +181,13 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       });
     }
 
-    const coreRoot = installed ?? path.resolve(REPO_ROOT, 'ts/packages/core');
+    const coreRoot = packageDir ?? path.resolve(REPO_ROOT, 'ts/packages/core');
     violations.push(
       ...(yield* checkSnippets(
         snippets,
         coreRoot,
         options.compilerOptions,
-        installed === undefined ? 'workspace' : 'built'
+        packageDir === undefined ? 'workspace' : 'built'
       ))
     );
     return {
@@ -201,7 +199,7 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
   });
 
 const USAGE =
-  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--built-package <dir> | --installed-package <dir>] [directory]';
+  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--package <dir> [--compare-packaged]] [directory]';
 
 const main = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args;
@@ -211,22 +209,22 @@ const main = Effect.gen(function* () {
       allowPositionals: true,
       options: {
         json: { type: 'boolean' },
-        'built-package': { type: 'string' },
-        'installed-package': { type: 'string' },
+        package: { type: 'string' },
+        'compare-packaged': { type: 'boolean' },
       },
     }),
     catch: cause => new UsageError({ message: `${String(cause)}\n${USAGE}` }),
   });
-  const builtPackage = values['built-package'];
-  const installedPackage = values['installed-package'];
-  if (positionals.length > 1 || (builtPackage !== undefined && installedPackage !== undefined)) {
+  const packageDir = values.package;
+  const comparePackaged = values['compare-packaged'] ?? false;
+  if (positionals.length > 1 || (comparePackaged && packageDir === undefined)) {
     return yield* new UsageError({ message: USAGE });
   }
   const path = yield* Path.Path;
   const json = values.json ?? false;
   const result = yield* checkReferencePages(positionals[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
-    builtPackage,
-    installedPackage,
+    packageDir,
+    comparePackaged,
   });
   yield* Console.log(json ? JSON.stringify(result, null, 2) : formatText(result));
   if (result.violations.length > 0) {

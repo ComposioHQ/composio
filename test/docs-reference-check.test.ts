@@ -354,7 +354,7 @@ test(
     await withPackage(async (root, put) => {
       await put('src/index.ts', 'export class Composio { sourceOnly() {} }');
       await put('dist/index.d.mts', 'export declare class Composio {}');
-      const options = { builtPackage: root, compilerOptions: { types: [] } };
+      const options = { packageDir: root, comparePackaged: true, compilerOptions: { types: [] } };
       const pages = join(root, 'pages');
       const packedPage = 'dist/docs/reference/sdk-reference/typescript/index.mdx';
       const missing = await check(pages, options);
@@ -385,7 +385,7 @@ test(
       expect((await check(pages, options)).violations).toEqual([]);
 
       await put(packedPage, REFERENCE_EXAMPLE + '\n');
-      const installed = { installedPackage: root, compilerOptions: { types: [] } };
+      const installed = { packageDir: root, compilerOptions: { types: [] } };
       expect((await check(pages, installed)).violations).toEqual([]);
       await put('dist/index.d.mts', 'export declare class Composio {}');
       expect((await check(pages, installed)).violations).toContainEqual(

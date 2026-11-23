@@ -31,15 +31,15 @@ jobs:
           if ! git diff --quiet "$BASE_SHA" HEAD -- \
             docs/sdk-reference-snapshots \
             docs/content/reference/sdk-reference/meta.json \
-            docs/lib/sdk-reference-snapshot.ts docs/lib/sdk-reference-content.ts \
+            docs/lib/sdk-reference-snapshot.ts docs/lib/sdk-reference-content.ts docs/lib/search-index.ts \
             docs/lib/code-examples.ts docs/lib/example-document.ts docs/lib/llm-guardrails \
-            'docs/scripts/*sdk-reference-snapshot*.ts' docs/scripts/vercel-build.sh \
-            docs/source.config.ts docs/vercel.json docs/package.json docs/bun.lock docs/agent/lib/docs.ts \
+            docs/scripts/sdk-reference-snapshot.ts docs/scripts/vercel-build.sh \
+            docs/source.config.ts docs/next.config.mjs docs/vercel.json docs/package.json docs/bun.lock docs/agent/lib/docs.ts \
             docs/scripts/check-python-snippets.ts docs/scripts/python-snippets docs/scripts/build-agent-index.ts docs/scripts/build-content-freshness.ts \
             scripts/docs-reference-check scripts/sdk-release/reference-snapshot.ts docs/tests/static/sdk-reference-snapshot.test.ts \
             package.json pnpm-lock.yaml uv.lock mise.toml mise.lock \
             .github/actions/setup-node-pnpm-bun .github/actions/setup-python-uv \
-            .github/workflows/docs-sdk-reference-snapshots.yml .github/workflows/sdk.release.yml; then
+            .github/workflows/docs-sdk-reference-snapshots.yml .github/workflows/docs-search-sync.yml .github/workflows/sdk.release.yml; then
             echo "affected=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -68,7 +68,7 @@ jobs:
         if: steps.scope.outputs.affected == 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bun docs/scripts/check-sdk-reference-snapshots.ts "$BASE_SHA"
+        run: bun docs/scripts/sdk-reference-snapshot.ts check "$BASE_SHA"
 
       - name: Exercise the production reference selection
         if: steps.scope.outputs.affected == 'true'

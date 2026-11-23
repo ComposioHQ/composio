@@ -1,5 +1,6 @@
 // Use direct imports from collections to avoid top-level await in lib/source.ts.
 import { resolveToolkitCount } from './toolkit-count';
+import { languages, snapshotDirectory } from './sdk-reference-snapshot';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -205,8 +206,7 @@ function isExcludedFromSearch(url: string): boolean {
   return SEARCH_EXCLUDED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-function urlFromContentPath(path: string): { url: string; type: string } | undefined {
-  const rel = relative(join(process.cwd(), 'content'), path).replace(/\\/g, '/');
+function urlFromRelativeContentPath(rel: string): { url: string; type: string } | undefined {
   const withoutExt = rel.replace(/\.mdx?$/, '');
   const parts = withoutExt.split('/');
   const collection = parts.shift();
@@ -535,10 +535,47 @@ function getToolkitSearchFields(slug: string): Pick<Parameters<typeof recordsFro
   };
 }
 
+function listSearchContentEntries(): { file: string; relPath: string }[] {
+  const docsRoot = process.cwd();
+  const contentDir = join(docsRoot, 'content');
+  const stableReferenceDir = process.env.COMPOSIO_STABLE_REFERENCE_DIR;
+  const useProductionSnapshots = !stableReferenceDir && process.env.VERCEL_ENV === 'production';
+
+  const entries: { file: string; relPath: string }[] = [];
+  for (const file of listContentFiles(contentDir)) {
+    const relPath = relative(contentDir, file).replace(/\\/g, '/');
+    if (stableReferenceDir && relPath.startsWith('reference/')) continue;
+    if (
+      useProductionSnapshots &&
+      languages.some((language) => relPath.startsWith(`reference/sdk-reference/${language}/`))
+    ) {
+      continue;
+    }
+    entries.push({ file, relPath });
+  }
+
+  if (stableReferenceDir) {
+    for (const file of listContentFiles(stableReferenceDir)) {
+      const relPath = `reference/${relative(stableReferenceDir, file).replace(/\\/g, '/')}`;
+      entries.push({ file, relPath });
+    }
+  } else if (useProductionSnapshots) {
+    for (const language of languages) {
+      const pagesDir = join(snapshotDirectory(docsRoot, language), 'pages');
+      if (!existsSync(pagesDir)) continue;
+      for (const file of listContentFiles(pagesDir)) {
+        const relPath = `reference/sdk-reference/${language}/${relative(pagesDir, file).replace(/\\/g, '/')}`;
+        entries.push({ file, relPath });
+      }
+    }
+  }
+
+  return entries;
+}
+
 function getFilesystemRecords(): AlgoliaDocsRecord[] {
-  const contentDir = join(process.cwd(), 'content');
-  return listContentFiles(contentDir).flatMap((file) => {
-    const route = urlFromContentPath(file);
+  return listSearchContentEntries().flatMap(({ file, relPath }) => {
+    const route = urlFromRelativeContentPath(relPath);
     if (!route) return [];
     if (isExcludedFromSearch(route.url)) return [];
 

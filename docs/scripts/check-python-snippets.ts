@@ -131,6 +131,7 @@ export function runPythonHelper(
   snippets: PythonSnippet[],
   syntaxOnly = false,
   installedPython?: string,
+  reference = false,
 ): PythonHelperResult {
   const workDir = mkdtempSync(join(tmpdir(), 'python-snippets-'));
   try {
@@ -141,6 +142,7 @@ export function runPythonHelper(
         workDir,
         sdkPython: installedPython ?? SDK_PYTHON,
         installed: installedPython !== undefined,
+        reference,
         syntaxOnly,
         snippets: snippets.map(({ id, code, typeCheck }) => ({ id, code, typeCheck })),
       }),
@@ -199,8 +201,13 @@ function main(): void {
   const snippets = reference
     ? collectPythonSnippets(listPythonReferenceFiles(DOCS_ROOT, directory), reference)
     : collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
-  const helper = runPythonHelper(snippets, values['syntax-only'], installed === undefined ? undefined : resolve(installed));
-  const violations = pythonSnippetViolations(snippets, helper, installed !== undefined);
+  const helper = runPythonHelper(
+    snippets,
+    values['syntax-only'],
+    installed === undefined ? undefined : resolve(installed),
+    Boolean(reference),
+  );
+  const violations = pythonSnippetViolations(snippets, helper, Boolean(reference));
   violations.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
 
   const counts: Record<string, number> = {};
