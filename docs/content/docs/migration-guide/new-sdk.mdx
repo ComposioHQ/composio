@@ -125,6 +125,24 @@ The SDK structure is now framework-agnostic and includes the OpenAI provider out
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+# from composio_langchain import LangchainProvider
+
+composio = AsyncComposio()
+
+# composio = AsyncComposio(provider=LangchainProvider())
+
+tools = await composio.tools.get(
+    user_id="user@example.com",
+    tools=["LINEAR_CREATE_LINEAR_ISSUE", "GITHUB_CREATE_COMMIT"]
+)
+# tools returned is formatted for the provider. by default, OpenAI.
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 # from composio_langchain import LangchainProvider
@@ -138,6 +156,8 @@ tools = composio.tools.get(
 )
 # tools returned is formatted for the provider. by default, OpenAI.
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -224,6 +244,28 @@ Since `user_id` is now explicitly required, the `check_connected_accounts` flag 
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+user_id = "user@acme.org"
+
+tools_1 = await composio.tools.get(user_id=user_id, toolkits=["GITHUB", "LINEAR"])
+
+tools_2 = await composio.tools.get(user_id=user_id, toolkits=["SLACK"], limit=5)  # Default limit=20
+
+tools_3 = await composio.tools.get(
+    user_id=user_id,
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_AN_ISSUE_COMMENT", "GITHUB_CREATE_A_COMMIT"],
+)
+
+tools_4 = await composio.tools.get(user_id=user_id, search="hackernews posts")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -242,6 +284,8 @@ tools_3 = composio.tools.get(
 
 tools_4 = composio.tools.get(user_id=user_id, search="hackernews posts")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -292,6 +336,19 @@ To examine the raw schema definition of a tool for understanding input/output pa
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+tool = await composio.tools.get_raw_composio_tool_by_slug("HACKERNEWS_GET_LATEST_POSTS")
+
+print(tool.model_dump_json())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -301,6 +358,8 @@ tool = composio.tools.get_raw_composio_tool_by_slug("HACKERNEWS_GET_LATEST_POSTS
 
 print(tool.model_dump_json())
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -334,6 +393,31 @@ For non-agentic frameworks, Composio provides a helper function to execute tool 
 {/* code-example: no-api reason="the OpenAI provider formats tool schemas and dispatches model-generated tool calls in-process; this orchestration helper has no single HTTP operation" */}
 <Tabs groupId="language" items={['Python v3', 'TypeScript v3']} persist>
   <Tab value="Python v3">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from openai import AsyncOpenAI
+from composio_openai import OpenAIProvider
+
+openai_client = AsyncOpenAI()
+
+composio = AsyncComposio(provider=OpenAIProvider(), toolkit_versions={"github": "latest"})
+provider = composio.provider
+assert isinstance(provider, OpenAIProvider)
+
+tools = await composio.tools.get(user_id="user@acme.com", tools=["GITHUB_GET_THE_ZEN_OF_GITHUB"])
+response = await openai_client.chat.completions.create(
+    model="gpt-4.1",
+    messages=[{"role": "user", "content": "gimme some zen."}],
+    tools=tools,
+)
+
+result = await provider.ahandle_tool_calls(user_id="user@acme.com", response=response)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from openai import OpenAI
@@ -353,6 +437,8 @@ response = openai_client.chat.completions.create(
 result = provider.handle_tool_calls(user_id="user@acme.com", response=response)
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript v3">
 ```typescript
@@ -426,6 +512,37 @@ The following example demonstrates schema modifier usage, applicable across all 
 {/* code-example: no-api reason="schema modifiers transform tool definitions in the local SDK provider pipeline" */}
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, schema_modifier
+from composio.types import Tool
+
+composio = AsyncComposio()
+
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = await composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
+print(tools)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, schema_modifier
 from composio.types import Tool
@@ -452,6 +569,8 @@ tools = composio.tools.get(
 )
 print(tools)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -493,6 +612,38 @@ The following example shows creating and using a before modifier for a Chat Comp
 {/* code-example: no-api reason="before-execution modifiers run local callbacks to rewrite arguments before the SDK sends a tool request" */}
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, before_execute
+from composio.types import ToolExecuteParams
+
+composio = AsyncComposio()
+
+user_id = "user@example.com"
+
+@before_execute(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def before_execute_modifier(
+    tool: str,
+    toolkit: str,
+    params: ToolExecuteParams,
+) -> ToolExecuteParams:
+    params["arguments"]["size"] = 1
+    print(params)
+    return params
+
+
+result_1 = await composio.tools.execute(
+    "HACKERNEWS_GET_LATEST_POSTS",
+    arguments={"size": 10},
+    version="latest",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    user_id=user_id,
+    modifiers=[before_execute_modifier],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, before_execute
 from composio.types import ToolExecuteParams
@@ -520,6 +671,8 @@ result_1 = composio.tools.execute(
     modifiers=[before_execute_modifier],
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -557,6 +710,40 @@ The following example shows creating and using an after modifier for a Chat Comp
 {/* code-example: no-api reason="after-execution modifiers transform responses locally after the HTTP request has completed" */}
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, after_execute
+from composio.types import ToolExecutionResponse
+
+composio = AsyncComposio()
+
+user_id = "user@example.com"
+
+@after_execute(tools=["HACKERNEWS_GET_USER"])
+def after_execute_modifier(
+    tool: str,
+    toolkit: str,
+    response: ToolExecutionResponse,
+) -> ToolExecutionResponse:
+    return {
+        **response,
+        "data": {
+            "karma": response["data"]["karma"],
+        },
+    }
+
+result_2 = await composio.tools.execute(
+    "HACKERNEWS_GET_USER",
+    arguments={"username": "pg"},
+    version="latest",
+    dangerously_skip_version_check=True,  # required when running "latest"
+    user_id=user_id,
+    modifiers=[after_execute_modifier],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, after_execute
 from composio.types import ToolExecutionResponse
@@ -586,6 +773,8 @@ result_2 = composio.tools.execute(
     modifiers=[after_execute_modifier],
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -627,6 +816,36 @@ Custom tools are now called local tools, and they are session-scoped. Define the
 {/* code-example: no-api reason="local tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from pydantic import BaseModel, Field
+
+composio = AsyncComposio()
+
+class GetIssueInfoInput(BaseModel):
+    issue_number: int = Field(..., description="The issue number")
+
+@composio.experimental.tool(extends_toolkit="github")
+def get_issue_info(input: GetIssueInfoInput, ctx) -> dict:
+    """Get information about a GitHub issue."""
+    result = ctx.proxy_execute(
+        toolkit="github",
+        endpoint=f"/repos/composiohq/composio/issues/{input.issue_number}",
+        method="GET",
+    )
+    if result["result_type"] == "blocked":
+        raise RuntimeError(result["message"])
+    return {"data": result["data"]}
+
+session = await composio.create(
+    user_id="default",
+    experimental={"local_tools": [get_issue_info]},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from pydantic import BaseModel, Field
@@ -653,6 +872,8 @@ session = composio.create(
     experimental={"local_tools": [get_issue_info]},
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -759,6 +980,32 @@ Creating auth configs programmatically in the current SDK:
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+# Use composio managed auth
+auth_config = await composio.auth_configs.create(
+    toolkit="LINEAR",
+    options={
+        "name": "Linear",
+        "type": "use_composio_managed_auth",
+        # "type": "use_custom_auth",
+        # "auth_scheme": "OAUTH2",
+        # "credentials": {
+        #     "client_id": "1234567890",
+        #     "client_secret": "1234567890",
+        #     "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+        # },
+    },
+)
+print(auth_config)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -781,6 +1028,8 @@ auth_config = composio.auth_configs.create(
 )
 print(auth_config)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -899,6 +1148,32 @@ The current process for initiating a connection is as follows:
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+linear_auth_config_id = "ac_1234"
+user_id = "user@email.com"
+
+composio = AsyncComposio()
+
+# Create a new connected account
+connection_request = await composio.connected_accounts.initiate(
+    user_id=user_id,
+    auth_config_id=linear_auth_config_id,
+)
+print(connection_request.redirect_url)
+
+# Wait for the connection to be established
+connected_account = await connection_request.wait_for_connection()
+print(connected_account)
+
+# If you only have the connection request ID, you can also wait using:
+await composio.connected_accounts.wait_for_connection(connection_request.id)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -920,6 +1195,8 @@ print(connected_account)
 # If you only have the connection request ID, you can also wait using:
 composio.connected_accounts.wait_for_connection(connection_request.id)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -990,6 +1267,43 @@ Some triggers require configuration, such as repository names for GitHub trigger
 
 <Tabs groupId="language" items={['Python (current)', 'TypeScript (current)', 'API']} persist>
   <Tab value="Python (current)">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+user_id = "user@example.com"
+trigger_config = await composio.triggers.get_type("GITHUB_COMMIT_EVENT")
+print(trigger_config.config)
+### Trigger Config
+# {
+#     "properties": {
+#         "owner": {
+#             "description": "Owner of the repository",
+#             "title": "Owner",
+#             "type": "string"
+#         },
+#         "repo": {
+#             "description": "Repository name",
+#             "title": "Repo",
+#             "type": "string"
+#         }
+#     },
+#     "required": ["owner", "repo"],
+#     "title": "WebhookConfigSchema",
+#     "type": "object"
+
+trigger = await composio.triggers.create(
+    slug="GITHUB_COMMIT_EVENT",
+    user_id=user_id,
+    trigger_config={"owner": "composiohq", "repo": "composio"},
+)
+print(trigger)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -1023,6 +1337,8 @@ trigger = composio.triggers.create(
 )
 print(trigger)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript (current)">
 ```typescript
@@ -1084,6 +1400,19 @@ Managing triggers with the SDK:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+# Disable a trigger instance
+disabled_instance = await composio.triggers.disable(trigger_id="ti_abcd123")
+print(disabled_instance)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -1092,6 +1421,8 @@ composio = Composio()
 disabled_instance = composio.triggers.disable(trigger_id="ti_abcd123")
 print(disabled_instance)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -1118,6 +1449,19 @@ If needed, the trigger can be enabled again.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+# Enable a trigger instance
+enabled_instance = await composio.triggers.enable(trigger_id="ti_abcd123")
+print(enabled_instance)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -1126,6 +1470,8 @@ composio = Composio()
 enabled_instance = composio.triggers.enable(trigger_id="ti_abcd123")
 print(enabled_instance)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

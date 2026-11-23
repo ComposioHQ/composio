@@ -25,3 +25,5 @@ source .venv/bin/activate
 make chk
 make tst
 ```
+
+Preserve both Python clients when changing SDK behavior. Use `AsyncComposio` for new integration examples, and show the equivalent `Composio` call for synchronous applications. Distinguish network I/O from local parsing and decoration.

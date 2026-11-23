@@ -49,6 +49,21 @@ Use the [Webhook Endpoints API](/reference/api-reference/webhook-endpoints) for 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+endpoint = await composio.webhooks.endpoints.create(
+    toolkit_slug="slack",
+    client_id="<YOUR_OAUTH_CLIENT_ID>",
+)
+print(endpoint.root.id, endpoint.root.webhook_url)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -60,6 +75,8 @@ endpoint = composio.webhooks.endpoints.create(
 )
 print(endpoint.root.id, endpoint.root.webhook_url)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -108,6 +125,19 @@ Hold on to two values from the response: `id` (`we_abc123` in the examples below
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await composio.webhooks.endpoints.update(
+    "we_abc123",
+    data={
+        "webhook_signing_secret": "<SIGNING_SECRET>",
+        "app_token": "xapp-...",
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 composio.webhooks.endpoints.update(
     "we_abc123",
@@ -117,6 +147,8 @@ composio.webhooks.endpoints.update(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -171,12 +203,24 @@ To rotate the signing secret or update any single field, `PATCH` it (other field
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await composio.webhooks.endpoints.update(
+    "we_abc123",
+    data={"webhook_signing_secret": "<NEW_SECRET>"},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 composio.webhooks.endpoints.update(
     "we_abc123",
     data={"webhook_signing_secret": "<NEW_SECRET>"},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -202,6 +246,19 @@ To **replace** `data` wholesale (any field you don't include is cleared), `POST`
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await composio.webhooks.endpoints.replace(
+    "we_abc123",
+    data={
+        "webhook_signing_secret": "<NEW_SECRET>",
+        "app_token": "<NEW_APP_TOKEN>",
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 composio.webhooks.endpoints.replace(
     "we_abc123",
@@ -211,6 +268,8 @@ composio.webhooks.endpoints.replace(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -241,10 +300,20 @@ To inspect a single endpoint:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+endpoint = await composio.webhooks.endpoints.get("we_abc123")
+print(endpoint)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 endpoint = composio.webhooks.endpoints.get("we_abc123")
 print(endpoint)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -267,10 +336,20 @@ To list every endpoint in the current project:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+endpoints = await composio.webhooks.endpoints.list()
+print(endpoints)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 endpoints = composio.webhooks.endpoints.list()
 print(endpoints)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

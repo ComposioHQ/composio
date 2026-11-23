@@ -73,6 +73,22 @@ With Composio-managed Notion credentials, the webhook ingress endpoint is alread
 
 #### Python
 
+##### Async
+
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+endpoint = await composio.webhooks.endpoints.create(
+    toolkit_slug="notion",
+    client_id="YOUR_NOTION_OAUTH_CLIENT_ID",
+)
+print(endpoint.root.id, endpoint.root.webhook_url)
+```
+
+##### Sync
+
 ```python
 from composio import Composio
 
@@ -83,6 +99,8 @@ endpoint = composio.webhooks.endpoints.create(
 )
 print(endpoint.root.id, endpoint.root.webhook_url)
 ```
+
+<!-- end-python-modes -->
 
 #### TypeScript
 
@@ -114,6 +132,22 @@ Replace `we_123` with the saved endpoint ID and read the token:
 
 #### Python
 
+##### Async
+
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+endpoint = await composio.webhooks.endpoints.get("we_123")
+token = endpoint.data.get("webhook_signing_secret") if endpoint.data is not None else None
+if token is None:
+    raise RuntimeError("Notion has not sent a verification token yet")
+print(token)
+```
+
+##### Sync
+
 ```python
 from composio import Composio
 
@@ -124,6 +158,8 @@ if token is None:
     raise RuntimeError("Notion has not sent a verification token yet")
 print(token)
 ```
+
+<!-- end-python-modes -->
 
 #### TypeScript
 

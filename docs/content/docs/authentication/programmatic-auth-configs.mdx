@@ -14,6 +14,22 @@ For OAuth2 toolkits, Composio maintains a managed app so you can create an auth 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+auth_config = await composio.auth_configs.create(
+    toolkit="github",
+    options={"type": "use_composio_managed_auth", "name": "GitHub"},
+)
+
+print(auth_config.id)  # ac_xxxxxxxx
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -26,6 +42,8 @@ auth_config = composio.auth_configs.create(
 
 print(auth_config.id)  # ac_xxxxxxxx
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -62,6 +80,33 @@ https://backend.composio.dev/api/v3/toolkits/auth/callback
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from typing import cast
+from composio import AsyncComposio
+from composio.client.types import auth_config_create_params as auth_types
+
+composio = AsyncComposio()
+
+auth_config = await composio.auth_configs.create(
+    toolkit="notion",
+    options={
+        "type": "use_custom_auth",
+        "auth_scheme": "OAUTH2",
+        "name": "Notion",
+        # The generated credentials type omits OAuth client fields accepted by the API.
+        "credentials": cast(auth_types.AuthConfigUnionMember1Credentials, {
+            "client_id": os.environ["NOTION_CLIENT_ID"],
+            "client_secret": os.environ["NOTION_CLIENT_SECRET"],
+            "oauth_redirect_uri": "https://backend.composio.dev/api/v3/toolkits/auth/callback",
+        }),
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from typing import cast
@@ -85,6 +130,8 @@ auth_config = composio.auth_configs.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -136,6 +183,21 @@ Toolkits that use API keys, bearer tokens, basic auth, or no auth follow the sam
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+auth_config = await composio.auth_configs.create(
+    toolkit="perplexityai",
+    options={
+        "type": "use_custom_auth",
+        "auth_scheme": "API_KEY",
+        "name": "Perplexity AI",
+        "credentials": {},
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 auth_config = composio.auth_configs.create(
     toolkit="perplexityai",
@@ -147,6 +209,8 @@ auth_config = composio.auth_configs.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -178,12 +242,24 @@ Creating an auth config does not change which credentials a session uses. Pass t
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    auth_configs={"notion": auth_config.id},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
     auth_configs={"notion": auth_config.id},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -216,12 +292,24 @@ Filter auth configs by name or ID with `search` in either SDK or the API. Disabl
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+configs = await composio.auth_configs.list(search="github", show_disabled=True)
+
+for config in configs.items:
+    print(config.id)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 configs = composio.auth_configs.list(search="github", show_disabled=True)
 
 for config in configs.items:
     print(config.id)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -254,6 +342,18 @@ Different schemes need different credential fields. To build the `credentials` o
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+fields = await composio.toolkits.get_auth_config_creation_fields(
+    toolkit="notion",
+    auth_scheme="OAUTH2",
+    required_only=True,
+)
+print(fields)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 fields = composio.toolkits.get_auth_config_creation_fields(
     toolkit="notion",
@@ -262,6 +362,8 @@ fields = composio.toolkits.get_auth_config_creation_fields(
 )
 print(fields)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

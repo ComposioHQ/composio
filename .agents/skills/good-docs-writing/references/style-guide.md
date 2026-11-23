@@ -73,3 +73,5 @@ Apply every rule below while drafting. Each rule is an imperative followed by a 
 - Did I remove every em-dash?
 - Did I cut every "seamlessly," "powerful," and other vague intensifier?
 - Are all code identifiers in backticks and core nouns (App, Function, Volume) capitalized?
+
+For Composio Python SDK operations, show AsyncComposio first and Composio second. Use the nested mode tabs and Markdown headings defined in `docs/agent-guidance/context/code-examples.md`.

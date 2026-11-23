@@ -31,6 +31,22 @@ Totals across entity types for a time window.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+summary = await composio.experimental.usage.summary(
+    from_=1744848000000,
+    to=1744934400000,
+    entity_types=["tool_calls", "sessions"],
+)
+print(summary.entities)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -43,6 +59,8 @@ summary = composio.experimental.usage.summary(
 )
 print(summary.entities)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -100,6 +118,26 @@ One entity type, grouped by a dimension. Useful for answering "top N" questions.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+breakdown = await composio.experimental.usage.breakdown(
+    "tool_calls",
+    from_=1744848000000,
+    to=1744934400000,
+    group_by="toolkit_slug",
+    order_by="total_quantity",
+    order_direction="desc",
+    limit=10,
+)
+print(breakdown.groups)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -116,6 +154,8 @@ breakdown = composio.experimental.usage.breakdown(
 )
 print(breakdown.groups)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -218,6 +258,27 @@ The Python SDK requires `COMPOSIO_API_KEY` to initialize as well as `COMPOSIO_OR
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+import time
+from composio import AsyncComposio
+
+composio = AsyncComposio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"])
+
+now = int(time.time()) * 1000
+breakdown = await composio.client.org.usage.retrieve(
+    "tool_calls",
+    from_=now - 604_800_000,
+    to=now,
+    group_by="tool_slug",
+    limit=10,
+)
+print(breakdown)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 import time
@@ -234,6 +295,8 @@ breakdown = composio.client.org.usage.retrieve(
 )
 print(breakdown)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -272,6 +335,26 @@ curl -X POST https://backend.composio.dev/api/v3.1/org/usage/tool_calls \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import time
+
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+now = int(time.time() * 1000)
+breakdown = await composio.experimental.usage.breakdown(
+    "tool_calls",
+    from_=now - 2_592_000_000,
+    to=now,
+    group_by="user_id",
+    limit=50,
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import time
 
@@ -288,6 +371,8 @@ breakdown = composio.experimental.usage.breakdown(
     limit=50,
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -325,6 +410,21 @@ curl -X POST https://backend.composio.dev/api/v3.1/project/usage/tool_calls \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+breakdown = await composio.experimental.usage.breakdown(
+    "tool_calls",
+    group_by="toolkit_slug",
+    filters={"user_id": ["user_abc123"]},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -336,6 +436,8 @@ breakdown = composio.experimental.usage.breakdown(
     filters={"user_id": ["user_abc123"]},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

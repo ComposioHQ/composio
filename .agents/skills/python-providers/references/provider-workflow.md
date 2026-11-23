@@ -33,3 +33,5 @@ make type_inference
 For narrow iteration, use pytest markers or direct test paths that match the provider.
 
 For release-facing package metadata, build first and then use `twine check dist/*` when distribution files are present.
+
+Verify async tool invocation with the actual framework callback, as well as synchronous invocation with the published adapter. Use async first for new Python integration examples. Run async execution helpers on the client-bound `composio.provider` and narrow it to the concrete provider with `isinstance` for type checking.

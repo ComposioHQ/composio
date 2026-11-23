@@ -10,6 +10,23 @@ Start with one Composio project per application environment. Map every signed-in
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+# Use the immutable primary key from your application database.
+app_user_id = "usr_01J9F4M2K8"
+session = await composio.sessions.create(
+    user_id=app_user_id,
+    toolkits=["gmail", "googlecalendar"],
+)
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -23,6 +40,8 @@ session = composio.sessions.create(
 )
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -93,6 +112,30 @@ Resolve the consumer project once to learn its nano IDs, then build the SDK inst
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(
+        disable_api_key=True,
+        user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
+        org_id="org_9f2k1x",
+        project_id="proj_4b8m2q",
+    ) as composio:
+        session = await composio.sessions.create(user_id="user_123", toolkits=["gmail"], mcp=True)
+        # session.mcp.headers carries x-user-api-key, x-org-id, and x-project-id
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 
@@ -108,6 +151,8 @@ composio = Composio(
 session = composio.sessions.create(user_id="user_123", toolkits=["gmail"], mcp=True)
 # session.mcp.headers carries x-user-api-key, x-org-id, and x-project-id
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -148,6 +193,33 @@ The nano IDs come from the consumer project resolve endpoint, which also provisi
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from composio import AsyncComposio
+
+user_key = os.environ["COMPOSIO_USER_API_KEY"]
+org_id = os.environ["COMPOSIO_ORG_ID"]
+
+composio = AsyncComposio(disable_api_key=True, user_api_key=user_key)
+
+# These consumer routes have no typed client method; the user key is sent automatically.
+project = await composio.client.post(
+    "/api/v3.1/org/consumer/project/resolve",
+    cast_to=object,
+    headers={"x-org-id": org_id},
+)
+toolkits = await composio.client.get(
+    "/api/v3.1/org/consumer/connected_toolkits",
+    cast_to=object,
+    query={"user_id": "user_123"},
+    headers={"x-org-id": org_id},
+)
+print(project, toolkits)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -170,6 +242,8 @@ toolkits = composio.client.get(
 )
 print(project, toolkits)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

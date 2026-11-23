@@ -2,7 +2,8 @@ import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { MDXComponents } from 'mdx/types';
 import type { ComponentProps } from 'react';
 import { Accordion as BaseAccordion, Accordions } from 'fumadocs-ui/components/accordion';
-import { Tabs, Tab, TabsList, TabsTrigger, TabsContent } from 'fumadocs-ui/components/tabs';
+import { ExampleTabs } from '@/components/example-tabs';
+import { Tab, TabsList, TabsTrigger, TabsContent } from 'fumadocs-ui/components/tabs';
 import { Callout } from '@/components/callout';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Card, Cards } from 'fumadocs-ui/components/card';
@@ -101,7 +102,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     h4: props => <Heading as="h4" {...props} />,
     img: props => <ImageZoom {...(props as ComponentProps<typeof ImageZoom>)} />,
     YouTube,
-    Tabs,
+    Tabs: ExampleTabs,
     Tab,
     TabsList,
     TabsTrigger,

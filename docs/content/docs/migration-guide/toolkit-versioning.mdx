@@ -15,6 +15,18 @@ Manual tool execution now requires explicit version specification. The `tools.ex
 {/* code-example: no-api reason="ToolVersionRequiredError is raised client-side by the SDK version check" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Raises ToolVersionRequiredError
+result = await composio.tools.execute(
+    "GITHUB_CREATE_AN_ISSUE",
+    arguments={"owner": "composio", "repo": "composio", "title": "Bug report"},
+    user_id="user-123",
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Raises ToolVersionRequiredError
 result = composio.tools.execute(
@@ -23,6 +35,8 @@ result = composio.tools.execute(
     user_id="user-123",
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -45,6 +59,32 @@ Choose one of three migration strategies:
 {/* code-example: no-api reason="toolkit_versions is an SDK constructor option; the REST API takes version per request" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+# Pin specific versions for each toolkit
+
+
+async def main():
+    async with AsyncComposio(
+        api_key="YOUR_API_KEY",
+        toolkit_versions={
+            "github": "20251027_00",
+            "slack": "20251027_00",
+            "gmail": "20251027_00"
+        }
+    ) as composio:
+        # Use the client within this context.
+        pass
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -58,6 +98,8 @@ composio = Composio(
     }
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -81,6 +123,23 @@ const composio = new Composio({
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Specify version directly in execute call
+result = await composio.tools.execute(
+    "GITHUB_LIST_STARGAZERS",
+    arguments={
+        "owner": "ComposioHQ",
+        "repo": "composio"
+    },
+    user_id="user-k7334",
+    version="20251027_00"  # Override version for this execution
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Specify version directly in execute call
 result = composio.tools.execute(
@@ -94,6 +153,8 @@ result = composio.tools.execute(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -144,6 +205,18 @@ During migration, you can temporarily skip version checks (not recommended for p
 {/* code-example: no-api reason="dangerously_skip_version_check only bypasses the SDK's client-side version check" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.tools.execute(
+    "GITHUB_CREATE_AN_ISSUE",
+    arguments={"owner": "composio", "repo": "composio", "title": "Bug report"},
+    user_id="user-123",
+    dangerously_skip_version_check=True,
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.tools.execute(
     "GITHUB_CREATE_AN_ISSUE",
@@ -152,6 +225,8 @@ result = composio.tools.execute(
     dangerously_skip_version_check=True,
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

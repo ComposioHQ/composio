@@ -26,10 +26,21 @@ To verify the required field names, inspect toolkit metadata:
 
 ### Python
 
+#### Async
+
+```python
+toolkit = await composio.toolkits.get("crowdin")
+print(toolkit.auth_config_details)
+```
+
+#### Sync
+
 ```python
 toolkit = composio.toolkits.get("crowdin")
 print(toolkit.auth_config_details)
 ```
+
+<!-- end-python-modes -->
 
 ### TypeScript
 

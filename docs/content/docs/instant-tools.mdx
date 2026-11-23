@@ -34,6 +34,20 @@ Keep Exa and Firecrawl available, but allow Instant only for `EXA_SEARCH`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["exa", "firecrawl"],
+    instant={
+        "toolkits": {"enable": ["exa"]},
+        "tools": {"exa": {"enable": ["EXA_SEARCH"]}},
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="user_123",
@@ -44,6 +58,8 @@ session = composio.sessions.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -86,9 +102,18 @@ Your own connected accounts remain available when you disable Instant:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+await session.update(instant=False)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session.update(instant=False)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -119,6 +144,22 @@ This human-in-the-loop (HITL) example asks you to approve one Firecrawl scrape b
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+tool = await composio.client.get(
+    "/api/v3.1/tools/FIRECRAWL_SCRAPE",
+    cast_to=object,
+    query={"toolkit_versions": "latest", "include_pricing": True},
+)
+print(tool)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -130,6 +171,8 @@ tool = composio.client.get(
 )
 print(tool)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -157,6 +200,33 @@ Then run the example. It shows the exact arguments, waits for `yes`, and makes o
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import json
+from composio import AsyncComposio
+
+tool = "FIRECRAWL_SCRAPE"
+arguments = {"url": "https://composio.dev"}
+
+print(tool, json.dumps(arguments))
+if (await asyncio.to_thread(input, "Approve this call at the published rate? Type yes: ")).strip().lower() != "yes":
+    raise SystemExit("Not approved. No tool call made.")
+
+composio = AsyncComposio()
+
+session = await composio.sessions.create(
+    user_id="instant_demo",
+    toolkits=["firecrawl"],
+    instant={"return_instant_charge": True},
+)
+result = await session.execute(tool, arguments=arguments, account="instant_account")
+print(result)
+print("Instant charge:", result.instant_charge)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import json
 from composio import Composio
@@ -178,6 +248,8 @@ result = session.execute(tool, arguments=arguments, account="instant_account")
 print(result)
 print("Instant charge:", result.instant_charge)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -262,6 +334,20 @@ Charge reporting is off by default. To include the charge in a `session.execute(
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="instant_demo",
+    toolkits=["firecrawl"],
+    instant={"return_instant_charge": True},
+)
+result = await session.execute("FIRECRAWL_SCRAPE", arguments={"url": "https://composio.dev"})
+if result.instant_charge is not None:
+    print(result.instant_charge.amount, result.instant_charge.currency)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="instant_demo",
@@ -272,6 +358,8 @@ result = session.execute("FIRECRAWL_SCRAPE", arguments={"url": "https://composio
 if result.instant_charge is not None:
     print(result.instant_charge.amount, result.instant_charge.currency)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -311,6 +399,21 @@ To see what an Instant tool costs before you call it, set `return_prices_in_sear
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="instant_demo",
+    toolkits=["firecrawl"],
+    instant={"return_prices_in_search": True},
+)
+results = await session.search(query="scrape a web page")
+for status in results.toolkit_connection_statuses:
+    if status.instant_account is not None:
+        print(status.toolkit, status.instant_account.prices)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="instant_demo",
@@ -322,6 +425,8 @@ for status in results.toolkit_connection_statuses:
     if status.instant_account is not None:
         print(status.toolkit, status.instant_account.prices)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -365,6 +470,17 @@ If your agent can spend without per-call approval, pass it the Session tools as 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.sessions.create(
+    user_id="instant_demo",
+    toolkits=["firecrawl"],
+)
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.sessions.create(
     user_id="instant_demo",
@@ -372,6 +488,8 @@ session = composio.sessions.create(
 )
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

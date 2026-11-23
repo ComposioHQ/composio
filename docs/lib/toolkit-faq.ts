@@ -7,7 +7,7 @@ import { toString } from 'mdast-util-to-string';
 
 export type FaqAnswerPart =
   | { type: 'html'; html: string }
-  | { type: 'languages'; tabs: { value: string; html: string }[] };
+  | { type: 'languages'; groupId: 'language' | 'python-mode'; tabs: { value: string; parts: FaqAnswerPart[] }[] };
 
 export type FaqItem = { question: string; answer: FaqAnswerPart[] };
 
@@ -16,21 +16,29 @@ function markdownToHtml(markdown: string): string {
   return toHtml(processor.runSync(processor.parse(markdown)));
 }
 
-/** Language headings stay readable to agents and become persistent options in the FAQ. */
+function parseAnswer(body: string): FaqAnswerPart[] {
+  const parts: FaqAnswerPart[] = [];
+  let offset = 0;
+  for (const group of markdownLanguageGroups(body)) {
+    const before = body.slice(offset, group.start);
+    if (before.trim()) parts.push({ type: 'html', html: markdownToHtml(before) });
+    parts.push({
+      type: 'languages',
+      groupId: group.groupId,
+      tabs: group.tabs.map((tab) => ({ value: tab.value, parts: parseAnswer(tab.source) })),
+    });
+    offset = group.end;
+  }
+  const after = body.slice(offset);
+  if (after.trim()) parts.push({ type: 'html', html: markdownToHtml(after) });
+  return parts;
+}
+
+/** Language and Python mode headings become persistent options in HTML. */
 export function parseToolkitFaq(source: string): FaqItem[] {
   const headings = parseExampleDocument(source, 'faq.md').children.filter((node) => node.type === 'heading' && node.depth === 2);
   return headings.map((heading, index) => {
     const body = source.slice(heading.position?.end.offset ?? 0, headings[index + 1]?.position?.start.offset ?? source.length);
-    const answer: FaqAnswerPart[] = [];
-    let offset = 0;
-    for (const group of markdownLanguageGroups(body)) {
-      const before = body.slice(offset, group.start);
-      if (before.trim()) answer.push({ type: 'html', html: markdownToHtml(before) });
-      answer.push({ type: 'languages', tabs: group.tabs.map((tab) => ({ value: tab.value, html: markdownToHtml(tab.source) })) });
-      offset = group.end;
-    }
-    const after = body.slice(offset);
-    if (after.trim()) answer.push({ type: 'html', html: markdownToHtml(after) });
-    return { question: toString(heading), answer };
+    return { question: toString(heading), answer: parseAnswer(body) };
   });
 }

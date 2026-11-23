@@ -28,7 +28,7 @@ Build an agent that chooses Composio tools at runtime. Type a task, connect an a
 
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
-The Composio Python SDK requires **Python 3.11 through 3.15**.
+The Composio Python SDK requires **Python 3.11 through 3.15**. Start with `AsyncComposio` for a new Python agent. If your application uses synchronous I/O, select **Sync** in the Python examples. Both clients use the same installation.
 
 <PackageInstall ecosystem="python" packages="python-dotenv composio composio-openai-agents openai-agents" />
 
@@ -70,6 +70,68 @@ OPENAI_API_KEY=your_openai_api_key
 {/* code-example: no-api reason="OpenAI Agents SDK agent loop; the session tools are run by the agent framework" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from dotenv import load_dotenv
+from composio import AsyncComposio
+from agents import Agent, Runner, SQLiteSession
+from composio_openai_agents import OpenAIAgentsProvider
+
+load_dotenv()
+
+# Initialize Composio with OpenAI Agents provider
+
+
+async def main():
+    async with AsyncComposio(provider=OpenAIAgentsProvider()) as composio:
+        # Create a session for your user
+        user_id = "user_123"
+        session = await composio.sessions.create(user_id=user_id)
+        tools = await session.tools()
+
+        # For multi-turn, store the session ID in your db and reuse instead of creating another session:
+        # session_id = session.session_id
+        # session = await composio.use(session_id)
+
+        agent = Agent(
+            name="Personal Assistant",
+            instructions=(
+                "Use Composio tools to complete the request. "
+                "If a connection is required, share its Connect Link and wait. "
+                "Ask for confirmation before creating, updating, or deleting data."
+            ),
+            model="gpt-5.2",
+            tools=tools,
+        )
+
+        # Memory for multi-turn conversation
+        memory = SQLiteSession("conversation")
+
+        print("""
+        What task would you like me to help you with?
+        I can use tools like Gmail, GitHub, Linear, Notion, and more.
+        (Type 'exit' to exit)
+        Example tasks:
+          - 'Summarize my emails from today'
+          - 'List all open issues on the composio github repository'
+        """)
+
+        while True:
+            user_input = (await asyncio.to_thread(input, "You: ")).strip()
+            if user_input.lower() == "exit":
+                break
+
+            print("Assistant: ", end="", flush=True)
+            result = await Runner.run(starting_agent=agent, input=user_input, session=memory)
+            print(f"{result.final_output}\n")
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from dotenv import load_dotenv
 from composio import Composio
@@ -122,6 +184,8 @@ while True:
     result = Runner.run_sync(starting_agent=agent, input=user_input, session=memory)
     print(f"{result.final_output}\n")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -228,6 +292,73 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 {/* code-example: no-api reason="Claude Agent SDK agent loop; the session tools are served through an in-process MCP server" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from dotenv import load_dotenv
+from composio import AsyncComposio
+from composio_claude_agent_sdk import ClaudeAgentSDKProvider
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, create_sdk_mcp_server, AssistantMessage, TextBlock
+
+load_dotenv()
+
+# Initialize Composio with Claude Agent SDK provider
+
+
+async def main():
+    async with AsyncComposio(provider=ClaudeAgentSDKProvider()) as composio:
+        # Create a session for your user
+        user_id = "user_123"
+        session = await composio.sessions.create(user_id=user_id)
+        tools = await session.tools()
+
+        # For multi-turn, store the session ID in your db and reuse instead of creating another session:
+        # session_id = session.session_id
+        # session = await composio.use(session_id)
+
+        custom_server = create_sdk_mcp_server(name="composio", version="1.0.0", tools=tools)
+
+
+        options = ClaudeAgentOptions(
+            system_prompt=(
+                "Use Composio tools to complete the request. "
+                "If a connection is required, share its Connect Link and wait. "
+                "Ask for confirmation before creating, updating, or deleting data."
+            ),
+            permission_mode="bypassPermissions",
+            mcp_servers={"composio": custom_server},
+        )
+
+        async with ClaudeSDKClient(options=options) as client:
+            print("""
+        What task would you like me to help you with?
+        I can use tools like Gmail, GitHub, Linear, Notion, and more.
+        (Type 'exit' to exit)
+        Example tasks:
+          - 'Summarize my emails from today'
+          - 'List all open issues on the composio github repository'
+        """)
+
+            while True:
+                user_input = (await asyncio.to_thread(input, "You: ")).strip()
+                if user_input.lower() == "exit":
+                    break
+
+                await client.query(user_input)
+                print("Claude: ", end="", flush=True)
+                async for message in client.receive_response():
+                    if isinstance(message, AssistantMessage):
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                print(block.text, end="", flush=True)
+                print()
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import asyncio
 from dotenv import load_dotenv
@@ -288,6 +419,8 @@ Example tasks:
 
 asyncio.run(main())
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

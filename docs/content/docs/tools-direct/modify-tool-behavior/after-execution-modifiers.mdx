@@ -30,6 +30,57 @@ Since completion providers don't have a function execution step, Composio execut
 {/* code-example: no-api reason="After-execute modifier runs client-side in the SDK around an LLM tool-call loop" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from openai import AsyncOpenAI
+from composio import AsyncComposio, after_execute
+from composio.types import ToolExecutionResponse
+from composio_openai import OpenAIProvider
+
+openai_client = AsyncOpenAI()
+
+composio = AsyncComposio(provider=OpenAIProvider(), toolkit_versions={"hackernews": "latest"})
+provider = composio.provider
+assert isinstance(provider, OpenAIProvider)
+
+messages = [{"role": "user", "content": "What is the karma of user pg on Hacker News?"}]
+
+@after_execute(tools=["HACKERNEWS_GET_USER"])
+def after_execute_modifier(
+    tool: str,
+    toolkit: str,
+    response: ToolExecutionResponse,
+) -> ToolExecutionResponse:
+    return {
+        **response,
+        "data": {
+            "karma": response["data"]["karma"],
+        },
+    }
+
+tools = await composio.tools.get(user_id="default", slug="HACKERNEWS_GET_USER")
+
+# Get response from the LLM
+response = await openai_client.chat.completions.create(
+    model="gpt-5.4",
+    tools=tools,
+    messages=messages,
+)
+print(response)
+
+# Execute the function calls
+result = await provider.ahandle_tool_calls(
+  response=response,
+  user_id="default",
+  modifiers=[
+     after_execute_modifier,
+  ]
+)
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from openai import OpenAI
 from composio import Composio, after_execute
@@ -74,6 +125,8 @@ result = provider.handle_tool_calls(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -126,6 +179,46 @@ Agentic providers have a function execution step. The modifier is configured on 
 {/* code-example: no-api reason="After-execute modifier runs client-side inside the agentic framework's tool execution" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio, after_execute
+from composio.types import ToolExecutionResponse
+from composio_crewai import CrewAIProvider
+
+
+async def main():
+    async with AsyncComposio(
+        provider=CrewAIProvider(),
+        toolkit_versions={"hackernews": "latest"},
+    ) as composio:
+        @after_execute(tools=["HACKERNEWS_GET_USER"])
+        def after_execute_modifier(
+            tool: str,
+            toolkit: str,
+            response: ToolExecutionResponse,
+        ) -> ToolExecutionResponse:
+            return {
+                **response,
+                "data": {
+                    "karma": response["data"]["karma"],
+                },
+            }
+
+        tools = await composio.tools.get(
+            user_id="default",
+            slug="HACKERNEWS_GET_USER",
+            modifiers=[
+                after_execute_modifier,
+            ]
+        )
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, after_execute
 from composio.types import ToolExecutionResponse
@@ -157,6 +250,8 @@ tools = composio.tools.get(
     ]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

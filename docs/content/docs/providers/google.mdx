@@ -17,9 +17,9 @@ In Python, the Gemini provider (`composio_gemini`) wraps Composio tools as typed
 
 Object arguments that declare no properties preserve arbitrary nested keys in both providers. The TypeScript provider also adds `type: "object"` to schema nodes that declare `properties` without a type, which is the shape Gemini expects for object schemas.
 
-If you use the Python `composio_google` provider with a manual Gemini loop, pass the Session to `composio.provider.execute_tool_call(session=session, function_call=function_call)` or `composio.provider.handle_response(session=session, response=response)`. Both helpers execute through that Session. Calls with `user_id` use direct execution for tools fetched with `tools.get()`. The `composio_gemini` callables in the example below already carry the Session.
+With the Python `composio_google` provider and a manual Vertex AI loop, use `await composio.provider.aexecute_tool_call(session=session, function_call=function_call)` for one call or `await composio.provider.ahandle_response(session=session, response=response)` for a response. With the sync client, use `execute_tool_call` or `handle_response` with the same arguments. Calls with `user_id` use direct execution for tools fetched with `tools.get()`. The `composio_gemini` callables in the example below already carry the Session.
 
-If you turn off Automatic Function Calling in `composio_gemini`, pass `session=session` to `composio.provider.handle_response(response, session=session)` for tools fetched with `session.tools()`. For tools fetched with `composio.tools.get(user_id="alice", ...)`, use `composio.provider.handle_response(response, user_id="alice")`. Each call uses the selected fetch's schema validation (including schema modifiers) and execution modifiers. Session calls also preserve session routing, so local custom tools in a `COMPOSIO_MULTI_EXECUTE_TOOL` batch run in process.
+If you turn off Automatic Function Calling in `composio_gemini`, use `await composio.provider.ahandle_response(response, session=session)` for session tools or `await composio.provider.ahandle_response(response, user_id="alice")` for tools fetched directly for that user. The sync client exposes `handle_response` with the same arguments. Each call uses the selected fetch's schema validation (including schema modifiers) and execution modifiers. Session calls also preserve session routing, so local custom tools in a `COMPOSIO_MULTI_EXECUTE_TOOL` batch run in process.
 
 <Callout type="warn">
 You can omit `user_id` and `session` from `GeminiProvider.handle_response` only when the provider has wrapped tools for a single user or session. Once it has wrapped tools for more than one, omitting both raises `ValueError` and executes nothing. Always pass the matching identity when you share a `Composio` instance across users or sessions. Automatic Function Calling already uses callables bound to their user or session.
@@ -58,6 +58,38 @@ GOOGLE_API_KEY=xxxxxxxxx
 {/* code-example: no-api reason="Gemini function-calling loop with the Composio Google provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_gemini import GeminiProvider
+from google import genai
+from google.genai import types
+
+
+async def main():
+    async with AsyncComposio(provider=GeminiProvider()) as composio:
+        client = genai.Client().aio
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        config = types.GenerateContentConfig(tools=tools)
+        chat = client.chats.create(model="gemini-3-pro-preview", config=config)
+
+        # Automatic Function Calling executes tool calls inside the chat loop
+        response = await chat.send_message(
+            "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+        )
+        print(response.text)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_gemini import GeminiProvider
@@ -80,6 +112,8 @@ response = chat.send_message(
 )
 print(response.text)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 {/* TODO: remove the `@errors: 2345` twoslash marker below once docs/package.json resolves @composio/google >= 0.12.0 (session-aware executeToolCall). The pin needs a manual range bump — ^0.11.1 does not admit this minor release. */}
@@ -169,6 +203,58 @@ GOOGLE_API_KEY=xxxxxxxxx
 **Create session and run**
 
 {/* code-example: single-language reason="Google ADK provider (composio_google_adk) is Python-only" */}
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_google_adk import GoogleAdkProvider
+from google.adk.agents import Agent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+
+async def main():
+    async with AsyncComposio(provider=GoogleAdkProvider()) as composio:
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = Agent(
+            name="email_agent",
+            model="gemini-3-pro-preview",
+            instruction="You are an AI agent that sends emails using Gmail.",
+            tools=tools,
+        )
+
+        session_service = InMemorySessionService()
+        adk_session = await session_service.create_session(
+            app_name="email_agent",
+            user_id="user_123",
+            session_id="session_1",
+        )
+        runner = Runner(
+            agent=agent,
+            app_name="email_agent",
+            session_service=session_service,
+        )
+
+        content = types.Content(
+            role="user",
+            parts=[types.Part(text="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'")],
+        )
+
+        events = runner.run_async(user_id="user_123", session_id="session_1", new_message=content)
+        async for event in events:
+            if event.is_final_response() and event.content and event.content.parts:
+                print(event.content.parts[0].text)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_google_adk import GoogleAdkProvider
@@ -212,6 +298,8 @@ for event in events:
     if event.is_final_response() and event.content and event.content.parts:
         print(event.content.parts[0].text)
 ```
+</Tab>
+</Tabs>
 </Step>
 </Steps>
 

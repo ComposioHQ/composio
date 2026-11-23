@@ -27,6 +27,18 @@ The signatures are the same shape — only the method name changes for the OAuth
 <Tab value="Python">
 **Before:**
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connection_request = await composio.connected_accounts.initiate(
+    user_id="user_123",
+    auth_config_id="ac_abc",
+)
+print(connection_request.redirect_url)
+connected_account = await connection_request.wait_for_connection()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connection_request = composio.connected_accounts.initiate(
     user_id="user_123",
@@ -35,9 +47,23 @@ connection_request = composio.connected_accounts.initiate(
 print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection()
 ```
+</Tab>
+</Tabs>
 
 **After:**
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connection_request = await composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_abc",
+)
+print(connection_request.redirect_url)
+connected_account = await connection_request.wait_for_connection()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connection_request = composio.connected_accounts.link(
     user_id="user_123",
@@ -46,6 +72,8 @@ connection_request = composio.connected_accounts.link(
 print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 **Before:**
@@ -116,6 +144,24 @@ If you maintain a mix of Composio-managed and custom auth configs and aren't sur
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+auth_config = await composio.auth_configs.get("ac_abc")
+
+if auth_config.is_composio_managed:
+    request = await composio.connected_accounts.link(
+        user_id="user_123",
+        auth_config_id="ac_abc",
+    )
+else:
+    request = await composio.connected_accounts.initiate(
+        user_id="user_123",
+        auth_config_id="ac_abc",
+    )
+```
+</Tab>
+<Tab value="Sync">
 ```python
 auth_config = composio.auth_configs.get("ac_abc")
 
@@ -130,6 +176,8 @@ else:
         auth_config_id="ac_abc",
     )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

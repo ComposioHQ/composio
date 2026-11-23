@@ -48,3 +48,5 @@ bun run check:docs-parity /tmp/docs-export.json
 The checker validates the JSON, groups chunks by page, and runs the shared expectations. Missing pages or facts return a nonzero exit status. Preserve the provider name and capture timestamp when recording results. Local tests prove the ingestion payload retains facts; they do not prove that an external service refreshed its index. External captures remain a separate check because PR CI has no external retrieval credentials.
 
 These assertions check content preservation. They do not measure retrieval ranking or agent task completion, which belong to DEVREL-37.
+
+For every maintained Python operation, compare both execution modes. Keep async first, sync second, and match inputs and effects across modes and with the TypeScript and API examples.

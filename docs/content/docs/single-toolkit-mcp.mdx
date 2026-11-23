@@ -29,11 +29,24 @@ For most use cases, use a regular [session](/docs/configuring-sessions) instead.
     {/* code-example: no-api reason="SDK client construction; the REST API takes the key as an x-api-key header on each request" */}
     <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
       <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="YOUR_API_KEY")
+
+# Reuse the client across requests. At application shutdown, await composio.aclose().
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio(api_key="YOUR_API_KEY")
 ```
+</Tab>
+</Tabs>
       </Tab>
       <Tab value="TypeScript">
 ```typescript
@@ -56,6 +69,22 @@ const composio = new Composio({
 
     <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
       <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+server = await composio.mcp.create(
+    name="my-gmail-server",
+    toolkits=[{
+        "toolkit": "gmail",
+        "auth_config": "ac_xyz123"
+    }],
+    allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEND_EMAIL"]
+)
+
+print(f"Server created: {server.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 server = composio.mcp.create(
     name="my-gmail-server",
@@ -68,6 +97,8 @@ server = composio.mcp.create(
 
 print(f"Server created: {server.id}")
 ```
+</Tab>
+</Tabs>
       </Tab>
       <Tab value="TypeScript">
 ```typescript
@@ -119,11 +150,22 @@ echo "Server created: $SERVER_ID"
 
     <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
       <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+instance = await composio.mcp.generate(user_id="user-123", mcp_config_id=server.id)
+
+print(f"MCP Server URL: {instance['url']}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 instance = composio.mcp.generate(user_id="user-123", mcp_config_id=server.id)
 
 print(f"MCP Server URL: {instance['url']}")
 ```
+</Tab>
+</Tabs>
       </Tab>
       <Tab value="TypeScript">
 ```typescript
@@ -166,6 +208,28 @@ curl -s -X POST https://backend.composio.dev/api/v3.1/mcp/servers/generate \
 {/* code-example: no-api reason="OpenAI Responses configures a remote MCP tool in an external model client, not through a Composio REST operation" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
+response = await client.responses.create(
+    model="gpt-5.4",
+    tools=[{
+        "type": "mcp",
+        "server_label": "composio-server",
+        "server_url": os.environ["COMPOSIO_MCP_URL"],
+        "headers": {"x-api-key": os.environ["COMPOSIO_API_KEY"]},
+        "require_approval": "never",
+    }],
+    input="What are my latest emails?",
+)
+print(response.output_text)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from openai import OpenAI
@@ -184,6 +248,8 @@ response = client.responses.create(
 )
 print(response.output_text)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -267,6 +333,17 @@ try {
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+servers = await composio.mcp.list(limit=10, page_no=1)
+print(f"Found {len(servers['items'])} servers")
+
+# Filter by toolkit
+gmail_servers = await composio.mcp.list(toolkits="gmail", limit=20, page_no=1)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 servers = composio.mcp.list(limit=10, page_no=1)
 print(f"Found {len(servers['items'])} servers")
@@ -274,6 +351,8 @@ print(f"Found {len(servers['items'])} servers")
 # Filter by toolkit
 gmail_servers = composio.mcp.list(toolkits="gmail", limit=20, page_no=1)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -313,10 +392,20 @@ curl -X GET "https://backend.composio.dev/api/v3.1/mcp/servers?toolkits=gmail&li
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+server = await composio.mcp.get("mcp_server_id")
+print(f"Server: {server.name}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 server = composio.mcp.get("mcp_server_id")
 print(f"Server: {server.name}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -339,6 +428,17 @@ curl -X GET https://backend.composio.dev/api/v3.1/mcp/mcp_server_id \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+updated = await composio.mcp.update(
+    server_id="mcp_server_id",
+    name="updated-name",
+    allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 updated = composio.mcp.update(
     server_id="mcp_server_id",
@@ -346,6 +446,8 @@ updated = composio.mcp.update(
     allowed_tools=["GMAIL_FETCH_EMAILS", "GMAIL_SEARCH_EMAILS"]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -372,11 +474,22 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/mcp/mcp_server_id \
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.mcp.delete("mcp_server_id")
+if result['deleted']:
+    print("Server deleted")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.mcp.delete("mcp_server_id")
 if result['deleted']:
     print("Server deleted")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

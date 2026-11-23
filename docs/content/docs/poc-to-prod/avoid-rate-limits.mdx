@@ -21,6 +21,28 @@ Only the first row raises an exception in the SDK. For a provider limit, the req
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio_client import RateLimitError
+
+composio = AsyncComposio()
+
+session = await composio.create(user_id="user_123")
+
+try:
+    result = await session.execute("GMAIL_FETCH_EMAILS", arguments={"max_results": 10})
+except RateLimitError as error:
+    # Composio's organization limit. The request was not run.
+    print("Composio 429, retry after", error.response.headers.get("retry-after"))
+else:
+    if result.result_type == "failed":
+        # The tool ran and failed. A provider quota error lands here.
+        print("Tool failed:", result.error)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_client import RateLimitError
@@ -38,6 +60,8 @@ else:
         # The tool ran and failed. A provider quota error lands here.
         print("Tool failed:", result.error)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -107,6 +131,75 @@ flowchart TD
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import random
+import time
+
+from composio import AsyncComposio
+from composio_client import RateLimitError
+
+composio = AsyncComposio()
+
+session = await composio.create(user_id="user_123")
+
+MAX_ATTEMPTS = 5
+BASE_DELAY_SECONDS = 1.0
+MAX_DELAY_SECONDS = 30.0
+
+# Adjust these to the error text your providers return.
+PROVIDER_LIMIT_MARKERS = ("429", "rate limit", "ratelimitexceeded", "resource_exhausted", "throttle")
+EXHAUSTED_QUOTA_MARKERS = ("daily", "per day", "dailylimitexceeded", "monthly")
+
+
+def backoff_seconds(attempt: int) -> float:
+    """Exponential backoff with full jitter: a random wait up to the capped exponential delay."""
+    return random.uniform(0, min(MAX_DELAY_SECONDS, BASE_DELAY_SECONDS * 2**attempt))
+
+
+def retry_after_seconds(error: RateLimitError, attempt: int) -> float:
+    value = error.response.headers.get("retry-after", "")
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        # Missing, or an HTTP date: fall back to backoff.
+        return backoff_seconds(attempt)
+
+
+async def execute_with_retry(tool_slug: str, arguments: dict, *, safe_to_repeat: bool):
+    for attempt in range(MAX_ATTEMPTS):
+        last_attempt = attempt == MAX_ATTEMPTS - 1
+        try:
+            result = await session.execute(tool_slug, arguments=arguments)
+        except RateLimitError as error:
+            # Composio's organization limit.
+            if last_attempt or not safe_to_repeat:
+                raise
+            await asyncio.sleep(retry_after_seconds(error, attempt))
+            continue
+
+        error_text = (result.error or "").lower()
+        provider_limited = result.result_type == "failed" and any(
+            marker in error_text for marker in PROVIDER_LIMIT_MARKERS
+        )
+        if not provider_limited:
+            return result
+        if any(marker in error_text for marker in EXHAUSTED_QUOTA_MARKERS):
+            return result  # The quota is gone until it resets. Don't spend more requests.
+        if last_attempt or not safe_to_repeat:
+            return result
+        await asyncio.sleep(backoff_seconds(attempt))
+    raise RuntimeError("unreachable")
+
+
+emails = await execute_with_retry(
+    "GMAIL_FETCH_EMAILS", {"max_results": 10}, safe_to_repeat=True
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import random
 import time
@@ -170,6 +263,8 @@ emails = execute_with_retry(
     "GMAIL_FETCH_EMAILS", {"max_results": 10}, safe_to_repeat=True
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -291,6 +386,32 @@ Queue tool calls per user ID or connected account, and run only a few at a time 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import threading
+from collections import defaultdict
+
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+MAX_CALLS_PER_USER = 2
+_user_slots: defaultdict[str, threading.BoundedSemaphore] = defaultdict(
+    lambda: threading.BoundedSemaphore(MAX_CALLS_PER_USER)
+)
+_slots_lock = threading.Lock()
+
+
+async def execute_for_user(user_id: str, tool_slug: str, arguments: dict):
+    with _slots_lock:
+        slots = _user_slots[user_id]
+    with slots:  # Blocks while this user already has MAX_CALLS_PER_USER calls running.
+        session = await composio.create(user_id=user_id)
+        return await session.execute(tool_slug, arguments=arguments)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import threading
 from collections import defaultdict
@@ -313,6 +434,8 @@ def execute_for_user(user_id: str, tool_slug: str, arguments: dict):
         session = composio.create(user_id=user_id)
         return session.execute(tool_slug, arguments=arguments)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

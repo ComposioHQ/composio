@@ -23,6 +23,31 @@ This example uses Hacker News, which needs no connected account, so you can run 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio_client import BadRequestError
+
+composio = AsyncComposio()
+
+session = await composio.create(
+    user_id="user_123",
+    toolkits=["hackernews"],
+    tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
+)
+
+allowed = await session.execute("HACKERNEWS_GET_USER", arguments={"username": "pg"})
+print(allowed.result_type)  # completed
+
+try:
+    await session.execute("HACKERNEWS_GET_LATEST_POSTS", arguments={})
+except BadRequestError as error:
+    print(error.message)
+    # 400 [Session Restriction] Tool 'HACKERNEWS_GET_LATEST_POSTS' is not enabled for this session. ...
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_client import BadRequestError
@@ -44,6 +69,8 @@ except BadRequestError as error:
     print(error.message)
     # 400 [Session Restriction] Tool 'HACKERNEWS_GET_LATEST_POSTS' is not enabled for this session. ...
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

@@ -140,10 +140,10 @@ class MyAIProvider(NonAgenticProvider[MyAITool, MyAIToolCollection], name="my-ai
 
 ## Creating an agentic provider
 
-An agentic provider extends `AgenticProvider`. Because the platform calls tools itself, `wrap_tool` receives an `execute_tool` function that you wrap into a callable the framework can invoke directly.
+An agentic provider extends `AgenticProvider`. Because the platform calls tools itself, `wrap_tool` receives an `execute_tool` function that you wrap into a callable the framework can invoke directly. Declare `async_tool_execution = "native"` if your framework awaits callbacks and your wrapper forwards the call to `execute_tool.aexecute`.
 
 ```python
-from typing import Callable, Dict, List, Sequence
+from typing import Callable, Dict, List, Sequence, TypeAlias
 from composio.core.provider import AgenticProvider, AgenticProviderExecuteFn
 from composio.types import Tool
 from my_provider import AgentTool
@@ -164,6 +164,8 @@ AgentToolCollection: TypeAlias = List[AgentTool]
 class MyAgentProvider(AgenticProvider[AgentTool, List[AgentTool]], name="my-agent-platform"):
     """Custom provider for My Agent Platform"""
 
+    async_tool_execution = "native"
+
     def wrap_tool(self, tool: Tool, execute_tool: AgenticProviderExecuteFn) -> AgentTool:
         """Transform a single tool with execute function"""
         def execute_wrapper(**kwargs) -> Dict:
@@ -172,10 +174,18 @@ class MyAgentProvider(AgenticProvider[AgentTool, List[AgentTool]], name="my-agen
                 raise Exception(result.get("error", "Tool execution failed"))
             return result.get("data", {})
 
+        async_execute = getattr(execute_tool, "aexecute", None)
+
+        async def execute_async(**kwargs) -> Dict:
+            result = await async_execute(tool.slug, kwargs)
+            if not result.get("successful", False):
+                raise RuntimeError(result.get("error", "Tool execution failed"))
+            return result.get("data", {})
+
         return AgentTool(
             name=tool.slug,
             description=tool.description or "",
-            execute=execute_wrapper,
+            execute=execute_async if async_execute is not None else execute_wrapper,
             schema=tool.input_parameters
         )
 
@@ -190,13 +200,61 @@ class MyAgentProvider(AgenticProvider[AgentTool, List[AgentTool]], name="my-agen
 
 ## Using your custom provider
 
-Pass an instance of your provider to `Composio`, and every tool you fetch comes back in your format.
+Pass your provider to `AsyncComposio` or `Composio` to receive tools in its format. The async client binds its own provider instance. Use `composio.provider` for execution helpers so they use the same client, tool aliases and registered modifiers.
 
 ### Non-agentic provider
 
 You drive the loop: fetch tools, send them to the platform, then hand the response back to the provider to execute the calls.
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
 ```python
+import asyncio
+import json
+from composio import AsyncComposio
+from composio_myai import MyAIProvider
+from myai import MyAIClient  # Your AI platform's client
+
+# Initialize tools
+myai_client = MyAIClient()
+
+
+async def main():
+    async with AsyncComposio(provider=MyAIProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, MyAIProvider)
+        # Define task
+        task = "Star a repo composiohq/composio on GitHub"
+
+        # Get GitHub tools that are pre-configured
+        tools = await composio.tools.get(user_id="default", toolkits=["GITHUB"])
+
+        # Get response from your AI platform (example)
+        response = await asyncio.to_thread(
+            myai_client.chat.completions.create,
+            model="your-model",
+            tools=tools,  # These are in your platform's format
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": task},
+            ],
+        )
+        print(response)
+
+        # Execute the function calls
+        for call in response.choices[0].message.tool_calls or []:
+            result = await provider.aexecute_tool(
+                slug=call.function.name, arguments=json.loads(call.function.arguments), user_id="default",
+            )
+            print(result)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
+```python
+import json
 from composio import Composio
 from composio_myai import MyAIProvider
 from myai import MyAIClient  # Your AI platform's client
@@ -224,14 +282,61 @@ response = myai_client.chat.completions.create(
 print(response)
 
 # Execute the function calls
-result = provider.handle_tool_calls(response=response, user_id="default")
-print(result)
+for call in response.choices[0].message.tool_calls or []:
+    result = provider.execute_my_ai_tool_call(
+        user_id="default",
+        tool_call={"name": call.function.name, "arguments": json.loads(call.function.arguments)},
+    )
+    print(result)
 ```
+</Tab>
+</Tabs>
 
 ### Agentic provider
 
 The framework runs the loop. Fetch tools, attach them to an agent, and the agent calls them itself.
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from agents import Agent, Runner
+from composio_myagent import MyAgentProvider
+from composio import AsyncComposio
+
+# Initialize Composio toolset
+
+
+async def main():
+    async with AsyncComposio(provider=MyAgentProvider()) as composio:
+        # Get all the tools
+        tools = await composio.tools.get(
+            user_id="default",
+            tools=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"],
+        )
+
+        # Create an agent with the tools
+        agent = Agent(
+            name="GitHub Agent",
+            instructions="You are a helpful assistant that helps users with GitHub tasks.",
+            tools=tools,
+        )
+
+        # Run the agent
+        result = await Runner.run(
+            starting_agent=agent,
+            input=(
+                "Star the repository composiohq/composio on GitHub. If done "
+                "successfully, respond with 'Action executed successfully'"
+            ),
+        )
+        print(result.final_output)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import asyncio
 from agents import Agent, Runner
@@ -267,6 +372,8 @@ async def main():
 
 asyncio.run(main())
 ```
+</Tab>
+</Tabs>
 
 ## Best practices
 

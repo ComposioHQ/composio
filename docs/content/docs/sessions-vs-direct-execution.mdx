@@ -36,6 +36,21 @@ Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+from composio_openai import OpenAIProvider
+
+composio = AsyncComposio(provider=OpenAIProvider())
+
+session = await composio.create(user_id="user_123")
+tools = await session.tools()
+# Returns meta tools like COMPOSIO_SEARCH_TOOLS, COMPOSIO_MANAGE_CONNECTIONS,
+# COMPOSIO_MULTI_EXECUTE_TOOL, COMPOSIO_REMOTE_WORKBENCH, etc.
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_openai import OpenAIProvider
@@ -46,6 +61,8 @@ tools = session.tools()
 # Returns meta tools like COMPOSIO_SEARCH_TOOLS, COMPOSIO_MANAGE_CONNECTIONS,
 # COMPOSIO_MULTI_EXECUTE_TOOL, COMPOSIO_REMOTE_WORKBENCH, etc.
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -104,6 +121,18 @@ Restrict toolkits, set auth configs, pin connected accounts:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    toolkits=["github", "gmail"],
+    auth_configs={"github": "ac_my_config"},
+    connected_accounts={"gmail": ["ca_work"]},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -112,6 +141,8 @@ session = composio.create(
     connected_accounts={"gmail": ["ca_work"]},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -148,6 +179,45 @@ Fetch tools by slug or toolkit. Pass them to your LLM or call `tools.execute()` 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_openai import OpenAIProvider
+
+
+async def main():
+    async with AsyncComposio(
+        provider=OpenAIProvider(),
+        toolkit_versions={"github": "latest"},  # required for direct execution
+    ) as composio:
+        # Fetch specific tools
+        tools = await composio.tools.get(
+            user_id="user_123",
+            tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_ISSUES"]
+        )
+
+        # Or by toolkit
+        tools = await composio.tools.get(
+            user_id="user_123",
+            toolkits=["github"],
+            limit=50
+        )
+
+        # Execute without an LLM
+        result = await composio.tools.execute(
+            "GITHUB_CREATE_AN_ISSUE",
+            user_id="user_123",
+            arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
+            dangerously_skip_version_check=True,  # required when running "latest"; or pin via version=...
+        )
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_openai import OpenAIProvider
@@ -178,6 +248,8 @@ result = composio.tools.execute(
     dangerously_skip_version_check=True,  # required when running "latest"; or pin via version=...
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

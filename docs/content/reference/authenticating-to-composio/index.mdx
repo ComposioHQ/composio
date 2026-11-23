@@ -29,12 +29,30 @@ Send it in the `x-api-key` header:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio() as composio:
+        print(await composio.client.tools.list())
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio()
 print(composio.client.tools.list())
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -64,6 +82,23 @@ The Python SDK also requires `COMPOSIO_API_KEY` to initialize; the generated org
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"]) as composio:
+        print(await composio.client.org.owner.project.list())
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -71,6 +106,8 @@ from composio import Composio
 composio = Composio(org_api_key=os.environ["COMPOSIO_ORG_API_KEY"])
 print(composio.client.org.owner.project.list())
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -100,6 +137,28 @@ Scope a key to the least it needs, then send it like any project key:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(api_key=os.environ["COMPOSIO_SCOPED_API_KEY"]) as composio:
+        result = await composio.client.post(
+            "/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
+            cast_to=object,
+            body={"arguments": {"username": "pg"}},
+        )
+        print(result)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -112,6 +171,8 @@ result = composio.client.post(
 )
 print(result)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -146,6 +207,27 @@ Every session route accepts a user API key as an alternative to a project key: c
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+import os
+from composio import AsyncComposio
+
+
+async def main():
+    async with AsyncComposio(
+        disable_api_key=True,
+        user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
+    ) as composio:
+        session = await composio.create(user_id="user_123", toolkits=["gmail"])
+        print(session)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 from composio import Composio
@@ -157,6 +239,8 @@ composio = Composio(
 session = composio.create(user_id="user_123", toolkits=["gmail"])
 print(session)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -209,6 +293,24 @@ A user-only instance sends `x-user-api-key` on every request and no `x-api-key`.
 {/* code-example: no-api reason="SDK constructor options choosing which key header the client sends" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import os
+
+from composio import AsyncComposio
+
+# Project key: pass it, or omit api_key to fall back to COMPOSIO_API_KEY.
+composio = AsyncComposio(api_key=os.environ["COMPOSIO_API_KEY"])
+
+# User key only: turn the project key off and use the user key alone.
+composio = AsyncComposio(
+    disable_api_key=True,
+    user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import os
 
@@ -223,6 +325,8 @@ composio = Composio(
     user_api_key=os.environ["COMPOSIO_USER_API_KEY"],
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

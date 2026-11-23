@@ -57,12 +57,25 @@ Stable (after):
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+session = await composio.create(user_id="user_123")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
 composio = Composio()
 session = composio.create(user_id="user_123")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -96,6 +109,19 @@ If you have existing users on tool router and you don't want them to authenticat
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -105,6 +131,8 @@ session = composio.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

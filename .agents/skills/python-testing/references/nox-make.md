@@ -41,3 +41,5 @@ When adding or renaming provider packages, inspect the explicit provider install
 - Core tests live under `python/tests/`.
 - Use existing fixtures from `python/tests/conftest.py`.
 - Provider behavior should include provider-specific tests when applicable.
+
+For SDK or provider changes affecting Python I/O, cover both clients and their actual framework invocation or transport boundaries.

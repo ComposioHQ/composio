@@ -24,6 +24,20 @@ Pass your MCP server's URL as `mcp_url`, how to authenticate, and `user_id`. Use
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.custom_toolkits.create(
+    name="Acme",
+    mcp_url="https://mcp.acme.com/mcp",
+    auth_schemes=[{"mode": "NO_AUTH"}],
+    user_id="all",
+)
+
+print(result.slug)  # CUSTOM_ACME
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.custom_toolkits.create(
     name="Acme",
@@ -34,6 +48,8 @@ result = composio.custom_toolkits.create(
 
 print(result.slug)  # CUSTOM_ACME
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -92,6 +108,28 @@ Set `user_id` to a user's ID to make the toolkit private: only that user's sessi
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.custom_toolkits.create(
+    name="Acme",
+    mcp_url="https://mcp.acme.com/mcp",
+    auth_schemes=[
+        {
+            "mode": "DCR_OAUTH",
+            "discovery_url": "https://mcp.acme.com/.well-known/oauth-authorization-server",
+        }
+    ],
+    user_id="user_123",
+    callback_url="https://app.example.com/connected",
+)
+
+print(result.slug)  # CUSTOM_ACME_K7F2Q
+if result.connect_link is not None:
+    print(result.connect_link.redirect_url)  # send user_123 here
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.custom_toolkits.create(
     name="Acme",
@@ -110,6 +148,8 @@ print(result.slug)  # CUSTOM_ACME_K7F2Q
 if result.connect_link is not None:
     print(result.connect_link.redirect_url)  # send user_123 here
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -188,6 +228,18 @@ Sync again only if that first sync fails or the server's tools change. Pass an a
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.custom_toolkits.sync(
+    "CUSTOM_ACME",
+    connected_account_id="ca_custom_acme",
+)
+
+print(result.version, result.synced_count)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.custom_toolkits.sync(
     "CUSTOM_ACME",
@@ -196,6 +248,8 @@ result = composio.custom_toolkits.sync(
 
 print(result.version, result.synced_count)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -227,11 +281,22 @@ Update changes `name`, `logo_file`, or the API key field's label (`api_key_field
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.custom_toolkits.update("CUSTOM_ACME", name="Acme (prod)")
+
+print(result.success)  # True
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.custom_toolkits.update("CUSTOM_ACME", name="Acme (prod)")
 
 print(result.success)  # True
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -261,11 +326,22 @@ Delete removes the toolkit and its tools, auth configs, and connected accounts.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+result = await composio.custom_toolkits.delete("CUSTOM_ACME")
+
+print(result.deleted, result.revoke_job_ids)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 result = composio.custom_toolkits.delete("CUSTOM_ACME")
 
 print(result.deleted, result.revoke_job_ids)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -293,6 +369,22 @@ Add the slug to a session. A session only sees the custom toolkits its `user_id`
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["CUSTOM_ACME"],
+)
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -305,6 +397,8 @@ session = composio.sessions.create(
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -336,6 +430,23 @@ Your agent finds the tools with `COMPOSIO_SEARCH_TOOLS`. Sessions pick the user'
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+session = await composio.sessions.create(
+    user_id="user_123",
+    toolkits=["CUSTOM_ACME"],
+    connected_accounts={
+        "CUSTOM_ACME": ["ca_custom_acme"],
+    },
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -349,6 +460,8 @@ session = composio.sessions.create(
     },
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

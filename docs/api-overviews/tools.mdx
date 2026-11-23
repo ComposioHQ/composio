@@ -23,6 +23,24 @@ Call it with `composio.tools.proxyExecute()` in the TypeScript SDK, `composio.to
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your_api_key")
+
+response = await composio.tools.proxy(
+    endpoint="/repos/composiohq/composio/issues/1",
+    method="GET",
+    connected_account_id="ca_github_user_123",
+    parameters=[{"name": "Accept", "value": "application/vnd.github.v3+json", "type": "header"}],
+)
+
+print(response.status, response.data)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -37,6 +55,8 @@ response = composio.tools.proxy(
 
 print(response.status, response.data)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

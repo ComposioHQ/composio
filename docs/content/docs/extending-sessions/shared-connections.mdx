@@ -31,6 +31,31 @@ Pass an `experimental` block to `link()` (`accountType` in TypeScript, `account_
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Create a SHARED Gmail connection that any userId can use,
+# except `user_bob`.
+connection_request = await composio.connected_accounts.link(
+    user_id="user_admin",
+    auth_config_id="ac_gmail_shared",
+    experimental={
+        "account_type": "SHARED",
+        "acl_config_for_shared": {
+            "allow_all_users": True,
+            "not_allowed_user_ids": ["user_bob"],
+        },
+    },
+)
+print(connection_request.redirect_url)
+
+# Have user_admin complete the OAuth flow at the redirect URL,
+# then wait for the connection to become ACTIVE.
+connected = await connection_request.wait_for_connection()
+print(f"Shared connection ready: {connected.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Create a SHARED Gmail connection that any userId can use,
 # except `user_bob`.
@@ -52,6 +77,8 @@ print(connection_request.redirect_url)
 connected = connection_request.wait_for_connection()
 print(f"Shared connection ready: {connected.id}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -118,6 +145,23 @@ The session config itself is **not** experimental. You pin the connection by ID 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# user_alice starts a session that pins the shared Gmail connection.
+# Gmail tools loaded from this session will resolve to that connection
+# even though user_alice did not create it.
+session = await composio.create(
+    user_id="user_alice",
+    connected_accounts={
+        "gmail": ["ca_gmail_shared"],
+    },
+)
+
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # user_alice starts a session that pins the shared Gmail connection.
 # Gmail tools loaded from this session will resolve to that connection
@@ -131,6 +175,8 @@ session = composio.create(
 
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -197,6 +243,30 @@ Call `updateAcl()` on the connected accounts namespace to change access after cr
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Open access to everyone.
+await composio.connected_accounts.update_acl(
+    "ca_gmail_shared",
+    allow_all_users=True,
+)
+
+# Add a targeted allow list (without touching the wildcard or deny list).
+await composio.connected_accounts.update_acl(
+    "ca_gmail_shared",
+    allowed_user_ids=["user_alice", "user_bob"],
+)
+
+# Revoke the allow list; only the creator can use it again
+# (unless allow_all_users is True).
+await composio.connected_accounts.update_acl(
+    "ca_gmail_shared",
+    allowed_user_ids=[],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Open access to everyone.
 composio.connected_accounts.update_acl(
@@ -217,6 +287,8 @@ composio.connected_accounts.update_acl(
     allowed_user_ids=[],
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -285,6 +357,23 @@ The filter is a flat query param on the wire (`?account_type=...`), so it stays 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# List every SHARED connection the caller has visibility into.
+shared = await composio.connected_accounts.list(account_type="SHARED")
+
+for item in shared.items:
+    print(item.id, item.toolkit.slug)
+
+# Scope to a single user's SHARED connections.
+shared_for_alice = await composio.connected_accounts.list(
+    account_type="SHARED",
+    user_ids=["user_alice"],
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # List every SHARED connection the caller has visibility into.
 shared = composio.connected_accounts.list(account_type="SHARED")
@@ -298,6 +387,8 @@ shared_for_alice = composio.connected_accounts.list(
     user_ids=["user_alice"],
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -338,6 +429,25 @@ curl -X GET "https://backend.composio.dev/api/v3.1/connected_accounts?account_ty
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+account = await composio.connected_accounts.get("ca_gmail_shared")
+
+if account.experimental:
+    print(f"Type: {account.experimental.account_type}")  # "PRIVATE" or "SHARED"
+
+    if account.experimental.acl_config_for_shared:
+        acl = account.experimental.acl_config_for_shared
+        print(f"Allow all users: {acl.allow_all_users}")
+        print(f"Allowed: {acl.allowed_user_ids}")
+        print(f"Denied: {acl.not_allowed_user_ids}")
+    else:
+        # You're not authorised to see the ACL on this connection.
+        print("ACL hidden")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 account = composio.connected_accounts.get("ca_gmail_shared")
 
@@ -353,6 +463,8 @@ if account.experimental:
         # You're not authorised to see the ACL on this connection.
         print("ACL hidden")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

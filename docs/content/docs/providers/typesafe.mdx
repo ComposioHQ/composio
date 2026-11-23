@@ -41,6 +41,30 @@ Fetch the tools you want Jev to choose between, then pass a request to `decide`.
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
 <Tab value="Python">
 
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_typesafe import TypesafeProvider
+
+
+async def main():
+    async with AsyncComposio(provider=TypesafeProvider()) as composio:
+        provider = composio.provider
+        assert isinstance(provider, TypesafeProvider)
+        tool_set = await composio.tools.get(
+            user_id="example-user",
+            tools=["HACKERNEWS_GET_USER", "HACKERNEWS_GET_TOP_STORIES"],
+        )
+        decision = await provider.adecide(tool_set, "Look up the Hacker News user 'pg'")
+        print(decision)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 from composio_typesafe import TypesafeProvider
@@ -55,6 +79,8 @@ tool_set = composio.tools.get(
 decision = provider.decide(tool_set, "Look up the Hacker News user 'pg'")
 print(decision)
 ```
+</Tab>
+</Tabs>
 
 </Tab>
 <Tab value="TypeScript">

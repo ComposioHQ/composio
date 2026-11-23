@@ -72,6 +72,12 @@ describe('language option contract', () => {
     expect(violations(group('<Callout />')).map((item) => item.rule)).toContain('language-empty-tab');
   });
 
+  test('requires Python modes for current client examples and allows a documented sync-only provider', () => {
+    const operation = 'session = composio.create(user_id="user")';
+    expect(violations(group(fence('python', operation))).map((issue) => issue.rule)).toContain('language-items');
+    expect(violations(group(fence('python', '# Sync-only: HTTPServer invokes a synchronous handler.\n' + operation)))).toEqual([]);
+  });
+
   test('requires counterparts for SDK-only and API-only operations', () => {
     expect(violations(python).map((item) => item.rule)).toEqual(['standalone-sdk-fence']);
     expect(violations(api).map((item) => item.rule)).toEqual(['standalone-api-fence']);
@@ -97,15 +103,24 @@ describe('Markdown options and agent output', () => {
     const faq = parseToolkitFaq(source);
     const options = faq[0].answer.find((part) => part.type === 'languages');
     expect(options?.type === 'languages' && options.tabs.map((item) => item.value)).toEqual(['Python', 'TypeScript', 'API']);
-    expect(options?.type === 'languages' && options.tabs.every((item) => item.html.includes('<code'))).toBe(true);
+    expect(options?.type === 'languages' && options.tabs.every((item) => item.parts.some((part) => part.type === 'html' && part.html.includes('<code')))).toBe(true);
     expect(faq[1].question).toBe('Next question');
+  });
+
+  test('Python modes retain order in both Markdown and the nested FAQ selector', () => {
+    const paired = source.replace(python, `#### Async\n\n${python}\n\n#### Sync\n\n${python}\n\n<!-- end-python-modes -->`);
+    expect(violations(paired, 'faq.md')).toEqual([]);
+    const options = parseToolkitFaq(paired)[0].answer.find((part) => part.type === 'languages');
+    const modes = options?.type === 'languages' && options.tabs[0].parts[0];
+    expect(modes && modes.type === 'languages' && modes.tabs.map((tab) => tab.value)).toEqual(['Async', 'Sync']);
+    expect(violations(paired.replace('#### Sync', '#### Missing'), 'faq.md').map((issue) => issue.rule)).toContain('language-items');
   });
 
   test('end-languages keeps shared prose after the group visible for every option', () => {
     const shared = source.replace('\n\n## Next question', '\n\n<!-- end-languages -->\n\nShared follow-up.\n\n## Next question');
     expect(violations(shared, 'faq.md')).toEqual([]);
     const [options, after] = parseToolkitFaq(shared)[0].answer.slice(1);
-    expect(options.type === 'languages' && options.tabs.some((item) => item.html.includes('Shared follow-up'))).toBe(false);
+    expect(options.type === 'languages' && options.tabs.some((item) => item.parts.some((part) => part.type === 'html' && part.html.includes('Shared follow-up')))).toBe(false);
     expect(after).toEqual({ type: 'html', html: '<p>Shared follow-up.</p>' });
   });
 

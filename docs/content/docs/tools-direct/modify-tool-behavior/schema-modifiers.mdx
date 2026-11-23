@@ -29,6 +29,38 @@ Below we modify the schema of `HACKERNEWS_GET_LATEST_POSTS` to make the `size` a
 {/* code-example: no-api reason="Schema modifier rewrites tool schemas client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, schema_modifier
+from composio.types import Tool
+
+composio = AsyncComposio()
+
+user_id = "your@email.com"
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+tools = await composio.tools.get(
+    user_id=user_id,
+    tools=["HACKERNEWS_GET_LATEST_POSTS", "HACKERNEWS_GET_USER"],
+    modifiers=[
+        modify_schema,
+    ]
+)
+
+print(tools)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, schema_modifier
 from composio.types import Tool
@@ -56,6 +88,8 @@ tools = composio.tools.get(
 
 print(tools)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -93,6 +127,60 @@ With the modified tool schema, the `page` argument is removed and `size` is requ
 {/* code-example: no-api reason="Schema modifier runs client-side in an OpenAI tool-call loop" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from openai import AsyncOpenAI
+from composio import AsyncComposio, schema_modifier
+from composio.types import Tool
+from composio_openai import OpenAIProvider
+
+@schema_modifier(tools=["HACKERNEWS_GET_LATEST_POSTS"])
+def modify_schema(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    _ = schema.input_parameters["properties"].pop("page", None)
+    schema.input_parameters["required"] = ["size"]
+    return schema
+
+# Initialize tools
+openai_client = AsyncOpenAI()
+
+composio = AsyncComposio(provider=OpenAIProvider())
+provider = composio.provider
+assert isinstance(provider, OpenAIProvider)
+
+# Define task
+task = "Get the latest posts from Hacker News"
+
+# Get tools with modifier
+tools = await composio.tools.get(
+  user_id="default",
+  tools=['HACKERNEWS_GET_LATEST_POSTS', 'HACKERNEWS_GET_USER'],
+  modifiers=[
+      modify_schema,
+  ],
+)
+
+# Get response from the LLM
+response = await openai_client.chat.completions.create(
+    model="gpt-5.4",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+print(response)
+
+# Execute the function calls
+result = await provider.ahandle_tool_calls(response=response, user_id="default")
+print(result)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from openai import OpenAI
 from composio import Composio, schema_modifier
@@ -141,6 +229,8 @@ print(response)
 result = provider.handle_tool_calls(response=response, user_id="default")
 print(result)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -211,6 +301,36 @@ In this example:
 {/* code-example: no-api reason="Schema modifier rewrites the tool description client-side in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio, schema_modifier
+from composio.types import Tool
+from uuid import uuid4
+
+composio = AsyncComposio()
+
+user_id = str(uuid4())
+
+@schema_modifier(tools=["GITHUB_LIST_REPOSITORY_ISSUES"])
+def append_repository(
+    tool: str,
+    toolkit: str,
+    schema: Tool,
+) -> Tool:
+    schema.description += " When not specified, use the `composiohq/composio` repository"
+    return schema
+
+tools = await composio.tools.get(
+    user_id=user_id,
+    tools=["GITHUB_LIST_REPOSITORY_ISSUES"],
+    modifiers=[append_repository]
+)
+
+print(tools)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio, schema_modifier
 from composio.types import Tool
@@ -236,6 +356,8 @@ tools = composio.tools.get(
 
 print(tools)
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

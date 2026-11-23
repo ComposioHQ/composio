@@ -72,6 +72,41 @@ That means a session pointed at your app asks an existing user to connect again.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+OWN_APP_CONFIG = "ac_your_own_gmail_config"
+MANAGED_CONFIG = "ac_your_managed_gmail_config"
+
+
+async def has_active_connection(user_id: str, auth_config_id: str) -> bool:
+    accounts = await composio.connected_accounts.list(
+        user_ids=[user_id],
+        auth_config_ids=[auth_config_id],
+        statuses=["ACTIVE"],
+    )
+    return len(accounts.items) > 0
+
+
+async def gmail_auth_config_for(user_id: str) -> str:
+    if await has_active_connection(user_id, OWN_APP_CONFIG):
+        return OWN_APP_CONFIG
+    if await has_active_connection(user_id, MANAGED_CONFIG):
+        return MANAGED_CONFIG
+    return OWN_APP_CONFIG
+
+
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={"gmail": await gmail_auth_config_for("user_123")},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -103,6 +138,8 @@ session = composio.create(
     auth_configs={"gmail": gmail_auth_config_for("user_123")},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -167,6 +204,21 @@ Ask each existing user to connect again, for example with an in-app banner or at
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+request = await composio.connected_accounts.link(
+    user_id="user_123",
+    auth_config_id="ac_your_own_gmail_config",
+    callback_url="https://your-app.com/connections/callback",
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -177,6 +229,8 @@ request = composio.connected_accounts.link(
     callback_url="https://your-app.com/connections/callback",
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -217,6 +271,35 @@ Triggers stay attached to the managed connected account. List them and create ea
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+old_triggers = await composio.triggers.list_active(
+    connected_account_ids=["ca_old_managed_account"],
+)
+
+new_trigger_ids = {}
+for trigger in old_triggers.items:
+    new_trigger = await composio.triggers.create(
+        slug=trigger.trigger_name,
+        connected_account_id="ca_new_own_app_account",
+        trigger_config=trigger.trigger_config,
+        # A fallback to polling is left for Composio to decide again
+        type=None if trigger.fallback_reason else trigger.type,
+        polling_interval=trigger.polling_interval,
+    )
+    new_trigger_ids[trigger.id] = new_trigger.trigger_id
+
+# After your event filters use the new IDs, disable the old instances
+for old_trigger_id in new_trigger_ids:
+    await composio.triggers.disable(trigger_id=old_trigger_id)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -242,6 +325,8 @@ for trigger in old_triggers.items:
 for old_trigger_id in new_trigger_ids:
     composio.triggers.disable(trigger_id=old_trigger_id)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

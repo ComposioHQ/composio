@@ -22,6 +22,22 @@ Retrieve all connected accounts with optional filters:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# List all accounts for a user
+accounts = await composio.connected_accounts.list(
+    user_ids=[user_id]
+)
+
+# Filter by status
+active_accounts = await composio.connected_accounts.list(
+    user_ids=[user_id],
+    statuses=["ACTIVE"]
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # List all accounts for a user
 accounts = composio.connected_accounts.list(
@@ -34,6 +50,8 @@ active_accounts = composio.connected_accounts.list(
     statuses=["ACTIVE"]
 )
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -72,12 +90,24 @@ Retrieve a connected account by ID:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+account = await composio.connected_accounts.get(connected_account_id)
+
+print(f"Status: {account.status}")
+print(f"Toolkit: {account.toolkit.slug}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 account = composio.connected_accounts.get(connected_account_id)
 
 print(f"Status: {account.status}")
 print(f"Toolkit: {account.toolkit.slug}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -115,6 +145,20 @@ Manually refresh credentials for a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+try:
+    refreshed = await composio.connected_accounts.refresh(connected_account_id)
+    print(f"Redirect URL: {refreshed.redirect_url}")
+
+    # Wait for the connection to be established
+    await composio.connected_accounts.wait_for_connection(refreshed.id)
+except Exception as e:
+    print(f"Failed to refresh tokens: {e}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 try:
     refreshed = composio.connected_accounts.refresh(connected_account_id)
@@ -125,6 +169,8 @@ try:
 except Exception as e:
     print(f"Failed to refresh tokens: {e}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -164,6 +210,19 @@ Change account status without deleting. Set to INACTIVE to pause access, or ACTI
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Disable an account
+disabled = await composio.connected_accounts.disable(connected_account_id)
+print(f"Account disabled status: {disabled.success}")
+
+# Re-enable when needed
+enabled = await composio.connected_accounts.enable(connected_account_id)
+print(f"Account enabled status: {enabled.success}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Disable an account
 disabled = composio.connected_accounts.disable(connected_account_id)
@@ -173,6 +232,8 @@ print(f"Account disabled status: {disabled.success}")
 enabled = composio.connected_accounts.enable(connected_account_id)
 print(f"Account enabled status: {enabled.success}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -226,11 +287,22 @@ Permanently remove a connected account:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Delete a connected account
+await composio.connected_accounts.delete(connected_account_id)
+print("Account deleted successfully")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Delete a connected account
 composio.connected_accounts.delete(connected_account_id)
 print("Account deleted successfully")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -287,6 +359,36 @@ The `initiate()` examples remain accurate for **custom auth configs** (your own 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# First account
+try:
+    first_account = await composio.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config_id
+    )
+    print(f"First account redirect URL: {first_account.redirect_url}")
+    connected_first_account = await first_account.wait_for_connection()
+    print(f"First account status: {connected_first_account.status}")
+except Exception as e:
+    print(f"Error initiating first account: {e}")
+
+# Second account - must explicitly allow multiple
+try:
+    second_account = await composio.connected_accounts.initiate(
+        user_id=user_id,
+        auth_config_id=auth_config_id,
+        allow_multiple=True  # Required for additional accounts
+    )
+    print(f"Second account redirect URL: {second_account.redirect_url}")
+    connected_second_account = await second_account.wait_for_connection()
+    print(f"Second account status: {connected_second_account.status}")
+except Exception as e:
+    print(f"Error initiating second account: {e}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # First account
 try:
@@ -313,6 +415,8 @@ try:
 except Exception as e:
     print(f"Error initiating second account: {e}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript
@@ -373,6 +477,21 @@ When you have multiple accounts, specify which one to use with `connected_accoun
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
   <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Execute tool with a specific connected account
+result = await composio.tools.execute(
+    "GMAIL_GET_PROFILE",
+    user_id=user_id,
+    connected_account_id=connected_account_id,  # Specify which account to use
+    version="20251111_00",
+    arguments={}
+)
+print(f"Tool executed: {result}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Execute tool with a specific connected account
 result = composio.tools.execute(
@@ -384,6 +503,8 @@ result = composio.tools.execute(
 )
 print(f"Tool executed: {result}")
 ```
+</Tab>
+</Tabs>
   </Tab>
   <Tab value="TypeScript">
 ```typescript

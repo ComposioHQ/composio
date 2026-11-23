@@ -14,6 +14,21 @@ Call `session.authorize()` to generate a [Connect Link](/docs/tools-direct/authe
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(user_id="user_123")
+
+connection_request = await session.authorize("gmail")
+
+print(connection_request.redirect_url)
+# https://connect.composio.dev/link/ln_abc123
+
+connected_account = await connection_request.wait_for_connection(60)
+print(f"Connected: {connected_account.id}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(user_id="user_123")
 
@@ -25,6 +40,8 @@ print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection(60)
 print(f"Connected: {connected_account.id}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -96,6 +113,18 @@ Pass a `callbackUrl` to control where users land after authenticating. You can i
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+connection_request = await session.authorize(
+    "gmail",
+    callback_url="https://your-app.com/callback?user_id=user_123&source=onboarding"
+)
+
+print(connection_request.redirect_url)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 connection_request = session.authorize(
     "gmail",
@@ -104,6 +133,8 @@ connection_request = session.authorize(
 
 print(connection_request.redirect_url)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -157,6 +188,35 @@ For a "Connected as…" label, read `state.val.displayName` when available. For 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from typing import Literal, cast
+
+# Continue after connected_account = await connection_request.wait_for_connection().
+account_id = connected_account.id
+state = connected_account.model_dump().get("state") or {}
+display_name = state.get("val", {}).get("displayName")
+print(f"Connected as {display_name}" if display_name else "Account connected")
+
+toolkit = await composio.toolkits.get(connected_account.toolkit.slug)
+endpoint = toolkit.get_current_user_endpoint
+method = toolkit.get_current_user_endpoint_method
+if not endpoint or method not in ("GET", "POST", "PUT", "PATCH", "DELETE"):
+    raise ValueError("This toolkit doesn't publish a supported current-user endpoint")
+# The membership check validates the value; cast records that narrowing for mypy.
+
+response = await composio.tools.proxy(
+    endpoint=endpoint,
+    method=cast(Literal["GET", "POST", "PUT", "PATCH", "DELETE"], method),
+    connected_account_id=account_id,
+)
+if response.status != 200:
+    raise RuntimeError("Could not retrieve the connected account's profile")
+profile = response.data  # Parse the fields documented by this provider.
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from typing import Literal, cast
 
@@ -182,6 +242,8 @@ if response.status != 200:
     raise RuntimeError("Could not retrieve the connected account's profile")
 profile = response.data  # Parse the fields documented by this provider.
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -248,6 +310,21 @@ Use `session.toolkits()` to see all toolkits in the session and their connection
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+toolkits = await session.toolkits()
+
+for toolkit in toolkits.items:
+    connection = toolkit.connection
+    if connection and connection.is_active and connection.connected_account:
+        status = connection.connected_account.id
+    else:
+        status = "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 toolkits = session.toolkits()
 
@@ -259,6 +336,8 @@ for toolkit in toolkits.items:
         status = "Not connected"
     print(f"{toolkit.name}: {status}")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -289,12 +368,24 @@ By default, sessions include the `COMPOSIO_MANAGE_CONNECTIONS` meta-tool that pr
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    manage_connections=False,
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
     manage_connections=False,
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -322,6 +413,37 @@ A common pattern is to verify all required connections before starting the agent
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(api_key="your-api-key")
+
+required_toolkits = ["gmail", "github"]
+
+session = await composio.create(
+    user_id="user_123",
+    manage_connections=False,  # Disable in-chat auth prompts
+)
+
+toolkits = await session.toolkits()
+
+connected = {t.slug for t in toolkits.items if t.connection is not None and t.connection.is_active}
+pending = [slug for slug in required_toolkits if slug not in connected]
+
+print(f"Connected: {connected}")
+print(f"Pending: {pending}")
+
+for slug in pending:
+    connection_request = await session.authorize(slug)
+    print(f"Connect {slug}: {connection_request.redirect_url}")
+    await connection_request.wait_for_connection()
+
+print("All toolkits connected!")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -349,6 +471,8 @@ for slug in pending:
 
 print("All toolkits connected!")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

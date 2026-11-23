@@ -150,12 +150,24 @@ To send users back to your app after they connect, pass a `callback_url`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    manage_connections={"callback_url": "https://yourapp.com/chat"},
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
     manage_connections={"callback_url": "https://yourapp.com/chat"},
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -209,6 +221,17 @@ Catch this before a tool call fails by subscribing to the `composio.connected_ac
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(user_id="user_123")
+connection_request = await session.authorize("gmail")
+
+# Send this URL to the user (email, in-app notification, etc.)
+print(connection_request.redirect_url)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(user_id="user_123")
 connection_request = session.authorize("gmail")
@@ -216,6 +239,8 @@ connection_request = session.authorize("gmail")
 # Send this URL to the user (email, in-app notification, etc.)
 print(connection_request.redirect_url)
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

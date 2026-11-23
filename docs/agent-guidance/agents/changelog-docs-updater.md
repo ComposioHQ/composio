@@ -32,7 +32,7 @@ Triggered when a changelog file (`docs/content/changelog/*.mdx`) is pushed to `n
 - Do NOT create new pages — only update existing ones
 - Do NOT add changelog-style content ("as of v0.6.0...") to docs. Docs should describe current behavior.
 - Do NOT make cosmetic or stylistic changes unrelated to the changelog
-- Follow existing patterns in the docs (Tabs for Python/TypeScript, `<Callout>` for warnings)
+- Follow existing patterns in the docs (language tabs with nested Async and Sync options for Python, `<Callout>` for warnings)
 - TypeScript code blocks in MDX are type-checked at build time. Add proper imports above `// ---cut---` lines. See `docs/agent-guidance/context/twoslash.md` for details.
 - If no documentation changes are needed, make no file changes
 

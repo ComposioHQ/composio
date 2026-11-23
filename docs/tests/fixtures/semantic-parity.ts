@@ -22,6 +22,8 @@ export const parityPages = [
       ['package-choice', 'Use @composio/slim for a smaller install with the same API.'],
       ['legacy-package-warning', 'it calls deprecated APIs and does not work with sessions'],
       ['current-python-package', 'The current Python package is `composio`. The package `composio-core` is the legacy v1 SDK'],
+      ['async-python-session-example', 'session = await composio.sessions.create(user_id=user_id)'],
+      ['async-python-tool-discovery', 'tools = await session.tools()'],
       ['python-session-example', 'session = composio.sessions.create(user_id=user_id)'],
       ['typescript-session-example', 'const session = await composio.create(userId);'],
     ],

@@ -59,6 +59,19 @@ Expected stale response includes `version: "00000000_00"` and `scopes: ["Channel
 
 #### Python
 
+##### Async
+
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio(toolkit_versions={"microsoft_teams": "latest"})
+
+tool = await composio.tools.get_raw_composio_tool_by_slug("MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE")
+print(tool.scopes)
+```
+
+##### Sync
+
 ```python
 from composio import Composio
 
@@ -66,6 +79,8 @@ composio = Composio(toolkit_versions={"microsoft_teams": "latest"})
 tool = composio.tools.get_raw_composio_tool_by_slug("MICROSOFT_TEAMS_GET_CHANNEL_MESSAGE")
 print(tool.scopes)
 ```
+
+<!-- end-python-modes -->
 
 #### TypeScript
 

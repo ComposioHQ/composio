@@ -39,6 +39,36 @@ OPENAI_API_KEY=xxxxxxxxx
 {/* code-example: no-api reason="LlamaIndex agent integration via the Composio LlamaIndex provider" */}
 <Tabs groupId="language" items={["Python", "TypeScript"]} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+import asyncio
+from composio import AsyncComposio
+from composio_llamaindex import LlamaIndexProvider
+from llama_index.core.agent.workflow import FunctionAgent
+from llama_index.llms.openai import AsyncOpenAI
+
+
+async def main():
+    async with AsyncComposio(provider=LlamaIndexProvider()) as composio:
+        llm = AsyncOpenAI(model="gpt-5.2")
+
+        # Create a session for your user
+        session = await composio.create(user_id="user_123")
+        tools = await session.tools()
+
+        agent = FunctionAgent(tools=tools, llm=llm)
+
+        result = await agent.run(
+            user_msg="Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"
+        )
+        print(result)
+
+
+asyncio.run(main())
+```
+</Tab>
+<Tab value="Sync">
 ```python
 import asyncio
 from composio import Composio
@@ -63,6 +93,8 @@ async def main():
 
 asyncio.run(main())
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

@@ -30,6 +30,27 @@ You already have auth configs (e.g. `ac_github_config`, `ac_slack_config`). Pass
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+from composio import AsyncComposio
+
+composio = AsyncComposio()
+
+# Before: manual tool fetching with user_id
+# tools = composio.tools.get(user_id="user_123", toolkits=["GITHUB", "SLACK"])
+
+# After: create a session with your existing auth configs
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 from composio import Composio
 
@@ -47,6 +68,8 @@ session = composio.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -89,6 +112,17 @@ Instead of fetching specific tools by name, get the session's meta tools. These 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Before: manually specifying which tools to fetch
+# tools = composio.tools.get(user_id="user_123", toolkits=["GITHUB"])
+
+# After: session provides meta tools that handle discovery
+tools = await session.tools()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Before: manually specifying which tools to fetch
 # tools = composio.tools.get(user_id="user_123", toolkits=["GITHUB"])
@@ -96,6 +130,8 @@ Instead of fetching specific tools by name, get the session's meta tools. These 
 # After: session provides meta tools that handle discovery
 tools = session.tools()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -128,6 +164,28 @@ If you were manually creating connect links and waiting for connections, session
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Before: manual auth flow
+# connection_request = composio.connected_accounts.link(
+#     user_id="user_123",
+#     auth_config_id="ac_your_github_config",
+#     callback_url="https://your-app.com/callback"
+# )
+# redirect_url = connection_request.redirect_url
+
+# After: auth happens automatically in-chat
+# Or if you need to pre-authenticate outside of chat:
+connection_request = await session.authorize(
+    "github",
+    callback_url="https://your-app.com/callback",
+)
+print(connection_request.redirect_url)
+connected_account = await connection_request.wait_for_connection()
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Before: manual auth flow
 # connection_request = composio.connected_accounts.link(
@@ -146,6 +204,8 @@ connection_request = session.authorize(
 print(connection_request.redirect_url)
 connected_account = connection_request.wait_for_connection()
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -188,6 +248,23 @@ If you were pinning toolkit versions in your code or environment variables, you 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+# Before: manual version pinning
+# composio = AsyncComposio(
+#     toolkit_versions={
+#         "github": "20251027_00",
+#         "slack": "20251027_00",
+#     }
+# )
+
+# After: no version management needed
+async with AsyncComposio() as composio:
+    session = await composio.create(user_id="user_123")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 # Before: manual version pinning
 # composio = Composio(
@@ -201,6 +278,8 @@ If you were pinning toolkit versions in your code or environment variables, you 
 composio = Composio()
 session = composio.create(user_id="user_123")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -238,6 +317,21 @@ If you were fetching tools from specific toolkits, you can restrict the session 
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    toolkits=["github", "gmail", "slack"],
+    auth_configs={
+        "github": "ac_your_github_config",
+        "gmail": "ac_your_gmail_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -249,6 +343,8 @@ session = composio.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -289,6 +385,21 @@ If your users have multiple accounts for the same toolkit (e.g., work and person
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(
+    user_id="user_123",
+    auth_configs={
+        "gmail": "ac_your_gmail_config"
+    },
+    connected_accounts={
+        "gmail": ["ca_work_gmail"]
+    }
+)
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(
     user_id="user_123",
@@ -300,6 +411,8 @@ session = composio.create(
     }
 )
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript

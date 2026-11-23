@@ -78,6 +78,22 @@ The files API ships under `session.experimental`, so the surface may change in a
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
+<Tabs groupId="python-mode" items={['Async', 'Sync']} persist>
+<Tab value="Async">
+```python
+session = await composio.create(user_id="user_123")
+
+# Upload a local file; the sandbox sees it at /mnt/files/sales.csv
+uploaded = await session.experimental.files.upload("./sales.csv")
+print(uploaded.sandbox_mount_prefix, uploaded.mount_relative_path)
+# /mnt/files sales.csv
+
+# After the agent writes a result in the sandbox, download it
+report = await session.experimental.files.download("/report.pdf")
+await report.save("./report.pdf")
+```
+</Tab>
+<Tab value="Sync">
 ```python
 session = composio.create(user_id="user_123")
 
@@ -90,6 +106,8 @@ print(uploaded.sandbox_mount_prefix, uploaded.mount_relative_path)
 report = session.experimental.files.download("/report.pdf")
 report.save("./report.pdf")
 ```
+</Tab>
+</Tabs>
 </Tab>
 <Tab value="TypeScript">
 ```typescript
