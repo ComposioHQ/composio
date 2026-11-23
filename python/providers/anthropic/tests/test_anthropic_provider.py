@@ -194,3 +194,41 @@ def test_tool_call_does_not_turn_auth_failure_into_tool_failure():
                     type="tool_use", id="use-auth", name="SEARCH", input={}
                 ),
             )
+
+
+def test_async_anthropic_helpers_preserve_correlation_and_stop_on_failure():
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    provider = AnthropicProvider()
+    provider.aexecute_tool = AsyncMock(
+        side_effect=[
+            {"successful": False, "data": {}, "error": None},
+            RuntimeError("stop"),
+        ]
+    )
+    response = {
+        "id": "msg-1",
+        "model": "test",
+        "role": "assistant",
+        "type": "message",
+        "usage": {"input_tokens": 1, "output_tokens": 2},
+        "content": [
+            {"type": "tool_use", "id": f"use-{n}", "name": "SEARCH", "input": {"n": n}}
+            for n in (1, 2, 3)
+        ],
+    }
+    first_only = {**response, "content": response["content"][:1]}
+    (first,) = asyncio.run(provider.ahandle_tool_calls("user", first_only))
+    assert first == {
+        "tool_use_id": "use-1",
+        "successful": False,
+        "data": {},
+        "error": None,
+    }
+    with pytest.raises(RuntimeError, match="stop"):
+        asyncio.run(provider.ahandle_tool_calls("user", response))
+    assert provider.aexecute_tool.await_count == 2
+    provider.aexecute_tool.assert_awaited_with(
+        slug="SEARCH", arguments={"n": 1}, user_id="user", modifiers=None
+    )

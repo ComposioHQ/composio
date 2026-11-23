@@ -15,7 +15,11 @@ import typing as t
 import typing_extensions as te
 
 from composio.core.models._modifiers import Modifier, before_execute
-from composio.core.provider import NonAgenticProvider, ToolCallSession
+from composio.core.provider import (
+    NonAgenticProvider,
+    ToolCallExecutionTarget,
+    ToolCallSession,
+)
 from composio.core.provider.base import BaseProviderConfig
 from composio.types import Modifiers, Tool, ToolExecutionResponse
 
@@ -51,6 +55,10 @@ from .types import (
     TypesafeToolSet,
     parse_decision,
 )
+
+if t.TYPE_CHECKING:
+    from composio.core.provider.base import AsyncToolCallSession
+
 
 _API_KEY_ENV = "TYPESAFE_API_KEY"
 _SDK_LOGGER = "typesafe_sdk"
@@ -204,6 +212,64 @@ class TypesafeProvider(
         :param modifiers: Modifiers for direct execution. A session takes none.
         :return: Object containing output data from the tool call.
         """
+        target, slug, call_arguments = self._prepare_execution(
+            user_id, session, decision, arguments, confirm, modifiers
+        )
+        return self.execute_tool_for_target(
+            target=target, slug=slug, arguments=call_arguments, modifiers=modifiers
+        )
+
+    @t.overload
+    async def aexecute(
+        self,
+        user_id: str,
+        decision: TypesafeDecision,
+        arguments: t.Optional[t.Mapping[str, t.Any]] = None,
+        confirm: bool = False,
+        modifiers: t.Optional[Modifiers] = None,
+    ) -> ToolExecutionResponse: ...
+
+    @t.overload
+    async def aexecute(
+        self,
+        *,
+        session: AsyncToolCallSession,
+        decision: TypesafeDecision,
+        arguments: t.Optional[t.Mapping[str, t.Any]] = None,
+        confirm: bool = False,
+    ) -> ToolExecutionResponse: ...
+
+    async def aexecute(
+        self,
+        user_id: t.Optional[str] = None,
+        decision: t.Optional[TypesafeDecision] = None,
+        arguments: t.Optional[t.Mapping[str, t.Any]] = None,
+        confirm: bool = False,
+        modifiers: t.Optional[Modifiers] = None,
+        *,
+        session: t.Optional[AsyncToolCallSession] = None,
+    ) -> ToolExecutionResponse:
+        """Execute a decision through AsyncComposio with the same confirmation rules."""
+        _, slug, call_arguments = self._prepare_execution(
+            user_id, session, decision, arguments, confirm, modifiers
+        )
+        return await self.aexecute_tool_for_target(
+            user_id=user_id,
+            session=session,
+            slug=slug,
+            arguments=call_arguments,
+            modifiers=modifiers,
+        )
+
+    def _prepare_execution(
+        self,
+        user_id: t.Optional[str],
+        session: t.Optional[ToolCallSession],
+        decision: t.Optional[TypesafeDecision],
+        arguments: t.Optional[t.Mapping[str, t.Any]],
+        confirm: bool,
+        modifiers: t.Optional[Modifiers],
+    ) -> tuple[ToolCallExecutionTarget, str, dict[str, t.Any]]:
         parsed = parse_decision(decision)
         if parsed["kind"] == "abstain":
             raise TypesafeAbstainedDecisionError()
@@ -233,12 +299,7 @@ class TypesafeProvider(
         if needs_confirmation and confirm is not True:
             raise TypesafeConfirmationRequiredError()
 
-        return self.execute_tool_for_target(
-            target=target,
-            slug=parsed["tool"],
-            arguments=call_arguments,
-            modifiers=modifiers,
-        )
+        return target, parsed["tool"], call_arguments
 
     def shortlist_tools(
         self,

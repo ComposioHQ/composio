@@ -1021,3 +1021,53 @@ def test_autogen_schema_mirrors_root_openness(
     parameters = wrapped.schema["parameters"]
 
     assert {key: parameters.get(key) for key in expected} == expected
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "crewai",
+        "langchain",
+        "langgraph",
+        "gemini",
+        "google_adk",
+        "llamaindex",
+        "autogen",
+    ],
+)
+@pytest.mark.anyio
+@pytest.mark.parametrize("anyio_backend", ["asyncio"])
+async def test_async_framework_executes_on_client_loop(row, anyio_backend):
+    from unittest.mock import MagicMock
+
+    from composio.core.provider._async import AsyncToolCallback
+
+    caller_loop = asyncio.get_running_loop()
+    received = []
+
+    async def execute(slug, arguments):
+        assert asyncio.get_running_loop() is caller_loop
+        received.append((slug, arguments))
+        return {"successful": True, "data": arguments, "error": None}
+
+    schema, arguments = PRESERVATION_CASES["nested_free_form"]
+    wrapped = _matrix_provider(row).wrap_tool(
+        _make_tool(schema), AsyncToolCallback(execute)
+    )
+    if row in {"langchain", "langgraph"}:
+        await wrapped.ainvoke(arguments)
+    elif row == "crewai":
+        await wrapped.to_structured_tool().ainvoke(arguments)
+    elif row == "llamaindex":
+        await wrapped.acall(**arguments)
+    elif row == "google_adk":
+        context = MagicMock()
+        context.tool_confirmation = None
+        await wrapped.run_async(args=arguments, tool_context=context)
+    elif row == "autogen":
+        from autogen_core import CancellationToken
+
+        await wrapped.run_json(arguments, CancellationToken())
+    else:
+        await wrapped(**arguments)
+    assert received == [("TEST_TOOL", arguments)]

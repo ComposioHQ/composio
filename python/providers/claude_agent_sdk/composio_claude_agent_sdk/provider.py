@@ -60,6 +60,8 @@ class ClaudeAgentSDKProvider(
         ```
     """
 
+    async_tool_execution = "native"
+
     def __init__(
         self,
         server_name: str = "composio",
@@ -103,11 +105,11 @@ class ClaudeAgentSDKProvider(
             try:
                 arguments = aliases.restore_arguments(normalize_tool_arguments(args))
                 # Run the synchronous execute_tool in a thread
-                result = await asyncio.to_thread(
-                    execute_tool,
-                    tool.slug,
-                    arguments,
-                )
+                async_execute = getattr(type(execute_tool), "aexecute", None)
+                if async_execute is None:
+                    result = await asyncio.to_thread(execute_tool, tool.slug, arguments)
+                else:
+                    result = await async_execute(execute_tool, tool.slug, arguments)
                 # Format the result for Claude Agent SDK
                 result_text = result if isinstance(result, str) else json.dumps(result)
                 return {

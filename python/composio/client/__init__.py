@@ -392,6 +392,27 @@ class RequestContext(te.TypedDict):
     provider: str
 
 
+def _new_request_context(provider: str) -> contextvars.ContextVar[RequestContext]:
+    return contextvars.ContextVar[RequestContext](
+        "request_ctx", default={"id": None, "provider": provider}
+    )
+
+
+def _headers_with_request_id(
+    headers: t.Dict[str, str], url: str, base_url: URL, context: RequestContext
+) -> t.Dict[str, str]:
+    target = URL(url)
+    if (target.scheme, target.host, target.port) == (
+        base_url.scheme,
+        base_url.host,
+        base_url.port,
+    ):
+        headers["x-request-id"] = (
+            context.get("id") or headers.get("x-request-id") or uuid4().hex
+        )
+    return headers
+
+
 # TODO: Rename `Composio` to `HttpClient` in stainless generator
 class HttpClient(BaseComposio, WithLogger):
     """
@@ -472,13 +493,7 @@ class HttpClient(BaseComposio, WithLogger):
         # user-supplied client keeps its own hooks.
         _install_toolkit_deprecation_hook(self._client)
         self.provider = provider
-        self.request_ctx = contextvars.ContextVar[RequestContext](
-            "request_ctx",
-            default={
-                "id": None,
-                "provider": provider,
-            },
-        )
+        self.request_ctx = _new_request_context(provider)
         # Lazily-built sibling client with retries disabled; see `without_retries`.
         self._without_retries: t.Optional[te.Self] = None
 
@@ -585,16 +600,9 @@ class HttpClient(BaseComposio, WithLogger):
         untouched so the override does not depend on the client's private
         signature.
         """
-        headers = super()._headers_for(url, **kwargs)
-        target, base = URL(url), URL(self.base_url)
-        if (target.scheme, target.host, target.port) != (
-            base.scheme,
-            base.host,
-            base.port,
-        ):
-            return headers
-        ctx = self.request_ctx.get()
-        headers["x-request-id"] = (
-            ctx.get("id") or headers.get("x-request-id") or uuid4().hex
+        return _headers_with_request_id(
+            super()._headers_for(url, **kwargs),
+            url,
+            URL(self.base_url),
+            self.request_ctx.get(),
         )
-        return headers

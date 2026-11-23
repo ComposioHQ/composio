@@ -5,6 +5,7 @@ The end-to-end path through ``Composio(...)`` and the generated client lives in
 ``tests/test_sdk_logging.py``; this file pins the pure helpers.
 """
 
+import asyncio
 import threading
 import typing as t
 import warnings
@@ -20,6 +21,7 @@ from composio.utils.toolkit_deprecation import (
     HEADER,
     DeprecatedToolkit,
     format_warnings,
+    install_async_hook,
     install_hook,
     parse_deprecated_toolkits_header,
     response_hook,
@@ -365,4 +367,33 @@ class TestInstallHook:
             warnings.simplefilter("always")
             response = client.get("https://backend.invalid/api/v3/toolkits/strava")
         assert response.json() == {}
+        assert len(_deprecations(caught)) == 1
+
+    def test_async_install_preserves_hooks_and_warns_once(self):
+        calls: list[str] = []
+
+        async def user_request(request: httpx.Request) -> None:
+            calls.append(request.method)
+
+        async def user_response(response: httpx.Response) -> None:
+            calls.append(str(response.status_code))
+
+        async def send() -> None:
+            transport = httpx.MockTransport(
+                lambda request: httpx.Response(200, headers={HEADER: BARE_ITEM})
+            )
+            async with httpx.AsyncClient(
+                transport=transport,
+                event_hooks={"request": [user_request], "response": [user_response]},
+            ) as client:
+                install_async_hook(client)
+                install_async_hook(client)
+                assert len(client.event_hooks["response"]) == 2
+                for _ in range(2):
+                    await client.get("https://backend.invalid/api/v3/toolkits/strava")
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            asyncio.run(send())
+        assert calls == ["GET", "200", "GET", "200"]
         assert len(_deprecations(caught)) == 1
