@@ -31,7 +31,8 @@ jobs:
           if ! git diff --quiet "$BASE_SHA" HEAD -- \
             docs/sdk-reference-snapshots \
             docs/content/reference/sdk-reference/meta.json \
-            docs/lib/sdk-reference-snapshot.ts docs/lib/code-examples.ts docs/lib/example-document.ts docs/lib/llm-guardrails \
+            docs/lib/sdk-reference-snapshot.ts docs/lib/sdk-reference-content.ts \
+            docs/lib/code-examples.ts docs/lib/example-document.ts docs/lib/llm-guardrails \
             'docs/scripts/*sdk-reference-snapshot*.ts' docs/scripts/vercel-build.sh \
             docs/source.config.ts docs/vercel.json docs/package.json docs/bun.lock docs/agent/lib/docs.ts \
             docs/scripts/check-python-snippets.ts docs/scripts/python-snippets docs/scripts/build-agent-index.ts docs/scripts/build-content-freshness.ts \
