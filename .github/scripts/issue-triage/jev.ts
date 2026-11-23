@@ -13,13 +13,9 @@ const NOUL_KEYS = [
 ] as const;
 const SDK_AREA_KEYS: readonly SdkAreaChoice[] = ['ts', 'py', 'cli', 'docs', 'none'];
 
-export type JevOptions = {
-  readonly apiKey: string;
-  readonly timeoutMs?: number;
-  readonly fetchFn?: typeof fetch;
-};
+export type JevOptions = { readonly apiKey: string; readonly timeoutMs?: number; readonly fetchFn?: typeof fetch };
 
-function assertProbability(value: unknown, label: string): number {
+function assertProb(value: unknown, label: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1) {
     throw new Error(`Invalid Jev probability for ${label}`);
   }
@@ -30,9 +26,7 @@ export async function classifyWithJev(
   issue: { readonly title: string; readonly body: string },
   options: JevOptions
 ): Promise<JevAnswers> {
-  if (!options.apiKey) {
-    throw new Error('TYPESAFE_API_KEY is not configured');
-  }
+  if (!options.apiKey) throw new Error('TYPESAFE_API_KEY is not configured');
   const fetchFn = options.fetchFn ?? fetch;
   const timeoutMs = options.timeoutMs ?? 30_000;
 
@@ -42,10 +36,7 @@ export async function classifyWithJev(
       method: 'POST',
       redirect: 'error',
       signal: AbortSignal.timeout(timeoutMs),
-      headers: {
-        Authorization: `Bearer ${options.apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${options.apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         state: { issue: { title: issue.title || '', body: issue.body || '' } },
         questions: QUESTIONS,
@@ -58,10 +49,7 @@ export async function classifyWithJev(
     }
     throw new Error('Jev API network request failed', { cause: error });
   }
-
-  if (!response.ok) {
-    throw new Error(`Jev API request failed with HTTP ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`Jev API request failed with HTTP ${response.status}`);
 
   let json: unknown;
   try {
@@ -71,26 +59,16 @@ export async function classifyWithJev(
   }
 
   const rawAnswers = (json as { answers?: Record<string, unknown> } | null)?.answers;
-  if (!rawAnswers || typeof rawAnswers !== 'object') {
-    throw new Error('Jev API response missing answers');
-  }
+  if (!rawAnswers || typeof rawAnswers !== 'object') throw new Error('Jev API response missing answers');
 
   const noulValues = {} as Record<(typeof NOUL_KEYS)[number], number>;
   for (const key of NOUL_KEYS) {
-    const entry = rawAnswers[key] as { noul?: unknown } | undefined;
-    noulValues[key] = assertProbability(entry?.noul, key);
+    noulValues[key] = assertProb((rawAnswers[key] as { noul?: unknown } | undefined)?.noul, key);
   }
-
-  const rawChoice = rawAnswers.sdk_area as { probabilities?: Record<string, unknown> } | undefined;
-  const rawProbs = rawChoice?.probabilities;
-  if (!rawProbs || typeof rawProbs !== 'object') {
-    throw new Error('Jev API response missing sdk_area probabilities');
-  }
+  const rawProbs = (rawAnswers.sdk_area as { probabilities?: Record<string, unknown> } | undefined)?.probabilities;
+  if (!rawProbs || typeof rawProbs !== 'object') throw new Error('Jev API response missing sdk_area probabilities');
 
   const sdkArea = {} as Record<SdkAreaChoice, number>;
-  for (const option of SDK_AREA_KEYS) {
-    sdkArea[option] = assertProbability(rawProbs[option], `sdk_area.${option}`);
-  }
-
+  for (const option of SDK_AREA_KEYS) sdkArea[option] = assertProb(rawProbs[option], `sdk_area.${option}`);
   return { ...noulValues, sdk_area: sdkArea };
 }

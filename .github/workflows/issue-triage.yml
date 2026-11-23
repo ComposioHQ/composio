@@ -34,35 +34,22 @@ jobs:
             if (eventName === "issue_comment") {
               const issue = payload.issue;
               const labels = (issue?.labels || []).map(l => (typeof l === "string" ? l : l.name));
-              const ok =
-                payload.action === "created" &&
-                !issue?.pull_request &&
-                issue?.user?.login === actor &&
-                labels.includes("support: redirected");
+              const ok = payload.action === "created" && !issue?.pull_request && issue?.user?.login === actor && labels.includes("support: redirected");
               core.setOutput("allowed", String(ok));
               return;
             }
-            if (
-              eventName === "issues" &&
-              payload.action === "labeled" &&
-              !["triage", "support", "support: forwarded"].includes(payload.label?.name)
-            ) {
+            if (eventName === "issues" && payload.action === "labeled" && !["triage", "support", "support: forwarded"].includes(payload.label?.name)) {
               core.setOutput("allowed", "false");
               return;
             }
             let allowed = false;
             try {
-              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: repo.owner,
-                repo: repo.repo,
-                username: actor,
-              });
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({ owner: repo.owner, repo: repo.repo, username: actor });
               allowed = ["admin", "maintain", "write"].includes(data.permission);
             } catch (error) {
               if (error.status !== 404) throw error;
             }
             core.setOutput("allowed", String(allowed));
-            if (!allowed) core.info("Skipping triage: actor does not have write access.");
 
   classify:
     needs: authorize
@@ -92,9 +79,8 @@ jobs:
           ISSUE_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.issue_number || github.event.issue.number }}
         with:
           script: |
-            const { needsClassification } = await import("./.github/scripts/issue-triage/route.ts");
+            const { needsClassification, parseEvent } = await import("./.github/scripts/issue-triage/route.ts");
             const { classifyWithJev } = await import("./.github/scripts/issue-triage/jev.ts");
-
             const raw = (process.env.ISSUE_NUMBER || "").trim();
             if (context.eventName === "workflow_dispatch" && !raw) {
               core.setOutput("mode", "sweep");
@@ -102,37 +88,17 @@ jobs:
               return;
             }
             const issue_number = Number(raw);
-            if (!Number.isSafeInteger(issue_number) || issue_number <= 0) {
-              throw new Error("Invalid issue_number");
-            }
-            const { data: issue } = await github.rest.issues.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number,
-            });
-            if (issue.pull_request) {
-              throw new Error("Cannot triage a pull request as an issue");
-            }
+            if (!Number.isSafeInteger(issue_number) || issue_number <= 0) throw new Error("Invalid issue_number");
+            const { data: issue } = await github.rest.issues.get({ owner: context.repo.owner, repo: context.repo.repo, issue_number });
+            if (issue.pull_request) throw new Error("Cannot triage a pull request as an issue");
             const labels = (issue.labels || []).map(l => (typeof l === "string" ? l : l.name));
-            const event =
-              context.eventName === "workflow_dispatch"
-                ? { type: "dispatch" }
-                : context.eventName === "issue_comment"
-                  ? { type: "author-comment" }
-                  : context.payload.action === "labeled"
-                    ? { type: "labeled", label: context.payload.label?.name || "" }
-                    : { type: context.payload.action };
-
             core.setOutput("issue_number", String(issue_number));
-            if (!needsClassification(event, labels)) {
+            if (!needsClassification(parseEvent(context.eventName, context.payload), labels)) {
               core.setOutput("mode", "none");
               return;
             }
             try {
-              const answers = await classifyWithJev(
-                { title: issue.title || "", body: issue.body || "" },
-                { apiKey: process.env.TYPESAFE_API_KEY || "" }
-              );
+              const answers = await classifyWithJev({ title: issue.title || "", body: issue.body || "" }, { apiKey: process.env.TYPESAFE_API_KEY || "" });
               core.setOutput("mode", "answers");
               core.setOutput("answers", JSON.stringify(answers));
             } catch (error) {
@@ -168,7 +134,7 @@ jobs:
           PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}
         with:
           script: |
-            const { LABEL_METADATA, SUPPORT_STATE_LABELS, route } = await import("./.github/scripts/issue-triage/route.ts");
+            const { LABEL_METADATA, SUPPORT_STATE_LABELS, parseEvent, route } = await import("./.github/scripts/issue-triage/route.ts");
             const { forwardIssueToPlain } = await import("./.github/scripts/issue-triage/plain.ts");
             const { owner, repo } = context.repo;
             const plainApiKey = process.env.PLAIN_API_KEY || "";
@@ -176,49 +142,32 @@ jobs:
             async function ensureLabel(name) {
               const meta = LABEL_METADATA[name];
               if (!meta) return;
-              try {
-                await github.rest.issues.getLabel({ owner, repo, name });
-              } catch (error) {
-                if (error.status !== 404) throw error;
-                await github.rest.issues.createLabel({ owner, repo, name, ...meta });
-              }
+              try { await github.rest.issues.getLabel({ owner, repo, name }); }
+              catch (e) { if (e.status !== 404) throw e; await github.rest.issues.createLabel({ owner, repo, name, ...meta }); }
             }
-
+            async function removeLabel(issue_number, name) {
+              await github.rest.issues.removeLabel({ owner, repo, issue_number, name }).catch(e => { if (e.status !== 404) throw e; });
+            }
             async function forwardOne(issue) {
               const login = issue.user?.login || "unknown";
               let email = issue.user?.email || null;
               let name = issue.user?.name || login;
               if (login !== "unknown") {
                 try {
-                  const { data: user } = await github.rest.users.getByUsername({ username: login });
-                  email = user.email || email;
-                  name = user.name || name;
-                } catch (error) {
-                  core.warning(`Could not fetch profile for ${login}: ${error.message}`);
-                }
+                  const { data: u } = await github.rest.users.getByUsername({ username: login });
+                  email = u.email || email;
+                  name = u.name || name;
+                } catch {}
               }
               return forwardIssueToPlain(
-                {
-                  owner,
-                  repo,
-                  number: issue.number,
-                  title: issue.title || "",
-                  body: issue.body || "",
-                  htmlUrl: issue.html_url,
-                  author: { login, id: issue.user?.id, email, name },
-                },
+                { owner, repo, number: issue.number, title: issue.title || "", body: issue.body || "", htmlUrl: issue.html_url, author: { login, id: issue.user?.id, email, name } },
                 { apiKey: plainApiKey }
               );
             }
 
             const mode = process.env.MODE;
             if (mode === "sweep") {
-              const issues = await github.paginate(github.rest.issues.listForRepo, {
-                owner,
-                repo,
-                state: "open",
-                labels: "support: forward failed",
-              });
+              const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: "open", labels: "support: forward failed" });
               let failed = 0;
               for (const issue of issues) {
                 if (issue.pull_request) continue;
@@ -226,12 +175,9 @@ jobs:
                   await forwardOne(issue);
                   await ensureLabel("support: forwarded");
                   await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: ["support: forwarded"] });
-                  await github.rest.issues.removeLabel({ owner, repo, issue_number: issue.number, name: "support: forward failed" }).catch(e => { if (e.status !== 404) throw e; });
-                  await github.rest.issues.removeLabel({ owner, repo, issue_number: issue.number, name: "triage" }).catch(e => { if (e.status !== 404) throw e; });
-                } catch (error) {
-                  failed++;
-                  core.warning(`Retry failed for #${issue.number}: ${error instanceof Error ? error.message : String(error)}`);
-                }
+                  await removeLabel(issue.number, "support: forward failed");
+                  await removeLabel(issue.number, "triage");
+                } catch (e) { failed++; core.warning(`Retry failed for #${issue.number}: ${e instanceof Error ? e.message : String(e)}`); }
               }
               if (failed > 0) core.setFailed(`Plain retry failed for ${failed} issue(s).`);
               return;
@@ -240,66 +186,33 @@ jobs:
             const issue_number = Number(process.env.ISSUE_NUMBER);
             const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number });
             const labels = (issue.labels || []).map(l => (typeof l === "string" ? l : l.name));
-            const event =
-              context.eventName === "workflow_dispatch"
-                ? { type: "dispatch" }
-                : context.eventName === "issue_comment"
-                  ? { type: "author-comment" }
-                  : context.payload.action === "labeled"
-                    ? { type: "labeled", label: context.payload.label?.name || "" }
-                    : { type: context.payload.action };
-            const input =
-              mode === "answers"
-                ? { kind: "answers", answers: JSON.parse(process.env.ANSWERS || "{}") }
-                : mode === "failed"
-                  ? { kind: "failed" }
-                  : { kind: "none" };
-            const closedByWorkflow = issue.closed_by?.login === "github-actions[bot]";
-            const actions = route(event, { labels, state: issue.state, closedByWorkflow }, input);
+            const input = mode === "answers" ? { kind: "answers", answers: JSON.parse(process.env.ANSWERS || "{}") } : { kind: mode === "failed" ? "failed" : "none" };
+            const actions = route(parseEvent(context.eventName, context.payload), { labels, state: issue.state, closedByWorkflow: issue.closed_by?.login === "github-actions[bot]" }, input);
 
             let forwardError = null;
-            if (actions.some(a => a.type === "reopen")) {
-              await github.rest.issues.update({ owner, repo, issue_number, state: "open" });
-            }
+            if (actions.some(a => a.type === "reopen")) await github.rest.issues.update({ owner, repo, issue_number, state: "open" });
             if (actions.some(a => a.type === "forward")) {
-              try {
-                await forwardOne(issue);
-              } catch (error) {
-                forwardError = error instanceof Error ? error.message : String(error);
-              }
+              try { await forwardOne(issue); }
+              catch (e) { forwardError = e instanceof Error ? e.message : String(e); }
             }
-
             const toAdd = [];
             const toRemove = [];
-            for (const action of actions) {
-              if (action.type === "add-label") {
-                const label = forwardError && action.label === "support: forwarded" ? "support: forward failed" : action.label;
+            for (const a of actions) {
+              if (a.type === "add-label") {
+                const label = forwardError && a.label === "support: forwarded" ? "support: forward failed" : a.label;
                 if (!toAdd.includes(label)) toAdd.push(label);
-              } else if (action.type === "remove-label") {
-                if (forwardError && (action.label === "triage" || action.label === "support: forward failed")) continue;
-                toRemove.push(action.label);
-              } else if (action.type === "add-assignees") {
-                await github.rest.issues.addAssignees({ owner, repo, issue_number, assignees: [...action.assignees] });
-              } else if (action.type === "comment") {
-                await github.rest.issues.createComment({ owner, repo, issue_number, body: action.body });
-              } else if (action.type === "close") {
-                await github.rest.issues.update({ owner, repo, issue_number, state: "closed", state_reason: action.reason });
-              }
+              } else if (a.type === "remove-label" && !(forwardError && (a.label === "triage" || a.label === "support: forward failed"))) {
+                toRemove.push(a.label);
+              } else if (a.type === "add-assignees") await github.rest.issues.addAssignees({ owner, repo, issue_number, assignees: [...a.assignees] });
+              else if (a.type === "comment") await github.rest.issues.createComment({ owner, repo, issue_number, body: a.body });
+              else if (a.type === "close") await github.rest.issues.update({ owner, repo, issue_number, state: "closed", state_reason: a.reason });
             }
             if (forwardError) {
-              if (!toAdd.includes("support: forward failed") && !labels.includes("support: forward failed")) {
-                toAdd.push("support: forward failed");
-              }
-              for (const existing of labels) {
-                if (SUPPORT_STATE_LABELS.includes(existing) && existing !== "support: forward failed" && !toRemove.includes(existing)) {
-                  toRemove.push(existing);
-                }
-              }
+              if (!toAdd.includes("support: forward failed") && !labels.includes("support: forward failed")) toAdd.push("support: forward failed");
+              for (const l of labels) if (SUPPORT_STATE_LABELS.includes(l) && l !== "support: forward failed" && !toRemove.includes(l)) toRemove.push(l);
             }
-            for (const label of toAdd) await ensureLabel(label);
+            for (const l of toAdd) await ensureLabel(l);
             if (toAdd.length > 0) await github.rest.issues.addLabels({ owner, repo, issue_number, labels: toAdd });
-            for (const name of toRemove) {
-              await github.rest.issues.removeLabel({ owner, repo, issue_number, name }).catch(e => { if (e.status !== 404) throw e; });
-            }
+            for (const l of toRemove) await removeLabel(issue_number, l);
             if (forwardError) core.setFailed(`Plain forwarding failed: ${forwardError}`);
             else if (mode === "failed") core.setFailed("Classification failed; added triage label for retry.");

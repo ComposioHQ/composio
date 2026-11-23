@@ -1,72 +1,29 @@
 export type SdkArea = 'ts' | 'py' | 'cli' | 'docs';
 export type SdkAreaChoice = SdkArea | 'none';
-
 export type SupportStateLabel =
   | 'support: redirected'
   | 'support: forwarded'
   | 'support: needs human'
   | 'support: forward failed';
 
-export type NoulQuestion = {
-  readonly type: 'noul';
-  readonly instructions: string;
-};
-
-export type ChoiceQuestion<T extends Record<string, string> = Record<string, string>> = {
-  readonly type: 'choice';
-  readonly instructions: string;
-  readonly criteria: T;
-};
-
 export type JevAnswers = {
-  readonly account_specific: number;
-  readonly hosted_problem: number;
-  readonly sdk_code: number;
-  readonly new_toolkit: number;
-  readonly is_bug: number;
-  readonly missing_details: number;
-  readonly feature_request: number;
-  readonly sdk_area: Readonly<Record<SdkAreaChoice, number>>;
+  readonly account_specific: number; readonly hosted_problem: number; readonly sdk_code: number;
+  readonly new_toolkit: number; readonly is_bug: number; readonly missing_details: number;
+  readonly feature_request: number; readonly sdk_area: Readonly<Record<SdkAreaChoice, number>>;
 };
-
-export type TriageEvent =
-  | { readonly type: 'opened' }
-  | { readonly type: 'reopened' }
-  | { readonly type: 'edited' }
-  | { readonly type: 'labeled'; readonly label: string }
-  | { readonly type: 'author-comment' }
-  | { readonly type: 'dispatch' };
-
-export type IssueContext = {
-  readonly labels: readonly string[];
-  readonly state: 'open' | 'closed';
-  readonly closedByWorkflow: boolean;
-};
-
-export type ClassificationInput =
-  | { readonly kind: 'answers'; readonly answers: JevAnswers }
-  | { readonly kind: 'failed' }
-  | { readonly kind: 'none' };
-
+export type TriageEvent = { readonly type: 'opened' | 'reopened' | 'edited' | 'author-comment' | 'dispatch' } | { readonly type: 'labeled'; readonly label: string };
+export type IssueContext = { readonly labels: readonly string[]; readonly state: 'open' | 'closed'; readonly closedByWorkflow: boolean };
+export type ClassificationInput = { readonly kind: 'answers'; readonly answers: JevAnswers } | { readonly kind: 'failed' | 'none' };
 export type TriageAction =
-  | { readonly type: 'add-label'; readonly label: string }
-  | { readonly type: 'remove-label'; readonly label: string }
+  | { readonly type: 'add-label' | 'remove-label'; readonly label: string }
   | { readonly type: 'add-assignees'; readonly assignees: readonly string[] }
   | { readonly type: 'comment'; readonly body: string }
   | { readonly type: 'close'; readonly reason?: 'completed' | 'not_planned' }
-  | { readonly type: 'reopen' }
-  | { readonly type: 'forward' };
+  | { readonly type: 'reopen' | 'forward' };
 
 export const SUPPORT_LABEL = 'support';
 export const TRIAGE_LABEL = 'triage';
-
-export const SUPPORT_STATE_LABELS: readonly SupportStateLabel[] = [
-  'support: redirected',
-  'support: forwarded',
-  'support: needs human',
-  'support: forward failed',
-];
-
+export const SUPPORT_STATE_LABELS: readonly SupportStateLabel[] = ['support: redirected', 'support: forwarded', 'support: needs human', 'support: forward failed'];
 export const LABEL_METADATA: Readonly<Record<string, { readonly color: string; readonly description: string }>> = {
   [SUPPORT_LABEL]: { color: '0e8a16', description: 'Needs support team follow-up' },
   'support: redirected': { color: 'cfd3d7', description: 'Redirected to the dashboard Support page' },
@@ -74,21 +31,14 @@ export const LABEL_METADATA: Readonly<Record<string, { readonly color: string; r
   'support: needs human': { color: 'fbca04', description: 'Support signal unclear; needs maintainer triage' },
   'support: forward failed': { color: 'd93f0b', description: 'Forwarding to Plain failed; retry via dispatch or triage label' },
 };
-
 export const ASSIGNEES: Readonly<Record<SdkArea, readonly string[]>> = {
-  docs: ['shawnesquivel', 'Sushmithamallesh'],
-  py: ['jkomyno'],
-  ts: ['jkomyno'],
-  cli: ['CryogenicPlanet'],
+  docs: ['shawnesquivel', 'Sushmithamallesh'], py: ['jkomyno'], ts: ['jkomyno'], cli: ['CryogenicPlanet'],
 };
 
 export const DASHBOARD_SUPPORT_URL = 'https://dashboard.composio.dev/~/org/support';
-export const REDIRECT_MARKER = '<!-- composio-support-redirected -->';
-
 export const REDIRECT_COMMENT = [
-  REDIRECT_MARKER,
-  'This looks like an account-specific support request. Please open a ticket from the Support page in your Composio dashboard: ' +
-    `${DASHBOARD_SUPPORT_URL}. Tickets filed there are tied to your account, so the team can inspect your connections and logs and reply directly.`,
+  '<!-- composio-support-redirected -->',
+  `This looks like an account-specific support request. Please open a ticket from the Support page in your Composio dashboard: ${DASHBOARD_SUPPORT_URL}. Tickets filed there are tied to your account, so the team can inspect your connections and logs and reply directly.`,
   '',
   'If this problem is not specific to your account, reply here and this issue will be reopened and forwarded to the support team.',
 ].join('\n');
@@ -122,8 +72,7 @@ export const QUESTIONS = {
   },
   new_toolkit: {
     type: 'noul',
-    instructions:
-      'Does `issue` ask Composio to add an app integration or toolkit that does not exist yet?',
+    instructions: 'Does `issue` ask Composio to add an app integration or toolkit that does not exist yet?',
   },
   is_bug: {
     type: 'noul',
@@ -182,49 +131,34 @@ export function isSupportStateLabel(label: string): label is SupportStateLabel {
   return (SUPPORT_STATE_LABELS as readonly string[]).includes(label);
 }
 
-function hasSupportState(labels: readonly string[]): boolean {
-  return labels.some(isSupportStateLabel);
+export function parseEvent(eventName: string, payload: { action?: string; label?: { name?: string } }): TriageEvent {
+  if (eventName === 'workflow_dispatch') return { type: 'dispatch' };
+  if (eventName === 'issue_comment') return { type: 'author-comment' };
+  if (payload.action === 'labeled') return { type: 'labeled', label: payload.label?.name ?? '' };
+  return { type: (payload.action as 'opened' | 'reopened' | 'edited') ?? 'opened' };
 }
 
 export function needsClassification(event: TriageEvent, labels: readonly string[]): boolean {
   if (event.type === 'dispatch') return true;
   if (event.type === 'author-comment') return false;
-  if (event.type === 'labeled') {
-    return event.label === TRIAGE_LABEL && !hasSupportState(labels);
-  }
-  return !labels.includes(SUPPORT_LABEL) && !hasSupportState(labels);
+  if (event.type === 'labeled') return event.label === TRIAGE_LABEL && !labels.some(isSupportStateLabel);
+  return !labels.includes(SUPPORT_LABEL) && !labels.some(isSupportStateLabel);
 }
 
-function swapSupportState(
-  actions: TriageAction[],
-  labels: readonly string[],
-  target: SupportStateLabel
-): void {
-  if (!labels.includes(SUPPORT_LABEL)) {
-    actions.push({ type: 'add-label', label: SUPPORT_LABEL });
+function swapSupportState(actions: TriageAction[], labels: readonly string[], target: SupportStateLabel): void {
+  if (!labels.includes(SUPPORT_LABEL)) actions.push({ type: 'add-label', label: SUPPORT_LABEL });
+  for (const l of labels) {
+    if (isSupportStateLabel(l) && l !== target) actions.push({ type: 'remove-label', label: l });
   }
-  for (const existing of labels) {
-    if (isSupportStateLabel(existing) && existing !== target) {
-      actions.push({ type: 'remove-label', label: existing });
-    }
-  }
-  if (!labels.includes(target)) {
-    actions.push({ type: 'add-label', label: target });
-  }
+  if (!labels.includes(target)) actions.push({ type: 'add-label', label: target });
 }
 
 function pickSdkArea(probs: Readonly<Record<SdkAreaChoice, number>>, threshold: number): SdkArea | null {
-  const areas: readonly SdkArea[] = ['ts', 'py', 'cli', 'docs'];
   let best: SdkArea | null = null;
-  let bestScore = -1;
-  for (const area of areas) {
-    if (probs[area] > bestScore) {
-      best = area;
-      bestScore = probs[area];
-    }
+  for (const area of ['ts', 'py', 'cli', 'docs'] as const) {
+    if (!best || probs[area] > probs[best]) best = area;
   }
-  if (!best || bestScore < threshold || bestScore < probs.none) return null;
-  return best;
+  return best && probs[best] >= threshold && probs[best] >= probs.none ? best : null;
 }
 
 export function route(
@@ -234,38 +168,28 @@ export function route(
   thresholds: Thresholds = THRESHOLDS
 ): TriageAction[] {
   const { labels, state, closedByWorkflow } = issue;
-
   if (event.type === 'author-comment') {
-    if (state !== 'closed' || !closedByWorkflow || !labels.includes('support: redirected')) {
-      return [];
-    }
+    if (state !== 'closed' || !closedByWorkflow || !labels.includes('support: redirected')) return [];
     const actions: TriageAction[] = [{ type: 'reopen' }];
     swapSupportState(actions, labels, 'support: forwarded');
     actions.push({ type: 'forward' });
     return actions;
   }
-
   if (state === 'closed') return [];
-
   if (input.kind === 'failed') {
     return labels.includes(TRIAGE_LABEL) ? [] : [{ type: 'add-label', label: TRIAGE_LABEL }];
   }
-
   if (input.kind === 'none') {
     const actions: TriageAction[] = [];
     if (event.type === 'labeled') {
-      if (event.label === SUPPORT_LABEL && labels.includes(SUPPORT_LABEL)) {
+      const manualForward =
+        (event.label === SUPPORT_LABEL && labels.includes(SUPPORT_LABEL)) ||
+        (event.label === 'support: forwarded' && labels.includes('support: forwarded'));
+      const retryFailed = event.label === TRIAGE_LABEL && labels.includes('support: forward failed');
+      if (manualForward || retryFailed) {
         swapSupportState(actions, labels, 'support: forwarded');
         actions.push({ type: 'forward' });
-      } else if (event.label === 'support: forwarded' && labels.includes('support: forwarded')) {
-        swapSupportState(actions, labels, 'support: forwarded');
-        actions.push({ type: 'forward' });
-      } else if (event.label === TRIAGE_LABEL && labels.includes('support: forward failed')) {
-        swapSupportState(actions, labels, 'support: forwarded');
-        actions.push({ type: 'forward' });
-        if (labels.includes(TRIAGE_LABEL)) {
-          actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
-        }
+        if (retryFailed) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
       }
     }
     return actions;
@@ -273,31 +197,20 @@ export function route(
 
   const { answers } = input;
   const actions: TriageAction[] = [];
-  const alreadyHasState = hasSupportState(labels);
-
+  const hasState = labels.some(isSupportStateLabel);
   let supportOutcome: 'redirected' | 'forwarded' | 'needs-human' | null = null;
-  if (!alreadyHasState && answers.account_specific >= thresholds.accountRedirect) {
-    supportOutcome = 'redirected';
-  } else if (answers.account_specific >= thresholds.accountUnclear) {
-    supportOutcome = 'needs-human';
-  } else if (answers.hosted_problem >= thresholds.hostedForward) {
-    supportOutcome = 'forwarded';
-  } else if (answers.hosted_problem >= thresholds.hostedUnclear) {
-    supportOutcome = 'needs-human';
-  } else if (labels.includes(SUPPORT_LABEL)) {
-    supportOutcome = 'forwarded';
-  }
+  if (!hasState && answers.account_specific >= thresholds.accountRedirect) supportOutcome = 'redirected';
+  else if (answers.account_specific >= thresholds.accountUnclear) supportOutcome = 'needs-human';
+  else if (answers.hosted_problem >= thresholds.hostedForward) supportOutcome = 'forwarded';
+  else if (answers.hosted_problem >= thresholds.hostedUnclear) supportOutcome = 'needs-human';
+  else if (labels.includes(SUPPORT_LABEL)) supportOutcome = 'forwarded';
 
   if (supportOutcome === 'redirected') {
     swapSupportState(actions, labels, 'support: redirected');
-    actions.push({ type: 'comment', body: REDIRECT_COMMENT });
-    actions.push({ type: 'close', reason: 'not_planned' });
-    if (labels.includes(TRIAGE_LABEL)) {
-      actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
-    }
+    actions.push({ type: 'comment', body: REDIRECT_COMMENT }, { type: 'close', reason: 'not_planned' });
+    if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
     return actions;
   }
-
   if (supportOutcome === 'forwarded') {
     swapSupportState(actions, labels, 'support: forwarded');
     actions.push({ type: 'forward' });
@@ -307,43 +220,25 @@ export function route(
 
   const isSupport = supportOutcome !== null;
   const isBug = answers.is_bug >= thresholds.isBug;
-  const isNewToolkit = answers.new_toolkit >= thresholds.newToolkit;
   const isFeatureRequest = answers.feature_request >= thresholds.featureRequest;
-  const isMissingDetails = answers.missing_details >= thresholds.missingDetails;
   const sdkArea = pickSdkArea(answers.sdk_area, thresholds.sdkArea);
-
-  if (isBug && !labels.includes('bug')) {
-    actions.push({ type: 'add-label', label: 'bug' });
-  }
+  if (isBug && !labels.includes('bug')) actions.push({ type: 'add-label', label: 'bug' });
   if (sdkArea) {
-    if (!labels.includes(sdkArea)) {
-      actions.push({ type: 'add-label', label: sdkArea });
-    }
+    if (!labels.includes(sdkArea)) actions.push({ type: 'add-label', label: sdkArea });
     actions.push({ type: 'add-assignees', assignees: ASSIGNEES[sdkArea] });
   }
 
-  const isToolRequest = !isBug && !isFeatureRequest && !sdkArea && isNewToolkit;
+  const isToolRequest = !isBug && !isFeatureRequest && !sdkArea && answers.new_toolkit >= thresholds.newToolkit;
   const closeAsToolRequest = !isSupport && isToolRequest;
-
-  if (isToolRequest) {
-    if (!isSupport && !labels.includes('tool-request')) {
-      actions.push({ type: 'add-label', label: 'tool-request' });
-    }
-    if (closeAsToolRequest) {
-      actions.push({ type: 'comment', body: TOOL_REQUEST_COMMENT });
-      actions.push({ type: 'close', reason: 'not_planned' });
-    }
-  } else if (!isBug && !sdkArea && isFeatureRequest && !labels.includes('feature-request')) {
+  if (closeAsToolRequest) {
+    if (!labels.includes('tool-request')) actions.push({ type: 'add-label', label: 'tool-request' });
+    actions.push({ type: 'comment', body: TOOL_REQUEST_COMMENT }, { type: 'close', reason: 'not_planned' });
+  } else if (!isToolRequest && !isBug && !sdkArea && isFeatureRequest && !labels.includes('feature-request')) {
     actions.push({ type: 'add-label', label: 'feature-request' });
   }
-
-  if (!isSupport && !closeAsToolRequest && isMissingDetails) {
+  if (!isSupport && !closeAsToolRequest && answers.missing_details >= thresholds.missingDetails) {
     actions.push({ type: 'comment', body: MISSING_DETAILS_COMMENT });
   }
-
-  if (labels.includes(TRIAGE_LABEL)) {
-    actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
-  }
-
+  if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
   return actions;
 }

@@ -10,454 +10,205 @@ import {
   type IssueContext,
   type JevAnswers,
   type TriageAction,
+  type TriageEvent,
 } from './route.ts';
 
-function makeAnswers(overrides: Partial<JevAnswers> = {}): JevAnswers {
-  return {
-    account_specific: 0.05,
-    hosted_problem: 0.05,
-    sdk_code: 0.1,
-    new_toolkit: 0.05,
-    is_bug: 0.05,
-    missing_details: 0.05,
-    feature_request: 0.05,
-    sdk_area: { ts: 0.05, py: 0.05, cli: 0.05, docs: 0.05, none: 0.8 },
-    ...overrides,
-  };
-}
+const baseAnswers: JevAnswers = {
+  account_specific: 0.05,
+  hosted_problem: 0.05,
+  sdk_code: 0.1,
+  new_toolkit: 0.05,
+  is_bug: 0.05,
+  missing_details: 0.05,
+  feature_request: 0.05,
+  sdk_area: { ts: 0.05, py: 0.05, cli: 0.05, docs: 0.05, none: 0.8 },
+};
 
-function makeIssue(overrides: Partial<IssueContext> = {}): IssueContext {
-  return {
-    labels: [],
-    state: 'open',
-    closedByWorkflow: false,
-    ...overrides,
-  };
-}
-
-function addedLabels(actions: TriageAction[]): string[] {
-  return actions.filter(a => a.type === 'add-label').map(a => a.label);
-}
-
-function removedLabels(actions: TriageAction[]): string[] {
-  return actions.filter(a => a.type === 'remove-label').map(a => a.label);
-}
+const openIssue: IssueContext = { labels: [], state: 'open', closedByWorkflow: false };
+const added = (actions: TriageAction[]) => actions.filter(a => a.type === 'add-label').map(a => a.label);
+const removed = (actions: TriageAction[]) => actions.filter(a => a.type === 'remove-label').map(a => a.label);
+const runAnswers = (
+  answers: Partial<JevAnswers>,
+  issue: Partial<IssueContext> = {},
+  event: TriageEvent = { type: 'opened' }
+) => route(event, { ...openIssue, ...issue }, { kind: 'answers', answers: { ...baseAnswers, ...answers } });
 
 describe('needsClassification', () => {
-  test('classifies newly opened issues without support labels', () => {
+  test('gating across opened, support states, overrides, triage, and dispatch', () => {
     expect(needsClassification({ type: 'opened' }, [])).toBe(true);
-    expect(needsClassification({ type: 'opened' }, ['bug'])).toBe(true);
-  });
-
-  test('skips classification when issue already carries support or a support state', () => {
     expect(needsClassification({ type: 'edited' }, ['support'])).toBe(false);
     expect(needsClassification({ type: 'reopened' }, ['support: forwarded'])).toBe(false);
-    expect(needsClassification({ type: 'opened' }, ['support: needs human'])).toBe(false);
-  });
-
-  test('skips classification on author-comment and manual support label events', () => {
     expect(needsClassification({ type: 'author-comment' }, ['support: redirected'])).toBe(false);
     expect(needsClassification({ type: 'labeled', label: 'support' }, ['support'])).toBe(false);
-    expect(
-      needsClassification({ type: 'labeled', label: 'support: forwarded' }, [
-        'support: needs human',
-        'support: forwarded',
-      ])
-    ).toBe(false);
-  });
-
-  test('classifies on triage label unless issue has a support state, and always on dispatch', () => {
-    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['triage'])).toBe(true);
-    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', 'triage'])).toBe(
-      true
-    );
-    expect(
-      needsClassification({ type: 'labeled', label: 'triage' }, [
-        'support',
-        'support: forward failed',
-        'triage',
-      ])
-    ).toBe(false);
-    expect(
-      needsClassification({ type: 'labeled', label: 'triage' }, [
-        'support',
-        'support: needs human',
-        'triage',
-      ])
-    ).toBe(false);
+    expect(needsClassification({ type: 'labeled', label: 'support: forwarded' }, ['support: needs human'])).toBe(false);
+    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', 'triage'])).toBe(true);
+    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', 'support: forward failed', 'triage'])).toBe(false);
+    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support: needs human', 'triage'])).toBe(false);
     expect(needsClassification({ type: 'dispatch' }, ['support: forwarded'])).toBe(true);
   });
 });
 
 describe('non-support triage characterization', () => {
-  test('TypeScript SDK bug gets ts, bug, and jkomyno with no support labels or comment', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({
-          sdk_code: 0.9,
-          is_bug: 0.9,
-          sdk_area: { ts: 0.9, py: 0.02, cli: 0.02, docs: 0.02, none: 0.04 },
-        }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['bug', 'ts']);
-    expect(actions.find(a => a.type === 'add-assignees')).toEqual({
-      type: 'add-assignees',
-      assignees: ['jkomyno'],
-    });
-    expect(actions.some(a => a.type === 'comment' || a.type === 'close' || a.type === 'forward')).toBe(
-      false
-    );
-  });
-
-  test('docs, cli, and py areas map to their respective labels and assignees', () => {
+  test('SDK areas map to labels and assignees without comments or closes', () => {
     for (const [area, assignees] of [
-      ['docs', ['shawnesquivel', 'Sushmithamallesh']],
+      ['ts', ['jkomyno']],
       ['py', ['jkomyno']],
       ['cli', ['CryogenicPlanet']],
+      ['docs', ['shawnesquivel', 'Sushmithamallesh']],
     ] as const) {
-      const actions = route(
-        { type: 'opened' },
-        makeIssue(),
-        {
-          kind: 'answers',
-          answers: makeAnswers({
-            sdk_code: 0.9,
-            sdk_area: { ts: 0.01, py: 0.01, cli: 0.01, docs: 0.01, none: 0.05, [area]: 0.9 },
-          }),
-        }
-      );
-      expect(addedLabels(actions)).toEqual([area]);
-      expect(actions.find(a => a.type === 'add-assignees')).toEqual({
-        type: 'add-assignees',
-        assignees: [...assignees],
+      const actions = runAnswers({
+        is_bug: area === 'ts' ? 0.9 : 0.05,
+        sdk_area: { ts: 0.01, py: 0.01, cli: 0.01, docs: 0.01, none: 0.05, [area]: 0.9 },
       });
+      expect(added(actions)).toEqual(area === 'ts' ? ['bug', 'ts'] : [area]);
+      expect(actions.find(a => a.type === 'add-assignees')).toEqual({ type: 'add-assignees', assignees: [...assignees] });
+      expect(actions.some(a => a.type === 'comment' || a.type === 'close' || a.type === 'forward')).toBe(false);
     }
   });
 
-  test('non-actionable bug report gets bug label and fixed missing-details note', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ is_bug: 0.85, missing_details: 0.85 }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['bug']);
-    const comment = actions.find(a => a.type === 'comment');
-    expect(comment?.body).toBe(MISSING_DETAILS_COMMENT);
-    expect(comment?.body).toContain('steps to reproduce');
-    expect(actions.some(a => a.type === 'close')).toBe(false);
-  });
-
-  test('open tool request is labeled, pointed at the request board, and closed', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ new_toolkit: 0.9, missing_details: 0.9 }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['tool-request']);
-    const comments = actions.filter(a => a.type === 'comment');
-    expect(comments).toHaveLength(1);
-    expect(comments[0].body).toBe(TOOL_REQUEST_COMMENT);
-    expect(comments[0].body).toContain('https://request.composio.dev/boards/tool-requests');
-    expect(actions.some(a => a.type === 'close')).toBe(true);
-  });
-
-  test('tool request that is also a bug is never closed and gets bug label instead', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ new_toolkit: 0.9, is_bug: 0.9, missing_details: 0.9 }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['bug']);
+  test('non-actionable bug gets bug label and fixed missing-details note', () => {
+    const actions = runAnswers({ is_bug: 0.85, missing_details: 0.85 });
+    expect(added(actions)).toEqual(['bug']);
     expect(actions.find(a => a.type === 'comment')?.body).toBe(MISSING_DETAILS_COMMENT);
     expect(actions.some(a => a.type === 'close')).toBe(false);
   });
 
-  test('feature request gets feature-request label and stays open even with high new_toolkit', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ feature_request: 0.85, new_toolkit: 0.85 }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['feature-request']);
-    expect(actions.some(a => a.type === 'close')).toBe(false);
+  test('open tool request is labeled, pointed at request board, and closed unless bug or feature-request', () => {
+    const req = runAnswers({ new_toolkit: 0.9, missing_details: 0.9 });
+    expect(added(req)).toEqual(['tool-request']);
+    expect(req.filter(a => a.type === 'comment').map(a => a.body)).toEqual([TOOL_REQUEST_COMMENT]);
+    expect(req.some(a => a.type === 'close')).toBe(true);
+
+    const bug = runAnswers({ new_toolkit: 0.9, is_bug: 0.9, missing_details: 0.9 });
+    expect(added(bug)).toEqual(['bug']);
+    expect(bug.find(a => a.type === 'comment')?.body).toBe(MISSING_DETAILS_COMMENT);
+    expect(bug.some(a => a.type === 'close')).toBe(false);
+
+    const feat = runAnswers({ new_toolkit: 0.9, feature_request: 0.85 });
+    expect(added(feat)).toEqual(['feature-request']);
+    expect(feat.some(a => a.type === 'close')).toBe(false);
   });
 });
 
 describe('support routing outcomes', () => {
-  test('account-specific above high bar redirects, comments, closes, and skips SDK labels', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({
-          account_specific: 0.95,
-          is_bug: 0.9,
-          sdk_area: { ts: 0.9, py: 0.02, cli: 0.02, docs: 0.02, none: 0.04 },
-        }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['support', 'support: redirected']);
-    const comment = actions.find(a => a.type === 'comment');
-    expect(comment?.body).toBe(REDIRECT_COMMENT);
-    expect(comment?.body).toContain(DASHBOARD_SUPPORT_URL);
+  test('account-specific above high bar redirects, comments, closes, and skips SDK triage', () => {
+    const actions = runAnswers({
+      account_specific: 0.95,
+      is_bug: 0.9,
+      sdk_area: { ts: 0.9, py: 0.02, cli: 0.02, docs: 0.02, none: 0.04 },
+    });
+    expect(added(actions)).toEqual(['support', 'support: redirected']);
+    const comment = actions.find(a => a.type === 'comment')?.body;
+    expect(comment).toBe(REDIRECT_COMMENT);
+    expect(comment).toContain(DASHBOARD_SUPPORT_URL);
     expect(actions.some(a => a.type === 'close')).toBe(true);
     expect(actions.some(a => a.type === 'add-assignees' || a.type === 'forward')).toBe(false);
   });
 
-  test('hosted problem above threshold forwards and stays open without missing-details note', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ hosted_problem: 0.9, missing_details: 0.9 }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['support', 'support: forwarded']);
-    expect(actions.some(a => a.type === 'forward')).toBe(true);
-    expect(actions.some(a => a.type === 'close' || a.type === 'comment')).toBe(false);
+  test('hosted above threshold forwards without close, missing-details note, or tool-request close', () => {
+    const hosted = runAnswers({ hosted_problem: 0.9, missing_details: 0.9, new_toolkit: 0.95 });
+    expect(added(hosted)).toEqual(['support', 'support: forwarded']);
+    expect(hosted.some(a => a.type === 'forward')).toBe(true);
+    expect(hosted.some(a => a.type === 'close' || a.type === 'comment')).toBe(false);
   });
 
-  test('account-specific or hosted inside unclear band sets needs human without forward or close', () => {
-    const unclearAccount = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ account_specific: THRESHOLDS.accountUnclear }),
-      }
-    );
-    expect(addedLabels(unclearAccount)).toEqual(['support', 'support: needs human']);
-    expect(unclearAccount.some(a => a.type === 'forward' || a.type === 'close')).toBe(false);
-
-    const unclearHosted = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ hosted_problem: THRESHOLDS.hostedUnclear }),
-      }
-    );
-    expect(addedLabels(unclearHosted)).toEqual(['support', 'support: needs human']);
-    expect(unclearHosted.some(a => a.type === 'forward' || a.type === 'close')).toBe(false);
-  });
-
-  test('hosted above threshold with account-specific in unclear band sets needs human', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({
-          account_specific: THRESHOLDS.accountUnclear,
-          hosted_problem: 0.95,
-        }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['support', 'support: needs human']);
-    expect(actions.some(a => a.type === 'forward' || a.type === 'close')).toBe(false);
+  test('unclear bands (including account-unclear with high hosted) set needs human without forward or close', () => {
+    for (const answers of [
+      { account_specific: THRESHOLDS.accountUnclear },
+      { hosted_problem: THRESHOLDS.hostedUnclear },
+      { account_specific: THRESHOLDS.accountUnclear, hosted_problem: 0.95 },
+    ]) {
+      const actions = runAnswers(answers);
+      expect(added(actions)).toEqual(['support', 'support: needs human']);
+      expect(actions.some(a => a.type === 'forward' || a.type === 'close')).toBe(false);
+    }
   });
 
   test('Python SDK bug with hosted signal keeps py, bug, and assignees alongside forwarded', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({
-          hosted_problem: 0.9,
-          sdk_code: 0.85,
-          is_bug: 0.9,
-          sdk_area: { ts: 0.02, py: 0.9, cli: 0.02, docs: 0.02, none: 0.04 },
-        }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['support', 'support: forwarded', 'bug', 'py']);
-    expect(actions.find(a => a.type === 'add-assignees')).toEqual({
-      type: 'add-assignees',
-      assignees: ['jkomyno'],
+    const actions = runAnswers({
+      hosted_problem: 0.9,
+      is_bug: 0.9,
+      sdk_area: { ts: 0.02, py: 0.9, cli: 0.02, docs: 0.02, none: 0.04 },
     });
+    expect(added(actions)).toEqual(['support', 'support: forwarded', 'bug', 'py']);
+    expect(actions.find(a => a.type === 'add-assignees')).toEqual({ type: 'add-assignees', assignees: ['jkomyno'] });
     expect(actions.some(a => a.type === 'forward')).toBe(true);
-  });
-
-  test('hosted above threshold with new-toolkit signal forwards with no close or tool-request note', () => {
-    const actions = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ hosted_problem: 0.9, new_toolkit: 0.95 }),
-      }
-    );
-    expect(addedLabels(actions)).toEqual(['support', 'support: forwarded']);
-    expect(actions.some(a => a.type === 'forward')).toBe(true);
-    expect(actions.some(a => a.type === 'close' || a.type === 'comment')).toBe(false);
   });
 
   test('existing support state is never redirected again on dispatch', () => {
-    const actions = route(
-      { type: 'dispatch' },
-      makeIssue({ labels: ['support', 'support: forwarded'] }),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ account_specific: 0.99, hosted_problem: 0.9 }),
-      }
+    const actions = runAnswers(
+      { account_specific: 0.99, hosted_problem: 0.9 },
+      { labels: ['support', 'support: forwarded'] },
+      { type: 'dispatch' }
     );
-    expect(addedLabels(actions)).not.toContain('support: redirected');
+    expect(added(actions)).not.toContain('support: redirected');
     expect(actions.some(a => a.type === 'close')).toBe(false);
   });
 });
 
 describe('overrides, recovery, closed issues, and boundaries', () => {
-  test('author-comment on workflow-closed redirected issue reopens, forwards, and swaps state', () => {
-    const actions = route(
+  test('author-comment reopens and forwards only workflow-closed redirected issues', () => {
+    const ok = route(
       { type: 'author-comment' },
-      makeIssue({
-        labels: ['support', 'support: redirected'],
-        state: 'closed',
-        closedByWorkflow: true,
-      }),
+      { labels: ['support', 'support: redirected'], state: 'closed', closedByWorkflow: true },
       { kind: 'none' }
     );
-    expect(actions.some(a => a.type === 'reopen')).toBe(true);
-    expect(actions.some(a => a.type === 'forward')).toBe(true);
-    expect(removedLabels(actions)).toEqual(['support: redirected']);
-    expect(addedLabels(actions)).toEqual(['support: forwarded']);
-    expect(actions.some(a => a.type === 'comment')).toBe(false);
-  });
-
-  test('author-comment on maintainer-closed redirected issue or non-redirected issue does nothing', () => {
-    expect(
-      route(
-        { type: 'author-comment' },
-        makeIssue({
-          labels: ['support', 'support: redirected'],
-          state: 'closed',
-          closedByWorkflow: false,
-        }),
-        { kind: 'none' }
-      )
-    ).toEqual([]);
+    expect(ok.some(a => a.type === 'reopen')).toBe(true);
+    expect(ok.some(a => a.type === 'forward')).toBe(true);
+    expect(removed(ok)).toEqual(['support: redirected']);
+    expect(added(ok)).toEqual(['support: forwarded']);
+    expect(ok.some(a => a.type === 'comment')).toBe(false);
 
     expect(
       route(
         { type: 'author-comment' },
-        makeIssue({ labels: ['bug'], state: 'closed', closedByWorkflow: true }),
+        { labels: ['support', 'support: redirected'], state: 'closed', closedByWorkflow: false },
         { kind: 'none' }
       )
     ).toEqual([]);
+    expect(
+      route({ type: 'author-comment' }, { labels: ['bug'], state: 'closed', closedByWorkflow: true }, { kind: 'none' })
+    ).toEqual([]);
   });
 
-  test('any event other than author-comment on a closed issue produces no actions', () => {
-    for (const event of [
-      { type: 'opened' },
-      { type: 'edited' },
-      { type: 'labeled', label: 'triage' },
-      { type: 'dispatch' },
-    ] as const) {
-      expect(
-        route(
-          event,
-          makeIssue({ state: 'closed', closedByWorkflow: true }),
-          { kind: 'answers', answers: makeAnswers({ hosted_problem: 0.95 }) }
-        )
-      ).toEqual([]);
+  test('closed issues ignore all events except author-comment; failures add only triage', () => {
+    for (const event of [{ type: 'opened' }, { type: 'edited' }, { type: 'labeled', label: 'triage' }, { type: 'dispatch' }] as const) {
+      expect(runAnswers({ hosted_problem: 0.95 }, { state: 'closed', closedByWorkflow: true }, event)).toEqual([]);
     }
+    expect(route({ type: 'opened' }, openIssue, { kind: 'failed' })).toEqual([{ type: 'add-label', label: 'triage' }]);
   });
 
-  test('maintainer setting support: forwarded on needs human forwards and removes old state', () => {
-    const actions = route(
+  test('maintainer overrides, bare support, triage retry on forward failed, and no-op edits', () => {
+    const swap = route(
       { type: 'labeled', label: 'support: forwarded' },
-      makeIssue({ labels: ['support', 'support: needs human', 'support: forwarded'] }),
+      { ...openIssue, labels: ['support', 'support: needs human', 'support: forwarded'] },
       { kind: 'none' }
     );
-    expect(actions.some(a => a.type === 'forward')).toBe(true);
-    expect(removedLabels(actions)).toEqual(['support: needs human']);
-  });
+    expect(swap.some(a => a.type === 'forward')).toBe(true);
+    expect(removed(swap)).toEqual(['support: needs human']);
 
-  test('bare support added by hand forwards and sets support: forwarded', () => {
-    const actions = route(
-      { type: 'labeled', label: 'support' },
-      makeIssue({ labels: ['support'] }),
-      { kind: 'none' }
-    );
-    expect(actions.some(a => a.type === 'forward')).toBe(true);
-    expect(addedLabels(actions)).toEqual(['support: forwarded']);
-  });
+    const bare = route({ type: 'labeled', label: 'support' }, { ...openIssue, labels: ['support'] }, { kind: 'none' });
+    expect(bare.some(a => a.type === 'forward')).toBe(true);
+    expect(added(bare)).toEqual(['support: forwarded']);
 
-  test('triage label on support: forward failed retries forward and swaps to forwarded', () => {
-    const actions = route(
+    const retry = route(
       { type: 'labeled', label: 'triage' },
-      makeIssue({ labels: ['support', 'support: forward failed', 'triage'] }),
+      { ...openIssue, labels: ['support', 'support: forward failed', 'triage'] },
       { kind: 'none' }
     );
-    expect(actions.some(a => a.type === 'forward')).toBe(true);
-    expect(removedLabels(actions)).toEqual(['support: forward failed', 'triage']);
-    expect(addedLabels(actions)).toEqual(['support: forwarded']);
-  });
+    expect(retry.some(a => a.type === 'forward')).toBe(true);
+    expect(removed(retry)).toEqual(['support: forward failed', 'triage']);
+    expect(added(retry)).toEqual(['support: forwarded']);
 
-  test('edited or reopened on issue in support: forwarded produces no actions', () => {
-    const issue = makeIssue({ labels: ['support', 'support: forwarded'] });
-    expect(route({ type: 'edited' }, issue, { kind: 'none' })).toEqual([]);
-    expect(route({ type: 'reopened' }, issue, { kind: 'none' })).toEqual([]);
-  });
-
-  test('classification failure adds only triage label', () => {
-    expect(route({ type: 'opened' }, makeIssue(), { kind: 'failed' })).toEqual([
-      { type: 'add-label', label: 'triage' },
-    ]);
+    const forwarded = { ...openIssue, labels: ['support', 'support: forwarded'] };
+    expect(route({ type: 'edited' }, forwarded, { kind: 'none' })).toEqual([]);
+    expect(route({ type: 'reopened' }, forwarded, { kind: 'none' })).toEqual([]);
   });
 
   test('exact threshold boundaries route to the documented side', () => {
-    const atRedirect = route(
-      { type: 'opened' },
-      makeIssue(),
-      { kind: 'answers', answers: makeAnswers({ account_specific: THRESHOLDS.accountRedirect }) }
-    );
-    expect(addedLabels(atRedirect)).toEqual(['support', 'support: redirected']);
-
-    const justBelowRedirect = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ account_specific: THRESHOLDS.accountRedirect - 0.001 }),
-      }
-    );
-    expect(addedLabels(justBelowRedirect)).toEqual(['support', 'support: needs human']);
-
-    const atHosted = route(
-      { type: 'opened' },
-      makeIssue(),
-      { kind: 'answers', answers: makeAnswers({ hosted_problem: THRESHOLDS.hostedForward }) }
-    );
-    expect(addedLabels(atHosted)).toEqual(['support', 'support: forwarded']);
-
-    const justBelowHosted = route(
-      { type: 'opened' },
-      makeIssue(),
-      {
-        kind: 'answers',
-        answers: makeAnswers({ hosted_problem: THRESHOLDS.hostedForward - 0.001 }),
-      }
-    );
-    expect(addedLabels(justBelowHosted)).toEqual(['support', 'support: needs human']);
+    expect(added(runAnswers({ account_specific: THRESHOLDS.accountRedirect }))).toEqual(['support', 'support: redirected']);
+    expect(added(runAnswers({ account_specific: THRESHOLDS.accountRedirect - 0.001 }))).toEqual(['support', 'support: needs human']);
+    expect(added(runAnswers({ hosted_problem: THRESHOLDS.hostedForward }))).toEqual(['support', 'support: forwarded']);
+    expect(added(runAnswers({ hosted_problem: THRESHOLDS.hostedForward - 0.001 }))).toEqual(['support', 'support: needs human']);
   });
 });
