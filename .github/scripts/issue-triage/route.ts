@@ -153,24 +153,24 @@ export const QUESTIONS = {
   },
 } as const;
 
-// Initial thresholds; calibrated against historical labeled issues via calibrate.ts.
+// Calibrated on 2026-04+ labeled issues via calibrate.ts (recall 0.955, precision 0.922, 0 false redirects).
 // Every boundary uses >= so a score equal to a threshold activates that branch.
 export const THRESHOLDS = {
-  // High bar for closing and redirecting to the dashboard so hosted bugs and SDK issues are never auto-closed.
-  accountRedirect: 0.85,
-  // Lower bound of the account-specific unclear band that routes to support: needs human.
-  accountUnclear: 0.5,
-  // Bar for forwarding hosted toolkit or backend problems to Plain.
-  hostedForward: 0.65,
-  // Lower bound of the hosted-problem unclear band that routes to support: needs human.
-  hostedUnclear: 0.45,
-  // Minimum choice probability to assign an SDK area label (ts, py, cli, docs).
+  // Catches account-only login/org issues (#3321 at 0.80, #5173 at 0.78) above the highest hosted issue (#3930 at 0.76).
+  accountRedirect: 0.78,
+  // Holds borderline account-vs-hosted issues (0.65–0.77) for human triage instead of auto-closing or forwarding.
+  accountUnclear: 0.65,
+  // Forwards clear hosted toolkit and backend defects to Plain while keeping the unclear band small.
+  hostedForward: 0.6,
+  // Holds moderate hosted signals (0.50–0.59) in support: needs human for maintainer review.
+  hostedUnclear: 0.5,
+  // Minimum choice probability to assign an SDK area label (90/91 agreement on non-support SDK issues).
   sdkArea: 0.5,
   // Bar for adding the bug label.
   isBug: 0.5,
-  // Bar for adding feature-request when not a bug or new-toolkit request.
+  // Bar for adding feature-request and protecting feature requests from tool-request auto-close.
   featureRequest: 0.5,
-  // Bar for labeling tool-request and closing with the request-board note.
+  // Bar for labeling tool-request and closing with the request-board note when neither bug nor feature-request.
   newToolkit: 0.7,
   // Bar for posting the fixed missing-details note on non-support, non-tool-request issues.
   missingDetails: 0.65,
@@ -322,7 +322,7 @@ export function route(
     actions.push({ type: 'add-assignees', assignees: ASSIGNEES[sdkArea] });
   }
 
-  const isToolRequest = !isBug && !sdkArea && isNewToolkit;
+  const isToolRequest = !isBug && !isFeatureRequest && !sdkArea && isNewToolkit;
   const closeAsToolRequest = !isSupport && isToolRequest;
 
   if (isToolRequest) {

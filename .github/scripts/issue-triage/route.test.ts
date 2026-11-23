@@ -185,13 +185,13 @@ describe('non-support triage characterization', () => {
     expect(actions.some(a => a.type === 'close')).toBe(false);
   });
 
-  test('feature request gets feature-request label and stays open', () => {
+  test('feature request gets feature-request label and stays open even with high new_toolkit', () => {
     const actions = route(
       { type: 'opened' },
       makeIssue(),
       {
         kind: 'answers',
-        answers: makeAnswers({ feature_request: 0.85 }),
+        answers: makeAnswers({ feature_request: 0.85, new_toolkit: 0.85 }),
       }
     );
     expect(addedLabels(actions)).toEqual(['feature-request']);
