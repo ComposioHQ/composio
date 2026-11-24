@@ -1,10 +1,94 @@
 ---
 title: Using saved session configs
-description: Start or update sessions from a saved, named access policy you build in the Composio Dashboard
-keywords: [session config, sessionConfigId, saved config, access policy, dashboard]
+description: Save an access policy once in the Composio Dashboard and reuse it across sessions
+keywords: [session config, sessionConfigId, saved config, access policy, dashboard, read-only, readOnlyHint, require_approval]
 ---
 
-A **Session config** is a saved, named access policy (`sc_…`) that you build in the Composio Dashboard under Sessions → Configs. Start a session from one instead of repeating `toolkits`, `tools`, and `tags` in your code:
+A **Session config** is a saved, named access policy (`sc_…`) for sessions. It holds the same `toolkits`, `tools`, and `tags` rules you'd otherwise pass in code, and your code refers to it by ID.
+
+Use one when:
+
+- **Several agents or sessions should get the same access.** You change the policy in one place, the Dashboard, instead of editing and redeploying every place that creates a session.
+- **Someone other than the agent's developer decides what it may do.** A security or ops teammate can set and review the policy in the Dashboard without touching code.
+
+## Creating a config
+
+You create and edit Session configs in the [Composio Dashboard](https://dashboard.composio.dev/~/project/sessions/configs?utm_source=docs&utm_medium=content&utm_campaign=session-configs), under **Sessions** → **Configs**. There's no API or SDK method to create, edit, or archive one yet: the public API can only [list](/reference/api-reference/tool-router/getSessionConfigs) and [retrieve](/reference/api-reference/tool-router/getSessionConfigsBySessionConfigId) configs. Only organization admins can create or edit them.
+
+Click **New config**. The builder has three steps:
+
+1. **Details:** a name, such as "Support agent access", and an optional description of when to use it.
+2. **Toolkits:** which toolkits the agent can use. Pick **Selected Toolkits** to allow only the ones you choose, or **Excluded Toolkits** to allow every toolkit except those.
+3. **Tool Access:** what the agent can do in those toolkits. Start from a preset (**Read Only**, **Ask Before Changes**, **Non-Destructive**, or **Full Access**), or set **Allow**, **Ask first**, or **Block** for each kind of tool: Read, Create, Update, and Delete. You can give a toolkit its own access, including **Custom** access where you pick its tools one by one.
+
+**Ask first** pauses the tool until the user approves it. It's experimental and works the same way as [Approvals](/docs/governance/approvals).
+
+To start from a session you already have, open it under **Sessions** → **Live Sessions** and click **Save as config**.
+
+## Example policies
+
+The builder saves your choices as a policy in the same shape that sessions use. You can read it back with [`sessionConfigs.get()`](#finding-a-config).
+
+A **Read Only** config allows only tools that read data:
+
+```json
+{
+  "tags": {
+    "enable": ["readOnlyHint"],
+    "disable": ["createHint", "updateHint", "destructiveHint"]
+  }
+}
+```
+
+When you block a kind, the builder also lists the kinds you allow under `enable`. That way a tool with no hint is blocked too, instead of slipping through.
+
+An **Ask Before Changes** config lets the agent read freely but asks the user before anything that creates, updates, or deletes:
+
+```json
+{
+  "tags": {
+    "require_approval": ["createHint", "updateHint", "destructiveHint"]
+  }
+}
+```
+
+Because this config blocks nothing, a tool with no hint runs without asking.
+
+A config can also limit toolkits and treat one differently. This one allows only GitHub and Slack, blocks deletes in both, and keeps Slack read-only:
+
+```json
+{
+  "toolkits": { "enable": ["github", "slack"] },
+  "tags": {
+    "enable": ["readOnlyHint", "createHint", "updateHint"],
+    "disable": ["destructiveHint"]
+  },
+  "tools": {
+    "slack": {
+      "tags": {
+        "enable": ["readOnlyHint"],
+        "disable": ["createHint", "updateHint", "destructiveHint"]
+      }
+    }
+  }
+}
+```
+
+As in a session, a toolkit's entry under `tools` replaces the top-level `tags` for that toolkit. See [Overriding for a toolkit](/docs/configuring-sessions#overriding-for-a-toolkit).
+
+## How hints are matched
+
+The tag rules use each tool's [hints](/docs/governance/tool-hints): `readOnlyHint`, `createHint`, `updateHint`, and `destructiveHint`. Hints are part of each tool's definition. Composio checks a tool's hints against the config's lists with a plain lookup, so no model decides at runtime whether a call is safe, and the same tool is treated the same way every time.
+
+Keep in mind:
+
+- Composio assigns hints ahead of time on a best-effort basis, so a tool can carry the wrong hint. If a tool must be gated, give its toolkit **Custom** access and pick the tools by name.
+- Session configs filter and ask only by those four hints. `idempotentHint` and `openWorldHint` can't be used in a config.
+- For scripts run in `COMPOSIO_REMOTE_WORKBENCH` or `COMPOSIO_REMOTE_BASH_TOOL`, Composio uses a model to find which tools the script calls, so **Ask first** can miss some. See [Approvals limitations](/docs/governance/approvals#current-limitations).
+
+## Starting a session from a config
+
+Pass the config's ID when you create a session, instead of `toolkits`, `tools`, and `tags`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -72,7 +156,7 @@ const composio = new Composio({ apiKey: 'your_api_key' });
 const sessionConfig = await composio.sessionConfigs.get("sc_123");
 
 console.log(sessionConfig.config);
-// { toolkits: { enable: ["github"] }, tags: { disable: ["destructiveHint"] } }
+// { toolkits: { enable: ["github"] }, tags: { enable: ["readOnlyHint"], disable: [...] } }
 ```
 </Tab>
 <Tab value="API">
@@ -92,8 +176,6 @@ The config owns the session's toolkit, tool, and tag access. On `create()`, you 
 Per-session settings stay yours: `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount`, `preload`, `sessionPreset`, `mcp`, and `experimental.assistivePrompt`.
 
 `SessionPreset.DIRECT_TOOLS` defaults to `preload: { tools: "all" }` when you omit `preload`. With a saved config, the backend resolves its policy before validating that preload. The policy must select toolkits with `enable`, enable specific tools, or enable tags within a named toolkit's tool rule. An unrestricted policy, a denylist-only policy, or top-level tags alone returns `400`. The resolved tool set must also contain at most 1,000 tools.
-
-Live verification accepted `DIRECT_TOOLS` with a saved config that provided a positive toolkit/tool scope. The no-positive-scope case was not exercised in that run; its `400` behavior is enforced by the API's preload validation. The SDK passes these API errors through unchanged.
 
 ## Applying a config to an existing session
 
