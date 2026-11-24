@@ -271,6 +271,9 @@ describe('Docs product navigation', () => {
     const sharedLayoutSource = await Bun.file(
       new URL('../../lib/layout.shared.tsx', import.meta.url),
     ).text();
+    const headerSource = await Bun.file(
+      new URL('../../components/docs-header.tsx', import.meta.url),
+    ).text();
     const contextSource = await Bun.file(
       new URL('../../components/docs-product-context.tsx', import.meta.url),
     ).text();
@@ -287,7 +290,8 @@ describe('Docs product navigation', () => {
     expect(switcherSource).toContain('focus-visible:outline-2');
     expect(switcherSource).toContain('aria-label="Composio home"');
     expect(switcherSource).toContain('href="/"');
-    expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
+    expect(sharedLayoutSource).toContain('slots: { header: DocsHeader }');
+    expect(headerSource).toContain('<ProductNavTitle />');
     expect(sharedLayoutSource).toContain('themeSwitch: { enabled: false }');
     expect(contextSource).toContain('applyProductTheme(product)');
     expect(contextSource).toContain('.querySelector(\'meta[name="theme-color"]\')');
