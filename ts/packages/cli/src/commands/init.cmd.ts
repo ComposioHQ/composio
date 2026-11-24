@@ -29,7 +29,7 @@ import {
   isClientDecodeError,
   type ClientApiError,
 } from 'src/utils/api-error-extraction';
-import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
+import { atomicWritePrivateFileString } from 'src/utils/atomic-write';
 
 /**
  * `composio init` — Initialize a developer project in the current directory.
@@ -125,19 +125,38 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     const path = yield* Path.Path;
 
     const envPath = path.join(cwd, '.env.local');
-    // `exists` follows symlinks, so a dangling link reads as absent; the private
-    // write below replaces the link itself and never creates its target.
-    const envExists = yield* fs.exists(envPath);
-    const envIsSymlink = Option.isSome(yield* fs.readLink(envPath).pipe(Effect.option));
-    if (envExists && !envIsSymlink) {
-      // A `.env.local` written by an older CLI kept the default mode; tighten it
-      // before reading, whether or not this run rewrites it.
-      yield* ensurePrivateFileMode({ fs, target: envPath });
-    } else if (envExists) {
-      yield* ui.log.warn(
-        '.env.local is a symbolic link; its target keeps its current permissions.'
-      );
+    const invalidEnvFile = commandInputError('dev init');
+    const envInfo = yield* fs.lstat(envPath).pipe(
+      Effect.map(Option.some),
+      Effect.catchReason('PlatformError', 'NotFound', () => Effect.succeed(Option.none())),
+      Effect.mapError(() =>
+        invalidEnvFile('Could not inspect .env.local. Check its permissions and run init again.')
+      )
+    );
+    if (Option.isSome(envInfo)) {
+      if (envInfo.value.type === 'SymbolicLink') {
+        return yield* invalidEnvFile(
+          'Refusing to use a symbolic link for .env.local. Secure the target, then replace the link with a private regular file and run init again.'
+        );
+      }
+      if (envInfo.value.type !== 'File') {
+        return yield* invalidEnvFile(
+          'Refusing to use .env.local because it is not a regular file. Move it aside and run init again.'
+        );
+      }
+      if ((envInfo.value.mode & 0o077) !== 0) {
+        yield* fs
+          .chmod(envPath, 0o600)
+          .pipe(
+            Effect.mapError(() =>
+              invalidEnvFile(
+                'Could not make .env.local private. Check that you own the file, set its permissions to 0600, and run init again.'
+              )
+            )
+          );
+      }
     }
+    const envExists = Option.isSome(envInfo);
     const existingEnvContent = envExists ? yield* fs.readFileString(envPath, 'utf8') : '';
     const hasProjectApiKey = /^COMPOSIO_API_KEY=.*/m.test(existingEnvContent);
     const hasTestUserId = /^COMPOSIO_TEST_USER_ID=.*/m.test(existingEnvContent);
@@ -187,15 +206,11 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
       testUserId: Option.some(composioTestUserId),
     });
     if (nextEnvContent !== existingEnvContent) {
-      if (envIsSymlink) {
-        yield* ui.log.step('Replaced the .env.local symbolic link with a private file');
-      } else {
-        yield* ui.log.step(
-          envExists
-            ? 'Updated .env.local with Composio credentials'
-            : 'Created .env.local with Composio credentials'
-        );
-      }
+      yield* ui.log.step(
+        envExists
+          ? 'Updated .env.local with Composio credentials'
+          : 'Created .env.local with Composio credentials'
+      );
     }
   });
 
@@ -391,14 +406,15 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* logEnvCreationHttpError(ui)(e);
         })
       ),
-      // The project is already written; a key the CLI could not resolve is a
-      // warning with manual instructions, never a failed init.
-      Effect.catch(e =>
-        Effect.gen(function* () {
+      // Credential lookup failures can fall back to manual setup. An unsafe
+      // credential file raises a command input error and fails the invocation.
+      Effect.catch(e => {
+        if (e._tag === 'commands/CommandInputError') return Effect.fail(e);
+        return Effect.gen(function* () {
           yield* Effect.logDebug('Failed to resolve the project API key:', e);
           yield* logEnvCreationDecodingError(ui)(e);
-        })
-      )
+        });
+      })
     );
 
     yield* ui.log.success(`Project initialized in ${composioDir}/`);
