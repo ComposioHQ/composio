@@ -37,13 +37,13 @@ class SessionWebhookEventType(str, Enum):
 class SessionWebhookMetadata(te.TypedDict):
     """Where the event came from. ``hook_id`` is the hook's id on the session,
     and ``tool_call_id`` pairs a call's ``before_execute`` event with its
-    ``after_execute``."""
+    ``after_execute``. An API version that predates ``tool_call_id`` omits it."""
 
     project_id: str
     session_id: str
     user_id: str
     hook_id: str
-    tool_call_id: str
+    tool_call_id: te.NotRequired[str]
 
 
 class SessionWebhookToolCall(te.TypedDict):

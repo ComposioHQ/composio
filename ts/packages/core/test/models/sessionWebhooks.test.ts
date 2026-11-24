@@ -80,6 +80,15 @@ describe('SessionWebhooks.parse', () => {
     expect(hook).toEqual(payload);
   });
 
+  it('accepts an event from an API version that sends no tool_call_id', async () => {
+    const { tool_call_id: _toolCallId, ...olderMetadata } = metadata;
+    const payload = { ...beforeToolCall, metadata: olderMetadata };
+
+    const hook = await webhooks.parse({ ...signed(payload), verifySecret: secret });
+
+    expect(hook).toEqual(payload);
+  });
+
   it('accepts a request when any one of several signatures matches', async () => {
     const timestamp = now();
     const body = JSON.stringify(beforeToolCall);

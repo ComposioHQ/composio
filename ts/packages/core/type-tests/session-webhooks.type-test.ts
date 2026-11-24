@@ -20,7 +20,7 @@ async function sessionWebhook(): Promise<void> {
     verifySecret: 'secret',
   });
 
-  const toolCallId: string = hook.metadata.tool_call_id;
+  const toolCallId: string | undefined = hook.metadata.tool_call_id;
   void toolCallId;
 
   // @ts-expect-error the secret is required
