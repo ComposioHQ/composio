@@ -448,6 +448,9 @@ jobs:
             sleep 30
           done
           exit 1
+      # The reference renderer imports the tagged checkout's docs packages.
+      - working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
       - name: Prepare stable SDK reference snapshots
         env:
           NPM_VERIFIED: ${{ needs.publish-npm.result == 'success' }}
