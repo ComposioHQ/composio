@@ -2,6 +2,8 @@
 
 Neutral decision records and long-running docs plans. Add every new decision record here.
 
+- [Sessions page split proposals](sessions-page-split.md) - option 1 approved on 2026-11-22, with nine task pages and bookmark compatibility.
+
 Read these when a docs change touches an existing architecture, generated-data pipeline, or documented product pattern:
 
 - `examples.md` - cookbook/examples restructuring plan.

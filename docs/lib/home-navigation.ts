@@ -127,6 +127,7 @@ export const DOCS_PRODUCTS = {
       '/docs/b2b-agents',
       '/docs/production-readiness',
       '/docs/providers',
+      '/docs/sessions',
       '/docs/how-composio-works',
       '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
@@ -164,16 +165,8 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Build',
         items: [
-          {
-            type: 'group',
-            label: 'Sessions',
-            links: [
-              { url: '/docs/how-composio-works', label: 'What is a Session?' },
-              { url: '/docs/configuring-sessions' },
-              { url: '/docs/session-configs' },
-              { url: '/docs/sessions-via-mcp' },
-            ],
-          },
+          { type: 'folder', path: 'sessions' },
+          { type: 'page', url: '/docs/sessions-via-mcp' },
           {
             type: 'group',
             label: 'Toolkits & Tools',

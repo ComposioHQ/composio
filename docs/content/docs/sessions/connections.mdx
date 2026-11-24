@@ -1,0 +1,277 @@
+---
+title: Select connections
+description: Choose auth configs and connected accounts for a session
+keywords: [session, tools, toolkits, configuration]
+---
+
+## Authentication
+
+When a tool needs a connection, the session generates a Connect Link with `session.authorize()`, or the agent handles the flow through `COMPOSIO_MANAGE_CONNECTIONS`.
+
+In chat, the agent can pause, ask the user to connect an app, then retry the tool once auth completes. Composio manages the OAuth redirects, token exchange, and refresh. Once a user connects a toolkit, the connected account persists and future sessions reuse it without re-authentication.
+
+For OAuth toolkits, Composio uses [managed apps](/docs/authentication/custom-app-vs-managed-app) by default. Bring your own app when you need your own branding, scopes, or consent screen.
+
+If you only need authentication for tools you already own, follow [managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). Use a session to create a Connect Link, then call provider APIs through Proxy Execute from your own code. You don't need to fetch tool schemas or replace your tools with catalog actions.
+
+## Custom auth configs
+
+Use your own OAuth credentials instead of Composio's defaults. Pass an auth config ID per toolkit:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    auth_configs={
+        "github": "ac_your_github_config",
+        "slack": "ac_your_slack_config"
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  authConfigs: {
+    github: "ac_your_github_config",
+    slack: "ac_your_slack_config",
+  },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "auth_configs": {"github": "ac_your_github_config", "slack": "ac_your_slack_config"}
+  }'
+```
+</Tab>
+</Tabs>
+
+See [White-labeling authentication](/docs/authentication/white-labeling-authentication) for branding, or [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for toolkits that require your own credentials.
+
+## Account selection
+
+When a user has multiple connected accounts for the same toolkit, specify which one the session uses:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    connected_accounts={
+        "gmail": ["ca_work_gmail"],
+        "github": ["ca_personal_github"],
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  connectedAccounts: {
+    gmail: ["ca_work_gmail"],
+    github: ["ca_personal_github"],
+  },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "connected_accounts": {"gmail": ["ca_work_gmail"], "github": ["ca_personal_github"]}
+  }'
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Arrays are the preferred format for `connectedAccounts`. A single string (e.g. `"ca_work_gmail"`) is still accepted for backwards compatibility and is automatically coerced to a single-element array. Only one account per toolkit is allowed when [multi-account mode](/docs/authentication/managing-multiple-connected-accounts) is disabled.
+</Callout>
+
+### Precedence
+
+When executing a tool, the session selects the connected account in this order:
+
+1. The `connectedAccounts` override, if provided in the session config.
+2. The `authConfigs` override, which finds or creates a connection on that config.
+3. An auth config previously created for this toolkit.
+4. A new auth config created using Composio managed auth.
+5. Otherwise, an error if no Composio managed auth scheme exists for the toolkit.
+
+When a user has multiple connected accounts for a toolkit, the session uses the most recently connected one.
+
+If an account exists but the session doesn't use it, see [When a session can't find a connected account](/docs/authentication/session-cant-find-account).
+
+## authorize()
+
+Manually authenticate a user to a toolkit outside of the chat flow.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+connection_request = session.authorize(
+    "github",
+    callback_url="https://myapp.com/callback",
+)
+
+print(connection_request.redirect_url)
+
+connected_account = connection_request.wait_for_connection()
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connectionRequest = await session.authorize("github", {
+  callbackUrl: "https://myapp.com/callback",
+});
+
+console.log(connectionRequest.redirectUrl);
+
+const connectedAccount = await connectionRequest.waitForConnection();
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/link \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit": "github", "callback_url": "https://myapp.com/callback"}' | jq -r '.redirect_url'
+```
+</Tab>
+</Tabs>
+
+For more details, see [Manually authenticating users](/docs/authentication/manually-authenticating).
+
+## toolkits()
+
+List the toolkits enabled for the session and their connection status, sorted by popularity. Use it to build a UI showing which apps are connected. Each toolkit includes its `slug`, `name`, `logo`, and connection status, and the call returns the first 20 by default.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+toolkits = session.toolkits()
+
+for toolkit in toolkits.items:
+    connection = toolkit.connection
+    if connection and connection.is_active and connection.connected_account:
+        status = connection.connected_account.id
+    else:
+        status = "Not connected"
+    print(f"{toolkit.name}: {status}")
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const toolkits = await session.toolkits();
+
+toolkits.items.forEach((toolkit) => {
+  console.log(`${toolkit.name}: ${toolkit.connection?.connectedAccount?.id ?? "Not connected"}`);
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
+
+Filter to only connected toolkits:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+connected = session.toolkits(is_connected=True)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const connected = await session.toolkits({ isConnected: true });
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?is_connected=true" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
+
+Paginate through every toolkit with `limit` and the returned cursor:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+all_toolkits = []
+cursor = None
+
+while True:
+    result = session.toolkits(limit=20, next_cursor=cursor)
+    all_toolkits.extend(result.items)
+    cursor = result.next_cursor
+    if not cursor:
+        break
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create("user_123");
+// ---cut---
+const allToolkits: any[] = [];
+let cursor: string | undefined;
+
+do {
+  const { items, cursor: nextCursor } = await session.toolkits({ limit: 20, cursor });
+  allToolkits.push(...items);
+  cursor = nextCursor;
+} while (cursor);
+```
+</Tab>
+<Tab value="API">
+```bash
+CURSOR=""
+while true; do
+  PAGE=$(curl -s -X GET "https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/toolkits?limit=20${CURSOR:+&cursor=$CURSOR}" \
+    -H "x-api-key: $COMPOSIO_API_KEY")
+  echo "$PAGE" | jq -c '.items[]'
+  CURSOR=$(echo "$PAGE" | jq -r '.next_cursor // empty')
+  [ -z "$CURSOR" ] && break
+done
+```
+</Tab>
+</Tabs>
+
+## Related guides
+
+For framework examples, see [OpenAI](/docs/providers/openai) or [Vercel AI SDK](/docs/providers/vercel). To connect over MCP, see [Using sessions via MCP](/docs/sessions-via-mcp).

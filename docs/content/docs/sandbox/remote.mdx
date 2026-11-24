@@ -4,19 +4,19 @@ description: A persistent Python sandbox where your agent writes code, calls too
 keywords: [sandbox, remote sandbox, workbench, remote execution, bulk operations, data processing]
 ---
 
-The **sandbox** is a persistent Python environment where your agent writes and executes code. It has programmatic access to all Composio tools, plus helper functions for calling LLMs, uploading files, and making API requests. State persists across calls within a [session](/docs/how-composio-works). Your agent runs code in it through the `COMPOSIO_REMOTE_WORKBENCH` meta tool, and shell commands through `COMPOSIO_REMOTE_BASH_TOOL`.
+The **sandbox** is a persistent Python environment where your agent writes and executes code. It has programmatic access to all Composio tools, plus helper functions for calling LLMs, uploading files, and making API requests. State persists across calls within a [session](/docs/sessions). Your agent runs code in it through the `COMPOSIO_REMOTE_WORKBENCH` meta tool, and shell commands through `COMPOSIO_REMOTE_BASH_TOOL`.
 
 <Callout title="Renamed from workbench">
 This feature used to be called the **workbench**. The preferred session config key is now `sandbox`, but `workbench` still works as a fully supported alias, in both SDKs and on the wire. It isn't deprecated, so existing code keeps running unchanged. The `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` meta tools keep their names.
 </Callout>
 
 <Callout title="Composio doesn't run or replace your agent">
-Your agent and its model stay entirely yours. Composio never proxies your LLM or runs an agent on your behalf. It discovers, authenticates, and executes tools. The one place Composio itself can call a model is *inside the sandbox*, when your code opts in through the [`invoke_llm`](#built-in-helpers) helper. That optional sandbox usage is the sole source of Composio-side **LLM tokens**. Standard sessions enable the sandbox by default, and you can [disable it](/docs/configuring-sessions#disabling-the-sandbox). Sandbox access alone does not use LLM tokens.
+Your agent and its model stay entirely yours. Composio never proxies your LLM or runs an agent on your behalf. It discovers, authenticates, and executes tools. The one place Composio itself can call a model is *inside the sandbox*, when your code opts in through the [`invoke_llm`](#built-in-helpers) helper. That optional sandbox usage is the sole source of Composio-side **LLM tokens**. Standard sessions enable the sandbox by default, and you can [disable it](/docs/sessions/sandbox-settings#disabling-the-sandbox). Sandbox access alone does not use LLM tokens.
 </Callout>
 
 ## Where it fits
 
-Use the sandbox when a task is too complex for individual tool calls. Your agent starts with [`SEARCH_TOOLS` to find the right tools, then uses `MULTI_EXECUTE`](/docs/how-composio-works#meta-tools) for straightforward calls. When the task involves bulk operations, data transformations, or multi-step logic, the agent reaches for `COMPOSIO_REMOTE_WORKBENCH` instead.
+Use the sandbox when a task is too complex for individual tool calls. Your agent starts with [`SEARCH_TOOLS` to find the right tools, then uses `MULTI_EXECUTE`](/docs/sessions#meta-tools) for straightforward calls. When the task involves bulk operations, data transformations, or multi-step logic, the agent reaches for `COMPOSIO_REMOTE_WORKBENCH` instead.
 
 <WorkbenchFlow />
 
@@ -58,7 +58,7 @@ Available tiers:
 - `large` (4 vCPU, 4 GB)
 - `xlarge` (8 vCPU, 8 GB)
 
-Larger tiers require `@composio/core` ≥ `0.8.1` or `composio` ≥ `0.12.1`. See [Configuring sessions → Sandbox compute tier](/docs/configuring-sessions#sandbox-compute-tier) for examples.
+Larger tiers require `@composio/core` ≥ `0.8.1` or `composio` ≥ `0.12.1`. See [Configuring sessions → Sandbox compute tier](/docs/sessions/sandbox-settings#sandbox-compute-tier) for examples.
 
 <Callout type="info">
 **Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime).

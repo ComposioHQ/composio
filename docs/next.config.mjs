@@ -69,6 +69,13 @@ const config = {
   },
   async redirects() {
     return [
+      // Saved policies retain their section anchors at the new URL.
+      ...['/docs/session-configs'].flatMap(source => [
+        { source, destination: '/docs/sessions/saved-session-policies', permanent: true },
+        { source: `${source}.md`, destination: '/docs/sessions/saved-session-policies.md', permanent: true },
+        { source: `${source}.mdx`, destination: '/docs/sessions/saved-session-policies.md', permanent: true },
+        { source: `/llms.mdx${source}`, destination: '/docs/sessions/saved-session-policies.md', permanent: true },
+      ]),
       // Vendor security review now lives in docs; preserve KB aliases and Markdown URLs.
       ...[
         '/kb/guide/platform-compliance-data-handling',
@@ -169,12 +176,12 @@ const config = {
       },
       {
         source: '/docs/toolkits/enable-and-disable-toolkits',
-        destination: '/docs/configuring-sessions',
+        destination: '/docs/sessions/tool-access#enabling-toolkits',
         permanent: true,
       },
       {
         source: '/docs/toolkits/fetching-tools-and-toolkits',
-        destination: '/docs/configuring-sessions',
+        destination: '/docs/sessions/tool-access#browsing-the-catalog',
         permanent: true,
       },
       {
@@ -585,7 +592,7 @@ const config = {
       },
       {
         source: '/docs/user-management',
-        destination: '/docs/how-composio-works#users',
+        destination: '/docs/sessions#users',
         permanent: true,
       },
             {
@@ -1278,11 +1285,6 @@ const config = {
       {
         source: '/docs/overview',
         destination: '/docs',
-        permanent: true,
-      },
-      {
-        source: '/docs/sessions',
-        destination: '/docs/configuring-sessions',
         permanent: true,
       },
       {

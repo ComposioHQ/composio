@@ -136,7 +136,7 @@ console.log(response.text);
 </Steps>
 
 <Callout type="info">
-Pass the session to `executeToolCall` when the model received tools from `session.tools()`. The helper preserves the provider's argument normalization and executes the call through that session, so session meta-tools such as `COMPOSIO_SEARCH_TOOLS` keep working. For tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), pass the user ID instead. Passing a session requires `@composio/core` ≥ 0.17.0 with `@composio/google` ≥ 0.12.0; on earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools). The Python Gemini tab needs neither: Automatic Function Calling runs provider-wrapped callables, which carry the session.
+Pass the session to `executeToolCall` when the model received tools from `session.tools()`. The helper preserves the provider's argument normalization and executes the call through that session, so session meta-tools such as `COMPOSIO_SEARCH_TOOLS` keep working. For tools fetched via [`tools.get`](/docs/tools-direct/executing-tools), pass the user ID instead. Passing a session requires `@composio/core` ≥ 0.17.0 with `@composio/google` ≥ 0.12.0; on earlier versions, execute session tools with [`session.execute()`](/docs/sessions/executing-tools#executing-session-tools). The Python Gemini tab needs neither: Automatic Function Calling runs provider-wrapped callables, which carry the session.
 </Callout>
 
 </IntegrationContent>
@@ -231,4 +231,4 @@ ADK builds tool declarations from named parameters, so a wholly free-form argume
 
 ## Next
 
-<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/sessions" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

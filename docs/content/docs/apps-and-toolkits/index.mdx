@@ -58,7 +58,7 @@ Connecting `notion` does _not_ connect `notion_mcp`, even for the same user. Eac
 The same separation applies to session filters. `toolkits: ["notion"]` makes `notion` available without making `notion_mcp` available.
 
 <Callout type="info" title="Check authentication for each toolkit">
-If both toolkits require authentication, each needs its own connection. A toolkit that declares no authentication does not require a sign-in. Enable the toolkits your task needs. See [Configuring sessions](/docs/configuring-sessions) for the enable and disable examples.
+If both toolkits require authentication, each needs its own connection. A toolkit that declares no authentication does not require a sign-in. Enable the toolkits your task needs. See [Restrict tool access](/docs/sessions/tool-access) for the enable and disable examples.
 </Callout>
 
 ## Find apps and toolkits in the dashboard
@@ -72,5 +72,5 @@ Open [Toolkits in the dashboard](https://dashboard.composio.dev/~/project/toolki
 <Cards>
   <Card icon={<Plug />} title="What are Provider MCPs" href="/docs/apps-and-toolkits/provider-mcps" description="Toolkits backed by a product's hosted MCP server" />
   <Card icon={<RouteIcon />} title="Composio Built vs Provider MCPs" href="/docs/apps-and-toolkits/composio-built-vs-provider-mcp" description="Choose a toolkit for your task" />
-  <Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Choose which toolkits a session can use" />
+  <Card icon={<Wrench />} title="Restrict tool access" href="/docs/sessions/tool-access" description="Choose which toolkits a session can use" />
 </Cards>

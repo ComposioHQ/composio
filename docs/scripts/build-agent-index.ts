@@ -278,6 +278,8 @@ for (const collection of COLLECTIONS) {
     const absPath = join(dir, entry);
     const url = urlFromContentPath(absPath);
     if (!url) continue;
+    // These pages preserve bookmarks; the task pages contain the documentation.
+    if (url === '/docs/configuring-sessions' || url === '/docs/how-composio-works') continue;
     const raw = resolveToolkitCount(readFileSync(absPath, 'utf8'));
     const { title, description, legacy } = parseFrontmatter(raw);
     pages.push({

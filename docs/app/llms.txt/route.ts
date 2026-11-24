@@ -36,12 +36,12 @@ If unclear, distinguish application integration from connecting apps to the codi
 
 ## Build an application
 
-- [Core concepts](https://docs.composio.dev/docs/how-composio-works.md): Understand users, sessions, toolkits, and tool execution.
+- [Sessions](https://docs.composio.dev/docs/sessions.md): Understand users, sessions, toolkits, and tool execution.
 - [Authentication](https://docs.composio.dev/docs/authentication.md): Distinguish auth configs from connected accounts and connect your application's users.
 - [B2B agents](https://docs.composio.dev/docs/b2b-agents.md): Tenant/member connection ownership and authorization.
 - [Token custody](https://docs.composio.dev/docs/security/token-custody.md): Credential storage, redaction, VPC, self-hosting, and customer-managed keys.
 - [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
-- [Configure sessions](https://docs.composio.dev/docs/configuring-sessions.md): Select toolkits, auth configs, and connected accounts for a user.
+- [Restrict tool access](https://docs.composio.dev/docs/sessions/tool-access.md): Select allowed toolkits, tools, tags, and approval rules.
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose a framework provider.
 - [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
 - [Single-toolkit MCP](https://docs.composio.dev/docs/single-toolkit-mcp.md): Build an MCP server scoped to one toolkit.
@@ -57,7 +57,7 @@ ${providerGuides}
 - [TypeScript session creation and reuse](https://docs.composio.dev/reference/sdk-reference/typescript/sessions.md): Look up the exact \`sessions.create()\` and \`sessions.use()\` signatures.
 - [TypeScript Session methods and results](https://docs.composio.dev/reference/sdk-reference/typescript/session.md): Look up \`tools()\`, \`search()\`, \`execute()\`, \`update()\`, and returned properties.
 - [Python Session methods and results](https://docs.composio.dev/reference/sdk-reference/python/session.md): Look up Python argument names, return types, and examples.
-- [Session configuration examples](https://docs.composio.dev/docs/configuring-sessions.md): Find language-specific create options and update behavior.
+- [Update a session](https://docs.composio.dev/docs/sessions/updating-sessions.md): Patch session configuration and resolve update conflicts.
 
 Fetch these Markdown pages directly for exact call shapes; search-result summaries may omit code. Use the installed package's version-matched reference when it differs from the current website.
 

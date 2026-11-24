@@ -102,7 +102,7 @@ This redaction has a specific scope. It does not sanitize every provider respons
 | Session extension tools | Your custom function runs in your process. Its `ctx.proxyExecute()` or `ctx.proxy_execute()` call delegates authentication and the provider request to Composio. |
 | Independent local tools or imported credentials | Your code controls any secrets it reads or supplies. Importing an existing token means your application already handles that token before sending it to Composio. |
 
-[Sessions](/docs/configuring-sessions) and [direct execution](/docs/sessions-vs-direct-execution) also work from deterministic backend code. An LLM is not required to execute a tool or proxy request.
+[Sessions](/docs/sessions/tool-access) and [direct execution](/docs/sessions-vs-direct-execution) also work from deterministic backend code. An LLM is not required to execute a tool or proxy request.
 
 [Proxy Execute](/docs/extending-sessions/proxy-execute) requires absolute URLs to use the same scheme and registrable domain (eTLD+1) as the connected account's resolved base URL, so sibling subdomains are allowed. It also requires its own API-key permission. Use relative provider paths and let Composio supply authentication. Granting proxy access allows provider operations beyond predefined tool schemas, subject to the provider's permissions. Review that permission separately from tool selection.
 
@@ -118,7 +118,7 @@ Choose tool behavior, OAuth app ownership, credential custody, and retention sep
 
 | Choice | What your application controls | What Composio operates and the limits |
 | --- | --- | --- |
-| Tool schemas and business logic | Keep your tool definitions and input validation in your application with [managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). Select the predefined tools exposed through [sessions](/docs/configuring-sessions). | Proxy Execute authenticates provider requests without requiring predefined tool schemas, MCP, or an LLM. The optional [local session-extension API](/docs/extending-sessions/local-tools-and-toolkits) is experimental. |
+| Tool schemas and business logic | Keep your tool definitions and input validation in your application with [managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). Select the predefined tools exposed through [sessions](/docs/sessions/tool-access). | Proxy Execute authenticates provider requests without requiring predefined tool schemas, MCP, or an LLM. The optional [local session-extension API](/docs/extending-sessions/local-tools-and-toolkits) is experimental. |
 | OAuth app and provider scopes | Use [your own OAuth app](/docs/authentication/custom-app-vs-managed-app) for branding, scopes, and dedicated provider quota. Managed apps can request only the scopes their app supports. | Composio stores the resulting connected-account credentials and handles token refresh where supported. The provider grants the authorization. |
 | Member or workspace connection ownership | Choose a stable `user_id` and enforce [tenant membership and roles](/docs/b2b-agents#choose-the-connection-owner) before selecting an account. | Composio associates connections with the supplied ID. That ID is not proof of identity. [Shared connections](/docs/extending-sessions/shared-connections) use explicit access-control lists and are experimental. |
 | Credential retrieval and portability | Call tools or Proxy Execute using connected-account IDs. Review any workflow that [imports existing credentials](/docs/authentication/importing-existing-connections). | [Connected-account reads redact credentials](/docs/auth-configuration/connected-accounts#credential-masking). They are not a supported raw-token export workflow, including with your own OAuth app. |
@@ -147,7 +147,7 @@ If your organization has an active customer-managed keyring, retrieve its public
 
 ## Application authorization and retained data
 
-Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/configuring-sessions), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs.
+Your backend must bind the signed-in user to the correct Composio `user_id` and connected accounts. A caller-supplied user ID is not proof of identity. Choose [provider scopes](/docs/authentication/controlling-scopes), [session tools](/docs/sessions/tool-access), and [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) for the operations your application needs.
 
 Credential redaction and payload retention are separate controls. Tool arguments and results are stored in execution logs by default. A project's [Zero Data Retention](/docs/security/zero-data-retention) setting stops storage of new call payloads for covered calls while retaining audit metadata. It does not prevent processing during execution, delete existing logs, or govern your own logs and model provider. See [data retention](/docs/security/data-retention) for file storage, Workbench processing, and retention details.
 
