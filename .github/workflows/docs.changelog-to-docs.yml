@@ -97,6 +97,10 @@ jobs:
           git commit -m "docs: update documentation for new changelog entries"
           git push -u origin "$BRANCH"
 
+          # Requesting the reviewer is deliberately NOT part of this call: an
+          # unassignable actor (bot account, non-collaborator) would fail the
+          # whole command after the branch is already pushed, leaving an orphan
+          # branch and no PR. It runs as a separate best-effort step below.
           PR_URL=$(gh pr create \
             --base next \
             --head "$BRANCH" \
@@ -111,3 +115,12 @@ jobs:
 
           echo "$PR_URL"
           echo "pull-request-number=$(basename "$PR_URL")" >> "$GITHUB_OUTPUT"
+
+      - name: Request review from pusher
+        if: steps.create-pr.outputs.pull-request-number
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+          AUTHOR: ${{ github.actor }}
+        run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"

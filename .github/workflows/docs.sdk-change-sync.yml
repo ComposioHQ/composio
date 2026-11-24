@@ -111,3 +111,12 @@ jobs:
           base: next
           add-paths: |
             docs/content/docs/
+
+      - name: Request review from pusher
+        if: steps.create-pr.outputs.pull-request-number
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+          AUTHOR: ${{ github.actor }}
+        run: gh pr edit "$PR_NUMBER" --add-reviewer "$AUTHOR"

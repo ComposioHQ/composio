@@ -31,9 +31,7 @@ Use the [issue templates](https://github.com/ComposioHQ/composio/issues/new/choo
 
 ### PR reviewer
 
-For docs PRs, leave requested reviewers unassigned unless Brendan explicitly names reviewers. Identify relevant owner expertise without automatically requesting review. Follow the repository's review and merge requirements.
-
-For other PRs, [@jkomyno](mailto:alberto@composio.dev) is the designated reviewer. Involve the relevant SDK or CLI owner when the change needs their expertise.
+Involve the relevant SDK, CLI, or docs owner when the change needs their expertise.
 
 ### Pull requests we may close
 
@@ -268,7 +266,7 @@ Docs changes follow the [third-party links policy](#third-party-links-in-docs).
 
 6. Read your full diff and run the smallest meaningful checks locally.
 
-7. Open a pull request against `next`. Fill in the template, link the issue for external contributions (or when one exists for team contributions), and describe how you tested the change. For docs PRs, leave requested reviewers unassigned unless Brendan explicitly names reviewers. For other PRs, request review from [@jkomyno](mailto:alberto@composio.dev).
+7. Open a pull request against `next`. Fill in the template, link the issue for external contributions (or when one exists for team contributions), and describe how you tested the change.
 
 ## Creating New Providers
 

@@ -84,10 +84,10 @@ You can declare `last_updated: YYYY-MM-DD` or a timezone-qualified ISO timestamp
 
 Docs CI fetches full history. The Vercel build command fetches missing history before running `bun run build`. If that fetch fails, the deployment fails instead of silently publishing incomplete freshness. For other CI/CD builds, provide full history (`fetch-depth: 0` with `actions/checkout`) for complete freshness coverage. A shallow checkout retains dates for changes proven within its history but omits unknown shallow-boundary dates. Source archives without history also omit unknown dates. Neither case substitutes the checkout or build time.
 
-## Review and verify publication
+## Request review and verify publication
 
 Describe the reader's problem, the resulting behavior, and the checks you ran. Include screenshots for visual changes and list checks that failed or could not run. Link the Linear issue when one exists. Docs-only changes do not need a Changeset.
 
-Leave requested reviewers unassigned unless Brendan explicitly names reviewers. Identify who can verify the changed topic without automatically requesting their review. Confirm behavior, security, tenancy, or contractual claims with the product owner. Follow the repository's review and merge requirements; a passing build alone does not verify those claims.
+Involve someone who can verify the changed topic. Involve the product owner for behavior, security, tenancy, or contractual claims. Follow the repository's review and merge requirements; a passing build alone does not verify those claims.
 
 After merge, confirm the deployment succeeds and inspect the live page and `.md` representation. Check `Docs - Sync Algolia Search` for changes that affect retrieval. Update the linked issue with the published result once the change is verified. If the live result is wrong, report the affected URL and commit so the next fix starts from evidence.
