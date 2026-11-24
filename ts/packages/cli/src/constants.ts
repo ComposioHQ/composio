@@ -87,6 +87,8 @@ export const PROJECT_ENV_FILE_NAME = '.env';
  */
 export const PROJECT_COMPOSIO_DIR = '.composio';
 
+export const RUN_STAGED_FILES_PREFIX = 'composio-run-staged-';
+
 /**
  * PostHog capture endpoint for CLI telemetry.
  */

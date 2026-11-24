@@ -218,6 +218,8 @@ const runCliAgainst = (
     /** Writes files into the CLI's cache directory before it starts. */
     readonly seed?: (configDirectory: string) => void;
     readonly env?: Readonly<Record<string, string>>;
+    /** The directory the CLI runs in; this package's by default. */
+    readonly cwd?: string;
   } = {}
 ) => {
   const configDirectory = tempy.temporaryDirectory();
@@ -241,8 +243,8 @@ const runCliAgainst = (
   // Asynchronous: the fake server answers from this process's event loop.
   return new Promise<{ status: number | null; stdout: string; stderr: string }>(
     (resolve, reject) => {
-      const child = spawn('bun', ['run', 'src/bin.ts', ...args], {
-        cwd: process.cwd(),
+      const child = spawn('bun', ['run', path.resolve('src/bin.ts'), ...args], {
+        cwd: options.cwd ?? process.cwd(),
         env: {
           ...host,
           CI: '1',
@@ -616,13 +618,21 @@ describe('local file uploads', () => {
       fakeComposio(req, res);
     };
 
+  // Each upload runs in its own working directory and temporary directory.
+  const uploadDirectories = () => {
+    const cwd = fs.realpathSync(tempy.temporaryDirectory());
+    const tmpdir = fs.realpathSync(tempy.temporaryDirectory());
+    const staging = fs.mkdtempSync(path.join(tmpdir, 'composio-run-staged-'));
+    return { cwd, tmpdir, staging };
+  };
+
   const uploadWith = async (
     baseUrl: string,
     file: string,
-    stagedFiles?: Record<string, { name: string; mimetype?: string }>
+    stagedFiles?: Record<string, { name: string; mimetype?: string }>,
+    directories = uploadDirectories()
   ) => {
-    const metadataDirectory = fs.mkdtempSync(path.join(tempy.temporaryDirectory(), 'labels-'));
-    const metadataFile = path.join(metadataDirectory, 'files.json');
+    const metadataFile = path.join(directories.staging, 'files.json');
     if (stagedFiles) fs.writeFileSync(metadataFile, JSON.stringify(stagedFiles));
     try {
       return await runCliAgainst(
@@ -637,11 +647,15 @@ describe('local file uploads', () => {
           '{"title":"Deck"}',
         ],
         {
-          env: { COMPOSIO_RUN_STAGED_FILES_FILE: stagedFiles ? metadataFile : '' },
+          cwd: directories.cwd,
+          env: {
+            COMPOSIO_RUN_STAGED_FILES_FILE: stagedFiles ? metadataFile : '',
+            TMPDIR: directories.tmpdir,
+          },
         }
       );
     } finally {
-      fs.rmSync(metadataDirectory, { recursive: true, force: true });
+      fs.rmSync(directories.staging, { recursive: true, force: true });
     }
   };
 
@@ -677,11 +691,14 @@ describe('local file uploads', () => {
   ])(
     '[Given] $name [Then] `composio execute --file` requests the upload as $filename, $mimetype',
     ({ onDisk, staged, filename, mimetype }) => {
-      const file = path.join(tempy.temporaryDirectory(), onDisk);
+      const directories = uploadDirectories();
+      // A path the caller names lives in the working directory; a File `composio run` staged
+      // lives in its staging directory.
+      const file = path.join(staged ? directories.staging : directories.cwd, onDisk);
       fs.writeFileSync(file, 'PK fake pptx');
       const presignRequests: Array<unknown> = [];
       return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
-        await uploadWith(baseUrl, file, staged && { [file]: staged });
+        await uploadWith(baseUrl, file, staged && { [file]: staged }, directories);
 
         expect(presignRequests).toEqual([
           expect.objectContaining({ filename, mimetype, toolkit_slug: 'canva' }),
@@ -705,6 +722,34 @@ describe('local file uploads', () => {
       expect(presignRequests).toEqual([]);
     });
   }, 30_000);
+
+  it.each([
+    { name: 'a --file path outside the working directory', staged: false },
+    { name: 'a path outside the working directory with a staged-file label', staged: true },
+  ])(
+    '[Given] $name [Then] it is refused before the presigned-URL request',
+    ({ staged }) => {
+      const file = path.join(tempy.temporaryDirectory(), 'deck.pptx');
+      fs.writeFileSync(file, 'PK fake pptx');
+      const presignRequests: Array<unknown> = [];
+      return withHttpServer(fakeUploadBackend(presignRequests), async baseUrl => {
+        const directories = uploadDirectories();
+        const result = await uploadWith(
+          baseUrl,
+          file,
+          staged ? { [file]: { name: 'deck.pptx', mimetype: PPTX } } : undefined,
+          directories
+        );
+
+        expect(result.status).toBe(1);
+        const output = `${result.stdout}${result.stderr}`;
+        expect(output).toContain('Refusing to upload');
+        expect(output).toContain(directories.cwd);
+        expect(presignRequests).toEqual([]);
+      });
+    },
+    30_000
+  );
 });
 
 describe('signals', () => {

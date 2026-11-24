@@ -25,7 +25,9 @@ const data = Flag.String('data').pipe(
   Flag.map(Array.head)
 );
 const file = Flag.String('file').pipe(
-  Flag.withDescription('Inject a local file path into the single file_uploadable input'),
+  Flag.withDescription(
+    'Inject a local file path, under the current directory, into the single file_uploadable input'
+  ),
   Flag.optional
 );
 const accountOption = Flag.String('account').pipe(
