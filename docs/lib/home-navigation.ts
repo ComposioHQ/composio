@@ -145,6 +145,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
+      '/docs/deployment',
       '/docs/security',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
@@ -248,7 +249,7 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
-          { type: 'page', url: '/docs/security/byoc', label: 'Private deployments' },
+          { type: 'folder', path: 'deployment' },
           { type: 'folder', path: 'poc-to-prod' },
         ],
       },
@@ -281,7 +282,7 @@ export const DOCS_PRODUCTS = {
             label: 'Security controls',
             links: [
               { url: '/docs/security/token-custody' },
-              { url: '/docs/security/byoc' },
+              { url: '/docs/deployment/byoc' },
               { url: '/docs/security/audit-logs' },
               { url: '/docs/security/outbound-ips' },
             ],

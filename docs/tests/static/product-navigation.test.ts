@@ -45,7 +45,8 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
-    expect(classifyDocsProduct('/docs/security/byoc')).toBe('platform');
+    expect(classifyDocsProduct('/docs/deployment')).toBe('platform');
+    expect(classifyDocsProduct('/docs/deployment/byoc')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
@@ -182,7 +183,7 @@ describe('Docs product navigation', () => {
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
       '/docs/security/token-custody',
-      '/docs/security/byoc',
+      '/docs/deployment/byoc',
       '/docs/security/audit-logs',
       '/docs/security/outbound-ips',
     ];
@@ -197,7 +198,7 @@ describe('Docs product navigation', () => {
     expect(platformTree.children.slice(shipStart + 1, securityStart)).toMatchObject([
       { type: 'page', url: '/docs/production-readiness' },
       { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
-      { type: 'page', url: '/docs/security/byoc', name: 'Private deployments' },
+      { type: 'folder', $ref: { folder: 'deployment' } },
       { type: 'folder', $ref: { folder: 'poc-to-prod' } },
     ]);
     const securityPages = platformTree.children.slice(
@@ -222,7 +223,7 @@ describe('Docs product navigation', () => {
     }));
     for (const url of securityUrls) {
       expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(
-        url === '/docs/security/byoc' ? 2 : 1,
+        url === '/docs/deployment/byoc' ? 2 : 1,
       );
       expect(forYouUrls).not.toContain(url);
     }

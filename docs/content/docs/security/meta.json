@@ -6,7 +6,6 @@
     "vendor-security-review",
     "audit-logs",
     "token-custody",
-    "byoc",
     "outbound-ips",
     "data-retention",
     "zero-data-retention"

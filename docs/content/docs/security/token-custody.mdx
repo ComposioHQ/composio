@@ -63,7 +63,7 @@ Replace the account ID with your connected account. Both SDKs read `COMPOSIO_API
 - **Refreshed by Composio.** OAuth tokens are refreshed server-side where the provider supports it, so refresh tokens don't pass through your application.
 - **API-key scope.** Requests authenticate with an API key. Session routes also accept [user API keys](/reference/authenticating-to-composio#user-api-key) in `x-user-api-key`, which can reach every project their owner can access. Prefer project API keys for application code that only needs one project. Project keys can be [restricted by permission](/reference/authenticating-to-composio/project-api-key-permissions) and IP allowlist, and [Proxy Execute](/docs/extending-sessions/proxy-execute) requires its own permission.
 
-Encryption at rest protects stored credentials; the execution service still decrypts them to authenticate provider requests. If your requirement is that Composio cannot decrypt credentials, see [deployment options](#deployment-options).
+Encryption at rest protects stored credentials. The execution service still decrypts them to authenticate provider requests. If your requirement is that Composio cannot decrypt credentials, see [deployment options](#deployment-options).
 
 ## How user isolation works
 
@@ -168,22 +168,20 @@ Choose tool behavior, OAuth app ownership, credential custody, and retention sep
 | Member or workspace connection ownership | Choose a stable `user_id` and enforce [tenant membership and roles](/docs/b2b-agents#choose-the-connection-owner) before selecting an account. | Composio associates connections with the supplied ID. That ID is not proof of identity. [Shared connections](/docs/extending-sessions/shared-connections) use explicit access-control lists and are experimental. |
 | Credential retrieval and portability | Call tools or Proxy Execute using connected-account IDs. Review any workflow that [imports existing credentials](/docs/authentication/importing-existing-connections). | [Connected-account reads redact credentials](/docs/auth-configuration/connected-accounts#credential-masking). They are not a supported raw-token export workflow, including with your own OAuth app. |
 | Provider operations | Restrict [project API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions), provider scopes, and the endpoints your code accepts. | Proxy Execute requires its own permission and can call operations beyond predefined tool schemas. Its [provider URL restrictions](/docs/tools-direct/executing-tools#proxy-execute) still apply. |
-| Execution location and key custody | Review the operator, decryption access, logs, backups, and outbound connections for your required environment. | Cloud hosts storage and execution by default. Other deployment choices require agreement with Composio; see [deployment options](#deployment-options) for availability and limits. |
+| Execution location and key custody | Review the operator, decryption access, logs, backups, and outbound connections for your required environment. | Cloud hosts storage and execution by default. See [deployment options](#deployment-options) for the alternatives. |
 | Payload retention | Have an organization admin enable [Zero Data Retention](/docs/security/zero-data-retention) for the projects that need it. Review your own logs and downstream providers separately. | ZDR is available on paid plans and included on Enterprise. It suppresses new covered execution-log payloads, keeps metadata, and has [feature and managed-app exclusions](/docs/security/zero-data-retention#what-zdr-does-not-cover). It does not change credential custody. |
 
 ## Deployment options
 
+Where Composio runs decides who holds your credentials. [Deployment options](/docs/deployment) compares the choices in full.
+
 | Option | Credential boundary | Availability |
 | --- | --- | --- |
-| Composio Cloud | Composio hosts credential storage and execution. Your application calls the managed API. | Default hosted deployment. |
-| [Bring your own cloud (BYOC)](/docs/security/byoc) | Composio operates the application services in your AWS account. Credentials are stored and used there, and provider requests originate from your environment. Runtime and support permissions determine who can access plaintext. | Enterprise arrangement on AWS. |
-| Customer-managed key deployment | A proxy in your cloud handles credential plaintext under keys in your KMS. Composio retains the control plane without the key material needed to decrypt those credentials. | Set up with the Composio team, rather than enabled by a dashboard toggle. |
+| Composio Cloud | Composio stores credentials and runs execution. Your application calls the hosted API. | Default |
+| [BYOC](/docs/deployment/byoc) | Composio operates the services in your own cloud account. Credentials are stored and decrypted there, and provider requests leave from your network. | Enterprise, on AWS, Google Cloud, or Azure |
+| Customer-managed keys | A proxy in your cloud decrypts credentials with keys in your KMS. Composio runs the rest of the deployment without that key material. | Set up with the Composio team |
 
-BYOC replaces the previous customer-operated Helm offering for new deployments. The [Helm troubleshooting guide](/kb/guide/platform-self-hosted-helm) remains available for existing installations.
-
-The [customer-managed key architecture](https://composio.dev/blog/two-questions-every-security-review-asks-us) supports AWS KMS, Google Cloud KMS, and HashiCorp Vault Transit. It is separate from BYOC and from bringing your own OAuth app.
-
-If your requirement is that Composio cannot decrypt provider credentials, evaluate the customer-managed key arrangement with the team. Running in your account with BYOC doesn't by itself establish that. For any deployment, confirm who operates each service, who can decrypt credentials, where logs and backups reside, and which outbound connections are required. [Contact Composio](https://composio.dev/contact?utm_source=docs) to establish the architecture and contractual requirements.
+The customer-managed key deployment supports AWS KMS, Google Cloud KMS, and HashiCorp Vault Transit. If no Composio service may decrypt your credentials, evaluate this option. [Contact Composio](https://composio.dev/contact?utm_source=docs) to plan either deployment.
 
 ### Customer-managed keyring transfer keys
 

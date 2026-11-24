@@ -1,4 +1,4 @@
-Use these checks only for existing customer-operated Composio Helm installations. This deployment approach is no longer offered to new customers. For new deployments, see [Composio-operated BYOC on AWS](/docs/security/byoc). Helm used internally by the managed BYOC pipeline does not make these manual installation instructions part of that offering.
+Use these checks for existing customer-operated Composio Helm installations. Composio no longer offers this approach to new customers. For new deployments, see [BYOC](/docs/deployment/byoc).
 
 ## Apollo S3 with IRSA / ServiceAccount credentials needs no static S3 secret keys
 

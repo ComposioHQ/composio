@@ -154,7 +154,7 @@ This is managed authentication for your own tools, not a token-export service. C
 - **Auth schemes and refresh:** Check [managed auth support](/toolkits/managed-auth) for your toolkit's OAuth app availability. The example above uses GitHub OAuth. Refresh depends on the provider and its credentials; revoked or expired authorization can require the user to reconnect.
 - **Provider scope:** Use relative paths for the connected provider. Proxy Execute is not an arbitrary authenticated HTTP relay; absolute URLs must keep the connected provider's scheme and registrable domain.
 - **Authorization:** Proxy permission can allow operations beyond predefined tool schemas. Validate endpoints and inputs in your own tools, enforce your application's tenant and role checks, and request only the provider scopes you need.
-- **Deployment:** [BYOC](/docs/security/byoc) is operated by Composio in your AWS account. Customer-managed keys require a separate deployment design with Composio. Confirm operator access, decryption, logs, and backups against your requirements.
+- **Deployment:** [BYOC](/docs/deployment/byoc) runs Composio in your own cloud account. [Deployment options](/docs/deployment) compares it with Composio Cloud and customer-managed keys.
 
 ## Next
 
