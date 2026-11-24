@@ -9,7 +9,7 @@ description: "Triggers (instance) class"
 
 Create or update the project webhook subscription used for webhook delivery.  If a subscription already exists, the first subscription is updated. Otherwise a new subscription is created. By default this subscribes to V3 trigger message events.
 
-```python
+```python signature
 def set_webhook_subscription(*, webhook_url: str, enabled_events: Sequence[str] | None = ..., version: Union[WebhookVersion, str] = ...) -> WebhookSubscription
 ```
 
@@ -39,7 +39,7 @@ composio.triggers.set_webhook_subscription(
 
 Get a trigger type by its slug Uses the global toolkit version provided when initializing composio instance to fetch trigger for specific toolkit version
 
-```python
+```python signature
 def get_type(slug: str) -> TriggersTypeRetrieveResponse
 ```
 
@@ -59,7 +59,7 @@ def get_type(slug: str) -> TriggersTypeRetrieveResponse
 
 List all active triggers
 
-```python
+```python signature
 def list_active(trigger_ids: list[str] | None = ..., trigger_names: list[str] | None = ..., auth_config_ids: list[str] | None = ..., connected_account_ids: list[str] | None = ..., show_disabled: bool | None = ..., limit: int | None = ..., cursor: str | None = ...)
 ```
 
@@ -81,7 +81,7 @@ def list_active(trigger_ids: list[str] | None = ..., trigger_names: list[str] | 
 
 List all the trigger types.
 
-```python
+```python signature
 def list(*, cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: list[str] | None = ...)
 ```
 
@@ -99,7 +99,7 @@ def list(*, cursor: str | None = ..., limit: int | None = ..., toolkit_slugs: li
 
 Create a trigger instance
 
-```python
+```python signature
 def create(slug: str, *, user_id: str | None = ..., connected_account_id: str | None = ..., trigger_config: Dict[str, Any] | None = ..., type: Literal['webhook', 'poll'] | None = ..., polling_interval: int | None = ...) -> trigger_instance_upsert_response.TriggerInstanceUpsertRes...
 ```
 
@@ -124,7 +124,7 @@ def create(slug: str, *, user_id: str | None = ..., connected_account_id: str | 
 
 Subscribe to a trigger and receive trigger events.
 
-```python
+```python signature
 def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorCallback | None = ...) -> TriggerSubscription
 ```
 
@@ -145,7 +145,7 @@ def subscribe(timeout: float = ..., on_subscription_error: SubscriptionErrorCall
 
 Verify an incoming webhook payload and signature.  This method validates that the webhook request is authentic by: 1. Validating the webhook timestamp is within the tolerance window 2. Verifying the HMAC-SHA256 signature using the correct algorithm 3. Parsing the payload and detecting the webhook version (V1, V2, or V3)
 
-```python
+```python signature
 def verify_webhook(*, id: str, payload: str, secret: str, signature: str, timestamp: str, tolerance: int = ...) -> VerifyWebhookResult
 ```
 
@@ -198,7 +198,7 @@ def webhook():
 
 Parse an incoming webhook request into a typed, normalized trigger payload.  Pass a framework request object, or pass `body=` and `headers=` explicitly. When `verify_secret` is provided, the SDK verifies the webhook signature before returning the normalized trigger payload. When it is omitted, the SDK parses the body without verifying the signature.  `request` may be any object exposing the request body and headers, such as a Flask, Django, or FastAPI request. The body is read from `.body` (or `.data` / `.get_data()`), and the headers are read from `.headers`. Because this SDK is synchronous, async frameworks must pass an already-read raw body, for example via `body=await request.body()`.
 
-```python
+```python signature
 def parse(request: Any = ..., *, body: Union[str, bytes, Mapping[str, Any], None] = ..., headers: Union[Mapping[str, Any], None] = ..., verify_secret: Union[str, None, Omit] = ..., tolerance: int = ...) -> VerifyWebhookResult
 ```
 
@@ -249,4 +249,4 @@ async def webhook(request: Request):
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1160)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/triggers.py#L1164)

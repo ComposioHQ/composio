@@ -14,22 +14,24 @@ export const connectionTips = (params: {
   readonly surface: 'root' | 'dev';
 }) => {
   const { toolkit, toolSlug, surface } = params;
+  const slugLabel = escapeTerminalText(toolSlug);
   const executeStep =
     surface === 'dev'
       ? commandHintStep('Retry', 'dev.playgroundExecute', {
-          slug: toolSlug,
+          slug: slugLabel,
           userId: '<user-id>',
           data: '...',
         })
-      : commandHintStep('Retry', 'root.execute', { slug: toolSlug, data: '...' });
+      : commandHintStep('Retry', 'root.execute', { slug: slugLabel, data: '...' });
   if (!toolkit) {
     return executeStep;
   }
+  const toolkitLabel = escapeTerminalText(toolkit);
   return [
     commandHintStep(
       'Link the toolkit first',
       surface === 'dev' ? 'dev.connectedAccounts.link' : 'root.link',
-      surface === 'dev' ? { toolkit, userId: '<user-id>' } : { toolkit }
+      surface === 'dev' ? { toolkit: toolkitLabel, userId: '<user-id>' } : { toolkit: toolkitLabel }
     ),
     executeStep.replace('Retry:', 'Then retry:'),
   ].join('\n');

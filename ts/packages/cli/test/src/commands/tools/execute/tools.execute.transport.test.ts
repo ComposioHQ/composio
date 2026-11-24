@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { PassThrough } from 'node:stream';
 import { describe, expect, it } from '@effect/vitest';
 import { afterEach, beforeEach, vi } from 'vitest';
 import {
@@ -11,13 +12,15 @@ import {
   type ComposioError,
 } from '@composio/client/effect';
 import type { SessionExecuteResponse } from '@composio/client/resources/tool-router';
-import { ConfigProvider, Effect, Exit, Fiber, Option, Schema } from 'effect';
+import { ConfigProvider, Deferred, Effect, Exit, Fiber, Option, Schema } from 'effect';
 import { TestClock } from 'effect/testing';
+import * as executeContext from 'src/commands/tools/execute/tools.execute.context';
 import { TEMPORARY_FAILURE_EXIT_CODE } from 'src/effects/retry-advice';
 import * as composioAccount from 'src/services/composio-account';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
 import { ComposioUserContext } from 'src/services/user-context';
+import { NodeProcess } from 'src/services/node-process';
 import {
   cli,
   dashboardProcedureError,
@@ -146,9 +149,10 @@ const makeWorld = (options: {
    * URLs in effect: `baseURL` is what the backend client is built with,
    * `webURL` what the Dashboard request is built from.
    */
-  const run = (args: ReadonlyArray<string>) =>
+  const run = (args: ReadonlyArray<string> | ((cwd: string) => ReadonlyArray<string>)) =>
     Effect.gen(function* () {
-      const exit = yield* cli(args).pipe(Effect.exit);
+      const argv = typeof args === 'function' ? args((yield* NodeProcess).cwd) : args;
+      const exit = yield* cli(argv).pipe(Effect.exit);
       const lines = yield* MockConsole.getLines({ stripAnsi: true });
       const { baseURL, webURL } = (yield* ComposioUserContext).data;
       return { exit, lines, output: lines.join('\n'), baseURL, webURL };
@@ -370,6 +374,145 @@ describe('CLI: composio execute transport', () => {
     })
   );
 
+  it.effect('waits for every parallel input before sending any tool', () =>
+    Effect.gen(function* () {
+      const stdin = new PassThrough();
+      yield* Effect.addFinalizer(() =>
+        Effect.sync(() => {
+          stdin.destroy();
+        })
+      );
+      const readingStdin = new Promise<void>(resolve => stdin.once('resume', resolve));
+      const firstPrepared = yield* Deferred.make<void>();
+      const prepare = executeContext.prepareExecuteCall;
+      vi.spyOn(executeContext, 'prepareExecuteCall').mockImplementation((params, user) =>
+        prepare(params, user).pipe(Effect.tap(() => Deferred.succeed(firstPrepared, undefined)))
+      );
+
+      const executed: string[] = [];
+      const world = makeWorld({
+        input: {
+          stdin: { isTTY: false, data: '', stream: stdin },
+          toolsExecutor: { onExecute: slug => void executed.push(slug) },
+        },
+      });
+      const fiber = yield* Effect.forkChild(
+        world.run([
+          'execute',
+          '--parallel',
+          '--skip-checks',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          '{"recipient":"a"}',
+          'GITHUB_CREATE_ISSUE',
+          '-d',
+          '-',
+        ])
+      );
+
+      yield* Effect.promise(() => readingStdin);
+      yield* Deferred.await(firstPrepared);
+      yield* TestClock.adjust(0);
+      expect(executed).toEqual([]);
+      stdin.end('{');
+      const { exit, output } = yield* Fiber.join(fiber);
+
+      expect(exitCodeOf(exit)).toBe(1);
+      expect(output).toContain('Invalid JSON input');
+      expect(executed).toEqual([]);
+    })
+  );
+
+  it.effect('allows single execution to proceed without a schema but fails the parallel item', () =>
+    Effect.gen(function* () {
+      const single = makeWorld({});
+      const parallel = makeWorld({});
+      const slug = 'GMAIL_TOOL_WITHOUT_SCHEMA';
+      const args = [slug, '--skip-connection-check', '-d', '{}'];
+
+      const singleRun = yield* single.run(['execute', ...args]);
+      const parallelRun = yield* parallel.run(['execute', '--parallel', ...args]);
+
+      expect(Exit.isSuccess(singleRun.exit)).toBe(true);
+      expect(single.dashboardRequests.map(request => requestJson(request)?.tool_slug)).toEqual([
+        slug,
+      ]);
+      expect(exitCodeOf(parallelRun.exit)).toBe(1);
+      expect(parallel.dashboardRequests).toEqual([]);
+      expect(parallel.toolRouterCalls).toEqual([]);
+      expect(lastJson(parallelRun.lines)).toMatchObject({
+        successful: false,
+        parallel: true,
+        results: [{ slug, successful: false, error: `Tool "${slug}" not found` }],
+      });
+    })
+  );
+
+  it.effect('validates each parallel item unless tool parameter checks are skipped', () =>
+    Effect.gen(function* () {
+      const slug = 'GMAIL_SEND_EMAIL';
+      const input: TestLiveInput = {
+        toolkitsData: {
+          tools: [
+            {
+              slug,
+              name: 'Send Email',
+              description: 'Send an email',
+              tags: [],
+              available_versions: ['20260101_00'],
+              input_parameters: {
+                type: 'object',
+                required: ['recipient'],
+                properties: { recipient: { type: 'string' } },
+              },
+              output_parameters: { type: 'object', properties: {} },
+            },
+          ],
+        },
+      };
+      const checked = makeWorld({ input });
+      const skipped = makeWorld({ input });
+      const args = [
+        slug,
+        '-d',
+        '{"recipient":42}',
+        slug,
+        '-d',
+        '{"recipient":"alice@example.test"}',
+      ];
+
+      const checkedRun = yield* checked.run(['execute', '--parallel', ...args]);
+      expect(exitCodeOf(checkedRun.exit)).toBe(1);
+      expect(lastJson(checkedRun.lines).results).toMatchObject([
+        {
+          slug,
+          successful: false,
+          error: 'recipient: Instance type "number" is invalid. Expected "string".',
+        },
+        { slug, successful: true },
+      ]);
+      expect(checked.dashboardRequests.map(request => requestJson(request)?.arguments)).toEqual([
+        { recipient: 'alice@example.test' },
+      ]);
+
+      const skippedRun = yield* skipped.run([
+        'execute',
+        '--parallel',
+        '--skip-tool-params-check',
+        ...args,
+      ]);
+      expect(exitCodeOf(skippedRun.exit)).toBe(0);
+      expect(lastJson(skippedRun.lines).results).toMatchObject([
+        { slug, successful: true },
+        { slug, successful: true },
+      ]);
+      expect(skipped.dashboardRequests.map(request => requestJson(request)?.arguments)).toEqual(
+        expect.arrayContaining([{ recipient: 42 }, { recipient: 'alice@example.test' }])
+      );
+      expect(skipped.dashboardRequests).toHaveLength(2);
+    })
+  );
+
   it.effect('sends each parallel tool on its own and keeps the siblings of a failed one', () =>
     Effect.gen(function* () {
       const world = makeWorld({
@@ -414,7 +557,9 @@ describe('CLI: composio execute transport', () => {
 
       expect(Exit.isFailure(exit)).toBe(true);
       expect(
-        world.dashboardRequests.map(request => requestJson(request)?.tool_slug).sort()
+        world.dashboardRequests
+          .map(request => requestJson(request)?.tool_slug)
+          .sort((a, b) => String(a).localeCompare(String(b)))
       ).toEqual(['GITHUB_CREATE_ISSUE', 'GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_SEND_EMAIL']);
       expect(world.toolRouterCalls).toEqual([]);
       expect(lastJson(lines).results).toEqual([
@@ -448,8 +593,7 @@ describe('CLI: composio execute transport', () => {
   it.effect('resolves the project and uploads files on the backend before the Dashboard call', () =>
     Effect.gen(function* () {
       const events: Array<string> = [];
-      const tempFile = path.join(os.tmpdir(), `composio-upload-${crypto.randomUUID()}.txt`);
-      fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
+      const filename = 'composio-upload.txt';
       const originalFetch = globalThis.fetch;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url =
@@ -493,13 +637,15 @@ describe('CLI: composio execute transport', () => {
         },
       });
 
-      const { exit } = yield* world.run([
-        'execute',
-        'GMAIL_SEND_EMAIL',
-        '-d',
-        JSON.stringify({ recipient_email: 'a@b.com', attachment: tempFile }),
-      ]);
-      fs.rmSync(tempFile, { force: true });
+      const { exit } = yield* world.run(cwd => {
+        fs.writeFileSync(path.join(cwd, filename), 'hello from cli upload', 'utf8');
+        return [
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          JSON.stringify({ recipient_email: 'a@b.com', attachment: filename }),
+        ];
+      });
 
       expect(Exit.isSuccess(exit)).toBe(true);
       expect(events).toContain('backend:org.consumer.project.resolve');
@@ -510,9 +656,9 @@ describe('CLI: composio execute transport', () => {
       expect(requestJson(world.dashboardRequests[0])?.arguments).toEqual({
         recipient_email: 'a@b.com',
         attachment: {
-          name: path.basename(tempFile),
+          name: filename,
           mimetype: 'text/plain',
-          s3key: `uploads/${path.basename(tempFile)}`,
+          s3key: `uploads/${filename}`,
         },
       });
     })

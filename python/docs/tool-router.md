@@ -135,7 +135,7 @@ session = composio.tool_router.create(
         'gmail': ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
         
         # Explicit enable configuration
-        'github': {'enable': ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_ISSUES']},
+        'github': {'enable': ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_LIST_ISSUES']},
         
         # Explicit disable configuration
         'slack': {'disable': ['SLACK_DELETE_MESSAGE']},

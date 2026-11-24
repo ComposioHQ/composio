@@ -1,0 +1,47 @@
+---
+title: "Tools"
+description: "A page whose examples are all valid."
+---
+
+## Usage
+
+Access this class through the `composio.tools` property:
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+const tools = await composio.tools.get('user-123', { toolkits: ['github'] });
+```
+
+## Methods
+
+### get()
+
+```typescript signature
+async get(userId: string, filters: ToolListParams): Promise<ToolCollection>
+```
+
+**Example**
+
+```typescript
+const tools = await composio.tools.get('user-123', { toolkits: ['github'] });
+```
+
+---
+
+### createTool()
+
+```typescript
+import { experimental_createTool } from '@composio/core/experimental';
+
+console.log(typeof experimental_createTool);
+```
+
+---
+
+### handleWebhook()
+
+```typescript nocheck="Express handler types are not installed"
+app.post('/webhook', handleWebhook);
+```

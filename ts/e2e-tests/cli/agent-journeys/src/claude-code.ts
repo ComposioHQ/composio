@@ -197,11 +197,6 @@ export const claudeCodeDriver = (options: ClaudeCodeOptions): Driver => ({
       ],
       { stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' }
     );
-    const send = (text: string) => {
-      child.stdin.write(userMessage(text));
-      void child.stdin.flush();
-    };
-
     const commands: ExecutedCommand[] = [];
     const commandRequests: Array<ReadonlyArray<JournalEntry>> = [];
     const messages: string[] = [];
@@ -217,6 +212,14 @@ export const claudeCodeDriver = (options: ClaudeCodeOptions): Driver => ({
       if (stop === undefined) stop = { provider: reason };
       child.kill();
     };
+    const send = async (text: string) => {
+      try {
+        await child.stdin.write(userMessage(text));
+        await child.stdin.flush();
+      } catch {
+        cutOff('stdin write failed');
+      }
+    };
     const deadline = setTimeout(() => cutOff('deadline'), options.deadlineMs);
     let ending: ReturnType<typeof setTimeout> | undefined;
     /**
@@ -224,12 +227,16 @@ export const claudeCodeDriver = (options: ClaudeCodeOptions): Driver => ({
      * the background keeps Claude Code alive. The run is over once the agent
      * stopped and the person had nothing to say, so it gets a moment, then goes.
      */
-    const end = () => {
-      child.stdin.end();
+    const end = async () => {
       ending ??= setTimeout(() => child.kill(), END_GRACE_MS);
+      try {
+        await child.stdin.end();
+      } catch {
+        cutOff('stdin close failed');
+      }
     };
 
-    const handle = (event: z.infer<typeof StreamEvent>) => {
+    const handle = async (event: z.infer<typeof StreamEvent>) => {
       const content = event.message?.content;
       const blocks = Array.isArray(content) ? content : [];
       if (event.type === 'assistant') {
@@ -285,21 +292,21 @@ export const claudeCodeDriver = (options: ClaudeCodeOptions): Driver => ({
         };
         if (event.subtype !== 'success') {
           stop = { provider: event.subtype ?? 'error' };
-          end();
+          await end();
           return;
         }
         const reply = person.hear(event.result ?? '', true);
         if (reply === undefined) {
           finished = true;
-          end();
+          await end();
           return;
         }
         replies.push({ afterModelTurn: modelTurns, text: reply });
-        send(reply);
+        await send(reply);
       }
     };
 
-    send(journey.prompt);
+    await send(journey.prompt);
     const decoder = new TextDecoder();
     let buffer = '';
     for await (const chunk of child.stdout) {
@@ -311,7 +318,7 @@ export const claudeCodeDriver = (options: ClaudeCodeOptions): Driver => ({
         const raw: unknown = JSON.parse(line);
         options.onEvent?.(raw);
         const event = StreamEvent.safeParse(raw);
-        if (event.success) handle(event.data);
+        if (event.success) await handle(event.data);
       }
     }
     const stderr = await new Response(child.stderr).text();

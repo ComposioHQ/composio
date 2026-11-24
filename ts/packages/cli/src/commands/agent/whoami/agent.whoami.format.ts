@@ -1,8 +1,4 @@
-import {
-  AGENT_SUMMARY_NOTE_TITLE,
-  agentSummaryLines,
-  type SafeAgentSummary,
-} from 'src/services/agents';
+import { agentSummaryLines, type SafeAgentSummary } from 'src/services/agents';
 
 /** The note body `composio agent whoami` prints on stderr. */
 export const formatAgentWhoamiNote = (summary: SafeAgentSummary) =>

@@ -8,9 +8,17 @@ description: "First-class API for creating and reusing Composio sessions.  `comp
 Access this class through the `composio.sessions` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.sessions.list();
+const sessions = composio.sessions;
 ```
+
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `webhooks` | `SessionWebhooks` | Read the events Composio sends to the project's session webhook URL, for session hooks with a `webhook` handler. |
 
 ## Methods
 
@@ -29,7 +37,7 @@ origins is logged, so native tools keep working.
 
 **Overload 1**
 
-```typescript
+```typescript signature
 async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
@@ -47,7 +55,7 @@ async create(userId: string, config: ToolRouterCreateSessionConfig & { mcp: true
 
 **Overload 2**
 
-```typescript
+```typescript signature
 async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
@@ -66,9 +74,29 @@ async create(userId: string, config?: ToolRouterCreateSessionConfig, requestOpti
 **Example**
 
 ```typescript
-import { Composio } from '@composio/core';
+import { Composio, experimental_createTool, experimental_createToolkit } from '@composio/core';
+import { z } from 'zod';
 
 const composio = new Composio();
+
+const myLocalTool = experimental_createTool('GET_WEATHER', {
+  name: 'Get Weather',
+  description: 'Get the weather for a city',
+  inputParams: z.object({ city: z.string() }),
+  execute: async ({ city }) => ({ city, forecast: 'sunny' }),
+});
+const myLocalToolkit = experimental_createToolkit('DEV_TOOLS', {
+  name: 'Dev Tools',
+  description: 'Local developer utilities',
+  tools: [
+    experimental_createTool('ECHO', {
+      name: 'Echo',
+      description: 'Return the input text',
+      inputParams: z.object({ text: z.string() }),
+      execute: async ({ text }) => ({ text }),
+    }),
+  ],
+});
 
 const session = await composio.sessions.create('user_123', {
   toolkits: ['gmail'],
@@ -95,7 +123,7 @@ Delete a tool router session by ID.
 Deleted sessions immediately stop being retrievable or executable. Deleting
 a missing or already-deleted session surfaces the backend 404.
 
-```typescript
+```typescript signature
 async delete(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
 ```
 
@@ -125,7 +153,7 @@ origins is logged, so native tools keep working.
 
 **Overload 1**
 
-```typescript
+```typescript signature
 async use(id: string, options: LocalToolsOptions & { mcp: true }, requestOptions?: ComposioRequestOptions): Promise<Session<TToolCollection, TTool, TProvider>>
 ```
 
@@ -143,7 +171,7 @@ async use(id: string, options: LocalToolsOptions & { mcp: true }, requestOptions
 
 **Overload 2**
 
-```typescript
+```typescript signature
 async use(id: string, options?: LocalToolsOptions & { mcp?: boolean }, requestOptions?: ComposioRequestOptions): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>
 ```
 
@@ -166,7 +194,7 @@ import { Composio } from '@composio/core';
 
 const composio = new Composio();
 const id = 'session_123';
-const session = await composio.sessions.use(id);
+const session = await composio.sessions.use(id, { mcp: true });
 
 console.log(session.mcp.url);
 console.log(session.mcp.headers);

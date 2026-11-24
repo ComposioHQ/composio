@@ -20,6 +20,7 @@ import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
 import { readInstallIdWhenTelemetryEnabled } from 'src/analytics/dispatch';
 import { APP_CONFIG } from 'src/config';
+import { agentSessionHeaders, resolveAgentSession } from 'src/services/agent-session';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { ComposioUserContext } from 'src/services/user-context';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
@@ -244,6 +245,7 @@ const makeDashboardToolExecution = Effect.gen(function* () {
   const call = (
     procedure: 'execute' | 'executeMeta',
     orgId: string,
+    slug: string,
     input: Record<string, unknown>
   ) =>
     Effect.gen(function* () {
@@ -261,6 +263,8 @@ const makeDashboardToolExecution = Effect.gen(function* () {
       // Lets the Dashboard's product analytics join the CLI's own events. Sent
       // only while telemetry is enabled, and only on these requests.
       const installId = yield* readInstallIdWhenTelemetryEnabled;
+      // The agent chat this execution is part of; none while telemetry is disabled.
+      const agentSession = yield* resolveAgentSession;
       const url = `${dashboard.base}/api/cli/trpc/${procedure}`;
       const request = HttpClientRequest.post(url).pipe(
         HttpClientRequest.setHeaders({
@@ -269,6 +273,7 @@ const makeDashboardToolExecution = Effect.gen(function* () {
           authorization: `Bearer ${apiKey.value}`,
           'x-org-id': orgId,
           ...(Option.isSome(installId) ? { 'x-cli-install-id': installId.value } : {}),
+          ...Option.match(agentSession, { onNone: () => ({}), onSome: agentSessionHeaders }),
         }),
         HttpClientRequest.bodyJsonUnsafe({ json: input })
       );
@@ -332,10 +337,7 @@ const makeDashboardToolExecution = Effect.gen(function* () {
         return yield* Effect.fail(relayedApiError(url, outcome.status, outcome.error));
       }
       if (outcome.response.result_type === 'input_required') {
-        return yield* toolInputRequiredError(
-          `Tool ${input.tool_slug ?? input.slug}`,
-          outcome.response
-        );
+        return yield* toolInputRequiredError(`Tool ${slug}`, outcome.response);
       }
       // Not validated beyond `result_type`; see `ExecutionResult`.
       return outcome.response as DashboardExecutionResult;
@@ -344,14 +346,14 @@ const makeDashboardToolExecution = Effect.gen(function* () {
   return {
     /** Runs a tool through the Dashboard. Never retried. */
     execute: (request: DashboardToolExecutionRequest) =>
-      call('execute', request.orgId, {
+      call('execute', request.orgId, request.slug, {
         tool_slug: request.slug,
         arguments: request.arguments,
         ...(request.account ? { account: request.account } : {}),
       }),
     /** Runs a meta tool through the Dashboard. Never retried. */
     executeMeta: (request: DashboardToolExecutionRequest) =>
-      call('executeMeta', request.orgId, {
+      call('executeMeta', request.orgId, request.slug, {
         slug: request.slug,
         arguments: request.arguments,
       }),

@@ -35,6 +35,13 @@
     # Find the release: the requested version, or the newest stable one that ships a Windows archive.
     $api = if ($env:COMPOSIO_GITHUB_API_BASE_URL) { $env:COMPOSIO_GITHUB_API_BASE_URL.TrimEnd('/') } else { 'https://api.github.com' }
     Assert-TrustedUrl $api
+    # CI can authenticate metadata requests to avoid GitHub's shared runner-IP
+    # limit. Never send the token to a custom API base or to asset hosts.
+    $apiRequest = @{}
+    if ($api -ceq 'https://api.github.com' -and $env:COMPOSIO_GITHUB_API_TOKEN) {
+        $apiRequest.Headers = @{ Authorization = "Bearer $env:COMPOSIO_GITHUB_API_TOKEN" }
+        $apiRequest.MaximumRedirection = 0
+    }
     $releasesUrl = "$api/repos/ComposioHQ/composio/releases"
     $release = $null
     if ($env:COMPOSIO_INSTALL_VERSION) {
@@ -42,12 +49,12 @@
         if ($version -notmatch '^\d+\.\d+\.\d+(-beta\.\d+)?$') {
             throw "Invalid Composio CLI version `"$env:COMPOSIO_INSTALL_VERSION`". Expected X.Y.Z or X.Y.Z-beta.N."
         }
-        $release = Invoke-RestMethod "$releasesUrl/tags/$([uri]::EscapeDataString("@composio/cli@$version"))"
+        $release = Invoke-RestMethod "$releasesUrl/tags/$([uri]::EscapeDataString("@composio/cli@$version"))" @apiRequest
     } else {
         Write-Host 'Finding latest stable CLI release...'
         for ($page = 1; $page -le 5 -and -not $release; $page++) {
             # Assign before piping: Windows PowerShell emits the JSON array as a single object.
-            $candidates = Invoke-RestMethod "${releasesUrl}?per_page=100&page=$page"
+            $candidates = Invoke-RestMethod "${releasesUrl}?per_page=100&page=$page" @apiRequest
             if (-not $candidates) { break }
             $release = $candidates | Where-Object {
                 $_.tag_name -match '^@composio/cli@\d+\.\d+\.\d+$' -and -not $_.draft -and -not $_.prerelease -and

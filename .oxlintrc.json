@@ -81,6 +81,9 @@
     "prefer-const": "warn",
     "no-console": "warn",
     "typescript/no-explicit-any": "error",
+    // SDK modifiers can return a value or a Promise. Promise.all preserves
+    // ordering and resolves either form.
+    "typescript/await-thenable": ["error", { "allowMixedPromiseArrays": true }],
     "no-unused-vars": [
       "warn",
       {
@@ -91,6 +94,26 @@
     ]
   },
   "overrides": [
+    {
+      // Build and maintenance scripts use stdout and stderr for their output.
+      "files": ["ts/packages/**/scripts/**/*.{ts,tsx,mts,cts}", "tsdown.config.base.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      // Bun's promise matchers are typed as returning void. Awaiting them
+      // preserves sequencing when the matcher has to wait for a pending promise.
+      "files": [
+        "test/{sdk-release-*,composio-client-update,issue-triage,provider-compatibility}.test.ts",
+        "ts/e2e-tests/_utils/test/image-lifecycle.test.ts",
+        "ts/examples/approvals/test/approval.test.ts",
+        "ts/examples/session-management/test/session-config-verification.test.ts"
+      ],
+      "rules": {
+        "typescript/await-thenable": "off"
+      }
+    },
     {
       // These files still enforce the repository-wide no-any rule, but are
       // exempt from source-only policies that do not fit test helpers, large

@@ -23,7 +23,13 @@ export const PIPED_STDIN_SILENCE_TIMEOUT = Duration.seconds(1);
 export const resolveInput = (input: Option.Option<string>) =>
   Effect.gen(function* () {
     if (Option.isSome(input)) {
-      return (yield* resolveExplicitTextInput(input)) ?? '{}';
+      return (
+        (yield* resolveExplicitTextInput(input, {
+          command: 'execute',
+          flag: '--data',
+          allowRunStagedArguments: true,
+        })) ?? '{}'
+      );
     }
     const stdin = yield* Stdin;
     if (stdin.isTTY()) {

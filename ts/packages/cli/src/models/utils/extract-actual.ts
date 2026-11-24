@@ -1,4 +1,4 @@
-import { SchemaIssue } from 'effect';
+import { Formatter, SchemaIssue } from 'effect';
 import { inspect } from 'node:util';
 
 export function extractActual(issue: SchemaIssue.Issue, cap = 50) {
@@ -10,7 +10,7 @@ export function extractActual(issue: SchemaIssue.Issue, cap = 50) {
   if (typeof actual === 'object') {
     str = inspect(actual, { depth: 2 });
   } else {
-    str = String(actual);
+    str = typeof actual === 'string' ? actual : Formatter.format(actual);
   }
 
   return str.slice(0, cap) + (str.length > cap ? '...' : '');

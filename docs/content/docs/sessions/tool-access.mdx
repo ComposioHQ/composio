@@ -1,0 +1,469 @@
+---
+title: Restrict tool access
+description: Enable toolkits, filter tools and tags, and require approval
+keywords: [session, tools, toolkits, configuration]
+---
+
+## Tools and Toolkits
+
+A **toolkit** is a collection of related tools for a service. The `github` toolkit, for example, contains tools for creating issues, managing pull requests, and starring repositories.
+
+A **tool** is an individual action your agent can execute. Each tool has an input schema (its parameters) and an output schema (what it returns), and follows a `{TOOLKIT}_{ACTION}` naming pattern, like `GITHUB_CREATE_AN_ISSUE`.
+
+See [Toolkits](/docs/toolkits) for how tools are grouped, discovered, and used with connected accounts.
+
+Every toolkit in the catalog is discoverable by default. Create a session without a `toolkits` parameter and the agent can find any of them at runtime. To restrict the set, pass `toolkits` when you create the session. See [Enable and disable toolkits](/docs/sessions/tool-access#enabling-toolkits). You can also bind local, in-process tools to a session with the experimental [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) API.
+
+## Using a saved Session config
+
+To start a session from a saved access policy you build in the Composio Dashboard, see [Saved session policies](/docs/sessions/saved-session-policies).
+
+## Requiring tool approval
+
+Require approval before selected session tools run by adding `requireApproval` (`require_approval` in Python) to toolkit, tool, or tag filters. These approval settings are experimental.
+
+| Scope | TypeScript session option | Python session option |
+| --- | --- | --- |
+| All tools in a toolkit | `toolkits: { requireApproval: ["gmail"] }` | `toolkits={"require_approval": ["gmail"]}` |
+| Specific tools in a toolkit | `tools: { gmail: { requireApproval: ["GMAIL_SEND_EMAIL"] } }` | `tools={"gmail": {"require_approval": ["GMAIL_SEND_EMAIL"]}}` |
+| Tools with matching tags | `tags: { requireApproval: ["destructiveHint"] }` | `tags={"require_approval": ["destructiveHint"]}` |
+
+You can combine an approval list with `enable` or `disable` in the same filter object. An approval list alone does not restrict which tools are available.
+
+When execution needs approval, catch `ComposioToolInputRequiredError` from `@composio/core` in TypeScript or `ToolInputRequiredError` from `composio.exceptions` in Python. Display `inputRequests` (`input_requests`) and wait for the person's answers. Repeat the same tool or meta-tool call with `inputResponses` and `requestState` (`input_responses` and `request_state`), preserving the state from the error. Forward decline and cancel answers unchanged. See [handling input requests](/docs/sessions/executing-tools#handling-requests-for-user-input) for the continuation flow.
+
+For MCP clients, configure the [approval fallback](/docs/sessions-via-mcp#approval-without-elicitation-support) if the client cannot ask for approval.
+
+## Enabling toolkits
+
+To limit a session to specific toolkits, pass an array of toolkit slugs. The agent can only discover and use tools from these toolkits.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+# Using array format
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits=["github", "gmail", "slack"]
+)
+
+# Using object format with enable key
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits={"enable": ["github", "gmail", "slack"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+// Using array format
+const session = await composio.create("user_123", {
+  toolkits: ["github", "gmail", "slack"],
+});
+
+// Using object format with enable key
+const session2 = await composio.create("user_123", {
+  toolkits: { enable: ["github", "gmail", "slack"] },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": ["github", "gmail", "slack"]}}'
+```
+</Tab>
+</Tabs>
+
+## Disabling toolkits
+
+To keep every toolkit discoverable except a few, use the `disable` syntax. This is useful when you want broad access but need to exclude specific toolkits.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits={"disable": ["exa", "firecrawl"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: { disable: ["exa", "firecrawl"] },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"disable": ["exa", "firecrawl"]}}'
+```
+</Tab>
+</Tabs>
+
+## Denying every app toolkit
+
+An explicit empty allowlist means no app toolkits at all. Omitting `toolkits` keeps the unrestricted default, and an empty `disable` list is also unrestricted. The three requests are different:
+
+| Toolkit config | Effect |
+|---|---|
+| Omitted | Every toolkit in the catalog is available |
+| `{ enable: [] }` | No app toolkit is listed, searchable, executable, or served over MCP |
+| `{ disable: [] }` | Every toolkit in the catalog is available |
+
+Use an empty allowlist when a session should only run [local tools](/docs/extending-sessions/local-tools-and-toolkits) or session helpers. Meta tools such as `COMPOSIO_SEARCH_TOOLS`, connection management, and the sandbox keep their own enablement, so `session.tools()` can still return them.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    toolkits={"enable": []},
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  toolkits: { enable: [] },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "toolkits": {"enable": []}}'
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python) when you narrow an existing session with `session.update()`. Both SDKs send the empty allowlist as `{ enable: [] }`; the backend previously read an empty allowlist as "allow every toolkit", which left the session unrestricted.
+</Callout>
+
+The session API rejects unknown root keys with a `400` before it creates anything. A typo such as a singular `toolkit` fails the request instead of silently creating an unrestricted session.
+
+## Enabling or disabling specific tools
+
+To control which individual tools are available within a toolkit, use the `tools` configuration. The key is the toolkit slug and the value specifies which tools to enable or disable.
+
+Composio enforces these filters on every session execution path, including multi-execute, the sandbox, and MCP. See [Per-action permissions](/docs/governance/action-permissions) for allow and deny examples and the paths the filters don't cover.
+
+To enable only specific tools, pass an `enable` list per toolkit:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    tools={
+        # Only these Gmail tools will be available
+        "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+        # Only issue-related GitHub tools
+        "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tools: {
+    // Only these Gmail tools will be available
+    gmail: { enable: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"] },
+    // Only issue-related GitHub tools
+    github: { enable: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"] }
+  }
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+      "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+  }'
+```
+</Tab>
+</Tabs>
+
+The shorthand array syntax is equivalent to `enable`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    tools={
+        "gmail": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+        "github": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tools: {
+    gmail: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
+    github: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]
+  }
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+# The SDK expands the array shorthand to {"enable": [...]}
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "gmail": {"enable": ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]},
+      "github": {"enable": ["GITHUB_CREATE_AN_ISSUE", "GITHUB_GET_ISSUE"]}
+    }
+  }'
+```
+</Tab>
+</Tabs>
+
+To keep every tool in a toolkit except a few, use `disable`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    tools={
+        # All Slack tools except delete
+        "slack": {"disable": ["SLACK_DELETE_MESSAGE"]},
+        # All GitHub tools except destructive ones
+        "github": {"disable": ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"]}
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tools: {
+    // All Slack tools except delete
+    slack: { disable: ["SLACK_DELETE_MESSAGE"] },
+    // All GitHub tools except destructive ones
+    github: { disable: ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"] }
+  }
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tools": {
+      "slack": {"disable": ["SLACK_DELETE_MESSAGE"]},
+      "github": {"disable": ["GITHUB_DELETE_REPO", "GITHUB_DELETE_BRANCH"]}
+    }
+  }'
+```
+</Tab>
+</Tabs>
+
+## Filtering tools by tags
+
+Every tool has a [hint](/docs/governance/tool-hints) for the type of action it takes: `readOnlyHint`, `createHint`, `updateHint` or `destructiveHint`. Use the `tags` configuration to set what happens to each type of tool:
+
+- **Allow:** leave the hint out. This is the default.
+- **Block:** add the hint to `tags.disable`. The agent can't see or call these tools.
+- **Require approval:** add the hint to `tags.require_approval`. These tools wait for the user's approval before they run. See [Approvals](/docs/governance/approvals).
+
+For example, to block every tool that can delete something:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    tags={"disable": ["destructiveHint"]}
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  tags: { disable: ["destructiveHint"] }
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "tags": {"disable": ["destructiveHint"]}}'
+```
+</Tab>
+</Tabs>
+
+### Overriding for a toolkit
+
+The session-wide `tags` apply to the tools of every toolkit. To handle a toolkit's tools differently, override them in `tools.<toolkit>.tags`. The override replaces the session-wide `tags` for that toolkit, so list everything you still want to block for it.
+
+For example, this session blocks tools that update or delete everywhere, but overrides GitHub so only its tools that delete are blocked:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    # Everywhere: block tools that update or delete
+    tags={"disable": ["updateHint", "destructiveHint"]},
+    tools={
+        # GitHub: block only tools that delete
+        "github": {"tags": {"disable": ["destructiveHint"]}}
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  // Everywhere: block tools that update or delete
+  tags: { disable: ["updateHint", "destructiveHint"] },
+  tools: {
+    // GitHub: block only tools that delete
+    github: { tags: { disable: ["destructiveHint"] } }
+  }
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "tags": {"disable": ["updateHint", "destructiveHint"]},
+    "tools": {"github": {"tags": {"disable": ["destructiveHint"]}}}
+  }'
+```
+</Tab>
+</Tabs>
+
+Listing a toolkit's tools with `enable` or `disable`, as in [Enabling or disabling specific tools](/docs/sessions/tool-access#enabling-or-disabling-specific-tools), also overrides the session-wide `tags` for that toolkit.
+
+## Browsing the catalog
+
+Before configuring a session, explore the toolkits and tools available. Browse them visually at [dashboard.composio.dev](https://dashboard.composio.dev?utm_source=docs&utm_medium=content&utm_campaign=docs-configuring-sessions) or in the [docs catalog](/toolkits), or fetch them programmatically:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+# List toolkits
+toolkits = composio.toolkits.get()
+
+# List tools within a toolkit (top 20 by default)
+tools = composio.tools.get("user_123", toolkits=["GITHUB"])
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const userId = 'user_123';
+// ---cut---
+// List toolkits
+const toolkits = await composio.toolkits.get();
+
+// List tools within a toolkit (top 20 by default)
+const tools = await composio.tools.get(userId, { toolkits: ["GITHUB"] });
+```
+</Tab>
+<Tab value="API">
+```bash
+# List toolkits
+curl -X GET https://backend.composio.dev/api/v3.1/toolkits \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+
+# List tools within a toolkit (top 20 by default)
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB&limit=20" \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
+
+Inspect a tool's input and output schema without a user context with `getRawComposioToolBySlug`:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+tool = composio.tools.get_raw_composio_tool_by_slug("GMAIL_SEND_EMAIL")
+print(tool.name)
+print(tool.description)
+print(tool.input_parameters)
+print(tool.output_parameters)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const tool = await composio.tools.getRawComposioToolBySlug("GMAIL_SEND_EMAIL");
+console.log(tool.name);
+console.log(tool.description);
+console.log(tool.inputParameters);
+console.log(tool.outputParameters);
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X GET https://backend.composio.dev/api/v3.1/tools/GMAIL_SEND_EMAIL \
+  -H "x-api-key: $COMPOSIO_API_KEY"
+```
+</Tab>
+</Tabs>
+
+To fetch several toolkits in one request, use `composio.toolkits.get_many(["github", "slack"])` in Python or `await composio.toolkits.getMany(['github', 'slack'])` in TypeScript. Both return the matching toolkits.

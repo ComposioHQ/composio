@@ -131,7 +131,7 @@ describe('Docs product navigation', () => {
     for (const url of [
       '/docs/quickstart',
       '/docs/providers',
-      '/docs/how-composio-works',
+      '/docs/sessions',
       '/docs/authentication',
       '/docs/authentication/session-cant-find-account',
       '/docs/skills',

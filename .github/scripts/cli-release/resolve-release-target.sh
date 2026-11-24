@@ -173,4 +173,6 @@ if [[ "$target_commitish" != "$COMMIT_SHA" ]]; then
   exit 1
 fi
 
+previous_stable_tag=$(latest_stable_tag)
+echo "previous_stable_tag=$previous_stable_tag" >>"$GITHUB_OUTPUT"
 emit_stable_target "$stable_tag" "$stable_version"

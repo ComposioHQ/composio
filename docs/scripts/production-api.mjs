@@ -1,10 +1,10 @@
 /**
  * Single source of truth for the Composio production API URL used by the docs
- * generators (fetch-openapi.mjs, generate-toolkits.ts, generate-meta-tools.ts).
+ * toolkit and OpenAPI generators.
  *
  * Published docs data must come from production. The "Docs - Update Data"
- * workflow leaves the base URL unset, and the toolkit/meta-tool generators
- * reject non-production overrides before making a request. Host rewriting is
+ * workflow leaves the base URL unset, and toolkit generation rejects
+ * non-production overrides before making a request. Host rewriting is
  * retained as defense in depth for staging URLs embedded inside an otherwise
  * production-sourced payload.
  *

@@ -85,7 +85,7 @@ describe("Toolkit version source - production only", () => {
     const versions = await fetchProductionToolkitVersions("test-key", fetcher);
 
     expect(requests).toEqual([
-      "https://backend.composio.dev/api/v3/toolkits/changelog",
+      "https://backend.composio.dev/api/v3.1/toolkits/changelog",
     ]);
     expect(versions.get("gmail")).toBe("20260702_01");
   });
@@ -96,6 +96,23 @@ describe("Toolkit version source - production only", () => {
     expect(fetchProductionToolkitVersions("test-key", fetcher)).rejects.toThrow(
       "missing an items array"
     );
+  });
+
+  test("skips malformed changelog entries instead of failing the run", async () => {
+    const fetcher: ToolkitVersionFetcher = async () =>
+      Response.json({
+        items: [
+          null,
+          { slug: 7, versions: [{ version: "20260101_01" }] },
+          { slug: "SLACK", versions: "none" },
+          { slug: "NOTION", versions: [{ version: 3 }] },
+          { slug: "GMAIL", versions: [{ version: "20260702_01" }] },
+        ],
+      });
+
+    const versions = await fetchProductionToolkitVersions("test-key", fetcher);
+
+    expect([...versions]).toEqual([["gmail", "20260702_01"]]);
   });
 
   test("rejects an empty production version map before rewriting the catalog", async () => {

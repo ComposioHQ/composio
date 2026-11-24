@@ -1,19 +1,25 @@
+import { z } from 'zod';
 import { fetchWithRetry, type FetchWithRetryOptions } from './fetch-with-retry';
-import { PRODUCTION_API_V3_URL } from './production-api.mjs';
+import { createComposioClient } from '../lib/composio-api';
 
 interface ToolkitWithVersion {
   slug: string;
   version: string | null;
 }
 
-interface ChangelogEntry {
-  slug?: string;
-  versions?: Array<{ version?: string }>;
-}
+// A malformed entry is dropped rather than failing the run; only a response
+// without an items array is rejected.
+const changelogEntrySchema = z
+  .object({
+    slug: z.string().optional().catch(undefined),
+    versions: z
+      .array(z.object({ version: z.string().optional().catch(undefined) }).catch({}))
+      .optional()
+      .catch(undefined),
+  })
+  .catch({});
 
-interface ChangelogResponse {
-  items?: ChangelogEntry[];
-}
+const changelogSchema = z.object({ items: z.array(changelogEntrySchema) });
 
 export type ToolkitVersionFetcher = (
   url: string,
@@ -25,27 +31,28 @@ export async function fetchProductionToolkitVersions(
   apiKey: string,
   fetcher: ToolkitVersionFetcher = fetchWithRetry
 ): Promise<Map<string, string>> {
-  const response = await fetcher(`${PRODUCTION_API_V3_URL}/toolkits/changelog`, {
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-    },
+  const client = createComposioClient(apiKey, {
+    maxRetries: 0,
+    timeout: 10 * 60_000,
+    fetch: (input, init) => fetcher(String(input), init),
   });
 
-  if (!response.ok) {
+  let response: unknown;
+  try {
+    response = await client.toolkits.retrieveChangelog();
+  } catch (error) {
     throw new Error(
-      `Failed to fetch production toolkit changelog: ${response.status} ${response.statusText}`
+      `Failed to fetch production toolkit changelog: ${error instanceof Error ? error.message : String(error)}`
     );
   }
-
-  const data = (await response.json()) as ChangelogResponse;
-  if (!Array.isArray(data.items)) {
+  const data = changelogSchema.safeParse(response);
+  if (!data.success) {
     throw new Error('Production toolkit changelog response is missing an items array');
   }
 
   const versionMap = new Map<string, string>();
 
-  for (const entry of data.items) {
+  for (const entry of data.data.items) {
     const slug = entry.slug?.toLowerCase();
     const latestVersion = entry.versions?.[0]?.version;
     if (slug && latestVersion) {

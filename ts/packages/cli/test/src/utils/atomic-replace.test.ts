@@ -130,11 +130,13 @@ describe('atomic replace', () => {
           Effect.result,
           Effect.forkChild
         );
-        yield* Effect.yieldNow.pipe(
-          Effect.andThen(TestClock.adjust('3 seconds')),
-          Effect.repeat({ times: 100, while: () => fiber.pollUnsafe() === undefined })
+        // Filesystem operations use the host event loop. Keep advancing the
+        // clock until they finish and the retry schedule has run.
+        const driveClock = TestClock.adjust('3 seconds').pipe(
+          Effect.andThen(TestClock.withLive(Effect.sleep('1 millis'))),
+          Effect.forever
         );
-        const result = yield* Fiber.join(fiber);
+        const result = yield* Effect.raceFirst(Fiber.join(fiber), driveClock);
 
         expect(attemptTimes).toHaveLength(scenario.attempts);
         const firstAttempt = attemptTimes[0];

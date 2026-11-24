@@ -56,5 +56,5 @@ test('local HTTP search retains section links alongside the added command and co
     .filter(result => result.type === 'text'
       && result.content.replace(/<\/?mark>/g, '').includes('every toolkit'))
     .map(result => result.url);
-  expect(destinations).toContain('/docs/configuring-sessions#creating-a-session');
+  expect(destinations).toContain('/docs/sessions/create-and-reuse#creating-a-session');
 });

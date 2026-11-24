@@ -402,7 +402,7 @@ Use direct execution when:
 
 ## Custom Tools
 
-Custom Tools allow you to attach your own local tools to Tool Router sessions. Define them with `experimental_createTool`, then pass them to `composio.create()` under `experimental.customTools`.
+Custom Tools allow you to attach your own local tools to Tool Router sessions. Define them with `experimental_createTool`, then pass them to `composio.create()` under `experimental.localTools`.
 
 ```typescript
 import { Composio, experimental_createTool } from '@composio/core';
@@ -423,7 +423,7 @@ const customTool = experimental_createTool('MY_CUSTOM_TOOL', {
 });
 
 const session = await composio.create('default', {
-  experimental: { customTools: [customTool] },
+  experimental: { localTools: [customTool] },
 });
 
 const result = await session.execute('MY_CUSTOM_TOOL', {

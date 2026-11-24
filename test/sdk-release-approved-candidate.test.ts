@@ -2,6 +2,7 @@ import { afterAll, expect, test } from 'bun:test';
 import { adoptApprovedCandidate } from '../scripts/sdk-release/candidates';
 import { formatJson, run, sha256Hex } from '../scripts/sdk-release/runtime';
 import {
+  fetchInputUrl,
   json,
   readText,
   runRelease,
@@ -71,7 +72,7 @@ const fakeGitHub =
     } = {}
   ): Fetch =>
   async input => {
-    const url = new URL(String(input));
+    const url = new URL(fetchInputUrl(input));
     if (url.hostname === 'artifacts.test') return new Response(archive.bytes);
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '');
     if (path === '/actions/workflows/sdk.release.candidates.yml/runs')

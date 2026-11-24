@@ -15,12 +15,13 @@ import * as composioAccount from 'src/services/composio-account';
 import type { ToolkitProjectScope } from 'src/services/composio-clients';
 import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioUserContext } from 'src/services/user-context';
+import { NodeProcess } from 'src/services/node-process';
 import * as toolPermissions from 'src/services/tool-permissions';
 import * as redactModule from 'src/ui/redact';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { liveEnvConfigProvider } from 'test/__utils__/live-env-config-provider';
 import type { TestLiveInput } from 'test/__utils__/services/test-layer';
-import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel';
+import { parseParallelExecuteArgs } from 'src/commands/tools/execute/tools.execute.parallel-argv';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import type { ToolkitDetailed } from 'src/models/toolkits';
 import { makeToolkitFixture } from 'test/__utils__/models/toolkits';
@@ -241,8 +242,6 @@ describe('CLI: composio execute', () => {
   it.effect('returns a CLI validation error for malformed parallel arguments', () =>
     Effect.gen(function* () {
       const failure = yield* parseParallelExecuteArgs(['--parallel', '--data', '{}'], {
-        surface: 'root',
-        projectMode: 'consumer',
         allowUserId: false,
         allowProjectName: false,
       }).pipe(Effect.flip);
@@ -990,6 +989,26 @@ describe('CLI: composio execute', () => {
         yield* cli(['execute', 'CUSTOM_GRAIN_SEARCH_PERSONS', '-d', '{"query":"ada"}']);
 
         expect(recordedExecuteParams[0]?.account).toBe('ca_1');
+      })
+    );
+
+    it.effect('escapes the toolkit and slug in cached connection failure messages', () =>
+      Effect.gen(function* () {
+        connectedToolkitsCache(['gmail']);
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const slug = 'FIXTURE\tLABEL_LOOKUP';
+        yield* cli(['execute', slug, '-d', '{}']).pipe(Effect.provide(terminal.layer), Effect.flip);
+
+        const stderr = terminal.stderr();
+        expect(stderr).toContain('Toolkit "fixture\\u0009label" is not connected');
+        expect(stderr).toContain('composio link fixture\\u0009label');
+        expect(stderr).toContain('composio execute "FIXTURE\\u0009LABEL_LOOKUP"');
+        expect(JSON.parse(terminal.stdout())).toMatchObject({
+          successful: false,
+          slug,
+          error: expect.stringContaining('Toolkit "fixture\tlabel" is not connected'),
+        });
+        expect(recordedSessionCreateParams).toHaveLength(0);
       })
     );
   });
@@ -2029,7 +2048,11 @@ describe('CLI: composio execute', () => {
     it => {
       it.effect('uploads local file paths before Tool Router execution', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-upload-${crypto.randomUUID()}.txt`);
+          // Local uploads are read from the invocation's working directory.
+          const tempFile = path.join(
+            (yield* NodeProcess).cwd,
+            `composio-upload-${crypto.randomUUID()}.txt`
+          );
           fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
 
           // The S3 upload is the only request that reaches `fetch`.
@@ -2071,6 +2094,82 @@ describe('CLI: composio execute', () => {
 
           fs.rmSync(tempFile, { force: true });
         })
+      );
+
+      it.effect('reads tool arguments from a file in the working directory', () =>
+        Effect.gen(function* () {
+          const cwd = (yield* NodeProcess).cwd;
+          const argsFile = path.join(cwd, `args-${crypto.randomUUID()}.json`);
+          fs.writeFileSync(argsFile, '{"recipient_email":"a@b.com"}', 'utf8');
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', `@${path.basename(argsFile)}`]).pipe(
+            Effect.ensuring(Effect.sync(() => fs.rmSync(argsFile, { force: true })))
+          );
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(parseLastJson(lines).data.arguments).toEqual({ recipient_email: 'a@b.com' });
+        })
+      );
+
+      it.effect.each([
+        {
+          name: 'outside the working directory',
+          inProject: false,
+          filename: 'args.json',
+          expected: 'outside the current working directory',
+        },
+        {
+          name: 'protected by the sensitive-path guard',
+          inProject: true,
+          filename: '.env.fixture',
+          expected: 'looks like a credential',
+        },
+      ])('refuses an arguments file $name', ({ inProject, filename, expected }) =>
+        Effect.gen(function* () {
+          const cwd = (yield* NodeProcess).cwd;
+          const directory = fs.mkdtempSync(
+            path.join(inProject ? cwd : os.tmpdir(), 'composio-args-')
+          );
+          const argsFile = path.join(directory, filename);
+          fs.writeFileSync(argsFile, '{"recipient_email":"a@b.com"}', 'utf8');
+
+          const failure = yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', `@${argsFile}`]).pipe(
+            Effect.flip,
+            Effect.ensuring(
+              Effect.sync(() => fs.rmSync(directory, { recursive: true, force: true }))
+            )
+          );
+          expect(failure).toMatchObject({ message: expect.stringContaining(expected) });
+        })
+      );
+
+      it.effect(
+        'refuses a local path outside the working directory before any upload request (SEC-2606)',
+        () =>
+          Effect.gen(function* () {
+            const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-outside-'));
+            const tempFile = path.join(outsideDir, 'notes.txt');
+            fs.writeFileSync(tempFile, 'harmless fixture', 'utf8');
+            const fetchSpy = vi
+              .spyOn(globalThis, 'fetch')
+              .mockImplementation(async () => new Response(null, { status: 200 }));
+
+            const failure = yield* cli([
+              'execute',
+              'GMAIL_SEND_EMAIL',
+              '-d',
+              JSON.stringify({ recipient_email: 'a@b.com', attachment: tempFile }),
+            ]).pipe(
+              Effect.flip,
+              Effect.map(error => (error as Error).message),
+              Effect.ensuring(
+                Effect.sync(() => fs.rmSync(outsideDir, { recursive: true, force: true }))
+              )
+            );
+
+            expect(failure).toContain('Refusing to upload');
+            expect(failure).toContain('outside the allowed upload directories');
+            expect(failure).toContain(fs.realpathSync((yield* NodeProcess).cwd));
+            expect(fetchSpy).not.toHaveBeenCalled();
+          })
       );
     }
   );
@@ -2119,7 +2218,10 @@ describe('CLI: composio execute', () => {
     it => {
       it.effect('injects into the single file_uploadable field before upload hydration', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-inject-${crypto.randomUUID()}.png`);
+          const tempFile = path.join(
+            (yield* NodeProcess).cwd,
+            `composio-inject-${crypto.randomUUID()}.png`
+          );
           fs.writeFileSync(tempFile, 'png-binary-ish', 'utf8');
 
           // The S3 upload is the only request that reaches `fetch`.
@@ -2205,7 +2307,10 @@ describe('CLI: composio execute', () => {
     it => {
       it.effect('treats property-bearing schema nodes as object-like during upload hydration', () =>
         Effect.gen(function* () {
-          const tempFile = path.join(os.tmpdir(), `composio-nested-${crypto.randomUUID()}.png`);
+          const tempFile = path.join(
+            (yield* NodeProcess).cwd,
+            `composio-nested-${crypto.randomUUID()}.png`
+          );
           fs.writeFileSync(tempFile, 'nested-png-binary-ish', 'utf8');
 
           // The S3 upload is the only request that reaches `fetch`.
@@ -2290,7 +2395,7 @@ describe('CLI: composio execute', () => {
       it.effect('propagates upload failures from file hydration', () =>
         Effect.gen(function* () {
           const tempFile = path.join(
-            os.tmpdir(),
+            (yield* NodeProcess).cwd,
             `composio-upload-fail-${crypto.randomUUID()}.txt`
           );
           fs.writeFileSync(tempFile, 'hello from failed cli upload', 'utf8');
@@ -3632,6 +3737,22 @@ describe('CLI: composio execute without a resolvable acting user', () => {
           'the response may contain an error: first\\u000d\\u000asecond\\u0009col\\u0007 \\u007f \\u0085 end'
         );
         expect(terminal.stderr()).not.toMatch(/[\u0007\u007f\u0085]/u);
+      })
+    );
+
+    it.effect('escapes whitespace in parallel tool labels and preserves the slug in JSON', () =>
+      Effect.gen(function* () {
+        const terminal = redirectedTerminalUI({ decoratedStderr: true });
+        const slug = 'GMAIL_SEND_EMAIL\tlabel';
+        yield* cli(['execute', '--parallel', '--skip-checks', slug, '-d', '{}']).pipe(
+          Effect.provide(terminal.layer)
+        );
+
+        expect(terminal.stderr()).toContain('[GMAIL_SEND_EMAIL\\u0009label] Execution successful');
+        expect(terminal.stderr()).toContain('Response: GMAIL_SEND_EMAIL\\u0009label');
+        expect(JSON.parse(terminal.stdout())).toMatchObject({
+          results: [{ slug, successful: true }],
+        });
       })
     );
   });

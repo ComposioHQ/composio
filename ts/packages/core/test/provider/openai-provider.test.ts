@@ -247,14 +247,14 @@ describe('OpenAIProvider', () => {
         execute: vi.fn(),
       };
       const chatCompletion = { choices: [] } as unknown as OpenAI.ChatCompletion;
-      const handleToolCallsWithOptions = provider.handleToolCalls as unknown as (
+      const handleToolCallsWithOptions = provider.handleToolCalls.bind(provider) as unknown as (
         executionTarget: typeof session,
         response: OpenAI.ChatCompletion,
         options: { connectedAccountId: string }
       ) => ReturnType<OpenAIProvider['handleToolCalls']>;
 
       await expect(
-        handleToolCallsWithOptions.call(provider, session, chatCompletion, {
+        handleToolCallsWithOptions(session, chatCompletion, {
           connectedAccountId: 'conn-123',
         })
       ).rejects.toThrow(

@@ -1,0 +1,120 @@
+name: Docs - Toolkit Parity
+
+# Checks that the deployed toolkit Markdown pages list the tools production
+# serves, and that each production tools page stays under the page-size budget
+# that keeps it cacheable. A stale Next.js data-cache entry served tableau.md
+# with 10 of 436 tools for days without any check failing.
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: ./docs
+    env:
+      # Production read access; the shared COMPOSIO_API_KEY secret is staging-scoped.
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_DOCS_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+
+      - name: Cache bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('docs/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Check toolkit parity
+        run: |
+          bun run check:toolkit-parity --markdown "$RUNNER_TEMP/toolkit-parity.md"
+
+      - name: Publish report
+        if: always()
+        run: cat "$RUNNER_TEMP/toolkit-parity.md" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      # One tracking issue per outage, closed by the next clean run, so a
+      # failing schedule does not re-alert every six hours.
+      - name: Open tracking issue on failure
+        id: open-issue
+        if: failure()
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-toolkit-parity
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create "$LABEL" --color B60205 \
+            --description "Deployed toolkit pages disagree with production" 2>/dev/null || true
+
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "Issue #$existing is already open; not filing a duplicate."
+            exit 0
+          fi
+
+          {
+            echo "The scheduled \`Docs - Toolkit Parity\` check failed: $RUN_URL"
+            echo
+            cat "$RUNNER_TEMP/toolkit-parity.md" 2>/dev/null || echo "The checker exited before writing its report."
+            echo
+            echo "A deployed page listing fewer tools than production usually means a Next.js data-cache entry is stale."
+            echo "Check \`vercel logs --query 'data cache'\` for 'items over 2MB' warnings, and lower the page size in"
+            echo "\`docs/lib/composio-api.ts\` if a page is over budget. This issue closes after the next clean run."
+          } > "$RUNNER_TEMP/toolkit-parity-issue.md"
+
+          url=$(gh issue create --title "Deployed toolkit pages disagree with production" \
+            --label "$LABEL" --body-file "$RUNNER_TEMP/toolkit-parity-issue.md")
+          echo "issue_url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Slack
+        if: failure() && steps.open-issue.outputs.issue_url
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ secrets.SLACK_POD_DX_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {"text": "🚨 *Docs Toolkit Parity*: deployed toolkit pages disagree with production. <${{ steps.open-issue.outputs.issue_url }}|Tracking issue>"}
+
+      # GitHub issue cleanup is best effort after a successful parity check.
+      # ast-grep-ignore: yaml-continue-on-error
+      - name: Close tracking issue on recovery
+        if: success()
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          LABEL: docs-toolkit-parity
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" \
+              --comment "Toolkit parity recovered in ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi

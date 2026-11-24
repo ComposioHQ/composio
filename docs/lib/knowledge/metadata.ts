@@ -34,8 +34,7 @@ const DOC_PATH_AREAS: Array<[prefix: string, area: ProductAreaSlug]> = [
   ['/docs/composio-connect', 'sdk-api-and-mcp'],
   ['/docs/claude-code-plugin', 'sdk-api-and-mcp'],
   ['/docs/cli', 'sdk-api-and-mcp'],
-  ['/docs/configuring-sessions', 'tools-actions-and-execution'],
-  ['/docs/how-composio-works', 'tools-actions-and-execution'],
+  ['/docs/sessions', 'tools-actions-and-execution'],
   ['/docs/quickstart', 'tools-actions-and-execution'],
   ['/docs/triggers', 'triggers-and-workflows'],
 ];

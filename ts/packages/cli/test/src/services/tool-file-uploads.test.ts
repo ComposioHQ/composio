@@ -1,12 +1,13 @@
-import { afterEach, describe, expect, it, vi } from '@effect/vitest';
+import { afterEach, assert, describe, expect, it, vi } from '@effect/vitest';
+import { createHash } from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
-import { Effect, Fiber, Layer } from 'effect';
+import { Effect, Fiber, Layer, Result } from 'effect';
 import { HttpClient } from 'effect/http';
 import { Auth, BadRequestError, make } from '@composio/client/effect';
 import {
@@ -23,6 +24,10 @@ import {
   uploadToolInputFiles,
 } from 'src/services/tool-file-uploads';
 import { stubComposioClient } from 'test/__utils__/services/stub-composio-client';
+
+// Every fixture below lives under the OS temp directory, which these tests
+// treat as the invocation's working directory.
+const testUploadScope = { cwd: os.tmpdir(), tmpdir: os.tmpdir() };
 
 // Schema with a single `file_uploadable` attachment field — mirrors tools like
 // GMAIL_SEND_EMAIL whose attachment is uploaded from a local path.
@@ -192,6 +197,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
           arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
 
@@ -221,6 +227,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
             arguments_: { attachment: path.join(os.homedir(), '.ssh', 'id_rsa') },
             inputSchema,
             client,
+            uploadScope: testUploadScope,
           })
         );
 
@@ -243,6 +250,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
           arguments_: { attachment: path.join(os.tmpdir(), '.env') },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
 
@@ -270,6 +278,7 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
         arguments_: { attachment: file },
         inputSchema,
         client,
+        uploadScope: testUploadScope,
       });
 
       expect(requests).toEqual([
@@ -296,6 +305,329 @@ describe('uploadToolInputFiles — sensitive-path guard (issue #3746)', () => {
       Effect.ensuring(Effect.sync(() => rmSync(root, { recursive: true, force: true })))
     );
   });
+});
+
+describe('uploadToolInputFiles — local upload scope (SEC-2606)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  // A throwaway tree of harmless files:
+  //   <base>/project            the invocation's working directory
+  //   <base>/project-sibling    shares the working directory's name as a prefix
+  //   <base>/outside            any other directory on the machine
+  //   <base>/tmp                the invocation's OS temp directory
+  //   <base>/tmp/composio-run-staged-fixture   where this run stages Files
+  const withTree = <A, E, R>(
+    use: (tree: {
+      readonly base: string;
+      readonly project: string;
+      readonly sibling: string;
+      readonly outside: string;
+      readonly tmp: string;
+      readonly staging: string;
+      readonly scope: {
+        readonly cwd: string;
+        readonly tmpdir: string;
+        readonly stagingDirectory?: string;
+      };
+    }) => Effect.Effect<A, E, R>
+  ) => {
+    const base = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'composio-scope-')));
+    const project = path.join(base, 'project');
+    const sibling = path.join(base, 'project-sibling');
+    const outside = path.join(base, 'outside');
+    const tmp = path.join(base, 'tmp');
+    const staging = path.join(tmp, 'composio-run-staged-fixture');
+    [project, sibling, outside, staging].forEach(dir => mkdirSync(dir, { recursive: true }));
+    mkdirSync(path.join(project, 'docs'));
+    writeFileSync(path.join(project, 'docs', 'report.pdf'), 'inside');
+    writeFileSync(path.join(sibling, 'report.pdf'), 'sibling');
+    writeFileSync(path.join(outside, 'report.pdf'), 'outside');
+    return use({
+      base,
+      project,
+      sibling,
+      outside,
+      tmp,
+      staging,
+      scope: { cwd: project, tmpdir: tmp, stagingDirectory: staging },
+    }).pipe(
+      Effect.provide(Layer.mergeAll(BunFileSystem.layer, BunPath.layer)),
+      Effect.ensuring(Effect.sync(() => rmSync(base, { recursive: true, force: true })))
+    );
+  };
+
+  const upload = (params: {
+    readonly attachment: unknown;
+    readonly scope: {
+      readonly cwd: string;
+      readonly tmpdir: string;
+      readonly stagingDirectory?: string;
+    };
+    readonly stagedFiles?: ReadonlyMap<string, { name: string; mimetype?: string }>;
+  }) =>
+    Effect.gen(function* () {
+      const { client, requests } = makeClient();
+      const uploadFetch = vi.fn(async (_url: string, _init: RequestInit) => ({
+        ok: true,
+        statusText: 'OK',
+      }));
+      vi.stubGlobal('fetch', uploadFetch);
+      const result = yield* uploadToolInputFiles({
+        fs: yield* FileSystem.FileSystem,
+        path: yield* Path.Path,
+        toolSlug: 'GMAIL_SEND_EMAIL',
+        arguments_: { attachment: params.attachment },
+        inputSchema,
+        client,
+        stagedFiles: params.stagedFiles,
+        uploadScope: params.scope,
+      }).pipe(Effect.result);
+      return { result, requests, uploadFetch };
+    });
+
+  const md5 = (text: string) => createHash('md5').update(text).digest('hex');
+
+  it.effect.each([
+    { name: 'a relative path', attachment: 'docs/report.pdf' },
+    { name: 'a ./ relative path', attachment: './docs/../docs/report.pdf' },
+    { name: 'an absolute path', attachment: undefined },
+  ])('[Given] $name inside the working directory [Then] it is uploaded', ({ attachment }) =>
+    withTree(({ project, scope }) =>
+      Effect.gen(function* () {
+        const { result, requests, uploadFetch } = yield* upload({
+          attachment: attachment ?? path.join(project, 'docs', 'report.pdf'),
+          scope,
+        });
+        assert(Result.isSuccess(result));
+        expect(requests).toMatchObject([
+          { body: { filename: 'report.pdf', mimetype: 'application/pdf', md5: md5('inside') } },
+        ]);
+        expect(uploadFetch).toHaveBeenCalledTimes(1);
+      })
+    )
+  );
+
+  it.effect.each([
+    { name: 'an absolute path in another directory', at: 'outside' },
+    { name: 'a ../ path out of the working directory', at: 'traversal' },
+    { name: 'a sibling directory sharing the name as a prefix', at: 'sibling' },
+    { name: 'a file directly in the temp directory, beside the staging directory', at: 'tmp' },
+  ] as const)('[Given] $name [Then] it is refused before any request', ({ at }) =>
+    withTree(({ outside, sibling, tmp, scope }) =>
+      Effect.gen(function* () {
+        writeFileSync(path.join(tmp, 'report.pdf'), 'tmp');
+        const attachment = {
+          outside: path.join(outside, 'report.pdf'),
+          traversal: '../outside/report.pdf',
+          sibling: path.join(sibling, 'report.pdf'),
+          tmp: path.join(tmp, 'report.pdf'),
+        }[at];
+        const { result, requests, uploadFetch } = yield* upload({ attachment, scope });
+        assert(Result.isFailure(result));
+        expect(result.failure).toBeInstanceOf(ToolFileUploadError);
+        expect(result.failure).toMatchObject({ reason: 'outside-upload-scope' });
+        // The failure names the allowed directory and how to use it.
+        expect(result.failure.message).toContain(scope.cwd);
+        expect(result.failure.message).toMatch(/Copy the file into the current directory/);
+        expect(requests).toEqual([]);
+        expect(uploadFetch).not.toHaveBeenCalled();
+      })
+    )
+  );
+
+  it.effect(
+    '[Given] a symlink in the working directory to a file outside it [Then] it is refused',
+    () =>
+      withTree(({ project, outside, scope }) =>
+        Effect.gen(function* () {
+          symlinkSync(path.join(outside, 'report.pdf'), path.join(project, 'link.pdf'));
+          const { result, requests } = yield* upload({ attachment: 'link.pdf', scope });
+          assert(Result.isFailure(result));
+          expect(result.failure).toMatchObject({ reason: 'outside-upload-scope' });
+          expect(result.failure.message).not.toContain(path.join(outside, 'report.pdf'));
+          expect(requests).toEqual([]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a symlinked directory in the working directory pointing outside it [Then] files through it are refused',
+    () =>
+      withTree(({ project, outside, scope }) =>
+        Effect.gen(function* () {
+          symlinkSync(outside, path.join(project, 'linked-dir'));
+          const { result, requests } = yield* upload({
+            attachment: 'linked-dir/report.pdf',
+            scope,
+          });
+          assert(Result.isFailure(result));
+          expect(result.failure).toMatchObject({ reason: 'outside-upload-scope' });
+          expect(requests).toEqual([]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a symlink in the working directory to another file in it [Then] the target is uploaded under the link name',
+    () =>
+      withTree(({ project, scope }) =>
+        Effect.gen(function* () {
+          symlinkSync(path.join(project, 'docs', 'report.pdf'), path.join(project, 'alias.pdf'));
+          const { result, requests } = yield* upload({ attachment: 'alias.pdf', scope });
+          assert(Result.isSuccess(result));
+          expect(requests).toMatchObject([{ body: { filename: 'alias.pdf', md5: md5('inside') } }]);
+        })
+      )
+  );
+
+  it.effect.skipIf(process.platform === 'win32')(
+    '[Given] a parent segment follows a symlink [Then] the upload follows the filesystem path',
+    () =>
+      withTree(({ project, scope }) =>
+        Effect.gen(function* () {
+          const docs = path.join(project, 'docs');
+          const appendix = path.join(docs, 'appendix');
+          mkdirSync(appendix);
+          writeFileSync(path.join(project, 'report.pdf'), 'root');
+          symlinkSync(appendix, path.join(project, 'latest'));
+          const { result, requests } = yield* upload({
+            attachment: 'latest/../report.pdf',
+            scope,
+          });
+          assert(Result.isSuccess(result));
+          expect(requests).toMatchObject([{ body: { md5: md5('inside') } }]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a working directory reached through a symlink [Then] files under it are uploaded',
+    () =>
+      withTree(({ base, project, scope }) =>
+        Effect.gen(function* () {
+          const linkedCwd = path.join(base, 'linked-project');
+          symlinkSync(project, linkedCwd);
+          const { result, requests } = yield* upload({
+            attachment: path.join(linkedCwd, 'docs', 'report.pdf'),
+            scope: { ...scope, cwd: linkedCwd },
+          });
+          assert(Result.isSuccess(result));
+          expect(requests).toMatchObject([{ body: { md5: md5('inside') } }]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a file `composio run` staged [Then] it is uploaded under its label from outside the working directory',
+    () =>
+      withTree(({ staging, scope }) =>
+        Effect.gen(function* () {
+          const staged = path.join(staging, 'file-0a1b2c3d.pptx');
+          writeFileSync(staged, 'staged');
+          const { result, requests } = yield* upload({
+            attachment: staged,
+            scope,
+            stagedFiles: new Map([[staged, { name: 'deck.pptx', mimetype: 'text/plain' }]]),
+          });
+          assert(Result.isSuccess(result));
+          expect(requests).toMatchObject([
+            { body: { filename: 'deck.pptx', mimetype: 'text/plain', md5: md5('staged') } },
+          ]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a staged-file label for a path outside the allowed directories [Then] the label grants nothing',
+    () =>
+      withTree(({ outside, scope }) =>
+        Effect.gen(function* () {
+          const file = path.join(outside, 'report.pdf');
+          const { result, requests } = yield* upload({
+            attachment: file,
+            scope,
+            stagedFiles: new Map([[file, { name: 'deck.pptx', mimetype: 'text/plain' }]]),
+          });
+          assert(Result.isFailure(result));
+          expect(result.failure).toMatchObject({ reason: 'outside-upload-scope' });
+          expect(requests).toEqual([]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a staging directory that is itself a symlink elsewhere [Then] files through it are refused',
+    () =>
+      withTree(({ outside, staging, scope }) =>
+        Effect.gen(function* () {
+          rmSync(staging, { recursive: true });
+          symlinkSync(outside, staging);
+          const attachment = path.join(staging, 'report.pdf');
+          const { result, requests } = yield* upload({
+            attachment,
+            scope,
+            stagedFiles: new Map([[attachment, { name: 'report.pdf' }]]),
+          });
+          assert(Result.isFailure(result));
+          expect(result.failure).toMatchObject({ reason: 'outside-upload-scope' });
+          expect(requests).toEqual([]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a sensitive name inside the working directory [Then] the denylist still refuses it',
+    () =>
+      withTree(({ project, scope }) =>
+        Effect.gen(function* () {
+          writeFileSync(path.join(project, '.env'), 'HARMLESS=fixture');
+          const { result, requests } = yield* upload({ attachment: '.env', scope });
+          assert(Result.isFailure(result));
+          expect(result.failure).toMatchObject({ reason: 'source-read' });
+          expect(
+            result.failure instanceof ToolFileUploadError ? result.failure.cause : undefined
+          ).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
+          expect(requests).toEqual([]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] a symlink in the working directory to a sensitive name in it [Then] the denylist refuses it',
+    () =>
+      withTree(({ project, scope }) =>
+        Effect.gen(function* () {
+          writeFileSync(path.join(project, '.env'), 'HARMLESS=fixture');
+          symlinkSync(path.join(project, '.env'), path.join(project, 'notes.txt'));
+          const { result, requests } = yield* upload({ attachment: 'notes.txt', scope });
+          assert(Result.isFailure(result));
+          expect(
+            result.failure instanceof ToolFileUploadError ? result.failure.cause : undefined
+          ).toBeInstanceOf(ComposioSensitiveFilePathBlockedError);
+          expect(requests).toEqual([]);
+        })
+      )
+  );
+
+  it.effect(
+    '[Given] an in-memory File [Then] it is uploaded whatever the allowed directories are',
+    () =>
+      withTree(({ base }) =>
+        Effect.gen(function* () {
+          const { result, requests } = yield* upload({
+            attachment: new File(['in memory'], 'memo.txt', { type: 'text/plain' }),
+            scope: { cwd: path.join(base, 'missing'), tmpdir: path.join(base, 'missing') },
+          });
+          assert(Result.isSuccess(result));
+          expect(requests).toMatchObject([
+            { body: { filename: 'memo.txt', mimetype: 'text/plain', md5: md5('in memory') } },
+          ]);
+        })
+      )
+  );
 });
 
 describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () => {
@@ -391,6 +723,7 @@ describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () 
           arguments_: { file, title: 'Deck', mime_type: PPTX },
           inputSchema: canvaSchema,
           client,
+          uploadScope: testUploadScope,
           stagedFiles: new Map(staged === undefined ? [] : [[file, staged]]),
         });
 
@@ -430,6 +763,7 @@ describe('uploadToolInputFiles — MIME type of a local file (issue #4984)', () 
             arguments_: { file: envFile, title: 'Deck' },
             inputSchema: canvaSchema,
             client,
+            uploadScope: testUploadScope,
             stagedFiles: new Map([[envFile, { name: 'deck.pptx', mimetype: PPTX }]]),
           })
         );
@@ -468,6 +802,7 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
           arguments_: { attachment: file },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
 
@@ -522,6 +857,7 @@ describe('uploadToolInputFiles — presigned-URL request', () => {
           arguments_: { attachment: file },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
       yield* Effect.promise(() => reached.promise);
@@ -556,6 +892,7 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
           arguments_: { attachment: sourceUrl },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
 
@@ -586,6 +923,7 @@ describe('uploadToolInputFiles — URL SSRF boundary', () => {
           arguments_: { attachment: file },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
 
@@ -631,6 +969,7 @@ describe('uploadToolInputFiles — URL download size cap', () => {
           arguments_: { attachment: 'https://1.1.1.1/large.bin' },
           inputSchema,
           client,
+          uploadScope: testUploadScope,
         })
       );
 
@@ -683,6 +1022,7 @@ describe('uploadToolInputFiles — local file for an input that is not file_uplo
         arguments_,
         inputSchema: schema,
         client,
+        uploadScope: testUploadScope,
       }).pipe(Effect.result);
       return { result, requests };
     });
@@ -1006,6 +1346,7 @@ describe('multiple PowerPoint images', () => {
         arguments_,
         inputSchema: schema,
         client,
+        uploadScope: testUploadScope,
       });
       expect(requests).toHaveLength(2);
       expect(uploaded).toEqual(

@@ -36,7 +36,7 @@
     "dotenv": "catalog:",
     "langchain": "^1.6.3",
     "openai": "catalog:",
-    "ora": "^9.4.1",
+    "ora": "^10.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {

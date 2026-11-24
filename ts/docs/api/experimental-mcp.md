@@ -31,7 +31,7 @@ const composio = new Composio({
 // 1. Create MCP configuration
 const mcpConfig = await composio.mcp.create('my-server-name', {
   toolkits: [{ toolkit: 'github', authConfigId: 'ac_233434343' }],
-  allowedTools: ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS'],
+  allowedTools: ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_LIST_REPOS'],
   manuallyManageConnections: false,
 });
 
@@ -63,7 +63,7 @@ const mcpConfig = await composio.mcp.create('gmail-assistant', {
 // Alternative with string toolkit names
 const mcpConfig = await composio.mcp.create('simple-server', {
   toolkits: ['github', 'slack'],
-  allowedTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+  allowedTools: ['GITHUB_CREATE_AN_ISSUE', 'SLACK_SEND_MESSAGE'],
   manuallyManageConnections: false,
 });
 ```
@@ -163,7 +163,7 @@ Retrieves detailed information about a specific MCP server.
 const server = await composio.mcp.get("mcp_12345");
 
 console.log(server.name); // "My Personal MCP Server"
-console.log(server.allowedTools); // ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+console.log(server.allowedTools); // ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"]
 console.log(server.toolkits); // ["github", "slack"]
 console.log(server.serverInstanceCount); // 3
 
@@ -201,7 +201,7 @@ const serverWithNewTools = await composio.mcp.update("mcp_12345", {
       authConfigId: "auth_xyz789"
     }
   ],
-  allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_REPOS", "SLACK_SEND_MESSAGE"]
+  allowedTools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_REPOS", "SLACK_SEND_MESSAGE"]
 });
 ```
 
@@ -288,7 +288,7 @@ const mcpConfig = await composio.mcp.create('multi-toolkit-assistant', {
   allowedTools: [
     'GMAIL_FETCH_EMAILS',
     'GMAIL_SEND_EMAIL', 
-    'GITHUB_CREATE_ISSUE',
+    'GITHUB_CREATE_AN_ISSUE',
     'GITHUB_LIST_REPOS'
   ],
   manuallyManageConnections: false,
@@ -345,7 +345,7 @@ const workConfig = await composio.mcp.create('work-assistant', {
     { toolkit: 'github', authConfigId: 'ac_work_github' },
     { toolkit: 'slack', authConfigId: 'ac_work_slack' },
   ],
-  allowedTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+  allowedTools: ['GITHUB_CREATE_AN_ISSUE', 'SLACK_SEND_MESSAGE'],
   manuallyManageConnections: false,
 });
 
@@ -477,7 +477,7 @@ You can configure toolkits in multiple ways:
 // Using string array (requires default auth configs)
 const simpleConfig = await composio.mcp.create('simple-server', {
   toolkits: ['github', 'slack'],
-  allowedTools: ['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
+  allowedTools: ['GITHUB_CREATE_AN_ISSUE', 'SLACK_SEND_MESSAGE'],
   manuallyManageConnections: false,
 });
 

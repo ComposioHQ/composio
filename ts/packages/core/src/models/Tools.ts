@@ -344,7 +344,7 @@ export class Tools<
     error: z.ZodError,
     droppedSides: Array<'inputParameters' | 'outputParameters'>
   ): void {
-    const slug = String((tool as { slug?: unknown }).slug ?? '');
+    const slug = typeof tool.slug === 'string' ? tool.slug : '';
     if (slug && this.warnedMalformedToolParametersSlugs.has(slug)) return;
     if (slug) this.warnedMalformedToolParametersSlugs.add(slug);
     const inputFailed = droppedSides.includes('inputParameters');
@@ -609,12 +609,6 @@ export class Tools<
    *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
    * });
    *
-   * // Get tools from specific toolkits
-   * const githubTools = await composio.tools.getRawComposioTools({
-   *   toolkits: ['github'],
-   *   limit: 10
-   * });
-   *
    * // Get tools with schema transformation
    * const customizedTools = await composio.tools.getRawComposioTools({
    *   toolkits: ['github'],
@@ -844,7 +838,7 @@ export class Tools<
    * );
    *
    * // Access tool properties
-   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_AN_ISSUE');
    * console.log({
    *   slug: githubTool.slug,
    *   name: githubTool.name,
@@ -1326,6 +1320,8 @@ export class Tools<
    *
    * @example Execute with SDK-level toolkit versions configuration
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // If toolkitVersions are set during Composio initialization, no need to pass version
    * const composio = new Composio({ toolkitVersions: { github: '20250909_00' } });
    * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
@@ -1518,7 +1514,7 @@ export class Tools<
    * ```typescript
    * // Get all available tools as an enum
    * const toolsEnum = await composio.tools.getToolsEnum();
-   * console.log(toolsEnum.items);
+   * console.log(toolsEnum); // ['GITHUB_GET_REPOS', ...]
    * ```
    */
   async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
@@ -1544,7 +1540,7 @@ export class Tools<
    *
    * @example
    * ```typescript
-   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_AN_ISSUE', {
    *   text: 'Open an issue in composiohq/composio titled "Docs typo" describing the broken link',
    *   version: '20250909_00',
    * });

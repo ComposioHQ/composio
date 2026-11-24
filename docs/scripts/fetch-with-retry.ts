@@ -15,9 +15,7 @@
  *
  * Why this exists: `generate-toolkits.ts` issues ~6500 requests per run (3 per
  * toolkit across a ~2.1k catalog), which can exceed the backend request limit.
- * Without backoff the run
- * fails with `429`, and `generate-meta-tools.ts` (which runs next) inherits the
- * exhausted window. See docs/scripts/README.md.
+ * Without backoff the run can fail with `429`. See docs/scripts/README.md.
  *
  * Deliberately hand-rolled rather than using Effect's `Schedule` (which would be
  * the idiomatic fit elsewhere): the docs package has no Effect dependency and

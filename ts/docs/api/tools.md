@@ -256,7 +256,7 @@ const customizedTool = await composio.tools.getRawComposioToolBySlug(
 );
 
 // Access tool properties
-const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_AN_ISSUE');
 console.log({
   slug: githubTool.slug,
   name: githubTool.name,

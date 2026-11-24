@@ -1,7 +1,13 @@
+// eslint-disable-next-line no-restricted-imports -- FileSystem.open cannot request a nonblocking read, which keeps the compaction reader from waiting on a special file.
+import { constants, open } from 'node:fs/promises';
+import * as FileSystem from 'effect/FileSystem';
+import * as Path from 'effect/Path';
 import { Effect, Option } from 'effect';
 import { uuidv5 } from 'uniku/uuid/v5';
 import { HOST_CONFIG, telemetryDisabled, type AgentSessionEnvironment } from 'src/config';
+import { USER_COMPOSIO_DIR } from 'src/constants';
 import { AGENT_HOSTS, type AgentHost } from './agent-host';
+import { NodeOs } from './node-os';
 
 /** A chat as its agent host identifies it. The host's ID stays on this device. */
 export type HostSession = {
@@ -13,6 +19,11 @@ export type HostSession = {
 export type AgentSession = {
   readonly host: AgentHost;
   readonly id: string;
+  /**
+   * How many times the chat was compacted, as the host's plugin hook recorded it. Unset when
+   * the hook keeps no compaction file for the chat, which is not the same as `0`.
+   */
+  readonly compactionCount?: number;
 };
 
 /** The pair a plugin hook exported, when it names a known host and carries a session ID. */
@@ -46,9 +57,10 @@ const soleOwnSession = (env: AgentSessionEnvironment): Option.Option<HostSession
  * host whose own variable is set is used. Blank variables already read as `undefined` (see
  * `HOST_CONFIG`).
  *
- * This reads no telemetry switch. Callers go through `resolveAgentSession`.
+ * Not exported: it reads no telemetry switch and returns the host's own session ID, which
+ * only `resolveAgentSession` may hold, after its telemetry check.
  */
-export const selectHostSession = (env: AgentSessionEnvironment): Option.Option<HostSession> =>
+const selectHostSession = (env: AgentSessionEnvironment): Option.Option<HostSession> =>
   Option.orElse(exportedSession(env), () => soleOwnSession(env));
 
 /**
@@ -75,22 +87,118 @@ const deriveInAgentSessionNamespace = uuidv5.namespace(AGENT_SESSION_NAMESPACE);
 export const deriveAgentSessionId = ({ host, hostSessionId }: HostSession): string =>
   deriveInAgentSessionNamespace(`${host}:${hostSessionId}`);
 
+const AGENT_COMPACTIONS_DIR = 'agent-compactions';
+// A host session ID that is safe as a file name: no path separator, and never `.` or `..`.
+const FILE_SAFE_SESSION_ID = /^[A-Za-z0-9_-]{1,128}$/;
+const MAX_COMPACTION_FILE_SIZE = 64 * 1024;
+
+/**
+ * How many compactions the host's plugin hook recorded for a chat: the lines that are not
+ * blank in `~/.composio/agent-compactions/<host>/<host session ID>`. The hook creates the
+ * file empty when the chat starts and appends one line per compaction; the CLI only reads it
+ * (the contract is in the README, under "Agent compaction state"). The directory is under the
+ * home directory whatever `COMPOSIO_CACHE_DIR` says, because a hook cannot know that variable.
+ *
+ * None when the hook wrote no readable regular file of at most 64 KiB. The read stays bounded
+ * if the hook appends to the file after the size check.
+ * None too for contents with a NUL character: the file is UTF-8 by contract, and a UTF-16 one,
+ * which reads that way, would count its line breaks twice.
+ */
+const readCompactionCount = ({ host, hostSessionId }: HostSession) =>
+  Effect.gen(function* () {
+    if (!FILE_SAFE_SESSION_ID.test(hostSessionId)) {
+      return Option.none<number>();
+    }
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const os = yield* NodeOs;
+    const file = path.join(
+      os.homedir,
+      USER_COMPOSIO_DIR,
+      AGENT_COMPACTIONS_DIR,
+      host,
+      hostSessionId
+    );
+    const info = yield* fs.lstat(file);
+    if (info.type !== 'File' || info.size > MAX_COMPACTION_FILE_SIZE) {
+      return Option.none<number>();
+    }
+    // Windows has no POSIX no-follow flag. Checking the descriptor's identity also rejects
+    // a replacement since lstat on that platform.
+    const noFollow = os.platform === 'win32' ? 0 : (constants.O_NOFOLLOW ?? 0);
+    const flags = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | noFollow;
+    return yield* Effect.acquireUseRelease(
+      Effect.tryPromise(() => open(file, flags)),
+      handle =>
+        Effect.gen(function* () {
+          const opened = yield* Effect.tryPromise(() => handle.stat({ bigint: true }));
+          if (
+            !opened.isFile() ||
+            opened.dev !== info.dev ||
+            !Option.contains(info.ino, opened.ino) ||
+            opened.size > MAX_COMPACTION_FILE_SIZE
+          ) {
+            return Option.none<number>();
+          }
+
+          // The extra byte distinguishes a file at the limit from a file that grew past it.
+          const bytes = new Uint8Array(MAX_COMPACTION_FILE_SIZE + 1);
+          let length = 0;
+          while (length < bytes.length) {
+            const { bytesRead } = yield* Effect.tryPromise(() =>
+              handle.read(bytes, length, bytes.length - length, length)
+            );
+            if (bytesRead === 0) break;
+            length += bytesRead;
+          }
+          if (length > MAX_COMPACTION_FILE_SIZE) return Option.none<number>();
+
+          const contents = new TextDecoder().decode(bytes.subarray(0, length));
+          if (contents.includes('\0')) return Option.none<number>();
+          return Option.some(contents.split('\n').filter(line => line.trim() !== '').length);
+        }),
+      handle => Effect.ignore(Effect.tryPromise(() => handle.close()))
+    );
+  }).pipe(Effect.catchCause(() => Effect.succeed(Option.none<number>())));
+
 /**
  * The agent session this command is part of, or none outside a known agent host.
  *
- * Telemetry is checked here, before any session variable is read, so every consumer resolves
- * none while an opt-out, a test run, or CI disables it. The result never carries the host's
- * own session ID.
+ * Telemetry is checked here, before any session variable or the compaction file is read, so
+ * every consumer resolves none while an opt-out, a test run, or CI disables it. The result
+ * never carries the host's own session ID.
  */
-export const resolveAgentSession: Effect.Effect<Option.Option<AgentSession>> = Effect.gen(
-  function* () {
-    if (yield* telemetryDisabled) {
-      return Option.none();
-    }
-    const hostSession = selectHostSession(yield* Effect.orDie(HOST_CONFIG.AGENT_SESSION));
-    return Option.map(hostSession, session => ({
-      host: session.host,
-      id: deriveAgentSessionId(session),
-    }));
+export const resolveAgentSession: Effect.Effect<
+  Option.Option<AgentSession>,
+  never,
+  FileSystem.FileSystem | Path.Path | NodeOs
+> = Effect.gen(function* () {
+  if (yield* telemetryDisabled) {
+    return Option.none();
   }
-);
+  const hostSession = selectHostSession(yield* Effect.orDie(HOST_CONFIG.AGENT_SESSION));
+  if (Option.isNone(hostSession)) {
+    return Option.none();
+  }
+  const compactionCount = yield* readCompactionCount(hostSession.value);
+  return Option.some({
+    host: hostSession.value.host,
+    id: deriveAgentSessionId(hostSession.value),
+    ...Option.match(compactionCount, {
+      onNone: () => ({}),
+      onSome: count => ({ compactionCount: count }),
+    }),
+  });
+});
+
+/**
+ * The request headers that carry an agent session. Only the backend client, the Dashboard
+ * execution client, and the `composio run` proxy helper send them.
+ */
+export const agentSessionHeaders = (session: AgentSession): Record<string, string> => ({
+  'x-cli-agent-session-host': session.host,
+  'x-cli-agent-session-id': session.id,
+  ...(session.compactionCount !== undefined
+    ? { 'x-cli-agent-compaction-count': String(session.compactionCount) }
+    : {}),
+});

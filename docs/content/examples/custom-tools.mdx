@@ -75,7 +75,7 @@ session = composio.create(
     session_preset=SESSION_PRESET_DIRECT_TOOLS,
     toolkits=["hackernews"],
     tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
-    experimental={"custom_toolkits": [research]},
+    experimental={"local_toolkits": [research]},
 )
 try:
     tools = session.tools()
@@ -134,7 +134,7 @@ const session = await composio.create('custom-tools-demo', {
   sessionPreset: SessionPreset.DIRECT_TOOLS,
   toolkits: ['hackernews'],
   tools: { hackernews: { enable: ['HACKERNEWS_GET_USER'] } },
-  experimental: { customToolkits: [research] },
+  experimental: { localToolkits: [research] },
 });
 try {
   const tools = await session.tools();
@@ -177,7 +177,7 @@ The repository's [TypeScript preload example](https://github.com/ComposioHQ/comp
 - `preload: true` on a local tool or toolkit exposes its local tools immediately.
 - Other allowed tools remain discoverable through search.
 
-See [preloading tools](/docs/configuring-sessions#preloading-tools) for the configuration in both languages. Preloading controls initial visibility; use the session's tool filters to restrict what the agent can access.
+See [preloading tools](/docs/sessions/loading-tools#preloading-tools) for the configuration in both languages. Preloading controls initial visibility; use the session's tool filters to restrict what the agent can access.
 
 ## Replace the demo note with your application data
 
