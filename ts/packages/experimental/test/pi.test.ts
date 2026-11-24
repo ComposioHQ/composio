@@ -456,9 +456,19 @@ describe('PiProvider', () => {
       extractComposioConnectLinks([
         'https://auth.example/link/setup',
         'https://auth.composio.dev/docs?section=/link/setup',
+        'https://auth.composio.dev/docs/link/setup',
         'https://composio.dev/link/setup',
       ])
     ).toEqual(['https://composio.dev/link/setup']);
+  });
+
+  it.each([
+    ['a lookalike host', 'https://auth.composio.dev.example.test/link/setup'],
+    ['userinfo', 'https://fixture@connect.composio.dev/setup'],
+    ['a non-default port', 'https://connect.composio.dev:8443/setup'],
+    ['a raw backslash', String.raw`https://connect.composio.dev/setup\example`],
+  ])('rejects links with %s', (_reason, link) => {
+    expect(extractComposioConnectLinks(link)).toEqual([]);
   });
 
   it('returns connect links first and deduplicates links across classifiers', () => {
