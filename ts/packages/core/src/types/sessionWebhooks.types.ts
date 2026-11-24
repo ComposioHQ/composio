@@ -18,10 +18,15 @@ const SessionWebhookMetadataSchema = z
     user_id: z.string(),
     /** ID of the hook that sent this event, as set on the session */
     hook_id: z.string(),
+    /** ID of the call. The `before_execute` and `after_execute` events for one call carry the same ID. */
+    tool_call_id: z.string(),
   })
   .passthrough();
 
-/** Where an event came from. `hook_id` is the hook's id on the session. */
+/**
+ * Where an event came from. `hook_id` is the hook's id on the session, and
+ * `tool_call_id` pairs a call's `before_execute` event with its `after_execute`.
+ */
 export type SessionWebhookMetadata = z.infer<typeof SessionWebhookMetadataSchema>;
 
 const SessionWebhookToolCallSchema = z
