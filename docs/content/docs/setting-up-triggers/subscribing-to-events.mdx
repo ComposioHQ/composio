@@ -238,6 +238,10 @@ export async function POST(request: Request) {
 Composio delivers other project events (like [connection expiry](/docs/authentication#connection-lifecycle)) to this same URL. `parse()` returns those too. Route on `result.payload.triggerSlug` and ignore what you don't handle.
 </Callout>
 
+<Callout>
+In TypeScript, `parse()` rejects request bodies larger than 10 MiB with a `ComposioWebhookPayloadError`. Pass `maxBodyBytes` to change the limit. For a Fetch `Request`, the SDK enforces the limit while it reads the body. If your framework buffers the body first (Express, for example), set a request size limit there too.
+</Callout>
+
 ### Inspecting trigger payload schemas
 
 Each trigger type declares the shape of the `data` it sends. Inspect it before you write your handler:
@@ -394,7 +398,7 @@ function verifyWebhook(
 </Tabs>
 
 <Callout>
-Reject requests whose `webhook-timestamp` is too old to block replays. The SDK's `parse()` and `verifyWebhook()` enforce a 300-second tolerance by default; pass `tolerance` to change it, or `0` to disable the check.
+Reject requests whose `webhook-timestamp` is too old to block replays. The SDK's `parse()` and `verifyWebhook()` enforce a 300-second tolerance by default; pass `tolerance` to change it, or `0` to disable the check. In TypeScript, `verifyWebhook()` also accepts an optional `maxBodyBytes` to cap the size of the payload you pass in.
 </Callout>
 
 ## Webhook payload versions
