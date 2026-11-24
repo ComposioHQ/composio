@@ -444,6 +444,27 @@ describe('Triggers', () => {
       }
     );
 
+    it.each([
+      ['declared', { 'content-length': String(10 * 1024 * 1024 + 1) }, undefined],
+      ['streamed', undefined, 1],
+    ])(
+      'rejects an oversized %s body while a cloned branch keeps cancellation pending',
+      async (_path, headers, maxBodyBytes) => {
+        const request = new Request('https://example.com/webhooks/composio', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(v3Payload),
+        });
+        // The unread clone keeps the tee'd body's cancellation pending.
+        request.clone();
+
+        await expect(triggers.parse(request, { maxBodyBytes })).rejects.toThrow(
+          ComposioWebhookPayloadError
+        );
+      },
+      1_000
+    );
+
     it('should throw when verifySecret is set but the signature is invalid', async () => {
       const timestamp = String(Math.floor(Date.now() / 1000));
       const body = JSON.stringify(v3Payload);
