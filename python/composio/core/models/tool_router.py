@@ -1018,7 +1018,9 @@ class ToolRouter(Resource, t.Generic[TTool, TToolCollection]):
         :param hooks: Optional hooks that run on this session's tool calls. A
                         ``before_execute`` hook can block a call before it runs;
                         an ``after_execute`` hook can block its result before the
-                        agent sees it. A blocked call comes back with
+                        agent sees it. A hook with a ``webhook`` handler sends the
+                        call to the project's session webhook URL, and can also
+                        change it. A blocked call comes back with
                         ``result_type="blocked"``. Cannot be combined with
                         ``experimental={"session_config_id": ...}``.
         :param instant: Experimental Instant usage policy. The project

@@ -148,6 +148,44 @@ describe('session execute when a hook blocks the call', () => {
     });
   });
 
+  it.each([
+    {
+      name: 'session.execute',
+      run: (client: ComposioClient) => createSession(client).execute('GMAIL_SEND_EMAIL', {}),
+    },
+    {
+      name: 'custom tool context execute',
+      run: (client: ComposioClient) =>
+        new SessionContextImpl(client, 'test-user', SESSION_ID).execute('GMAIL_SEND_EMAIL', {}),
+    },
+  ])('$name says why a webhook hook was unavailable', async ({ run }) => {
+    // The hook's endpoint timed out and its fallbackAction is 'block'.
+    const { client } = createClient({
+      result_type: 'blocked',
+      reason: { type: 'request_blocked', hook_id: 'check_outgoing_email' },
+      message: 'Blocked by session policy',
+      log_id: '',
+      hook_results: [
+        {
+          id: 'check_outgoing_email',
+          status: 'unavailable',
+          detail: 'The webhook endpoint timed out',
+        },
+      ],
+    });
+
+    await expect(run(client)).resolves.toMatchObject({
+      resultType: 'blocked',
+      hookResults: [
+        {
+          id: 'check_outgoing_email',
+          status: 'unavailable',
+          detail: 'The webhook endpoint timed out',
+        },
+      ],
+    });
+  });
+
   it('leaves hookResults out of a blocked call that reports none', async () => {
     const { hook_results: _hookResults, ...withoutHookResults } = blockedCall;
     const { client } = createClient(withoutHookResults);

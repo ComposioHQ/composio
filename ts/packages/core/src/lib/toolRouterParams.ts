@@ -232,14 +232,50 @@ export type SessionPatchExperimentalBody = WithNull<
   'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
 >;
 
+type GeneratedSessionHook = NonNullable<SessionCreateParams['hooks']>[number];
+
+/** The `webhook` handler as the API takes it. */
+type SessionWebhookHandlerBody = {
+  type: 'webhook';
+  fallback_action: 'block' | 'continue';
+  timeout_ms?: number;
+};
+
 /**
- * `hooks` as sent on create and update: `appliesTo` becomes `applies_to`.
- * Create and patch take the same hook shape.
+ * `hooks` as sent on create and update. Wider than the generated type by the
+ * `webhook` handler, which `@composio/client` does not declare until it picks
+ * up ComposioHQ/platform#15328.
  */
-export const transformToolRouterHooksParams = (
-  hooks: ToolRouterHook[]
-): NonNullable<SessionCreateParams['hooks']> =>
-  hooks.map(({ appliesTo, ...hook }) => ({ ...hook, applies_to: appliesTo }));
+export type SessionHooksBody = Array<
+  Omit<GeneratedSessionHook, 'handler'> & {
+    handler: GeneratedSessionHook['handler'] | SessionWebhookHandlerBody;
+  }
+>;
+
+/**
+ * `hooks` as sent on create and update: `appliesTo` becomes `applies_to`, and
+ * a `webhook` handler's fields become snake_case. Create and patch take the
+ * same hook shape.
+ */
+export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHooksBody =>
+  hooks.map(({ appliesTo, handler, ...hook }) => ({
+    ...hook,
+    applies_to: appliesTo,
+    handler:
+      handler.type === 'webhook'
+        ? {
+            type: handler.type,
+            fallback_action: handler.fallbackAction,
+            ...(handler.timeoutMs !== undefined && { timeout_ms: handler.timeoutMs }),
+          }
+        : handler,
+  }));
+
+/**
+ * Request body of `sessions.create()`: the generated `SessionCreateParams`
+ * with `hooks` widened to `SessionHooksBody`.
+ */
+export type SessionCreateBody = Omit<SessionCreateParams, 'hooks'> & { hooks?: SessionHooksBody };
 
 /**
  * Request body of `session.update()`. Extends the generated `SessionPatchParams`
@@ -252,8 +288,9 @@ export type SessionPatchBody = Omit<
     SessionPatchParams,
     'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
   >,
-  'manage_connections' | 'multi_account' | 'experimental'
+  'manage_connections' | 'multi_account' | 'experimental' | 'hooks'
 > & {
+  hooks?: SessionHooksBody | null;
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;

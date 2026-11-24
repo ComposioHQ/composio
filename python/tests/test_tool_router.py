@@ -3041,6 +3041,40 @@ class TestSessionHooks:
         },
     ]
 
+    _WEBHOOK_HOOKS: t.List[t.Any] = [
+        {
+            "type": "before_execute",
+            "id": "check_outgoing_email",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "webhook",
+                "fallback_action": "block",
+                "timeout_ms": 2000,
+            },
+        },
+        {
+            "type": "after_execute",
+            "id": "redact_results",
+            "applies_to": "all",
+            "handler": {"type": "webhook", "fallback_action": "continue"},
+        },
+    ]
+
+    def test_create_sends_webhook_hooks(self, tool_router, mock_client):
+        tool_router.create(user_id="user_123", hooks=self._WEBHOOK_HOOKS)
+
+        kwargs = mock_client.tool_router.session.create.call_args.kwargs
+        assert kwargs["hooks"] == self._WEBHOOK_HOOKS
+
+    def test_update_sends_webhook_hooks(self):
+        client, requests = _transport_client(
+            auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
+        )
+
+        _created_session(client).update(hooks=self._WEBHOOK_HOOKS)
+
+        assert json.loads(requests[-1].content)["hooks"] == self._WEBHOOK_HOOKS
+
     def test_create_sends_hooks(self, tool_router, mock_client):
         tool_router.create(user_id="user_123", hooks=self._HOOKS)
 
@@ -3227,6 +3261,30 @@ class TestSessionHooks:
         assert result.hook_results == [
             {"id": "block_injection", "status": "unavailable"}
         ]
+
+    def test_unavailable_webhook_hook_says_why(self):
+        """A webhook hook whose endpoint timed out, with ``fallback_action``
+        ``block``: the call is blocked and the hook result says why."""
+        unavailable = {
+            "id": "check_outgoing_email",
+            "status": "unavailable",
+            "detail": "The webhook endpoint timed out",
+        }
+        client, _ = _answering_client(
+            {
+                **_BLOCKED_CALL_JSON,
+                "reason": {
+                    "type": "request_blocked",
+                    "hook_id": "check_outgoing_email",
+                },
+                "hook_results": [unavailable],
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+        assert result.result_type == "blocked"
+        assert result.hook_results == [unavailable]
 
     @pytest.mark.parametrize(
         "run",
