@@ -6,6 +6,7 @@ Runtime deprecations (the client's response-driven ones and the SDK's own)
 all surface as :class:`ComposioDeprecationWarning`.
 """
 
+import asyncio
 import io
 import logging
 import typing as t
@@ -13,6 +14,7 @@ import warnings
 
 import httpx
 import pytest
+from composio_client import ProjectAuth
 
 from composio import Composio, ComposioDeprecationWarning, exceptions
 from composio.client import (
@@ -20,6 +22,7 @@ from composio.client import (
     _ClientLogForwarder,
     _forwarding_wrappers,
 )
+from composio.client._async import AsyncHttpClient
 from composio.core.models.base import allow_tracking
 from composio.utils.logging import LogLevel
 
@@ -197,6 +200,45 @@ class TestCustomLogger:
             assert "delivered once" not in other_output.getvalue()
         finally:
             other.handlers = []
+
+    def test_overlapping_async_requests_use_the_owning_logger(self, custom_logger):
+        first_logger, first_output = custom_logger
+        second_output = io.StringIO()
+        second_logger = logging.Logger("other-async-sdk", level=logging.DEBUG)
+        second_logger.addHandler(logging.StreamHandler(second_output))
+
+        async def exercise():
+            both_in_flight = asyncio.Barrier(2)
+
+            async def respond(request):
+                await both_in_flight.wait()
+                return httpx.Response(200, json=_LIST_BODY)
+
+            def client_for(logger):
+                return AsyncHttpClient(
+                    provider="logging-test",
+                    auth=ProjectAuth("test-key"),
+                    logger=logger,
+                    http_client=httpx.AsyncClient(
+                        transport=httpx.MockTransport(respond)
+                    ),
+                )
+
+            async with (
+                client_for(first_logger) as first,
+                client_for(second_logger) as second,
+            ):
+                async with asyncio.timeout(5):
+                    await asyncio.gather(
+                        first.without_retries.toolkits.list(),
+                        second.tools.list(),
+                    )
+
+        asyncio.run(exercise())
+        assert "path=/api/v3.1/toolkits" in first_output.getvalue()
+        assert "path=/api/v3.1/tools" not in first_output.getvalue()
+        assert "path=/api/v3.1/tools" in second_output.getvalue()
+        assert "path=/api/v3.1/toolkits" not in second_output.getvalue()
 
     def test_quieter_instance_does_not_silence_earlier_debug_instance(
         self, custom_logger

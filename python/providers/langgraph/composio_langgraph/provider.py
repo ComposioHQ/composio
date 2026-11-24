@@ -52,6 +52,8 @@ class LanggraphProvider(
     Composio toolset for Langchain framework.
     """
 
+    async_tool_execution = "native"
+
     def _wrap_action(
         self,
         tool: str,
@@ -90,6 +92,17 @@ class LanggraphProvider(
         schema_params, keywords = substitute_reserved_python_keywords(
             schema=tool.input_parameters
         )
+        async_execute = getattr(type(execute_tool), "aexecute", None)
+
+        async def async_action(**kwargs: t.Any) -> t.Dict:
+            assert async_execute is not None
+            arguments = reinstate_reserved_python_keywords(
+                request=kwargs, keywords=keywords
+            )
+            return await async_execute(
+                execute_tool, tool.slug, normalize_tool_arguments(arguments)
+            )
+
         return t.cast(
             StructuredTool,
             StructuredTool.from_function(
@@ -100,6 +113,7 @@ class LanggraphProvider(
                     skip_default=self.skip_default,
                 ),
                 return_schema=True,
+                coroutine=async_action if async_execute is not None else None,
                 func=self._wrap_action(
                     tool=tool.slug,
                     description=tool.description,

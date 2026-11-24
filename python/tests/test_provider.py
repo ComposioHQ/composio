@@ -1346,3 +1346,46 @@ class TestAgenticSkipDefaultsParity:
 
         limit = wrapped._func.__signature__.parameters["limit"]
         assert limit.default == 5
+
+
+def test_async_openai_handle_tool_calls_dispatches_to_the_selected_user():
+    import asyncio
+    import json
+
+    import httpx
+
+    from composio import AsyncComposio
+    from composio.core.provider._openai import OpenAIProvider
+
+    slug = "GITHUB_STAR_REPO"
+    tool = create_mock_tool(slug, "github")
+    request_bodies = []
+
+    def respond(request):
+        if request.method == "GET":
+            assert request.url.path.endswith(f"/tools/{slug}")
+            return httpx.Response(200, json=tool.model_dump(mode="json"))
+        assert request.url.path.endswith(f"/tools/execute/{slug}")
+        request_bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={"successful": True, "data": {}, "error": None})
+
+    async def scenario():
+        async with AsyncComposio(
+            api_key="test",
+            provider=OpenAIProvider(),
+            base_url="https://backend.invalid",
+            allow_tracking=False,
+            http_client=httpx.AsyncClient(transport=httpx.MockTransport(respond)),
+        ) as sdk:
+            function = SimpleNamespace(name=slug, arguments='{"repo":"test"}')
+            message = SimpleNamespace(tool_calls=[SimpleNamespace(function=function)])
+            completion = SimpleNamespace(choices=[SimpleNamespace(message=message)])
+            output = await sdk.provider.ahandle_tool_calls(
+                user_id="user-1", response=completion
+            )
+            assert [result["successful"] for result in output] == [True]
+
+    asyncio.run(scenario())
+    assert len(request_bodies) == 1
+    assert request_bodies[0]["user_id"] == "user-1"
+    assert request_bodies[0]["arguments"] == {"repo": "test"}

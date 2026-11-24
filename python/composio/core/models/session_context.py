@@ -15,6 +15,7 @@ from composio_client.types.tool_router.session_execute_response import (
 from composio_client.types.tool_router.session_proxy_execute_params import Parameter
 from composio_client.types.tool_router.session_proxy_execute_response import (
     SessionProxyExecuteBlockedResponse,
+    SessionProxyExecuteResult,
 )
 
 from composio.client import HttpClient
@@ -57,6 +58,31 @@ def proxy_execute_impl(
     Projects the generated client's response model onto the SDK's own shape so
     the public return type does not move when the client is regenerated.
     """
+    api_params = _proxy_parameters(
+        toolkit=toolkit, endpoint=endpoint, method=method, parameters=parameters
+    )
+    subject = f"{method} proxy call for toolkit {toolkit}"
+    # Disable retries: a proxied call is a non-idempotent write, and a silent
+    # retry after a read timeout can duplicate the side effect.
+    raw = client.without_retries.tool_router.session.proxy_execute(
+        session_id=session_id,
+        toolkit_slug=toolkit,
+        endpoint=endpoint,
+        method=method,
+        body=body if body is not None else omit,
+        parameters=api_params if api_params else omit,
+    )
+
+    return _proxy_result(raw, subject)
+
+
+def _proxy_parameters(
+    *,
+    toolkit: str,
+    endpoint: str,
+    method: t.Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+    parameters: t.Optional[t.List[t.Dict[str, t.Any]]] = None,
+) -> list[Parameter]:
     # Client-side validation (matches TS SessionProxyExecuteParamsSchema)
     if not toolkit:
         raise ValidationError("proxy_execute: toolkit is required")
@@ -89,18 +115,12 @@ def proxy_execute_impl(
                 )
             )
 
-    subject = f"{method} proxy call for toolkit {toolkit}"
-    # Disable retries: a proxied call is a non-idempotent write, and a silent
-    # retry after a read timeout can duplicate the side effect.
-    raw = client.without_retries.tool_router.session.proxy_execute(
-        session_id=session_id,
-        toolkit_slug=toolkit,
-        endpoint=endpoint,
-        method=method,
-        body=body if body is not None else omit,
-        parameters=api_params if api_params else omit,
-    )
+    return api_params
 
+
+def _proxy_result(
+    raw: SessionProxyExecuteResult, subject: str
+) -> ToolRouterSessionProxyExecuteResponse:
     # A blocked request has no HTTP response, so it is read before ``status``.
     if isinstance(raw, SessionProxyExecuteBlockedResponse):
         blocked_result: ToolRouterSessionProxyExecuteBlocked = {

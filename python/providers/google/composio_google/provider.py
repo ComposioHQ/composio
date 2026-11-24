@@ -2,8 +2,13 @@
 Google AI Python Gemini tool spec.
 """
 
+from __future__ import annotations
+
 import json
 import typing as t
+
+if t.TYPE_CHECKING:
+    from composio.core.provider.base import AsyncToolCallSession
 
 from proto.marshal.collections.maps import MapComposite
 from vertexai.generative_models import (
@@ -263,20 +268,96 @@ class GoogleProvider(
                 "Direct execution modifiers cannot be used with a Tool Router session"
             )
         outputs = []
+        for function_call in self._function_calls(response):
+            result = (
+                self.execute_tool_call(session=session, function_call=function_call)
+                if session is not None
+                else self.execute_tool_call(
+                    user_id=t.cast(str, user_id),
+                    function_call=function_call,
+                    modifiers=modifiers,
+                )
+            )
+            outputs.append(result)
+        return outputs
+
+    @staticmethod
+    def _function_calls(response: GenerationResponse) -> t.Iterator[t.Any]:
         for candidate in response.candidates:
             if isinstance(candidate.content, Content) and candidate.content.parts:
                 for part in candidate.content.parts:
                     if isinstance(part, Part) and part.function_call:
-                        outputs.append(
-                            self.execute_tool_call(
-                                session=session,
-                                function_call=part.function_call,
-                            )
-                            if session is not None
-                            else self.execute_tool_call(
-                                user_id=t.cast(str, user_id),
-                                function_call=part.function_call,
-                                modifiers=modifiers,
-                            )
-                        )
+                        yield part.function_call
+
+    @t.overload
+    async def aexecute_tool_call(
+        self, user_id: str, function_call: t.Any, modifiers: Modifiers | None = None
+    ) -> ToolExecutionResponse: ...
+
+    @t.overload
+    async def aexecute_tool_call(
+        self, *, session: AsyncToolCallSession, function_call: t.Any
+    ) -> ToolExecutionResponse: ...
+
+    async def aexecute_tool_call(
+        self,
+        user_id: str | None = None,
+        function_call: t.Any | None = None,
+        modifiers: Modifiers | None = None,
+        *,
+        session: AsyncToolCallSession | None = None,
+    ) -> ToolExecutionResponse:
+        if function_call is None:
+            raise TypeError("function_call is required")
+        return await self.aexecute_tool_for_target(
+            user_id=user_id,
+            session=session,
+            slug=function_call.name,
+            arguments=normalize_tool_arguments(
+                _convert_map_composite(function_call.args)
+            ),
+            modifiers=modifiers,
+        )
+
+    @t.overload
+    async def ahandle_response(
+        self,
+        user_id: str,
+        response: GenerationResponse,
+        modifiers: Modifiers | None = None,
+    ) -> list[ToolExecutionResponse]: ...
+
+    @t.overload
+    async def ahandle_response(
+        self, *, session: AsyncToolCallSession, response: GenerationResponse
+    ) -> list[ToolExecutionResponse]: ...
+
+    async def ahandle_response(
+        self,
+        user_id: str | None = None,
+        response: GenerationResponse | None = None,
+        modifiers: Modifiers | None = None,
+        *,
+        session: AsyncToolCallSession | None = None,
+    ) -> list[ToolExecutionResponse]:
+        if response is None:
+            raise TypeError("response is required")
+        if (user_id is None) == (session is None):
+            raise ValueError("Provide exactly one of user_id or session")
+        if session is not None and modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
+        outputs = []
+        for call in self._function_calls(response):
+            result = (
+                await self.aexecute_tool_call(session=session, function_call=call)
+                if session is not None
+                else await self.aexecute_tool_call(
+                    user_id=t.cast(str, user_id),
+                    function_call=call,
+                    modifiers=modifiers,
+                )
+            )
+            outputs.append(result)
         return outputs

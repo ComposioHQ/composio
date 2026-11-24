@@ -1,0 +1,22 @@
+---
+title: "AsyncKeyring"
+description: "Async counterpart to Keyring."
+---
+
+## Methods
+
+### list_transfer_keys()
+
+List the public transfer keys of the organization's active customer keyring, the keys a secret is sealed to before it is sent to Composio.
+
+```python signature
+async def list_transfer_keys() -> keyring_list_transfer_keys_response.KeyringListTransferKe...
+```
+
+**Returns**
+
+`keyring_list_transfer_keys_response.KeyringListTransferKe...`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/keyring.py#L7)

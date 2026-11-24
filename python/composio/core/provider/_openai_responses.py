@@ -11,6 +11,7 @@ import typing_extensions as te
 from openai.types.responses.response import Response
 from openai.types.responses.response_output_item import ResponseFunctionToolCall
 
+from composio.core.provider.base import AsyncToolCallSession
 from composio.core.provider import NonAgenticProvider, ToolCallSession
 from composio.core.provider.base import BaseProviderConfig
 from composio.types import Modifiers, Tool, ToolExecutionResponse
@@ -55,6 +56,11 @@ class OpenAIResponsesProvider(
         # slug, so tool-call arguments can be reconciled against the schema
         # the model actually saw.
         self._strict_input_schemas: dict[str, dict[str, t.Any]] = {}
+
+    def _for_async_client(self) -> "OpenAIResponsesProvider":
+        bound = super()._for_async_client()
+        bound._strict_input_schemas = {}
+        return bound
 
     def wrap_tool(self, tool: Tool) -> ResponsesTool:
         """Wrap a tool for the Responses API format."""
@@ -114,6 +120,22 @@ class OpenAIResponsesProvider(
         """Wrap multiple tools for the Responses API format."""
         return [self.wrap_tool(tool) for tool in tools]
 
+    def _tool_call_arguments(
+        self, tool_call: ResponseFunctionToolCall
+    ) -> tuple[str, dict[str, t.Any]]:
+        # OpenAI always serializes tool arguments as a JSON string; normalize
+        # tolerates empty / object-shaped payloads too (issue #2406).
+        slug = tool_call.name
+        arguments = normalize_tool_arguments(tool_call.arguments)
+        strict_schema = self._strict_input_schemas.get(slug)
+        if strict_schema is not None:
+            # Under strict mode optional parameters are emitted as
+            # required-nullable, so a ``null`` the tool's own schema does not
+            # accept means "omitted".
+            arguments = omit_null_tool_arguments(arguments, strict_schema)
+
+        return slug, arguments
+
     @t.overload
     def execute_tool_call(
         self,
@@ -152,16 +174,7 @@ class OpenAIResponsesProvider(
             user_id=user_id, session=session
         )
 
-        # OpenAI always serializes tool arguments as a JSON string; normalize
-        # tolerates empty / object-shaped payloads too (issue #2406).
-        slug = tool_call.name
-        arguments = normalize_tool_arguments(tool_call.arguments)
-        strict_schema = self._strict_input_schemas.get(slug)
-        if strict_schema is not None:
-            # Under strict mode optional parameters are emitted as
-            # required-nullable, so a ``null`` the tool's own schema does not
-            # accept means "omitted".
-            arguments = omit_null_tool_arguments(arguments, strict_schema)
+        slug, arguments = self._tool_call_arguments(tool_call)
 
         return self.execute_tool_for_target(
             target=target,
@@ -222,6 +235,113 @@ class OpenAIResponsesProvider(
                         )
                         if session is not None
                         else self.execute_tool_call(
+                            user_id=t.cast(str, user_id),
+                            tool_call=item,
+                            modifiers=modifiers,
+                        )
+                    )
+                    outputs.append(result)
+
+        return outputs
+
+    @t.overload
+    async def aexecute_tool_call(
+        self,
+        user_id: str,
+        tool_call: ResponseFunctionToolCall,
+        modifiers: Modifiers | None = None,
+    ) -> ToolExecutionResponse: ...
+
+    @t.overload
+    async def aexecute_tool_call(
+        self,
+        *,
+        session: AsyncToolCallSession,
+        tool_call: ResponseFunctionToolCall,
+    ) -> ToolExecutionResponse: ...
+
+    async def aexecute_tool_call(
+        self,
+        user_id: str | None = None,
+        tool_call: ResponseFunctionToolCall | None = None,
+        modifiers: Modifiers | None = None,
+        *,
+        session: AsyncToolCallSession | None = None,
+    ) -> ToolExecutionResponse:
+        """Execute a tool call from the Responses API.
+
+        :param tool_call: Tool call metadata from Responses API.
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
+        :param modifiers: Optional modifiers for tool execution.
+        :return: Object containing output data from the tool call.
+        """
+        if tool_call is None:
+            raise TypeError("tool_call is required")
+
+        slug, arguments = self._tool_call_arguments(tool_call)
+
+        return await self.aexecute_tool_for_target(
+            user_id=user_id,
+            session=session,
+            slug=slug,
+            arguments=arguments,
+            modifiers=modifiers,
+        )
+
+    @t.overload
+    async def ahandle_tool_calls(
+        self,
+        user_id: str,
+        response: Response,
+        modifiers: Modifiers | None = None,
+    ) -> list[ToolExecutionResponse]: ...
+
+    @t.overload
+    async def ahandle_tool_calls(
+        self,
+        *,
+        session: AsyncToolCallSession,
+        response: Response,
+    ) -> list[ToolExecutionResponse]: ...
+
+    async def ahandle_tool_calls(
+        self,
+        user_id: str | None = None,
+        response: Response | None = None,
+        modifiers: Modifiers | None = None,
+        *,
+        session: AsyncToolCallSession | None = None,
+    ) -> list[ToolExecutionResponse]:
+        """
+        Handle tool calls from OpenAI Responses API.
+
+        :param response: Response object from openai.OpenAI.beta.responses.create
+        :param user_id: User ID for direct tool execution.
+        :param session: Tool Router session that produced session tools.
+        :param modifiers: Optional modifiers for tool execution
+        :return: List[ToolExecutionResponse] with tool execution results
+        """
+        if response is None:
+            raise TypeError("response is required")
+        if (user_id is None) == (session is None):
+            raise ValueError("Provide exactly one of user_id or session")
+        if session is not None and modifiers is not None:
+            raise ValueError(
+                "Direct execution modifiers cannot be used with a Tool Router session"
+            )
+        outputs = []
+
+        if response.output:
+            for item in response.output:
+                if isinstance(item, ResponseFunctionToolCall):
+                    result = (
+                        await self.aexecute_tool_call(
+                            session=session,
+                            tool_call=item,
+                        )
+                        if session is not None
+                        else await self.aexecute_tool_call(
                             user_id=t.cast(str, user_id),
                             tool_call=item,
                             modifiers=modifiers,

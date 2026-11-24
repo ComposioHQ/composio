@@ -21,6 +21,9 @@ from pysher.connection import Connection as PusherConnection
 
 from composio import exceptions
 from composio.client import HttpClient
+
+if t.TYPE_CHECKING:
+    from composio.client._async import AsyncHttpClient
 from composio.client.types import trigger_instance_upsert_response
 from composio.core.models.base import Resource, credential_headers
 from composio.core.models.internal import Internal
@@ -588,35 +591,13 @@ def _build_trigger_event_from_v3(data: WebhookPayloadV3) -> TriggerEvent:
     )
 
 
-class TriggerSubscription(Resource):
-    """Trigger subscription."""
+class _SubscriptionFrames(WithLogger):
+    """Decode, assemble and filter realtime frames for both delivery modes."""
 
-    _pusher: Pusher
-    _channel: PusherChannel
-    _connection: PusherConnection
-    _alive: bool
+    _chunks: t.Dict[str, t.Dict[int, str]]
 
-    def __init__(self, client: HttpClient) -> None:
-        """Initialize subscription object."""
-        super().__init__(client=client)
-        self.client = client
-        self._alive = False
-        self._chunks: t.Dict[str, t.Dict[int, str]] = {}
-        self._callbacks: t.List[t.Tuple[TriggerCallback, TriggerEventFilters]] = []
-        self._on_subscription_error: t.Optional[SubscriptionErrorCallback] = None
-        self._connection_error: t.Optional[Exception] = None
-
-    def handle(
-        self, **filters: te.Unpack[TriggerEventFilters]
-    ) -> t.Callable[[TriggerCallback], TriggerCallback]:
-        """Register a trigger callaback."""
-
-        def _wrap(f: TriggerCallback) -> TriggerCallback:
-            self.logger.debug(f"Registering callback `{f.__name__}`")
-            self._callbacks.append((f, filters))
-            return f
-
-        return _wrap
+    def _handle_event(self, event: str) -> None:
+        raise NotImplementedError
 
     def _parse_payload(self, event: str) -> t.Optional[TriggerEvent]:
         """Parse a realtime event payload into a ``TriggerEvent``.
@@ -773,6 +754,37 @@ class TriggerSubscription(Resource):
             )
             return False
         return True
+
+
+class TriggerSubscription(Resource, _SubscriptionFrames):
+    """Trigger subscription."""
+
+    _pusher: Pusher
+    _channel: PusherChannel
+    _connection: PusherConnection
+    _alive: bool
+
+    def __init__(self, client: HttpClient) -> None:
+        """Initialize subscription object."""
+        super().__init__(client=client)
+        self.client = client
+        self._alive = False
+        self._chunks: t.Dict[str, t.Dict[int, str]] = {}
+        self._callbacks: t.List[t.Tuple[TriggerCallback, TriggerEventFilters]] = []
+        self._on_subscription_error: t.Optional[SubscriptionErrorCallback] = None
+        self._connection_error: t.Optional[Exception] = None
+
+    def handle(
+        self, **filters: te.Unpack[TriggerEventFilters]
+    ) -> t.Callable[[TriggerCallback], TriggerCallback]:
+        """Register a trigger callaback."""
+
+        def _wrap(f: TriggerCallback) -> TriggerCallback:
+            self.logger.debug(f"Registering callback `{f.__name__}`")
+            self._callbacks.append((f, filters))
+            return f
+
+        return _wrap
 
     def _handle_callback(
         self,
@@ -1040,6 +1052,22 @@ class _ComposioPusher(Pusher):
         return auth
 
 
+def _new_realtime_pusher(
+    client: HttpClient | AsyncHttpClient, key: str, cluster: str
+) -> Pusher:
+    """Construct the shared realtime transport with the SDK's credential policy."""
+    return _ComposioPusher(
+        key=key,
+        cluster=_validate_pusher_cluster(cluster),
+        auth_endpoint=PUSHER_AUTH_URL.format(base_url=client.base_url),
+        auth_endpoint_headers={
+            **credential_headers(client),
+            "x-request-id": str(uuid.uuid4()),
+        },
+        auto_sub=True,
+    )
+
+
 class _SubcriptionBuilder(WithLogger):
     """Pusher client for Composio SDK."""
 
@@ -1095,17 +1123,7 @@ class _SubcriptionBuilder(WithLogger):
         return _connection_handler
 
     def _get_pusher_instance(self, key: str, cluster: str) -> Pusher:
-        """Get a pusher instance."""
-        return _ComposioPusher(
-            key=key,
-            cluster=_validate_pusher_cluster(cluster),
-            auth_endpoint=PUSHER_AUTH_URL.format(base_url=self._client.base_url),
-            auth_endpoint_headers={
-                **credential_headers(self._client),
-                "x-request-id": str(uuid.uuid4()),
-            },
-            auto_sub=True,
-        )
+        return _new_realtime_pusher(self._client, key, cluster)
 
     def connect(
         self,
@@ -1161,7 +1179,251 @@ class _SubcriptionBuilder(WithLogger):
             raise
 
 
-class Triggers(Resource):
+class _WebhookParser:
+    """Shared local parsing and verification of trigger webhook payloads."""
+
+    def verify_webhook(
+        self,
+        *,
+        id: str,
+        payload: str,
+        secret: str,
+        signature: str,
+        timestamp: str,
+        tolerance: int = 300,
+    ) -> VerifyWebhookResult:
+        """Verify an incoming webhook payload and signature."""
+        # Validate timestamp if tolerance is set
+        if tolerance > 0:
+            validate_webhook_timestamp(timestamp, tolerance)
+
+        # Verify signature using the correct algorithm
+        verify_webhook_signature(
+            webhook_id=id,
+            webhook_timestamp=timestamp,
+            payload=payload,
+            signature=signature,
+            secret=secret,
+        )
+
+        # Parse and detect version
+        version, raw_payload, normalized_payload = self._parse_webhook_payload(payload)
+
+        return {
+            "version": version,
+            "payload": normalized_payload,
+            "raw_payload": raw_payload,
+        }
+
+    def parse(
+        self,
+        request: t.Any = None,
+        *,
+        body: t.Union[str, bytes, t.Mapping[str, t.Any], None] = None,
+        headers: t.Union[t.Mapping[str, t.Any], None] = None,
+        verify_secret: t.Union[str, None, Omit] = omit,
+        tolerance: int = 300,
+    ) -> VerifyWebhookResult:
+        """Parse an incoming webhook request into a typed, normalized trigger payload."""
+        raw_body = body if body is not None else extract_request_body(request)
+        raw_headers = (
+            headers if headers is not None else getattr(request, "headers", None)
+        )
+
+        payload = body_to_str(raw_body)
+
+        # Distinguish "caller omitted verify_secret" (explicit opt-out) from
+        # "caller passed verify_secret but it resolved to empty" (almost always
+        # an unset COMPOSIO_WEBHOOK_SECRET). The latter must fail loudly rather
+        # than silently skip verification and accept forged events.
+        if isinstance(verify_secret, Omit):
+            version, raw_payload, normalized_payload = self._parse_webhook_payload(
+                payload
+            )
+            return {
+                "version": version,
+                "payload": normalized_payload,
+                "raw_payload": raw_payload,
+            }
+
+        if not verify_secret:
+            raise exceptions.ValidationError(
+                "Cannot verify webhook: `verify_secret` was provided but is empty — "
+                "your COMPOSIO_WEBHOOK_SECRET is likely unset. Set the secret, or omit "
+                "`verify_secret` entirely to parse without verification."
+            )
+
+        # Secret provided: signature headers are required to verify.
+        webhook_id = get_header(raw_headers, "webhook-id")
+        timestamp = get_header(raw_headers, "webhook-timestamp")
+        signature = get_header(raw_headers, "webhook-signature")
+
+        missing = [
+            name
+            for name, value in (
+                ("webhook-id", webhook_id),
+                ("webhook-timestamp", timestamp),
+                ("webhook-signature", signature),
+            )
+            if not value
+        ]
+        if missing:
+            raise exceptions.ValidationError(
+                "Cannot verify webhook: missing signature header(s) "
+                f"{', '.join(repr(name) for name in missing)}. "
+                "Pass the raw, unparsed request body and ensure the Composio "
+                "signature headers (webhook-id, webhook-timestamp, "
+                "webhook-signature) are forwarded to triggers.parse(). "
+                "To parse without verifying, omit `verify_secret`."
+            )
+
+        return self.verify_webhook(
+            id=t.cast(str, webhook_id),
+            payload=payload,
+            secret=verify_secret,
+            signature=t.cast(str, signature),
+            timestamp=t.cast(str, timestamp),
+            tolerance=tolerance,
+        )
+
+    def _parse_webhook_payload(
+        self, payload: str
+    ) -> t.Tuple[WebhookVersion, WebhookPayload, TriggerEvent]:
+        """
+        Parse webhook payload and detect version.
+
+        :param payload: The raw webhook payload string
+        :return: Tuple of (version, raw_payload, normalized_payload)
+        :raises WebhookPayloadError: If payload cannot be parsed
+        """
+        try:
+            data = json.loads(payload)
+        except json.JSONDecodeError as e:
+            raise exceptions.WebhookPayloadError(
+                f"Failed to parse webhook payload as JSON: {e}"
+            ) from e
+
+        # Try V3 first — same envelope the realtime channel uses, so reuse the
+        # shared detector/normalizer to keep the two paths from drifting.
+        if _is_v3_envelope(data):
+            return (
+                WebhookVersion.V3,
+                t.cast(WebhookPayloadV3, data),
+                _build_trigger_event_from_v3(t.cast(WebhookPayloadV3, data)),
+            )
+
+        # Try V2 (has 'type', 'timestamp', 'data' with nested fields)
+        if (
+            isinstance(data, dict)
+            and "type" in data
+            and "timestamp" in data
+            and "data" in data
+            and isinstance(data.get("data"), dict)
+            and "connection_id" in data.get("data", {})
+        ):
+            return (
+                WebhookVersion.V2,
+                t.cast(WebhookPayloadV2, data),
+                self._normalize_v2_payload(t.cast(WebhookPayloadV2, data)),
+            )
+
+        # Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload')
+        if (
+            isinstance(data, dict)
+            and "trigger_name" in data
+            and "connection_id" in data
+            and "trigger_id" in data
+            and "payload" in data
+        ):
+            return (
+                WebhookVersion.V1,
+                t.cast(WebhookPayloadV1, data),
+                self._normalize_v1_payload(t.cast(WebhookPayloadV1, data)),
+            )
+
+        raise exceptions.WebhookPayloadError(
+            "Webhook payload does not match any known version (V1, V2, or V3). "
+            "Please ensure the payload structure is correct."
+        )
+
+    def _normalize_v1_payload(self, data: WebhookPayloadV1) -> TriggerEvent:
+        """Normalize V1 payload to TriggerEvent format."""
+        return t.cast(
+            TriggerEvent,
+            {
+                "id": data["trigger_id"],
+                "uuid": data["trigger_id"],
+                "user_id": "",  # V1 doesn't have user_id
+                "toolkit_slug": "",  # V1 doesn't have toolkit_slug
+                "trigger_slug": data["trigger_name"],
+                "metadata": {
+                    "id": data["trigger_id"],
+                    "uuid": data["trigger_id"],
+                    "toolkit_slug": "",
+                    "trigger_slug": data["trigger_name"],
+                    "trigger_data": None,
+                    "trigger_config": {},
+                    "connected_account": {
+                        "id": data["connection_id"],
+                        "uuid": data["connection_id"],
+                        "auth_config_id": "",
+                        "auth_config_uuid": "",
+                        "user_id": "",
+                        "status": "ACTIVE",
+                    },
+                },
+                "payload": data["payload"],
+                "original_payload": None,
+            },
+        )
+
+    def _normalize_v2_payload(self, data: WebhookPayloadV2) -> TriggerEvent:
+        """Normalize V2 payload to TriggerEvent format."""
+        payload_data = data["data"]
+        return t.cast(
+            TriggerEvent,
+            {
+                "id": payload_data.get(
+                    "trigger_nano_id", payload_data.get("trigger_id", "")
+                ),
+                "uuid": payload_data.get("trigger_id", ""),
+                "user_id": payload_data.get("user_id", ""),
+                "toolkit_slug": data["type"].upper() if data.get("type") else "",
+                "trigger_slug": data["type"].upper() if data.get("type") else "",
+                "metadata": {
+                    "id": payload_data.get("trigger_nano_id", ""),
+                    "uuid": payload_data.get("trigger_id", ""),
+                    "toolkit_slug": data["type"].upper() if data.get("type") else "",
+                    "trigger_slug": data["type"].upper() if data.get("type") else "",
+                    "trigger_data": None,
+                    "trigger_config": {},
+                    "connected_account": {
+                        "id": payload_data.get("connection_nano_id", ""),
+                        "uuid": payload_data.get("connection_id", ""),
+                        "auth_config_id": "",
+                        "auth_config_uuid": "",
+                        "user_id": payload_data.get("user_id", ""),
+                        "status": "ACTIVE",
+                    },
+                },
+                "payload": {
+                    k: v
+                    for k, v in payload_data.items()
+                    if k
+                    not in (
+                        "connection_id",
+                        "connection_nano_id",
+                        "trigger_nano_id",
+                        "trigger_id",
+                        "user_id",
+                    )
+                },
+                "original_payload": None,
+            },
+        )
+
+
+class Triggers(Resource, _WebhookParser):
     """Triggers (instance) class"""
 
     enable: t.Callable
@@ -1440,27 +1702,14 @@ class Triggers(Resource):
                 )
                 return result["payload"]
         """
-        # Validate timestamp if tolerance is set
-        if tolerance > 0:
-            validate_webhook_timestamp(timestamp, tolerance)
-
-        # Verify signature using the correct algorithm
-        verify_webhook_signature(
-            webhook_id=id,
-            webhook_timestamp=timestamp,
+        return super().verify_webhook(
+            id=id,
             payload=payload,
-            signature=signature,
             secret=secret,
+            signature=signature,
+            timestamp=timestamp,
+            tolerance=tolerance,
         )
-
-        # Parse and detect version
-        version, raw_payload, normalized_payload = self._parse_webhook_payload(payload)
-
-        return {
-            "version": version,
-            "payload": normalized_payload,
-            "raw_payload": raw_payload,
-        }
 
     def parse(
         self,
@@ -1510,199 +1759,10 @@ class Triggers(Resource):
                 )
                 return result["payload"]
         """
-        raw_body = body if body is not None else extract_request_body(request)
-        raw_headers = (
-            headers if headers is not None else getattr(request, "headers", None)
-        )
-
-        payload = body_to_str(raw_body)
-
-        # Distinguish "caller omitted verify_secret" (explicit opt-out) from
-        # "caller passed verify_secret but it resolved to empty" (almost always
-        # an unset COMPOSIO_WEBHOOK_SECRET). The latter must fail loudly rather
-        # than silently skip verification and accept forged events.
-        if isinstance(verify_secret, Omit):
-            version, raw_payload, normalized_payload = self._parse_webhook_payload(
-                payload
-            )
-            return {
-                "version": version,
-                "payload": normalized_payload,
-                "raw_payload": raw_payload,
-            }
-
-        if not verify_secret:
-            raise exceptions.ValidationError(
-                "Cannot verify webhook: `verify_secret` was provided but is empty — "
-                "your COMPOSIO_WEBHOOK_SECRET is likely unset. Set the secret, or omit "
-                "`verify_secret` entirely to parse without verification."
-            )
-
-        # Secret provided: signature headers are required to verify.
-        webhook_id = get_header(raw_headers, "webhook-id")
-        timestamp = get_header(raw_headers, "webhook-timestamp")
-        signature = get_header(raw_headers, "webhook-signature")
-
-        missing = [
-            name
-            for name, value in (
-                ("webhook-id", webhook_id),
-                ("webhook-timestamp", timestamp),
-                ("webhook-signature", signature),
-            )
-            if not value
-        ]
-        if missing:
-            raise exceptions.ValidationError(
-                "Cannot verify webhook: missing signature header(s) "
-                f"{', '.join(repr(name) for name in missing)}. "
-                "Pass the raw, unparsed request body and ensure the Composio "
-                "signature headers (webhook-id, webhook-timestamp, "
-                "webhook-signature) are forwarded to triggers.parse(). "
-                "To parse without verifying, omit `verify_secret`."
-            )
-
-        return self.verify_webhook(
-            id=t.cast(str, webhook_id),
-            payload=payload,
-            secret=verify_secret,
-            signature=t.cast(str, signature),
-            timestamp=t.cast(str, timestamp),
+        return super().parse(
+            request=request,
+            body=body,
+            headers=headers,
+            verify_secret=verify_secret,
             tolerance=tolerance,
-        )
-
-    def _parse_webhook_payload(
-        self, payload: str
-    ) -> t.Tuple[WebhookVersion, WebhookPayload, TriggerEvent]:
-        """
-        Parse webhook payload and detect version.
-
-        :param payload: The raw webhook payload string
-        :return: Tuple of (version, raw_payload, normalized_payload)
-        :raises WebhookPayloadError: If payload cannot be parsed
-        """
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as e:
-            raise exceptions.WebhookPayloadError(
-                f"Failed to parse webhook payload as JSON: {e}"
-            ) from e
-
-        # Try V3 first — same envelope the realtime channel uses, so reuse the
-        # shared detector/normalizer to keep the two paths from drifting.
-        if _is_v3_envelope(data):
-            return (
-                WebhookVersion.V3,
-                t.cast(WebhookPayloadV3, data),
-                _build_trigger_event_from_v3(t.cast(WebhookPayloadV3, data)),
-            )
-
-        # Try V2 (has 'type', 'timestamp', 'data' with nested fields)
-        if (
-            isinstance(data, dict)
-            and "type" in data
-            and "timestamp" in data
-            and "data" in data
-            and isinstance(data.get("data"), dict)
-            and "connection_id" in data.get("data", {})
-        ):
-            return (
-                WebhookVersion.V2,
-                t.cast(WebhookPayloadV2, data),
-                self._normalize_v2_payload(t.cast(WebhookPayloadV2, data)),
-            )
-
-        # Try V1 (has 'trigger_name', 'connection_id', 'trigger_id', 'payload')
-        if (
-            isinstance(data, dict)
-            and "trigger_name" in data
-            and "connection_id" in data
-            and "trigger_id" in data
-            and "payload" in data
-        ):
-            return (
-                WebhookVersion.V1,
-                t.cast(WebhookPayloadV1, data),
-                self._normalize_v1_payload(t.cast(WebhookPayloadV1, data)),
-            )
-
-        raise exceptions.WebhookPayloadError(
-            "Webhook payload does not match any known version (V1, V2, or V3). "
-            "Please ensure the payload structure is correct."
-        )
-
-    def _normalize_v1_payload(self, data: WebhookPayloadV1) -> TriggerEvent:
-        """Normalize V1 payload to TriggerEvent format."""
-        return t.cast(
-            TriggerEvent,
-            {
-                "id": data["trigger_id"],
-                "uuid": data["trigger_id"],
-                "user_id": "",  # V1 doesn't have user_id
-                "toolkit_slug": "",  # V1 doesn't have toolkit_slug
-                "trigger_slug": data["trigger_name"],
-                "metadata": {
-                    "id": data["trigger_id"],
-                    "uuid": data["trigger_id"],
-                    "toolkit_slug": "",
-                    "trigger_slug": data["trigger_name"],
-                    "trigger_data": None,
-                    "trigger_config": {},
-                    "connected_account": {
-                        "id": data["connection_id"],
-                        "uuid": data["connection_id"],
-                        "auth_config_id": "",
-                        "auth_config_uuid": "",
-                        "user_id": "",
-                        "status": "ACTIVE",
-                    },
-                },
-                "payload": data["payload"],
-                "original_payload": None,
-            },
-        )
-
-    def _normalize_v2_payload(self, data: WebhookPayloadV2) -> TriggerEvent:
-        """Normalize V2 payload to TriggerEvent format."""
-        payload_data = data["data"]
-        return t.cast(
-            TriggerEvent,
-            {
-                "id": payload_data.get(
-                    "trigger_nano_id", payload_data.get("trigger_id", "")
-                ),
-                "uuid": payload_data.get("trigger_id", ""),
-                "user_id": payload_data.get("user_id", ""),
-                "toolkit_slug": data["type"].upper() if data.get("type") else "",
-                "trigger_slug": data["type"].upper() if data.get("type") else "",
-                "metadata": {
-                    "id": payload_data.get("trigger_nano_id", ""),
-                    "uuid": payload_data.get("trigger_id", ""),
-                    "toolkit_slug": data["type"].upper() if data.get("type") else "",
-                    "trigger_slug": data["type"].upper() if data.get("type") else "",
-                    "trigger_data": None,
-                    "trigger_config": {},
-                    "connected_account": {
-                        "id": payload_data.get("connection_nano_id", ""),
-                        "uuid": payload_data.get("connection_id", ""),
-                        "auth_config_id": "",
-                        "auth_config_uuid": "",
-                        "user_id": payload_data.get("user_id", ""),
-                        "status": "ACTIVE",
-                    },
-                },
-                "payload": {
-                    k: v
-                    for k, v in payload_data.items()
-                    if k
-                    not in (
-                        "connection_id",
-                        "connection_nano_id",
-                        "trigger_nano_id",
-                        "trigger_id",
-                        "user_id",
-                    )
-                },
-                "original_payload": None,
-            },
         )

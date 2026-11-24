@@ -7,13 +7,81 @@ description: "A Composio session \u2014 the object returned by `composio.create(
 
 | Name | Type |
 |------|------|
+| `preload` | `Any` |
 | `session_id` | `str` |
 | `config` | `ToolRouterSessionConfig` |
 | `experimental` | `'ToolRouterSessionExperimental'` |
 | `config_version` | `int | None` |
-| `preload` | `Any` |
 
 ## Methods
+
+### local_tools()
+
+List all local tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
+
+```python signature
+def local_tools(*, toolkit: str | None = ...) -> List[RegisteredLocalTool]
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit?` | `str \| None` | Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS') |
+
+**Returns**
+
+`List[RegisteredLocalTool]` — Array of registered local tools
+
+---
+
+### local_toolkits()
+
+List all toolkits of local tools registered in this session.  Returns toolkits with their tools showing final slugs.
+
+```python signature
+def local_toolkits() -> List[RegisteredLocalToolkit]
+```
+
+**Returns**
+
+`List[RegisteredLocalToolkit]`
+
+---
+
+### custom_tools()
+
+Deprecated alias for `local_tools`.
+
+```python signature
+def custom_tools(*, toolkit: str | None = ...) -> List[RegisteredCustomTool]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit?` | `str \| None` |
+
+**Returns**
+
+`List[RegisteredCustomTool]`
+
+---
+
+### custom_toolkits()
+
+Deprecated alias for `local_toolkits`.
+
+```python signature
+def custom_toolkits() -> List[RegisteredCustomToolkit]
+```
+
+**Returns**
+
+`List[RegisteredCustomToolkit]`
+
+---
 
 ### tools()
 
@@ -170,74 +238,6 @@ print(result.result_type, result.data)
 
 ---
 
-### local_tools()
-
-List all local tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
-
-```python signature
-def local_tools(*, toolkit: str | None = ...) -> List[RegisteredLocalTool]
-```
-
-**Parameters**
-
-| Name | Type | Description |
-|------|------|-------------|
-| `toolkit?` | `str \| None` | Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS') |
-
-**Returns**
-
-`List[RegisteredLocalTool]` — Array of registered local tools
-
----
-
-### local_toolkits()
-
-List all toolkits of local tools registered in this session.  Returns toolkits with their tools showing final slugs.
-
-```python signature
-def local_toolkits() -> List[RegisteredLocalToolkit]
-```
-
-**Returns**
-
-`List[RegisteredLocalToolkit]`
-
----
-
-### custom_tools()
-
-Deprecated alias for `local_tools`.
-
-```python signature
-def custom_tools(*, toolkit: str | None = ...) -> List[RegisteredCustomTool]
-```
-
-**Parameters**
-
-| Name | Type |
-|------|------|
-| `toolkit?` | `str \| None` |
-
-**Returns**
-
-`List[RegisteredCustomTool]`
-
----
-
-### custom_toolkits()
-
-Deprecated alias for `local_toolkits`.
-
-```python signature
-def custom_toolkits() -> List[RegisteredCustomToolkit]
-```
-
-**Returns**
-
-`List[RegisteredCustomToolkit]`
-
----
-
 ### proxy_execute()
 
 Proxy an API call through Composio's auth layer.
@@ -344,4 +344,4 @@ def delete() -> ToolRouterSessionDeleteResponse
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L316)
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/tool_router_session.py#L528)

@@ -3,12 +3,14 @@ Base resource class for representing resources in the composio client.
 """
 
 import contextvars
-from collections.abc import Mapping
 import functools
+import inspect
 import os
 import time
 import traceback
 import typing as t
+from collections.abc import Mapping
+from contextlib import contextmanager
 
 from composio_client import AutoAuth, NoAuth, ProjectAuth, Scope, UserAuth
 
@@ -19,10 +21,14 @@ from composio.core.models.tool_router_constants import (
     PROJECT_ID_HEADER,
     USER_API_KEY_HEADER,
 )
-from composio.utils.redaction import redact_sensitive_text
 from composio.utils.logging import WithLogger
+from composio.utils.redaction import redact_sensitive_text
 
-from ._telemetry import Event, create_event, push_event
+from ._telemetry import create_event, push_event
+
+if t.TYPE_CHECKING:
+    from composio.client._async import AsyncHttpClient
+
 
 PayloadT = t.TypeVar("PayloadT", bound=dict)
 
@@ -30,53 +36,62 @@ allow_tracking = contextvars.ContextVar[bool]("allow_tracking", default=True)
 _environment = os.getenv("ENVIRONMENT", "development")
 
 
-def trace_method(method: t.Callable, name: str) -> t.Callable:
-    """Wrap a method to log the call."""
+@contextmanager
+def _trace_invocation(name: str, provider: str) -> t.Iterator[None]:
+    start = time.monotonic()
+    event = create_event(
+        type="metric",
+        functionName=name,
+        timestamp=time.time(),
+        props={},
+        source={
+            "environment": _environment,  # type: ignore[typeddict-item]  # Preserve deployment-provided environment labels.
+            "language": "python",
+            "service": "sdk",
+            "version": __version__,
+        },
+        metadata={"provider": provider},
+    )
+    try:
+        yield
+    except Exception as exc:
+        _, payload = event
+        payload["error"] = {
+            "name": type(exc).__name__,
+            "message": redact_sensitive_text(str(exc)),
+            "stack": redact_sensitive_text(traceback.format_exc()),
+        }
+        event = ("error", payload)
+        raise
+    finally:
+        event[1]["durationMs"] = (time.monotonic() - start) * 1000
+        push_event(event=event)
 
-    # Check if the method is a class method
+
+def trace_method(method: t.Callable, name: str) -> t.Callable:
+    """Record the entire invocation, including time spent awaiting I/O."""
     if getattr(method, "__self__", None) is not None:
         return method
 
+    if inspect.iscoroutinefunction(method):
+
+        @functools.wraps(method)
+        async def trace_async(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
+            if not self._tracking_enabled:
+                return await method(self, *args, **kwargs)
+            with _trace_invocation(name, self._client.provider):
+                return await method(self, *args, **kwargs)
+
+        return trace_async
+
     @functools.wraps(method)
-    def trace_wrapper(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
-        if not allow_tracking.get():
+    def trace_sync(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
+        if not self._tracking_enabled:
+            return method(self, *args, **kwargs)
+        with _trace_invocation(name, self._client.provider):
             return method(self, *args, **kwargs)
 
-        event: t.Optional[Event] = None
-        start_time = time.time()
-        event = create_event(
-            type="metric",
-            functionName=name,
-            timestamp=time.time(),
-            props={},
-            source={
-                "environment": _environment,  # type: ignore
-                "language": "python",
-                "service": "sdk",
-                "version": __version__,
-            },
-            metadata={
-                "provider": self._client.provider,
-            },
-        )
-        try:
-            return method(self, *args, **kwargs)
-        except Exception as e:
-            _, payload = event
-            payload["error"] = {
-                "name": e.__class__.__name__,
-                "message": redact_sensitive_text(str(e)),
-                "stack": redact_sensitive_text(traceback.format_exc()),
-            }
-            event = ("error", payload)
-            raise e
-        finally:
-            if event is not None:
-                event[1]["durationMs"] = (time.time() - start_time) * 1000
-                push_event(event=event)
-
-    trace_wrapper.__name__ = method.__name__
-    return trace_wrapper
+    return trace_sync
 
 
 class ResourceMeta(type):
@@ -89,11 +104,29 @@ class ResourceMeta(type):
             setattr(cls, attr, trace_method(getattr(cls, attr), f"{name}.{attr}"))
 
 
-class Resource(WithLogger, metaclass=ResourceMeta):
-    """Base resource class for composio client."""
+class _ResourceBase(WithLogger, metaclass=ResourceMeta):
+    @property
+    def _tracking_enabled(self) -> bool:
+        return allow_tracking.get()
 
     def sanitize_payload(self, payload: PayloadT) -> PayloadT:
-        return {k: v for k, v in payload.items()}  # type: ignore
+        return t.cast(PayloadT, dict(payload))
+
+
+class AsyncResource(_ResourceBase):
+    """Base class for resources backed by the native async transport."""
+
+    def __init__(self, client: "AsyncHttpClient"):
+        super().__init__()
+        self._client = client
+
+    @property
+    def _tracking_enabled(self) -> bool:
+        return self._client.allow_tracking
+
+
+class Resource(_ResourceBase):
+    """Base resource class for the synchronous client."""
 
     def __init__(self, client: HttpClient):
         super().__init__()
@@ -112,7 +145,7 @@ def header_value(headers: t.Mapping[str, t.Any], name: str) -> t.Optional[str]:
     return None
 
 
-def credential_headers(client: HttpClient) -> t.Dict[str, str]:
+def credential_headers(client: "HttpClient | AsyncHttpClient") -> t.Dict[str, str]:
     """The single credential header the client puts on its own requests.
 
     For the destinations the SDK hands a credential to outside the client (the
@@ -143,7 +176,7 @@ def credential_headers(client: HttpClient) -> t.Dict[str, str]:
     return {}
 
 
-def scope_headers(client: HttpClient) -> t.Dict[str, str]:
+def scope_headers(client: "HttpClient | AsyncHttpClient") -> t.Dict[str, str]:
     """The ``x-org-id`` / ``x-project-id`` the client sends to its API origin:
     its ``scope``, or without one the caller-placed default headers."""
     scope = client.scope

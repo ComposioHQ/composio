@@ -323,8 +323,8 @@ class ToolRouterSessionFilesMount:
             limit=int(limit) if limit is not None else omit,
         )
 
+    @staticmethod
     def _normalize_upload_input(
-        self,
         input: t.Union[str, Path, bytes, bytearray],
         *,
         remote_path: t.Optional[str] = None,

@@ -39,9 +39,11 @@ from .core.types import (
     ToolkitVersions,
 )
 from .sdk import Composio
+from .async_sdk import AsyncComposio
 
 __all__ = (
     "APIErrorDetails",
+    "AsyncComposio",
     "Composio",
     "ComposioDeprecationWarning",
     "CustomTool",

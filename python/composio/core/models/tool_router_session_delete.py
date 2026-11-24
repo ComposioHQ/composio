@@ -24,6 +24,10 @@ def delete_tool_router_session(
     """Delete a tool router session by ID."""
     response = client.tool_router.session.delete(session_id)
 
+    return _delete_response(response)
+
+
+def _delete_response(response: object) -> ToolRouterSessionDeleteResponse:
     response_session_id = getattr(response, "session_id", None)
     deleted = getattr(response, "deleted", None)
     if not isinstance(response_session_id, str) or deleted is not True:

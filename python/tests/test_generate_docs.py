@@ -275,6 +275,17 @@ def test_generated_mdx_renders_keyword_only_parameters_with_descriptions():
     )
 
 
+def test_async_reference_distinguishes_io_from_local_methods():
+    griffe = pytest.importorskip("griffe")
+    generate_docs = load_generate_docs_module()
+    package = griffe.load("composio", search_paths=[str(generate_docs.PACKAGE_DIR)])
+    sessions = package["core.models._async_sessions.AsyncToolRouterSession"]
+    info = generate_docs.extract_class_info(sessions, "AsyncToolRouterSession", {})
+    methods = {method["name"]: method["is_async"] for method in info["methods"]}
+    assert methods["execute"]
+    assert not methods["local_tools"]
+
+
 def test_display_signatures_have_reserved_fence_metadata():
     from composio.core.models.mcp import MCP
 
@@ -325,10 +336,11 @@ def test_mcp_examples_are_python_and_use_the_public_client(name):
     assert f"composio.mcp.{name}(" in code
 
 
-def test_quick_start_passes_a_concrete_version_to_execute():
+@pytest.mark.parametrize("mode", ["Async", "Sync"])
+def test_quick_start_passes_a_concrete_version_to_execute(mode):
     generate_docs = load_generate_docs_module()
     reference = generate_docs.generate_index_mdx([], [])
-    fence = re.search(r"## Quick Start\s+```python\n([\s\S]+?)\n```", reference)
+    fence = re.search(rf"### {mode} Python\s+```python\n([\s\S]+?)\n```", reference)
     assert fence is not None
     execution = next(
         node

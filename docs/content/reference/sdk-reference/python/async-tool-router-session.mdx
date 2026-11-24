@@ -1,0 +1,311 @@
+---
+title: "AsyncToolRouterSession"
+description: "An async session bound to one user, its provider tools and optional MCP endpoint."
+---
+
+## Properties
+
+| Name | Type |
+|------|------|
+| [`experimental`](/reference/sdk-reference/python/async-tool-router-session-experimental) | `AsyncToolRouterSessionExperimental` |
+
+## Methods
+
+### local_tools()
+
+List all local tools registered in this session.  Returns tools with their final slugs, schemas, and resolved toolkit.
+
+```python signature
+def local_tools(*, toolkit: str | None = ...) -> List[RegisteredLocalTool]
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `toolkit?` | `str \| None` | Filter by toolkit slug (e.g. 'gmail', 'DEV_TOOLS') |
+
+**Returns**
+
+`List[RegisteredLocalTool]` — Array of registered local tools
+
+---
+
+### local_toolkits()
+
+List all toolkits of local tools registered in this session.  Returns toolkits with their tools showing final slugs.
+
+```python signature
+def local_toolkits() -> List[RegisteredLocalToolkit]
+```
+
+**Returns**
+
+`List[RegisteredLocalToolkit]`
+
+---
+
+### custom_tools()
+
+Deprecated alias for `local_tools`.
+
+```python signature
+def custom_tools(*, toolkit: str | None = ...) -> List[RegisteredCustomTool]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit?` | `str \| None` |
+
+**Returns**
+
+`List[RegisteredCustomTool]`
+
+---
+
+### custom_toolkits()
+
+Deprecated alias for `local_toolkits`.
+
+```python signature
+def custom_toolkits() -> List[RegisteredCustomToolkit]
+```
+
+**Returns**
+
+`List[RegisteredCustomToolkit]`
+
+---
+
+### tools()
+
+Get provider-wrapped tools for execution with your AI framework.
+
+```python signature
+async def tools(modifiers: 'Modifiers' | None = ...) -> TToolCollection
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `modifiers?` | `'Modifiers' \| None` |
+
+**Returns**
+
+`TToolCollection`
+
+---
+
+### authorize()
+
+Authorize a toolkit for the user and get a connection request.
+
+```python signature
+async def authorize(toolkit: str, *, callback_url: str | None = ..., alias: str | None = ..., experimental: session_link_params.Experimental | None = ...) -> AsyncConnectionRequest
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `str` |
+| `callback_url?` | `str \| None` |
+| `alias?` | `str \| None` |
+| `experimental?` | `session_link_params.Experimental \| None` |
+
+**Returns**
+
+`AsyncConnectionRequest`
+
+---
+
+### toolkits()
+
+Get toolkit connection states for the session.
+
+```python signature
+async def toolkits(*, toolkits: List[str] | None = ..., next_cursor: str | None = ..., limit: int | None = ..., is_connected: bool | None = ..., search: str | None = ...) -> ToolkitConnectionsDetails
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkits?` | `List[str] \| None` |
+| `next_cursor?` | `str \| None` |
+| `limit?` | `int \| None` |
+| `is_connected?` | `bool \| None` |
+| `search?` | `str \| None` |
+
+**Returns**
+
+`ToolkitConnectionsDetails`
+
+---
+
+### search()
+
+Search for tools by semantic use case.
+
+```python signature
+async def search(*, query: str, model: str | None = ...) -> ToolRouterSessionSearchResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `query` | `str` |
+| `model?` | `str \| None` |
+
+**Returns**
+
+`ToolRouterSessionSearchResponse`
+
+---
+
+### execute()
+
+Execute a tool within the session.
+
+```python signature
+async def execute(tool_slug: str, *, arguments: Dict[str, Any] | None = ..., account: str | None = ..., input_responses: Dict[str, ToolRouterInputResponse] | None = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `tool_slug` | `str` |
+| `arguments?` | `Dict[str, Any] \| None` |
+| `account?` | `str \| None` |
+| `input_responses?` | `Dict[str, ToolRouterInputResponse] \| None` |
+| `request_state?` | `str \| None` |
+
+**Returns**
+
+`ToolRouterSessionExecuteResponse`
+
+---
+
+### execute_meta()
+
+Execute a Composio meta tool (`COMPOSIO_*`) within the session.
+
+```python signature
+async def execute_meta(slug: ToolRouterSessionMetaToolSlug, *, arguments: Dict[str, Any] | None = ..., input_responses: Dict[str, ToolRouterInputResponse] | None = ..., request_state: str | None = ...) -> ToolRouterSessionExecuteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `slug` | `ToolRouterSessionMetaToolSlug` |
+| `arguments?` | `Dict[str, Any] \| None` |
+| `input_responses?` | `Dict[str, ToolRouterInputResponse] \| None` |
+| `request_state?` | `str \| None` |
+
+**Returns**
+
+`ToolRouterSessionExecuteResponse`
+
+---
+
+### proxy_execute()
+
+Proxy an API call through Composio's auth layer.
+
+```python signature
+async def proxy_execute(*, toolkit: str, endpoint: str, method: Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], body: Any = ..., parameters: List[Dict[str, Any]] | None = ...) -> ToolRouterSessionProxyExecuteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkit` | `str` |
+| `endpoint` | `str` |
+| `method` | `Literal['GET', 'POST', 'PUT', 'DELETE', 'PATCH']` |
+| `body?` | `Any` |
+| `parameters?` | `List[Dict[str, Any]] \| None` |
+
+**Returns**
+
+`ToolRouterSessionProxyExecuteResponse`
+
+---
+
+### update()
+
+Partially update the session configuration.
+
+```python signature
+async def update(*, toolkits: Union[session_patch_params.Toolkits | None, 'Omit'] = ..., instant: Union[Literal[False], ToolRouterInstantConfig, 'Omit'] = ..., tools: Union[Dict[str, session_patch_params.Tools] | None, 'Omit'] = ..., tags: Union[session_patch_params.Tags | None, 'Omit'] = ..., auth_configs: Union[Dict[str, str] | None, 'Omit'] = ..., connected_accounts: Union[Dict[str, SequenceNotStr[str]] | None, 'Omit'] = ..., manage_connections: Union[session_patch_params.ManageConnections | None, ToolRouterUpdateManageConnectionsConfig | None, 'Omit'] = ..., sandbox: Union[session_patch_params.Workbench | None, 'Omit'] = ..., workbench: Union[session_patch_params.Workbench | None, 'Omit'] = ..., multi_account: Union[session_patch_params.MultiAccount | None, ToolRouterUpdateMultiAccountConfig | None, 'Omit'] = ..., proxy_execute: Union[Union[bool, ToolRouterProxyExecuteConfig] | None, 'Omit'] = ..., hooks: Union[List[ToolRouterHook] | None, 'Omit'] = ..., preload: Union[session_patch_params.Preload | None, 'Omit'] = ..., search: Union[session_patch_params.Search | None, 'Omit'] = ..., execute: Union[session_patch_params.Execute | None, 'Omit'] = ..., experimental: Union[session_patch_params.Experimental | None, ToolRouterUpdateExperimentalConfig | None, 'Omit'] = ..., expected_config_version: Union[int, None, Literal[False]] = ...) -> ToolRouterSessionConfig
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `toolkits?` | `Union[session_patch_params.Toolkits \| None, 'Omit']` |
+| `instant?` | `Union[Literal[False], ToolRouterInstantConfig, 'Omit']` |
+| `tools?` | `Union[Dict[str, session_patch_params.Tools] \| None, 'Omit']` |
+| `tags?` | `Union[session_patch_params.Tags \| None, 'Omit']` |
+| `auth_configs?` | `Union[Dict[str, str] \| None, 'Omit']` |
+| `connected_accounts?` | `Union[Dict[str, SequenceNotStr[str]] \| None, 'Omit']` |
+| `manage_connections?` | `Union[session_patch_params.ManageConnections \| None, ToolRouterUpdateManageConnectionsConfig \| None, 'Omit']` |
+| `sandbox?` | `Union[session_patch_params.Workbench \| None, 'Omit']` |
+| `workbench?` | `Union[session_patch_params.Workbench \| None, 'Omit']` |
+| `multi_account?` | `Union[session_patch_params.MultiAccount \| None, ToolRouterUpdateMultiAccountConfig \| None, 'Omit']` |
+| `proxy_execute?` | `Union[Union[bool, ToolRouterProxyExecuteConfig] \| None, 'Omit']` |
+| `hooks?` | `Union[List[ToolRouterHook] \| None, 'Omit']` |
+| `preload?` | `Union[session_patch_params.Preload \| None, 'Omit']` |
+| `search?` | `Union[session_patch_params.Search \| None, 'Omit']` |
+| `execute?` | `Union[session_patch_params.Execute \| None, 'Omit']` |
+| `experimental?` | `Union[session_patch_params.Experimental \| None, ToolRouterUpdateExperimentalConfig \| None, 'Omit']` |
+| `expected_config_version?` | `Union[int, None, Literal[False]]` |
+
+**Returns**
+
+`ToolRouterSessionConfig`
+
+---
+
+### list_config_history()
+
+List the configuration history of this session, newest first.
+
+```python signature
+async def list_config_history(**query: Unpack[session_config_history_params.SessionConfigHistoryParams]) -> session_config_history_response.SessionConfigHistoryResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `query?` | `Unpack[session_config_history_params.SessionConfigHistoryParams]` |
+
+**Returns**
+
+`session_config_history_response.SessionConfigHistoryResponse`
+
+---
+
+### delete()
+
+Delete this session.
+
+```python signature
+async def delete() -> ToolRouterSessionDeleteResponse
+```
+
+**Returns**
+
+`ToolRouterSessionDeleteResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_sessions.py#L444)

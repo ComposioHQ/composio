@@ -245,6 +245,10 @@ const verifyPythonConsumer = (
       yield* command('uv', ['pip', 'check', '--python', executable]);
       yield* writeFile(path.join(environment, 'verify.py'), pythonVerifier(names, version));
       yield* command(executable, [path.join(environment, 'verify.py')]);
+      if (pkg.name === 'composio-openai') {
+        const consumer = path.join(cwd, 'scripts/sdk-release/fixtures/python/session_consumer.py');
+        yield* command(executable, ['-I', consumer, 'async']);
+      }
     }
   });
 
@@ -283,6 +287,28 @@ export const verifyPublishedProviders = (
       const executable = path.join(environment, 'bin/python');
       yield* Effect.gen(function* () {
         yield* command('uv', ['venv', '--python', python, environment]);
+        const checkUpgrade = provider.name === 'composio-openai';
+        const consumer = path.join(cwd, 'scripts/sdk-release/fixtures/python/session_consumer.py');
+        let providerRequirement = provider.name;
+        if (checkUpgrade) {
+          yield* command('uv', [
+            'pip',
+            'install',
+            '--python',
+            executable,
+            '--index-url',
+            PYPI_INDEX,
+            'composio',
+            provider.name,
+          ]);
+          yield* command(executable, ['-I', consumer, 'sync']);
+          const providerVersion = yield* command(executable, [
+            '-I',
+            '-c',
+            'from importlib.metadata import version; print(version("composio-openai"))',
+          ]);
+          providerRequirement = `${provider.name}==${providerVersion.trim()}`;
+        }
         yield* command('uv', [
           'pip',
           'install',
@@ -291,8 +317,13 @@ export const verifyPublishedProviders = (
           '--index-url',
           PYPI_INDEX,
           core,
-          provider.name,
+          providerRequirement,
         ]);
+        if (checkUpgrade) {
+          yield* command('uv', ['pip', 'check', '--python', executable]);
+          yield* command(executable, ['-I', consumer, 'sync']);
+          yield* command(executable, ['-I', consumer, 'async']);
+        }
         yield* writeFile(path.join(environment, 'verify.py'), providerImport(provider.name));
         yield* command(executable, [path.join(environment, 'verify.py')]);
       }).pipe(

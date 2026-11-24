@@ -1,0 +1,56 @@
+---
+title: "AsyncConnectionRequest"
+description: "Async counterpart to ConnectionRequest."
+---
+
+## Properties
+
+| Name | Type |
+|------|------|
+| `DEFAULT_WAIT_TIMEOUT` | `Any` |
+| `id` | `Any` |
+| `status` | `Any` |
+| `redirect_url` | `Any` |
+
+## Methods
+
+### wait_for_connection()
+
+Wait for the connection to be established.
+
+```python signature
+async def wait_for_connection(timeout: float | None = ...) -> connected_account_retrieve_response.ConnectedAccountRetri...
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `timeout?` | `float \| None` |
+
+**Returns**
+
+`connected_account_retrieve_response.ConnectedAccountRetri...`
+
+---
+
+### from_id()
+
+```python signature
+async def from_id(id: str, client: AsyncHttpClient) -> Self
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `id` | `str` |
+| `client` | `AsyncHttpClient` |
+
+**Returns**
+
+`Self`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_resources/connected_accounts.py#L39)

@@ -291,19 +291,30 @@ def response_hook(response: httpx.Response) -> None:
         _logger.debug("Failed to inspect the toolkit deprecation header", exc_info=True)
 
 
-def install_hook(client: httpx.Client) -> None:
-    """Append :func:`response_hook` to ``client`` once, keeping existing hooks.
+async def _async_response_hook(response: httpx.Response) -> None:
+    response_hook(response)
 
-    ``httpx.Client.event_hooks`` is a plain attribute holding the live dict in
-    the pinned httpx, so appending to its ``response`` list takes effect
-    immediately; the assignment below also covers an httpx that returns a copy.
-    """
+
+def _install_hook(
+    client: httpx.Client | httpx.AsyncClient,
+    response_callback: t.Callable[[httpx.Response], t.Awaitable[None] | None],
+) -> None:
     hooks = client.event_hooks
     response_hooks = list(hooks.get("response", []))
-    if any(hook is response_hook for hook in response_hooks):
+    if any(hook is response_callback for hook in response_hooks):
         return
-    response_hooks.append(response_hook)
+    response_hooks.append(response_callback)
     client.event_hooks = {**hooks, "response": response_hooks}
+
+
+def install_hook(client: httpx.Client) -> None:
+    """Install the synchronous response hook once, preserving user hooks."""
+    _install_hook(client, response_hook)
+
+
+def install_async_hook(client: httpx.AsyncClient) -> None:
+    """Install the awaitable response hook once, preserving user hooks."""
+    _install_hook(client, _async_response_hook)
 
 
 def _reset_for_tests() -> None:

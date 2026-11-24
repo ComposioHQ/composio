@@ -52,6 +52,8 @@ class LangchainProvider(
     Composio toolset for Langchain framework.
     """
 
+    async_tool_execution = "native"
+
     runtime = "langchain"
 
     def wrap_tool(
@@ -86,6 +88,17 @@ class LangchainProvider(
         )
         action_func.__doc__ = tool.description
 
+        async_execute = getattr(type(execute_tool), "aexecute", None)
+
+        async def async_action(**kwargs: t.Any) -> t.Dict:
+            assert async_execute is not None
+            arguments = reinstate_reserved_python_keywords(
+                request=kwargs, keywords=keywords
+            )
+            return await async_execute(
+                execute_tool, tool.slug, normalize_tool_arguments(arguments)
+            )
+
         return t.cast(
             StructuredTool,
             StructuredTool.from_function(
@@ -96,6 +109,7 @@ class LangchainProvider(
                     skip_default=self.skip_default,
                 ),
                 return_schema=True,
+                coroutine=async_action if async_execute is not None else None,
                 func=action_func,
                 handle_tool_error=True,
                 handle_validation_error=True,

@@ -1,0 +1,89 @@
+---
+title: "AsyncToolRouter"
+description: "AsyncToolRouter class"
+---
+
+## Methods
+
+### create()
+
+Create a new tool router session for a user.
+
+```python signature
+async def create(*, user_id: str, toolkits: Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig] | None = ..., tools: Dict[str, ToolRouterToolsConfig] | None = ..., tags: ToolRouterConfigTags | None = ..., manage_connections: Union[bool, ToolRouterManageConnectionsConfig] | None = ..., auth_configs: Dict[str, str] | None = ..., connected_accounts: Dict[str, Union[str, List[str]]] | None = ..., sandbox: ToolRouterSandboxConfig | None = ..., workbench: ToolRouterWorkbenchConfig | None = ..., multi_account: ToolRouterMultiAccountConfig | None = ..., proxy_execute: Union[bool, ToolRouterProxyExecuteConfig] | None = ..., hooks: List[ToolRouterHook] | None = ..., preload: ToolRouterPreloadConfig | None = ..., session_preset: SessionPreset | None = ..., experimental: ToolRouterExperimentalConfig | None = ..., instant: Union[Literal[False], ToolRouterInstantConfig] | None = ..., mcp: bool = ...) -> AsyncToolRouterSession[TTool, TToolCollection]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `user_id` | `str` |
+| `toolkits?` | `Union[List[str], ToolRouterToolkitsEnableConfig, ToolRouterToolkitsDisableConfig, ToolRouterToolkitsRequireApprovalConfig] \| None` |
+| `tools?` | `Dict[str, ToolRouterToolsConfig] \| None` |
+| `tags?` | `ToolRouterConfigTags \| None` |
+| `manage_connections?` | `Union[bool, ToolRouterManageConnectionsConfig] \| None` |
+| `auth_configs?` | `Dict[str, str] \| None` |
+| `connected_accounts?` | `Dict[str, Union[str, List[str]]] \| None` |
+| `sandbox?` | `ToolRouterSandboxConfig \| None` |
+| `workbench?` | `ToolRouterWorkbenchConfig \| None` |
+| `multi_account?` | `ToolRouterMultiAccountConfig \| None` |
+| `proxy_execute?` | `Union[bool, ToolRouterProxyExecuteConfig] \| None` |
+| `hooks?` | `List[ToolRouterHook] \| None` |
+| `preload?` | `ToolRouterPreloadConfig \| None` |
+| `session_preset?` | `SessionPreset \| None` |
+| `experimental?` | `ToolRouterExperimentalConfig \| None` |
+| `instant?` | `Union[Literal[False], ToolRouterInstantConfig] \| None` |
+| `mcp?` | `bool` |
+
+**Returns**
+
+`AsyncToolRouterSession[TTool, TToolCollection]`
+
+---
+
+### use()
+
+Use an existing tool router session.
+
+```python signature
+async def use(session_id: str, *, local_tools: List[LocalTool] | None = ..., local_toolkits: List[LocalToolkit] | None = ..., custom_tools: List[CustomTool] | None = ..., custom_toolkits: List[ExperimentalToolkit] | None = ..., mcp: bool = ...) -> AsyncToolRouterSession[TTool, TToolCollection]
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+| `local_tools?` | `List[LocalTool] \| None` |
+| `local_toolkits?` | `List[LocalToolkit] \| None` |
+| `custom_tools?` | `List[CustomTool] \| None` |
+| `custom_toolkits?` | `List[ExperimentalToolkit] \| None` |
+| `mcp?` | `bool` |
+
+**Returns**
+
+`AsyncToolRouterSession[TTool, TToolCollection]`
+
+---
+
+### delete()
+
+Delete a tool router session by ID.
+
+```python signature
+async def delete(session_id: str) -> ToolRouterSessionDeleteResponse
+```
+
+**Parameters**
+
+| Name | Type |
+|------|------|
+| `session_id` | `str` |
+
+**Returns**
+
+`ToolRouterSessionDeleteResponse`
+
+---
+
+[View source](https://github.com/composiohq/composio/blob/next/python/composio/core/models/_async_sessions.py#L137)
