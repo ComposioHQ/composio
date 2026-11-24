@@ -7,9 +7,15 @@
 import { describe, test, expect } from "bun:test";
 import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
+import { baseOptions } from "../../lib/layout.shared";
+import {
+  examplesSource,
+  knowledgeBaseSource,
+  referenceSource,
+  source,
+} from "../../lib/source";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
-const LAYOUT_OPTIONS = join(import.meta.dir, "../../lib/layout.shared.tsx");
 const GLOBAL_SEARCH = join(import.meta.dir, "../../components/custom-search-dialog.tsx");
 
 /** Separator entries in meta.json start with --- */
@@ -100,15 +106,35 @@ describe("Navigation - meta.json validity", () => {
     ]);
   });
 
-  test("Knowledge Base appears between Docs and Examples", async () => {
-    const source = await readFile(LAYOUT_OPTIONS, "utf-8");
-    const docsIndex = source.indexOf("text: 'Docs'");
-    const kbIndex = source.indexOf("text: 'Knowledge Base'");
-    const examplesIndex = source.indexOf("text: 'Examples'");
+  test("header follows the guided journey and links to existing destinations", async () => {
+    const links = baseOptions().links ?? [];
+    expect(
+      links.slice(0, 6).map(link => link.type === "custom" ? null : link.text),
+    ).toEqual([
+      "Get Started",
+      "Build",
+      "Learn",
+      "Ship & Scale",
+      "Reference",
+      "Resources",
+    ]);
 
-    expect(docsIndex).toBeGreaterThan(-1);
-    expect(kbIndex).toBeGreaterThan(docsIndex);
-    expect(examplesIndex).toBeGreaterThan(kbIndex);
+    const destinations = links.flatMap(link => link.type === "menu" ? link.items : [link]);
+    const knownUrls = new Set(
+      [source, referenceSource, examplesSource, knowledgeBaseSource].flatMap(
+        collection => collection.getPages().map(page => page.url),
+      ),
+    );
+    // Changelog is an app route, rather than a page in an MDX collection.
+    expect(
+      await exists(join(import.meta.dir, "../../app/(home)/docs/changelog/page.tsx")),
+    ).toBe(true);
+    knownUrls.add("/docs/changelog");
+
+    for (const link of destinations) {
+      if (link.type === "custom" || !link.url?.startsWith("/")) continue;
+      expect(knownUrls.has(link.url), `Header destination does not exist: ${link.url}`).toBe(true);
+    }
   });
 
   test("global search uses canonical knowledge URLs and shared source labels", async () => {

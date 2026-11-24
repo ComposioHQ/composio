@@ -20,29 +20,55 @@ export function baseOptions(): BaseLayoutProps {
     },
     links: [
       {
-        text: 'Docs',
+        text: 'Get Started',
         url: '/docs',
-        active: 'nested-url',
       },
       {
-        text: 'Knowledge Base',
-        url: '/kb',
-        active: 'nested-url',
+        text: 'Build',
+        url: '/docs/quickstart',
       },
       {
-        text: 'Examples',
-        url: '/examples',
-        active: 'nested-url',
+        type: 'menu',
+        text: 'Learn',
+        items: [
+          { text: 'Tools & toolkits', url: '/docs/toolkits' },
+          { text: 'Authentication', url: '/docs/authentication' },
+          { text: 'Sessions', url: '/docs/sessions' },
+          { text: 'Triggers', url: '/docs/triggers' },
+          { text: 'Instant', url: '/docs/instant-tools' },
+          { text: 'Governance', url: '/docs/governance/action-permissions' },
+        ],
       },
       {
-        text: 'Toolkits',
-        url: '/toolkits',
-        active: 'nested-url',
+        text: 'Ship & Scale',
+        url: '/docs/production-readiness',
       },
       {
-        text: <span className="inline-flex items-center gap-1">Reference <NavVersionSelector /></span>,
+        type: 'menu',
+        text: 'Reference',
         url: '/reference',
         active: 'nested-url',
+        items: [
+          { text: 'API reference (v3.1)', url: '/reference' },
+          { text: 'TypeScript SDK', url: '/reference/sdk-reference/typescript/composio' },
+          { text: 'Python SDK', url: '/reference/sdk-reference/python/composio' },
+          { text: 'API reference (v3)', url: '/reference/v3' },
+          { text: 'Migration and legacy', url: '/docs/migration-guide' },
+        ],
+      },
+      {
+        type: 'menu',
+        text: 'Resources',
+        items: [
+          { text: 'Examples', url: '/examples' },
+          { text: 'Changelog', url: '/docs/changelog' },
+          { text: 'Knowledge Base', url: '/kb' },
+        ],
+      },
+      {
+        type: 'custom',
+        children: <NavVersionSelector />,
+        secondary: true,
       },
       {
         type: 'icon',
