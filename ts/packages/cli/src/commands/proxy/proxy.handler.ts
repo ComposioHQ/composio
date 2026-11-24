@@ -196,7 +196,7 @@ export const runProxy = (params: ProxyParams) =>
     );
     // Only `-d -` reads stdin: reading a pipe the caller left open would hang the request before
     // it is sent, and agents run with such pipes.
-    const rawBody = yield* resolveExplicitTextInput(data);
+    const rawBody = yield* resolveExplicitTextInput(data, { command: 'proxy', flag: '--data' });
     if (rawBody === undefined && normalizedMethod !== 'GET' && !(yield* Stdin).isTTY()) {
       // A body piped in without `-d` used to be sent; say why it no longer is, without reading
       // stdin, which an agent harness may hold open. A GET stays quiet: it is the bodiless read

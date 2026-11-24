@@ -1,6 +1,6 @@
 import { BadRequestError, type RequestOptions } from '@composio/client/effect';
 import { describe, expect, it, layer } from '@effect/vitest';
-import { ConfigProvider, Effect, Option } from 'effect';
+import { ConfigProvider, Effect, FileSystem, Option } from 'effect';
 import { afterEach, vi } from 'vitest';
 import { PassThrough } from 'node:stream';
 import type {
@@ -14,6 +14,7 @@ import {
   parseProxyHeader,
 } from 'src/commands/proxy/proxy.handler';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
+import { NodeProcess } from 'src/services/node-process';
 import * as toolPermissions from 'src/services/tool-permissions';
 import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
@@ -147,7 +148,7 @@ describe('CLI: composio proxy', () => {
   layer(TestLive({ baseConfigProvider: testConfigProvider, fixture: 'global-test-user-id' }))(
     '[Given] curl-like proxy flags [Then] it creates a scoped session and forwards proxy_execute',
     it => {
-      it.effect('forwards proxy execute params and prints the response', () =>
+      it.effect('forwards an in-directory request body file and prints the response', () =>
         Effect.gen(function* () {
           let createParams: SessionCreateParams | undefined;
           let proxyOptions: RequestOptions | undefined;
@@ -245,6 +246,10 @@ describe('CLI: composio proxy', () => {
           });
 
           const output = yield* Effect.gen(function* () {
+            const fs = yield* FileSystem.FileSystem;
+            const cwd = (yield* NodeProcess).cwd;
+            const bodyFile = yield* fs.makeTempFileScoped({ directory: cwd });
+            yield* fs.writeFileString(bodyFile, '{ "message": { "raw": "abc" } }');
             yield* cli([
               'proxy',
               'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
@@ -257,7 +262,7 @@ describe('CLI: composio proxy', () => {
               '-H',
               'content-type: application/json',
               '-d',
-              '{ "message": { "raw": "abc" } }',
+              `@${bodyFile}`,
             ]);
             const lines = yield* MockConsole.getLines({ stripAnsi: true });
             return lines.join('\n');
@@ -293,6 +298,31 @@ describe('CLI: composio proxy', () => {
 
           expect(output).toContain('Status: 200');
           expect(output).toContain('"ok": true');
+        })
+      );
+
+      it.effect('refuses a request body file outside the working directory', () =>
+        Effect.gen(function* () {
+          const fs = yield* FileSystem.FileSystem;
+          const bodyFile = yield* fs.makeTempFileScoped();
+          yield* fs.writeFileString(bodyFile, '{"message":{"raw":"fixture"}}');
+          const failure = yield* cli([
+            'proxy',
+            'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
+            '--toolkit',
+            'gmail',
+            '--skip-connection-check',
+            '-X',
+            'POST',
+            '-d',
+            `@${bodyFile}`,
+          ]).pipe(Effect.flip);
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            command: 'proxy',
+            option: '--data',
+            message: expect.stringContaining('outside the current working directory'),
+          });
         })
       );
     }

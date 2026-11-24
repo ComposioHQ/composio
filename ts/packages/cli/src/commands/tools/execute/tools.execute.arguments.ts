@@ -1,12 +1,8 @@
-import { Duration, Effect, FileSystem, Option, Path, Result } from 'effect';
-import { APP_CONFIG } from 'src/config';
-import { RUN_STAGED_ARGUMENTS_FILE } from 'src/constants';
+import { Duration, Effect, Option, Result } from 'effect';
 import { resolveExplicitTextInput } from 'src/effects/resolve-optional-text-input';
 import { Stdin } from 'src/services/stdin';
 import {
-  executeLocalFileScope,
   findFileUploadablePaths,
-  resolveExecuteLocalFile,
   schemaHasFileUploadable,
   setArgumentAt,
 } from 'src/services/tool-file-uploads';
@@ -20,25 +16,6 @@ import { invalidArguments, ToolExecutionError } from './tools.execute.errors';
  */
 export const PIPED_STDIN_SILENCE_TIMEOUT = Duration.seconds(1);
 
-const readArgumentsFile = (filePath: string) =>
-  Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const path = yield* Path.Path;
-    const manifestPath = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES_FILE);
-    const scope = yield* executeLocalFileScope(path, manifestPath);
-    const canonicalPath = yield* resolveExecuteLocalFile({
-      fs,
-      path,
-      filePath,
-      scope,
-      operation: 'read',
-      allowStaging:
-        scope.stagingDirectory !== undefined &&
-        filePath === path.join(scope.stagingDirectory, RUN_STAGED_ARGUMENTS_FILE),
-    });
-    return yield* fs.readFileString(canonicalPath, 'utf-8');
-  }).pipe(Effect.mapError(error => invalidArguments(error.message, '--data')));
-
 /**
  * The tool arguments: `-d` as `resolveExplicitTextInput` reads it, else JSON piped on stdin, else
  * `{}` when stdin is a terminal (e.g. tools with no required args).
@@ -46,7 +23,13 @@ const readArgumentsFile = (filePath: string) =>
 export const resolveInput = (input: Option.Option<string>) =>
   Effect.gen(function* () {
     if (Option.isSome(input)) {
-      return (yield* resolveExplicitTextInput(input, readArgumentsFile)) ?? '{}';
+      return (
+        (yield* resolveExplicitTextInput(input, {
+          command: 'execute',
+          flag: '--data',
+          allowRunStagedArguments: true,
+        })) ?? '{}'
+      );
     }
     const stdin = yield* Stdin;
     if (stdin.isTTY()) {

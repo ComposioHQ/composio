@@ -2114,7 +2114,7 @@ describe('CLI: composio execute', () => {
           name: 'outside the working directory',
           inProject: false,
           filename: 'args.json',
-          expected: 'outside the allowed upload directories',
+          expected: 'outside the current working directory',
         },
         {
           name: 'protected by the sensitive-path guard',

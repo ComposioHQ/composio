@@ -20,27 +20,27 @@ type JsonSchema = Record<string, unknown>;
  * Local path -> the name and MIME type to upload it under, for files their caller
  * staged (`composio run` writes each script File to a generated path). Labels
  * only: the path is still read, and checked against the denylist and the
- * {@link LocalUploadScope}, as given. A label never makes a path readable.
+ * {@link LocalFileScope}, as given. A label never makes a path readable.
  */
 type StagedFiles = ReadonlyMap<string, { readonly name: string; readonly mimetype?: string }>;
 
 /**
- * Local uploads are confined to the working directory and the staging directory
+ * Local tool file reads are confined to the working directory and the staging directory
  * created for this execute call by `composio run`.
  */
-type LocalUploadScope = {
+type LocalFileScope = {
   readonly cwd: string;
   readonly tmpdir: string;
   readonly stagingDirectory?: string;
 };
 
-export const executeLocalFileScope = (path: Path.Path, manifestPath: string | undefined) =>
+export const localFileScope = (path: Path.Path, manifestPath: string | undefined) =>
   Effect.gen(function* () {
     return {
       cwd: (yield* NodeProcess).cwd,
       tmpdir: (yield* NodeOs).tmpdir,
       stagingDirectory: manifestPath ? path.dirname(manifestPath) : undefined,
-    } satisfies LocalUploadScope;
+    } satisfies LocalFileScope;
   });
 
 // The core helpers below are only reached once an execute actually carries
@@ -518,11 +518,7 @@ const isWithinDirectory = (path: Path.Path, root: string, candidate: string): bo
 
 // Resolve the temporary parent, keeping the staging directory's own name
 // literal so a symlink in its place cannot expand the upload scope.
-const canonicalStagingRoot = (
-  fs: FileSystem.FileSystem,
-  path: Path.Path,
-  scope: LocalUploadScope
-) =>
+const canonicalStagingRoot = (fs: FileSystem.FileSystem, path: Path.Path, scope: LocalFileScope) =>
   Effect.gen(function* () {
     if (!scope.stagingDirectory) return Option.none<string>();
     const directory = path.resolve(scope.stagingDirectory);
@@ -547,9 +543,11 @@ const outsideUploadScopeError = (params: {
   new ToolFileUploadError({
     reason: 'outside-upload-scope',
     message:
-      `Refusing to ${params.operation} "${params.filePath}": it is outside the allowed upload directories. ` +
-      `The current working directory is ${params.cwd}. The tool was not executed. Copy ` +
-      'the file into the current directory, or run the command from a directory that contains ' +
+      `Refusing to ${params.operation} "${params.filePath}": it is outside the ` +
+      (params.operation === 'upload'
+        ? `allowed upload directories. The current working directory is ${params.cwd}. The tool was not executed. `
+        : `current working directory (${params.cwd}). `) +
+      'Copy the file into the current directory, or run the command from a directory that contains ' +
       'it, and pass that path.',
   });
 
@@ -581,11 +579,11 @@ const resolveFilesystemPath = (
     return yield* fs.realPath(prefix || '/');
   });
 
-export const resolveExecuteLocalFile = (params: {
+export const resolveScopedLocalFile = (params: {
   readonly fs: FileSystem.FileSystem;
   readonly path: Path.Path;
   readonly filePath: string;
-  readonly scope: LocalUploadScope;
+  readonly scope: LocalFileScope;
   readonly operation: 'upload' | 'read';
   readonly allowStaging: boolean;
 }) =>
@@ -636,11 +634,11 @@ const readFileFromDisk = (
   path: Path.Path,
   filePath: string,
   stagedFiles: StagedFiles,
-  scope: LocalUploadScope
+  scope: LocalFileScope
 ) =>
   Effect.gen(function* () {
     const staged = stagedFiles.get(filePath);
-    const canonicalPath = yield* resolveExecuteLocalFile({
+    const canonicalPath = yield* resolveScopedLocalFile({
       fs,
       path,
       filePath,
@@ -669,7 +667,7 @@ const readUploadSource = (
   path: Path.Path,
   file: string | File,
   stagedFiles: StagedFiles,
-  scope: LocalUploadScope
+  scope: LocalFileScope
 ) => {
   if (isFileLike(file)) {
     return Effect.tryPromise({ try: () => file.arrayBuffer(), catch: asSourceReadError }).pipe(
@@ -705,7 +703,7 @@ const uploadFile = (params: {
   readonly toolkitSlug: string;
   readonly client: ComposioClientShape;
   readonly stagedFiles: StagedFiles;
-  readonly uploadScope: LocalUploadScope;
+  readonly uploadScope: LocalFileScope;
 }) =>
   Effect.gen(function* () {
     const fileData = yield* readUploadSource(
@@ -794,8 +792,8 @@ export const uploadToolInputFiles = (params: {
   readonly toolkitSlug?: string;
   /** Local path -> name and MIME type its caller staged it under. */
   readonly stagedFiles?: StagedFiles;
-  /** The directories a local path may be read from; see {@link LocalUploadScope}. */
-  readonly uploadScope: LocalUploadScope;
+  /** The directories a local path may be read from; see {@link LocalFileScope}. */
+  readonly uploadScope: LocalFileScope;
 }): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
   Effect.gen(function* () {
     yield* rejectLocalFilesWithoutUpload(params);

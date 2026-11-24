@@ -11,7 +11,7 @@ const slug = Argument.String('slug').pipe(
 const params = Flag.String('params').pipe(
   Flag.withAlias('p'),
   Flag.withDescription(
-    'Trigger create params as JSON/JS object, @file, or - for stdin. Only valid for trigger slugs.'
+    'Trigger create params as JSON/JS object, @file under the current directory, or - for stdin. Only valid for trigger slugs.'
   ),
   Flag.optional
 );

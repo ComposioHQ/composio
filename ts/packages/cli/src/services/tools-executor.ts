@@ -29,7 +29,7 @@ import {
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import type { CliDebugFlags } from 'src/services/runtime-flags';
 import {
-  executeLocalFileScope,
+  localFileScope,
   readRunStagedFiles,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -300,7 +300,7 @@ const prepareToolExecution = (
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const manifestPath = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES_FILE);
-    const uploadScope = yield* executeLocalFileScope(path, manifestPath);
+    const uploadScope = yield* localFileScope(path, manifestPath);
     const stagedFiles = yield* readRunStagedFiles(fs, manifestPath);
     const preparedArguments = isMetaToolSlug(slug)
       ? params.arguments
