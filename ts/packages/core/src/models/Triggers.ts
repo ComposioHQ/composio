@@ -56,6 +56,7 @@ import type { BaseComposioProvider } from '../provider/BaseProvider';
 import {
   WEBHOOK_HEADERS,
   getHeader,
+  assertWebhookBodySize,
   readWebhookRequest,
   validateWebhookTimestamp,
   verifyWebhookSignature,
@@ -679,15 +680,19 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Next.js Pages Router `req`). The signature headers (`webhook-id`,
    * `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
    *
+   * Configure a request body limit in your server or framework as well,
+   * especially if it buffers the body before calling this method.
+   *
    * @param {WebhookRequestLike} request - The incoming webhook HTTP request
    * @param {ParseWebhookOptions} [options] - Parse options
    * @param {string} [options.verifySecret] - Webhook secret; when set, the signature is verified
    * @param {number} [options.tolerance=300] - Max webhook age in seconds (only used when verifying)
+   * @param {number} [options.maxBodyBytes=10485760] - Max request body size in bytes (10 MiB)
    * @returns {Promise<VerifyWebhookResult>} The parsed (and optionally verified) webhook payload
    *
    * @throws {ValidationError} If `verifySecret` is set but the signature headers are missing
    * @throws {ComposioWebhookSignatureVerificationError} If signature verification fails
-   * @throws {ComposioWebhookPayloadError} If the payload cannot be parsed
+   * @throws {ComposioWebhookPayloadError} If the payload exceeds the limit or cannot be parsed
    *
    * @example
    * ```ts nocheck="Express route handler; the checker has no express types"
@@ -745,7 +750,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     options?: ParseWebhookOptions
   ): Promise<VerifyWebhookResult> {
     // Extract the raw body and signature headers from either request shape.
-    const { body, headers } = await readWebhookRequest(request);
+    const { body, headers } = await readWebhookRequest(request, options?.maxBodyBytes);
 
     const verifySecret = options?.verifySecret;
 
@@ -813,6 +818,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${payload}, secret)`
    * and is expected in the format: `v1,base64EncodedSignature`
    *
+   * For a Fetch API `Request`, use {@link parse} to enforce a limit while reading
+   * the body. Set a server request limit if you buffer the payload yourself.
+   *
    * @param {VerifyWebhookParams} params - The verification parameters
    * @param {string} params.payload - The raw webhook payload as a string (request body)
    * @param {string} params.signature - The signature from the 'webhook-signature' header
@@ -820,6 +828,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {string} params.webhookId - The webhook ID from the 'webhook-id' header
    * @param {string} params.webhookTimestamp - The timestamp from the 'webhook-timestamp' header (Unix seconds)
    * @param {number} [params.tolerance=300] - Maximum allowed age of the webhook in seconds (default: 5 minutes). Set to 0 to disable timestamp validation.
+   * @param {number} [params.maxBodyBytes] - Max UTF-8 size of the supplied payload
    * @returns {VerifyWebhookResult} The verified and parsed webhook payload with version information
    *
    * @throws {ValidationError} If the parameters are invalid
@@ -888,7 +897,12 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       id: webhookId,
       timestamp: webhookTimestamp,
       tolerance,
+      maxBodyBytes,
     } = parsedParams.data;
+
+    if (maxBodyBytes !== undefined) {
+      assertWebhookBodySize(payload, maxBodyBytes);
+    }
 
     // Validate timestamp if tolerance is set
     if (tolerance > 0) {

@@ -4,7 +4,10 @@ import {
 } from '../errors/TriggerErrors';
 import type { WebhookRequestLike } from '../types/triggers.types';
 import { hmacSha256Base64, timingSafeEqual } from './crypto';
+import { assertValidBodyLimit, readBodyWithLimit } from './readResponseBody';
 import { describeThrown } from './userCallback';
+
+const DEFAULT_WEBHOOK_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
 
 /**
  * The signature header names Composio sends with every webhook request.
@@ -19,15 +22,12 @@ const isFetchRequest = (request: WebhookRequestLike): request is Request =>
   typeof Request !== 'undefined' && request instanceof Request;
 
 /**
- * Coerces an object request body (string, Buffer/Uint8Array, or already-parsed
- * value) into the raw string form expected by signature verification.
+ * Coerces an already-buffered request body into the string expected by
+ * signature verification.
  */
 const bodyToString = (body: unknown): string => {
   if (typeof body === 'string') {
     return body;
-  }
-  if (body instanceof Uint8Array) {
-    return new TextDecoder().decode(body);
   }
   if (body === null || body === undefined) {
     return '';
@@ -41,17 +41,40 @@ const bodyToString = (body: unknown): string => {
   return describeThrown(body);
 };
 
+const webhookBodyLimitError = (maxBytes: number): ComposioWebhookPayloadError =>
+  new ComposioWebhookPayloadError(`Webhook payload exceeds the ${maxBytes}-byte limit`);
+
+export const assertWebhookBodySize = (body: string | Uint8Array, maxBytes: number): void => {
+  assertValidBodyLimit(maxBytes);
+  if (
+    body.length > maxBytes ||
+    (typeof body === 'string' && new TextEncoder().encode(body).byteLength > maxBytes)
+  ) {
+    throw webhookBodyLimitError(maxBytes);
+  }
+};
+
 /**
  * Reads the raw body and the headers from either request shape: a Fetch API
  * `Request`, or a plain `{ body, headers }` object.
  */
 export const readWebhookRequest = async (
-  request: WebhookRequestLike
+  request: WebhookRequestLike,
+  maxBytes = DEFAULT_WEBHOOK_BODY_LIMIT_BYTES
 ): Promise<{ body: string; headers: unknown }> => {
   if (isFetchRequest(request)) {
-    return { body: await request.text(), headers: request.headers };
+    if (request.bodyUsed) {
+      throw new TypeError('Webhook request body has already been read');
+    }
+    const bytes = await readBodyWithLimit(request, maxBytes, () => webhookBodyLimitError(maxBytes));
+    return { body: new TextDecoder().decode(bytes), headers: request.headers };
   }
-  return { body: bodyToString(request.body), headers: request.headers };
+  const body = request.body instanceof Uint8Array ? request.body : bodyToString(request.body);
+  assertWebhookBodySize(body, maxBytes);
+  return {
+    body: typeof body === 'string' ? body : new TextDecoder().decode(body),
+    headers: request.headers,
+  };
 };
 
 /**
