@@ -30,7 +30,7 @@ def test_triggers_parse_generated_example_is_valid_python():
     assert parsed["examples"], "Triggers.parse() must keep its public example"
 
     try:
-        ast.parse(parsed["examples"][0])
+        ast.parse(parsed["examples"][0]["code"])
     except SyntaxError as exc:
         pytest.fail(
             "Triggers.parse() generated SDK reference example must be "
@@ -188,8 +188,11 @@ def test_generated_examples_do_not_keep_nested_markdown_fences():
     )
 
     assert parsed["examples"] == [
-        'result = composio.tools.get_raw_tool_router_meta_tools("session_123")\n'
-        "print(result)"
+        {
+            "code": 'result = composio.tools.get_raw_tool_router_meta_tools("session_123")\n'
+            "print(result)",
+            "meta": "",
+        }
     ]
 
 
@@ -270,3 +273,73 @@ def test_generated_mdx_renders_keyword_only_parameters_with_descriptions():
         "| `polling_interval?` | `int \\| None` | Minutes between polls. "
         'Overrides `trigger_config["interval"]`. |' in mdx
     )
+
+
+def test_display_signatures_have_reserved_fence_metadata():
+    from composio.core.models.mcp import MCP
+
+    generate_docs = load_generate_docs_module()
+    griffe = generate_docs.load_griffe()
+    module = griffe.load("composio.core.models.mcp")
+    info = generate_docs.extract_class_info(module[MCP.__name__], MCP.__name__, {})
+    assert "```python signature\ndef " in generate_docs.generate_class_mdx(info)
+    decorator = {
+        "name": "modifier",
+        "description": "",
+        "source_link": "",
+        "parameters": [],
+    }
+    assert "```python signature\n@modifier(" in generate_docs.generate_index_mdx(
+        [], [decorator]
+    )
+
+
+def test_authored_python_signature_is_rejected():
+    generate_docs = load_generate_docs_module()
+    with pytest.raises(ValueError, match="signature"):
+        generate_docs.normalize_example("```python signature\nprint('example')\n```")
+
+
+def test_authored_python_opt_out_keeps_its_reason():
+    generate_docs = load_generate_docs_module()
+    example = generate_docs.normalize_example(
+        '```python nocheck="Requires an optional provider"\nuse_provider()\n```'
+    )
+    assert example == {
+        "code": "use_provider()",
+        "meta": 'nocheck="Requires an optional provider"',
+    }
+
+
+@pytest.mark.parametrize(
+    "name", ["create", "list", "get", "update", "delete", "generate"]
+)
+def test_mcp_examples_are_python_and_use_the_public_client(name):
+    from composio.core.models.mcp import MCP
+
+    generate_docs = load_generate_docs_module()
+    examples = generate_docs.parse_docstring(getattr(MCP, name).__doc__)["examples"]
+    assert len(examples) == 1
+    code = examples[0]["code"]
+    ast.parse(code)
+    assert f"composio.mcp.{name}(" in code
+
+
+def test_quick_start_passes_a_concrete_version_to_execute():
+    generate_docs = load_generate_docs_module()
+    reference = generate_docs.generate_index_mdx([], [])
+    fence = re.search(r"## Quick Start\s+```python\n([\s\S]+?)\n```", reference)
+    assert fence is not None
+    execution = next(
+        node
+        for node in ast.walk(ast.parse(fence[1]))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "execute"
+    )
+    version = next(
+        keyword.value for keyword in execution.keywords if keyword.arg == "version"
+    )
+    assert isinstance(version, ast.Constant)
+    assert isinstance(version.value, str)
+    assert version.value and version.value != "latest"

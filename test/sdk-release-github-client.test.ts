@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { Effect, Schema } from 'effect';
 import { GitHub, request } from '../scripts/sdk-release/github';
-import { json, runRelease, type Fetch } from './sdk-release-harness';
+import { fetchInputUrl, json, runRelease, type Fetch } from './sdk-release-harness';
 
 const Ref = Schema.Struct({ ref: Schema.String });
 
@@ -9,7 +9,7 @@ const Ref = Schema.Struct({ ref: Schema.String });
 const scripted = (...responses: Array<() => Response | Promise<Response>>) => {
   const seen: string[] = [];
   const fetcher: Fetch = async (input, init) => {
-    seen.push(`${init?.method ?? 'GET'} ${new URL(String(input)).pathname}`);
+    seen.push(`${init?.method ?? 'GET'} ${new URL(fetchInputUrl(input)).pathname}`);
     const next = responses[Math.min(seen.length, responses.length) - 1];
     return next();
   };

@@ -51,7 +51,7 @@ ANTHROPIC_API_KEY=xxxxxxxxx
 **Create session and run**
 
 <Callout type="info">
-Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.19.0 (Python) or `@composio/core` ≥ 0.17.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/how-composio-works#executing-session-tools).
+Passing a session to `handle_tool_calls` / `handleToolCalls` requires `composio` newer than 0.19.0 (Python) or `@composio/core` ≥ 0.17.0 with `@composio/anthropic` ≥ 0.11.0 (TypeScript). On earlier versions, execute session tools with [`session.execute()`](/docs/sessions/executing-tools#executing-session-tools).
 </Callout>
 
 {/* code-example: no-api reason="Anthropic Messages agent loop with the Composio Anthropic provider; not a single REST call" */}
@@ -293,4 +293,4 @@ A few things are specific to the Anthropic provider:
 
 ## Next
 
-<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/sessions" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

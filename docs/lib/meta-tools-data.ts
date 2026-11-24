@@ -87,7 +87,10 @@ export const metaToolSchema = z
   .object({
     slug: z.string(),
     name: z.string(),
-    displayName: z.string(),
+    // Generated pages put it on one frontmatter line.
+    displayName: z.string().refine(value => !/[\r\n]/.test(value), {
+      message: 'Meta-tool displayName must be a single line',
+    }),
     description: z.string(),
     tags: z.array(z.string()),
     inputParameters: parameterSchema.transform(toDisplayParameter),
@@ -105,7 +108,15 @@ export const metaToolSchema = z
 
 export type MetaTool = z.infer<typeof metaToolSchema>;
 
-const metaToolsSchema = z.array(metaToolSchema);
+export const metaToolsSchema = z
+  .array(metaToolSchema)
+  .min(1)
+  .refine(tools => tools.every(tool => /^COMPOSIO_[A-Z0-9_]+$/.test(tool.slug)), {
+    message: 'Invalid meta-tool slug',
+  })
+  .refine(tools => new Set(tools.map(tool => tool.slug)).size === tools.length, {
+    message: 'Meta-tool slugs must be unique',
+  });
 const META_TOOLS_PATH = join(process.cwd(), 'public/data/meta-tools.json');
 
 let cached: { list: MetaTool[]; bySlug: Map<string, MetaTool> } | null = null;

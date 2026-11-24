@@ -52,16 +52,6 @@ export const LOCAL_TOOL_PREFIX = 'LOCAL_';
 /** Maximum allowed length for the final prefixed slug. */
 const MAX_SLUG_LENGTH = 60;
 
-type InputParamsSchema = {
-  definitions: {
-    input: {
-      type: string;
-      properties: Record<string, unknown>;
-      required?: string[];
-    };
-  };
-};
-
 /**
  * Compute the final slug length for a tool given its context.
  * Returns the expected length of LOCAL_[TOOLKIT_]SLUG.

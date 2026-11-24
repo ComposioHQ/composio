@@ -12,7 +12,7 @@ Deletes a file or directory at the specified path on the session's file mount.
 Removes the file or directory from the virtual filesystem. Use with caution:
 deletion is typically irreversible. Ensure the path exists and is intended for removal.
 
-```typescript
+```typescript signature
 async delete(remotePath: string, options?: ToolRouterSessionFilesMountDeleteOptions): Promise<FileDeleteResponse>
 ```
 
@@ -50,7 +50,7 @@ Downloads a file from the session's file mount to the local filesystem.
 Retrieves a file stored in the session's virtual filesystem (e.g., one produced
 by a tool or previously uploaded) and saves it to the specified local path.
 
-```typescript
+```typescript signature
 async download(filePath: string, options?: ToolRouterSessionFilesMountDownloadOptions): Promise<RemoteFile>
 ```
 
@@ -89,7 +89,7 @@ Use this to browse the virtual filesystem attached to the tool router session.
 The path is relative to the mount root (e.g., `"/"` for root, `"/documents"` for a subdirectory).
 Supports cursor-based pagination via `cursor` and `limit` options.
 
-```typescript
+```typescript signature
 async list(options?: ToolRouterSessionFilesMountListOptions): Promise<FileListResponse>
 ```
 
@@ -129,7 +129,7 @@ The file is stored in the virtual filesystem associated with the tool router ses
 URL inputs require a Node.js or Bun runtime so the destination can be DNS-validated;
 edge runtimes must fetch the file themselves and pass a File or ArrayBuffer.
 
-```typescript
+```typescript signature
 async upload(input: string | File | ArrayBuffer | Uint8Array, options?: ToolRouterSessionFilesMountUploadOptions): Promise<RemoteFile>
 ```
 
@@ -154,11 +154,13 @@ await session.experimental.files.upload('https://example.com/file.pdf');
 
 ```typescript
 // From native File (e.g. from input[type=file])
-await session.experimental.files.upload(fileInput.files[0]);
+const file = new File(['hello world'], 'hello.txt', { type: 'text/plain' });
+await session.experimental.files.upload(file);
 ```
 
 ```typescript
 // From raw buffer
+const buffer = new TextEncoder().encode(JSON.stringify({ hello: 'world' }));
 await session.experimental.files.upload(buffer, { remotePath: 'data.json', mimetype: 'application/json' });
 ```
 

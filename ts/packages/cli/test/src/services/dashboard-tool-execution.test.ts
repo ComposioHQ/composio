@@ -161,6 +161,24 @@ const executeRequest = {
   orgId: 'org_test',
 };
 
+/** The environment in which the CLI sends its own analytics events. */
+const enableTelemetry = () => {
+  vi.stubEnv('NODE_ENV', 'development');
+  vi.stubEnv('CI', 'false');
+  vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
+  vi.stubEnv('TELEMETRY_DISABLED', 'false');
+  vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
+  vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
+  // Open telemetry resolves the agent session from these, and the suite may itself run inside
+  // Claude Code or Codex. A blank value reads as unset; a test that wants a session sets it
+  // afterwards.
+  vi.stubEnv('COMPOSIO_AGENT_HOST', '');
+  vi.stubEnv('COMPOSIO_AGENT_SESSION_ID', '');
+  vi.stubEnv('CLAUDE_CODE_SESSION_ID', '');
+  vi.stubEnv('CODEX_SESSION_ID', '');
+  vi.stubEnv('CODEX_THREAD_ID', '');
+};
+
 describe('DashboardToolExecution', () => {
   it.effect('posts a tool execution to the execute procedure and returns the relayed body', () =>
     withDashboard(succeedWith(successOutcome), (dashboard, requests) =>
@@ -532,16 +550,6 @@ describe('DashboardToolExecution install ID header', () => {
     vi.unstubAllEnvs();
   });
 
-  /** The environment in which the CLI sends its own analytics events. */
-  const enableTelemetry = () => {
-    vi.stubEnv('NODE_ENV', 'development');
-    vi.stubEnv('CI', 'false');
-    vi.stubEnv('COMPOSIO_CLI_TELEMETRY_DISABLED', 'false');
-    vi.stubEnv('TELEMETRY_DISABLED', 'false');
-    vi.stubEnv('COMPOSIO_DISABLE_TELEMETRY', 'false');
-    vi.stubEnv('COMPOSIO_POSTHOG_PROJECT_API_KEY', 'phc_test_key');
-  };
-
   const analyticsStatePath = (home: string) => path.join(home, '.composio', 'analytics.json');
 
   const homeWithAnalyticsState = (contents: string) => {
@@ -615,6 +623,131 @@ describe('DashboardToolExecution install ID header', () => {
   it('is not part of the headers shared with backend requests', () => {
     enableTelemetry();
     expect(Object.keys(cliRequestHeaders())).not.toContain('x-cli-install-id');
+  });
+});
+
+describe('DashboardToolExecution agent session headers', () => {
+  // A made-up host session ID and the agent session ID it derives to for host `claude`.
+  const CLAUDE_SESSION = '00000000-0000-4000-8000-000000000001';
+  const CLAUDE_AGENT_SESSION_ID = 'df095fd9-410b-5ec9-b678-4ed04b5ab2dd';
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  /**
+   * Sets every agent session variable, blank unless named, so the shell or agent host that
+   * runs the suite cannot supply one.
+   */
+  const stubAgentSessionVariables = (variables: Record<string, string>) => {
+    [
+      'COMPOSIO_AGENT_HOST',
+      'COMPOSIO_AGENT_SESSION_ID',
+      'CLAUDE_CODE_SESSION_ID',
+      'CODEX_SESSION_ID',
+      'CODEX_THREAD_ID',
+    ].forEach(name => vi.stubEnv(name, variables[name] ?? ''));
+  };
+
+  /** The requests of one tool execution and one meta tool execution. */
+  const sentRequests = (home?: string) =>
+    withDashboard(
+      succeedWith(successOutcome),
+      (dashboard, requests) =>
+        Effect.gen(function* () {
+          yield* dashboard.execute(executeRequest);
+          yield* dashboard.executeMeta({ ...executeRequest, slug: 'COMPOSIO_SEARCH_TOOLS' });
+          expect(requests).toHaveLength(2);
+          return requests;
+        }),
+      { home }
+    );
+
+  const agentSessionHeadersOf = (requests: ReadonlyArray<RecordedRequest>) =>
+    requests.map(request => [
+      request.headers['x-cli-agent-session-host'],
+      request.headers['x-cli-agent-session-id'],
+    ]);
+
+  it.effect('sends the agent session on both procedures when telemetry is on', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      stubAgentSessionVariables({ CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION });
+
+      const requests = yield* sentRequests();
+
+      expect(agentSessionHeadersOf(requests)).toEqual([
+        ['claude', CLAUDE_AGENT_SESSION_ID],
+        ['claude', CLAUDE_AGENT_SESSION_ID],
+      ]);
+      // The host's own session ID stays on the device.
+      expect(JSON.stringify(requests)).not.toContain(CLAUDE_SESSION);
+      // No plugin hook wrote a compaction file for this chat.
+      expect(requests.map(request => request.headers['x-cli-agent-compaction-count'])).toEqual([
+        undefined,
+        undefined,
+      ]);
+    })
+  );
+
+  it.effect("sends the chat's compaction count on both procedures", () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      stubAgentSessionVariables({ CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION });
+      const home = emptyHome();
+      const hostDir = path.join(home, '.composio', 'agent-compactions', 'claude');
+      fs.mkdirSync(hostDir, { recursive: true });
+      fs.writeFileSync(path.join(hostDir, CLAUDE_SESSION), 'auto\nmanual\n');
+
+      const requests = yield* sentRequests(home);
+
+      expect(requests.map(request => request.headers['x-cli-agent-compaction-count'])).toEqual([
+        '2',
+        '2',
+      ]);
+    })
+  );
+
+  describe.each([
+    { name: 'COMPOSIO_CLI_TELEMETRY_DISABLED', value: 'true' },
+    { name: 'COMPOSIO_DISABLE_TELEMETRY', value: 'true' },
+    { name: 'TELEMETRY_DISABLED', value: 'true' },
+    { name: 'CI', value: 'true' },
+    { name: 'NODE_ENV', value: 'test' },
+  ])('$name=$value', ({ name, value }) => {
+    it.effect(`omits the headers when ${name}=${value} turns telemetry off`, () =>
+      Effect.gen(function* () {
+        enableTelemetry();
+        vi.stubEnv(name, value);
+        stubAgentSessionVariables({ CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION });
+
+        expect(agentSessionHeadersOf(yield* sentRequests())).toEqual([
+          [undefined, undefined],
+          [undefined, undefined],
+        ]);
+      })
+    );
+  });
+
+  it.effect('omits the headers outside an agent host', () =>
+    Effect.gen(function* () {
+      enableTelemetry();
+      stubAgentSessionVariables({});
+
+      expect(agentSessionHeadersOf(yield* sentRequests())).toEqual([
+        [undefined, undefined],
+        [undefined, undefined],
+      ]);
+    })
+  );
+
+  it('is not part of the headers shared with other first-party requests', () => {
+    enableTelemetry();
+    stubAgentSessionVariables({ CLAUDE_CODE_SESSION_ID: CLAUDE_SESSION });
+
+    const names = Object.keys(cliRequestHeaders());
+    expect(names).not.toContain('x-cli-agent-session-host');
+    expect(names).not.toContain('x-cli-agent-session-id');
   });
 });
 

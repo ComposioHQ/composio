@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import ComposioClient, { Auth, createFetchTransport } from '@composio/client';
 import { Tools } from '../../src/models/Tools';
+import { ToolRouter } from '../../src/models/ToolRouter';
 import { ToolRouterSession } from '../../src/models/ToolRouterSession';
 import { SessionContextImpl } from '../../src/models/SessionContext';
+import type { ToolRouterHook } from '../../src/types/toolRouter.types';
 import { MockProvider } from '../utils/mocks/provider.mock';
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
@@ -15,6 +17,7 @@ vi.mock('../../src/telemetry/Telemetry', () => ({
 // stubbed `fetch` so they cover the wire shape the SDK reads.
 
 const SESSION_ID = 'sess_123';
+const SESSION_PATH = '/api/v3.1/tool_router/session';
 
 const blockedCall = {
   result_type: 'blocked',
@@ -64,32 +67,96 @@ const proxyParams = {
   body: { raw: 'VG86IGNlb0ByaXZhbC5jb20' },
 };
 
-describe('session execute when a hook blocks the call', () => {
+describe('webhook session hook configuration', () => {
   it.each([
     {
-      name: 'session.execute',
-      run: (client: ComposioClient) =>
-        createSession(client).execute('GMAIL_SEND_EMAIL', { to: 'ceo@rival.com' }),
+      name: 'sessions.create',
+      method: 'POST',
+      path: SESSION_PATH,
+      run: (client: ComposioClient, hooks: ToolRouterHook[]) =>
+        new ToolRouter(client).create('test-user', { hooks }),
     },
     {
-      name: 'custom tool context execute',
-      run: (client: ComposioClient) =>
-        new SessionContextImpl(client, 'test-user', SESSION_ID).execute('GMAIL_SEND_EMAIL', {
-          to: 'ceo@rival.com',
-        }),
+      name: 'session.update',
+      method: 'PATCH',
+      path: `${SESSION_PATH}/${SESSION_ID}`,
+      run: (client: ComposioClient, hooks: ToolRouterHook[]) =>
+        createSession(client).update({ hooks }),
     },
-  ])('$name returns resultType blocked with the message in error', async ({ run }) => {
-    const { client } = createClient(blockedCall);
-
-    await expect(run(client)).resolves.toEqual({
-      data: {},
-      error: 'Blocked by session policy: No external email',
-      logId: '',
-      resultType: 'blocked',
-      blockReason: { type: 'request_blocked', hookId: 'no_external_email' },
-      hookResults: [{ id: 'no_external_email', status: 'evaluated', outcome: 'block' }],
+  ])('$name serializes webhook handlers for both hook phases', async ({ method, path, run }) => {
+    const { client, fetch } = createClient({
+      session_id: SESSION_ID,
+      config_version: 1,
+      config: { user_id: 'test-user', preload: { tools: [] } },
+      tool_router_tools: [],
+      mcp: { type: 'http', url: `https://backend.invalid${SESSION_PATH}/${SESSION_ID}` },
     });
+
+    await run(client, [
+      {
+        type: 'before_execute',
+        id: 'check_outgoing_email',
+        appliesTo: { toolkits: ['gmail'] },
+        handler: { type: 'webhook', fallbackAction: 'block', timeoutMs: 2000 },
+      },
+      {
+        type: 'after_execute',
+        id: 'redact_results',
+        appliesTo: 'all',
+        handler: { type: 'webhook', fallbackAction: 'continue' },
+      },
+    ]);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const request = new Request(...fetch.mock.calls[0]);
+    expect(request.method).toBe(method);
+    expect(new URL(request.url).pathname).toBe(path);
+    expect(await request.json()).toHaveProperty('hooks', [
+      {
+        type: 'before_execute',
+        id: 'check_outgoing_email',
+        applies_to: { toolkits: ['gmail'] },
+        handler: { type: 'webhook', fallback_action: 'block', timeout_ms: 2000 },
+      },
+      {
+        type: 'after_execute',
+        id: 'redact_results',
+        applies_to: 'all',
+        handler: { type: 'webhook', fallback_action: 'continue' },
+      },
+    ]);
   });
+});
+
+const executePaths = [
+  {
+    name: 'session.execute',
+    run: (client: ComposioClient, args: Record<string, unknown>) =>
+      createSession(client).execute('GMAIL_SEND_EMAIL', args),
+  },
+  {
+    name: 'custom tool context execute',
+    run: (client: ComposioClient, args: Record<string, unknown>) =>
+      new SessionContextImpl(client, 'test-user', SESSION_ID).execute('GMAIL_SEND_EMAIL', args),
+  },
+];
+
+describe('session execute when a hook blocks the call', () => {
+  it.each(executePaths)(
+    '$name returns resultType blocked with the message in error',
+    async ({ run }) => {
+      const { client } = createClient(blockedCall);
+
+      await expect(run(client, { to: 'ceo@rival.com' })).resolves.toEqual({
+        data: {},
+        error: 'Blocked by session policy: No external email',
+        logId: '',
+        resultType: 'blocked',
+        blockReason: { type: 'request_blocked', hookId: 'no_external_email' },
+        hookResults: [{ id: 'no_external_email', status: 'evaluated', outcome: 'block' }],
+      });
+    }
+  );
 
   it('keeps the log id and the charge when the tool ran and its result was blocked', async () => {
     const { client } = createClient(blockedResponse);
@@ -144,6 +211,33 @@ describe('session execute when a hook blocks the call', () => {
       hookResults: [
         { id: 'no_external_email', status: 'evaluated', outcome: 'continue' },
         { id: 'block_injection', status: 'unavailable' },
+      ],
+    });
+  });
+
+  it.each(executePaths)('$name says why a webhook hook was unavailable', async ({ run }) => {
+    const { client } = createClient({
+      result_type: 'blocked',
+      reason: { type: 'request_blocked', hook_id: 'check_outgoing_email' },
+      message: 'Blocked by session policy',
+      log_id: '',
+      hook_results: [
+        {
+          id: 'check_outgoing_email',
+          status: 'unavailable',
+          detail: 'The webhook endpoint timed out',
+        },
+      ],
+    });
+
+    await expect(run(client, {})).resolves.toMatchObject({
+      resultType: 'blocked',
+      hookResults: [
+        {
+          id: 'check_outgoing_email',
+          status: 'unavailable',
+          detail: 'The webhook endpoint timed out',
+        },
       ],
     });
   });

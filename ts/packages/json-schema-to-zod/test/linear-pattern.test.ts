@@ -176,6 +176,7 @@ describe.each(builders)('catastrophic backtracking (SEC-1178) ($name)', builder 
     location => {
       const pattern = '^(a+)+$';
       let nativeExecutions = 0;
+      // oxlint-disable-next-line typescript/unbound-method -- the spy calls the saved method with its RegExp receiver
       const originalExec = RegExp.prototype.exec;
       const nativeExec = vi.spyOn(RegExp.prototype, 'exec').mockImplementation(function (
         this: RegExp,

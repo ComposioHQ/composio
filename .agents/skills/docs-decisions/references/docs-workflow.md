@@ -1,8 +1,11 @@
-# Docs Workflow
+# Docs workflow
 
-## Entry Points
+## Entry points
 
 - Read `docs/AGENTS.md` before editing docs.
+- Use `good-docs-writing` for the shared writing standard, `docs-page-rewrite`
+  for page structure, and `good-docs-audit` for writing reviews. Choose the page's
+  purpose before applying a template.
 - Docs context lives in `docs/agent-guidance/context/`.
 - Docs automation prompts live in `docs/agent-guidance/agents/`.
 - Changelog guidance lives in `docs/agent-guidance/guides/changelog.md`.

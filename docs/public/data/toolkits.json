@@ -15576,7 +15576,7 @@
     ],
     "toolCount": 171,
     "triggerCount": 17,
-    "version": "20261116_00",
+    "version": "20261120_00",
     "tools": [
       {
         "slug": "JIRA_ADD_ATTACHMENT",
@@ -23610,148 +23610,6 @@
                 "default": null
               }
             ],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
-    "slug": "composio_search",
-    "name": "Composio Search",
-    "logo": "https://logos.composio.dev/api/composio_search",
-    "description": "Composio Search provides comprehensive web search across travel (flights, hotels, events), e-commerce (Amazon, Walmart, shopping), financial markets, news, academic research, images, and location services.",
-    "category": "ai agents",
-    "authSchemes": [
-      "NO_AUTH"
-    ],
-    "toolCount": 22,
-    "triggerCount": 0,
-    "version": "20261119_00",
-    "tools": [
-      {
-        "slug": "COMPOSIO_SEARCH_AMAZON",
-        "name": "Amazon Product Search",
-        "description": "Search Amazon products across international marketplaces. Returns selected product details, including prices, ratings, review counts, and Prime status when available; supports pagination."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_DUCK_DUCK_GO",
-        "name": "Composio DuckDuckGo Search",
-        "description": "The DuckDuckGoSearch class utilizes the Composio DuckDuckGo Search API to perform searches, focusing on web information and details. It leverages the DuckDuckGo search engine via the Composio DuckDuckGo Search API to retrieve relevant web data based on the provided query."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_EVENT",
-        "name": "Composio Google Events Search",
-        "description": "Search for upcoming events, concerts, festivals, conferences, and other activities. Supports location-based search (city, neighborhood, address), date filtering (today, tomorrow, weekend, next week/month), virtual event discovery, international search with 100+ languages and countries, and pagination. If results are sparse or events_results_state is 'Fully empty', treat as limited coverage and try COMPOSIO_SEARCH_WEB instead of retrying. Rate limit: ~2 requests/second; apply exponential backoff (1s, 2s, 4s) on 429 errors. Examples: \"Tech conferences\" in \"San Francisco, CA\" with gl=\"us\" and hl=\"en\" | \"Virtual networking events\" with htichips=\"event_type:Virtual-Event,date:next_week\" | \"Music festivals\" in \"London, UK\" with gl=\"uk\" and hl=\"en\""
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_EXA_ANSWER",
-        "name": "Exa Answer",
-        "description": "Get answers with citations using the Exa API. DEPRECATED: Use COMPOSIO_SEARCH_WEB instead."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_EXA_SIMILARLINK",
-        "name": "Composio Similarlinks",
-        "description": "Find links similar to a supplied URL using Exa, with optional domain, date, category and result-count filters."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_FETCH_URL_CONTENT",
-        "name": "Fetch URL Content",
-        "description": "Fetch and extract clean, readable page text (markdown) from public web pages (HTML content) using the Exa API. Use when you need to retrieve actual content from search results or documentation links to extract setup steps, requirements, or citations. Only works with web page URLs - does not support direct links to images, PDFs, or other binary files."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_FINANCE",
-        "name": "Composio Finance Search",
-        "description": "Search Google Finance for stock quotes, indices, cryptocurrency prices, exchange rates, company financials and related news. Results may include a summary, historical price graph and key events; empty results can include an explanatory message."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_FLIGHTS",
-        "name": "Flight Search",
-        "description": "Search flights using a natural-language route or structured airport codes and dates. Supports one-way and round-trip searches, passenger types, travel classes and currencies; an omitted departure date defaults to seven days from today."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_GOOGLE_MAPS",
-        "name": "Composio Google Maps Search",
-        "description": "Search Google Maps for places by query, optionally using map coordinates and a pagination offset. Results can include local places with addresses, coordinates, ratings, hours and contact information when available."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_GROQ_CHAT",
-        "name": "Groq Chat Completion",
-        "description": "Generate chat completions using Groq models for tasks such as question answering, content generation, coding, summarization and translation. If the selected model is rate-limited, the tool tries other models."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_HOTELS",
-        "name": "Hotel Search",
-        "description": "Search hotels and vacation rentals by location and stay dates, with price, class, cancellation and localization filters. Results may include properties and ads with rates, ratings and booking information."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_IMAGE",
-        "name": "Composio Image Search",
-        "description": "Search Google Images for image metadata and URLs, including original and thumbnail links. Control the number of returned images and use an image page number to retrieve additional pages; license details may be available."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_NEWS",
-        "name": "Composio News Search",
-        "description": "Search Google News results by query, time window, country and language. Returns filtered news articles, the displayed query and a flag indicating whether results were found; use the result offset to request another page."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_NPPESNPI_LOOKUP",
-        "name": "NPPES NPI Registry Lookup",
-        "description": "Lookup US healthcare provider details from the CMS NPI Registry (NPPES) using an NPI number or search filters. Returns normalized structured fields including provider name, taxonomy/specialty, addresses, identifiers, and endpoints. Use this for deterministic, authoritative provider lookups when you need structured NPI/NPPES data rather than noisy web search results."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_SCHOLAR",
-        "name": "Composio Scholar Search",
-        "description": "Search Google Scholar for scholarly articles. Returns normalized article details, including authors, citation counts, snippets and PDF links when available, with pagination information."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_SEC_FILINGS",
-        "name": "Composio SEC EDGAR Filings Search",
-        "description": "Retrieve recent SEC EDGAR filing metadata for a company by ticker or CIK, optionally filtering by form type and constructing primary document and index URLs. The returned filing count reflects the limited results returned."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_SHOPPING",
-        "name": "Composio Shopping Search",
-        "description": "Search for products with advanced price filtering, location targeting, and deal discovery. This tool provides comprehensive product search with price range filtering, geographic targeting for local retailers, sorting by price (low to high, high to low), and filtering for free shipping or sale items. Perfect for product research, price comparison, finding deals, and discovering where to buy items. Returns product details, prices, availability, seller information, and reviews. Examples: query=\"gaming laptop\" + min_price=800 + max_price=1500 + sort_by=1 query=\"running shoes\" + location=\"Seattle, WA\" + free_shipping=True query=\"coffee maker\" + on_sale=True + gl=\"us\""
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_TAVILY",
-        "name": "Composio LLM Search",
-        "description": "Search a broad range of content using the Tavily API, with options for search depth, images, direct answers, domain filters, and the number of results."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_TRENDS",
-        "name": "Composio Trends Search",
-        "description": "Search Google Trends for interest over time, regional comparisons, related topics, and related queries. Results vary by data type; timeline values contain numeric extracted values, and a timeline point may be marked is_partial."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_TRIP_ADVISOR",
-        "name": "TripAdvisor Travel Search",
-        "description": "Search TripAdvisor for attractions, restaurants, hotels, tours, and other travel information without a connected TripAdvisor account. Results may include places, locations, or forums, with optional ratings, review excerpts, and thumbnails; filter by result type and paginate."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_WALMART",
-        "name": "Walmart Product Search",
-        "description": "Search Walmart products with optional minimum and maximum price filters. Product listings appear in results.organic_results and may include prices, ratings, and sponsorship status."
-      },
-      {
-        "slug": "COMPOSIO_SEARCH_WEB",
-        "name": "Composio Web Search",
-        "description": "Search the web using Exa's answer API, returning an AI-generated answer and source citations. The tool accepts a query without a separate date filter; verify source dates when recency matters."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "NO_AUTH",
-        "name": "Composio Search",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [],
             "optional": []
           }
         }
@@ -43177,7 +43035,7 @@
     ],
     "toolCount": 336,
     "triggerCount": 43,
-    "version": "20261116_01",
+    "version": "20261120_00",
     "tools": [
       {
         "slug": "TRELLO_ADD_BOARDS",
@@ -58560,68 +58418,6 @@
     ]
   },
   {
-    "slug": "text_to_pdf",
-    "name": "Text to PDF",
-    "logo": "https://logos.composio.dev/api/text_to_pdf",
-    "description": "Convert text to PDF",
-    "category": "documents",
-    "authSchemes": [
-      "NO_AUTH"
-    ],
-    "toolCount": 6,
-    "triggerCount": 0,
-    "version": "20261030_00",
-    "tools": [
-      {
-        "slug": "TEXT_TO_PDF_CONVERT_TEXT_TO_PDF",
-        "name": "Convert Text to PDF",
-        "description": "Convert plain text or Markdown content into a downloadable PDF document. Supports Unicode characters, special symbols, and Markdown formatting including headers, lists, code blocks, links, and emphasis. Images must use inline data URLs; external and local resources are rejected. The response includes the generated PDF file, filename, and MIME type."
-      },
-      {
-        "slug": "TEXT_TO_PDF_DELETE_ASYNC_JOB",
-        "name": "Delete Async Job",
-        "description": "Tool to delete an asynchronous conversion job. Use when a job is no longer required to free up server resources. Jobs are automatically deleted after 3 hours if not manually removed."
-      },
-      {
-        "slug": "TEXT_TO_PDF_DELETE_FILE",
-        "name": "Delete File",
-        "description": "Tool to delete a file from ConvertAPI server. Use when a file is no longer needed and should be removed from temporary storage."
-      },
-      {
-        "slug": "TEXT_TO_PDF_DOWNLOAD_FILE",
-        "name": "Download File",
-        "description": "Download a file from ConvertAPI server using its unique File ID. Use this after converting or uploading files to retrieve the result. The file must exist on the server and not be expired."
-      },
-      {
-        "slug": "TEXT_TO_PDF_START_ASYNC_CONVERSION",
-        "name": "Start Async Conversion",
-        "description": "Start an asynchronous file conversion job using ConvertAPI. Returns a JobId that can be used to poll for conversion results. Optionally supports WebHook callback for push notification when conversion completes."
-      },
-      {
-        "slug": "TEXT_TO_PDF_UPLOAD_FILE",
-        "name": "Upload File to ConvertAPI",
-        "description": "Upload a file to ConvertAPI server for subsequent conversions. Supports direct file upload or remote URL upload. Files are stored securely for up to 3 hours and can be referenced by File ID in conversion requests."
-      }
-    ],
-    "triggers": [],
-    "authConfigDetails": [
-      {
-        "mode": "NO_AUTH",
-        "name": "texttopdf",
-        "fields": {
-          "auth_config_creation": {
-            "required": [],
-            "optional": []
-          },
-          "connected_account_initiation": {
-            "required": [],
-            "optional": []
-          }
-        }
-      }
-    ]
-  },
-  {
     "slug": "zoho",
     "name": "Zoho",
     "logo": "https://logos.composio.dev/api/zoho",
@@ -61177,7 +60973,7 @@
     ],
     "toolCount": 75,
     "triggerCount": 23,
-    "version": "20261116_01",
+    "version": "20261120_00",
     "tools": [
       {
         "slug": "CONFLUENCE_ADD_CONTENT_LABEL",
@@ -77805,6 +77601,9 @@
     "authSchemes": [
       "OAUTH2",
       "API_KEY"
+    ],
+    "composioManagedAuthSchemes": [
+      "OAUTH2"
     ],
     "toolCount": 101,
     "triggerCount": 0,
@@ -111157,7 +110956,7 @@
     ],
     "toolCount": 84,
     "triggerCount": 1,
-    "version": "20261116_00",
+    "version": "20261120_00",
     "tools": [
       {
         "slug": "TODOIST_ADD_WORKSPACE",
@@ -379306,7 +379105,7 @@
     "composioManagedAuthSchemes": [
       "OAUTH2"
     ],
-    "toolCount": 1000,
+    "toolCount": 1208,
     "triggerCount": 0,
     "version": "20261120_00",
     "tools": [
@@ -384309,6 +384108,1046 @@
         "slug": "MICROSOFT_365_SHARE_DOCX",
         "name": "Share DOCX",
         "description": "Share a verified DOCX by creating a link or inviting named recipients, returning sanitized permission outcomes and a partial-success flag; recipient identities may not be included. Sharing links are capability URLs to treat as secrets, and disabling inherited-permission retention can remove existing permissions on first share."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_ADD_WORKBOOK_WORKSHEET",
+        "name": "Add SharePoint Workbook Worksheet",
+        "description": "Add a worksheet to an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_CLOSE_WORKBOOK_SESSION",
+        "name": "Close SharePoint Workbook Session",
+        "description": "Close an Excel workbook session."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_COPY_DRIVE_ITEM",
+        "name": "Copy SharePoint Drive Item",
+        "description": "Start an asynchronous copy of a SharePoint drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_CREATE_FOLDER",
+        "name": "Create SharePoint Folder",
+        "description": "Create a folder inside a SharePoint drive folder."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_CREATE_SUBSCRIPTION",
+        "name": "Create Microsoft Graph Subscription",
+        "description": "Create a Microsoft Graph webhook subscription."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_CREATE_UPLOAD_SESSION",
+        "name": "Create SharePoint Upload Session",
+        "description": "Create an upload session for large SharePoint file uploads."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_CREATE_WORKBOOK_SESSION",
+        "name": "Create SharePoint Workbook Session",
+        "description": "Create an Excel workbook session for a workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_DELETE_DRIVE_ITEM",
+        "name": "Delete SharePoint Drive Item",
+        "description": "Delete a SharePoint drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_DELETE_SHARE_PERMISSION",
+        "name": "Delete SharePoint Share Permission",
+        "description": "Revoke the sharing-link permission for a shared SharePoint or OneDrive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_DELETE_SUBSCRIPTION",
+        "name": "Delete Microsoft Graph Subscription",
+        "description": "Delete a Microsoft Graph webhook subscription."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_DELETE_WORKBOOK_WORKSHEET",
+        "name": "Delete SharePoint Workbook Worksheet",
+        "description": "Delete a worksheet in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_DOWNLOAD_DRIVE_ITEM",
+        "name": "Download SharePoint Drive Item",
+        "description": "Download a SharePoint drive item. The file is streamed to the file backend and the response returns a downloadable file, so large files are handled without exhausting memory."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_CURRENT_USER",
+        "name": "Get Current Microsoft Graph User",
+        "description": "Get the current Microsoft Graph user for delegated SharePoint Graph connections."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_DOCUMENT_COMMENTS",
+        "name": "Get SharePoint Document Comments",
+        "description": "Extract comments from a SharePoint Word .docx drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_DRIVE",
+        "name": "Get SharePoint Drive",
+        "description": "Get a SharePoint document library drive by drive ID."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_DRIVE_ITEM",
+        "name": "Get SharePoint Drive Item",
+        "description": "Get a SharePoint drive item by ID."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_DRIVE_ITEM_BY_PATH",
+        "name": "Get SharePoint Drive Item By Path",
+        "description": "Get a SharePoint drive item by path."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_DRIVE_ITEM_LIST_ITEM",
+        "name": "Get Drive Item List Item",
+        "description": "Get the SharePoint list item associated with a drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_SITE",
+        "name": "Get SharePoint Site",
+        "description": "Get a SharePoint site by Microsoft Graph site ID."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_SPECIAL_FOLDER",
+        "name": "Get SharePoint Special Folder",
+        "description": "Get a SharePoint special folder by name."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GET_WORKBOOK_WORKSHEET",
+        "name": "Get SharePoint Workbook Worksheet",
+        "description": "Get an Excel worksheet in a SharePoint workbook."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_GRANT_SHARE_PERMISSION",
+        "name": "Grant SharePoint Share Permission",
+        "description": "Grant users access to a shared SharePoint or OneDrive link via an encoded sharing URL."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_DRIVE_ITEM_CHILDREN",
+        "name": "List SharePoint Drive Item Children",
+        "description": "List children under a folder drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_DRIVE_ITEM_PERMISSIONS",
+        "name": "List SharePoint Drive Item Permissions",
+        "description": "List sharing permissions on a SharePoint drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_DRIVE_ITEM_VERSIONS",
+        "name": "List SharePoint Drive Item Versions",
+        "description": "List versions for a SharePoint drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_FOLLOWED_SITES",
+        "name": "List Followed SharePoint Sites",
+        "description": "List the SharePoint sites followed by the signed-in user."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_SHARE_PERMISSIONS",
+        "name": "List SharePoint Share Permission",
+        "description": "Get the sharing-link permission details for a shared SharePoint or OneDrive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_SITE_COLUMNS",
+        "name": "List SharePoint Site Columns",
+        "description": "List column definitions for a SharePoint site."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_SITE_RECYCLE_BIN_ITEMS",
+        "name": "List SharePoint Site Recycle Bin Items",
+        "description": "List deleted items in a site's recycle bin through Microsoft Graph beta."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_SUBSCRIPTIONS",
+        "name": "List Microsoft Graph Subscriptions",
+        "description": "List Microsoft Graph webhook subscriptions."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_WORKBOOK_NAMES",
+        "name": "List SharePoint Workbook Named Items",
+        "description": "List named items defined at the workbook scope in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_WORKBOOK_TABLES",
+        "name": "List SharePoint Workbook Tables",
+        "description": "List tables in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_LIST_WORKBOOK_WORKSHEETS",
+        "name": "List SharePoint Workbook Worksheets",
+        "description": "List worksheets in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_PREVIEW_DRIVE_ITEM",
+        "name": "Preview SharePoint Drive Item",
+        "description": "Get a short-lived embeddable preview URL for a SharePoint drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_SEARCH_DRIVE_ITEMS",
+        "name": "Search SharePoint Drive Items",
+        "description": "Search items in a SharePoint drive."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_UPDATE_DRIVE_ITEM",
+        "name": "Update SharePoint Drive Item",
+        "description": "Update drive item metadata such as name or description."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_UPDATE_SUBSCRIPTION",
+        "name": "Update Microsoft Graph Subscription",
+        "description": "Update a Microsoft Graph webhook subscription."
+      },
+      {
+        "slug": "MICROSOFT_365_SHAREPOINT_GRAPH_UPDATE_WORKBOOK_WORKSHEET",
+        "name": "Update SharePoint Workbook Worksheet",
+        "description": "Update worksheet metadata in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_SHARE_TEAM_SCHEDULE",
+        "name": "Share Team Schedule",
+        "description": "Tool to share a Microsoft Teams schedule for a specified time range. Use when you need to make a team's schedule visible to members."
+      },
+      {
+        "slug": "MICROSOFT_365_SITES_SEARCH",
+        "name": "Search SharePoint sites",
+        "description": "Search SharePoint sites available through Microsoft Graph. Use this to find a site ID from a site name or keyword before listing site-hosted OneNote notebooks. Microsoft Graph site search does not support $count; page only with returned @odata.nextLink URLs."
+      },
+      {
+        "slug": "MICROSOFT_365_SNOOZE_CALENDAR_GROUP_EVENT_REMINDER",
+        "name": "Snooze user calendar group event reminder",
+        "description": "Tool to snooze a reminder for a user's calendar event within a calendar group to a new time. Use when you need to postpone an event reminder for a specific user's calendar that belongs to a calendar group."
+      },
+      {
+        "slug": "MICROSOFT_365_SNOOZE_EVENT_REMINDER",
+        "name": "Snooze event reminder",
+        "description": "Tool to postpone an event reminder until a new time. Use when you need to delay a reminder for a calendar event."
+      },
+      {
+        "slug": "MICROSOFT_365_SNOOZE_USER_CALENDAR_EVENT_REMINDER",
+        "name": "Snooze user calendar event reminder",
+        "description": "Tool to snooze a reminder for a calendar event in a specific user calendar to a new time. Use when you need to postpone an event reminder for a specific calendar."
+      },
+      {
+        "slug": "MICROSOFT_365_SNOOZE_USER_EVENT_REMINDER",
+        "name": "Snooze user event reminder",
+        "description": "Snoozes a reminder for an event in a user's default calendar to a new time."
+      },
+      {
+        "slug": "MICROSOFT_365_SORT_RANGE",
+        "name": "Sort Range",
+        "description": "Sort a range in a worksheet using Microsoft Graph API."
+      },
+      {
+        "slug": "MICROSOFT_365_SYNC_TASK_LISTS",
+        "name": "Sync Task Lists",
+        "description": "Read one page of Microsoft To Do task-list changes. Continue the current round with next_cursor, or store the terminal delta_token to retrieve only changes from a later round. Removed task lists retain their removal marker."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_CREATE_CHANNEL",
+        "name": "Create a channel",
+        "description": "(DEPRECATED: use `MICROSOFT_TEAMS_CREATE_CHANNEL`) Tool to create a new standard, private, or shared channel within a Microsoft Teams team. Use when you need to create a new channel for team collaboration."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_CREATE_CHAT",
+        "name": "Create Chat",
+        "description": "Creates a new chat; if a 'oneOnOne' chat with the specified members already exists, its details are returned, while 'group' chats are always newly created. IMPORTANT: The authenticated user MUST be included as one of the members."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_LIST",
+        "name": "List Teams",
+        "description": "Lists Microsoft Teams with filtering and pagination. Property selection can be requested, but returned team details are limited to ID, display name, description, visibility, and a constructed display URL."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_LIST_CHANNEL_MESSAGES",
+        "name": "List channel messages",
+        "description": "Tool to list messages in a Teams channel when team_id and channel_id are known (no chat_id required). Use this to enumerate channel message history and obtain message_id for follow-on operations like listing replies or getting message details."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_LIST_CHANNELS",
+        "name": "List team channels",
+        "description": "Lists channels for a specified Microsoft Teams team, with filtering and property selection. Shared channels are excluded by default; enable the shared-channel option to use the all-channels endpoint."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_LIST_CHAT_MESSAGES",
+        "name": "List chat messages (Deprecated)",
+        "description": "DEPRECATED: Retrieves a page of messages from an accessible Microsoft Teams chat by chat ID. Results default to creation time descending; a continuation token can be used to fetch further pages."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_POST_CHANNEL_MESSAGE",
+        "name": "Send Channel Message",
+        "description": "Posts a new top-level message to a channel in Microsoft Teams (does NOT reply to an existing message). Despite the file name 'reply_to_channel_chat', this action creates a brand-new message in the channel via POST /teams/{id}/channels/{id}/messages. To reply to an existing message thread, use the dedicated reply action instead."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_POST_CHAT_MESSAGE",
+        "name": "Send message to Teams chat",
+        "description": "Sends a non-empty message (text or HTML) to a specified, existing Microsoft Teams chat; content must be valid HTML if `content_type` is 'html'."
+      },
+      {
+        "slug": "MICROSOFT_365_TEAMS_POST_MESSAGE_REPLY",
+        "name": "Reply to Teams channel message",
+        "description": "(DEPRECATED: use `MICROSOFT_TEAMS_POST_MESSAGE_REPLY`) Sends a reply to an existing message, identified by `message_id`, within a specific `channel_id` of a given `team_id` in Microsoft Teams."
+      },
+      {
+        "slug": "MICROSOFT_365_TRACK_FOLDER_CHANGES",
+        "name": "Track Folder Changes",
+        "description": "Track changes beneath one folder, one Microsoft Graph delta page at a time."
+      },
+      {
+        "slug": "MICROSOFT_365_TRANSFORM_PRESENTATION_TEXT_AND_PROPERTIES",
+        "name": "Transform Presentation Text and Properties",
+        "description": "Transform text, slide order, or embedded core document properties inside a macro-free PPTX, then conditionally replace the same file. Literal text replacement runs sequentially within DrawingML paragraphs, including slide text in tables and optionally speaker notes; complete slide reordering and core-property updates are supported."
+      },
+      {
+        "slug": "MICROSOFT_365_TRANSLATE_EXCHANGE_IDS",
+        "name": "Translate Exchange IDs",
+        "description": "Translate Outlook resource IDs between supported Exchange ID formats."
+      },
+      {
+        "slug": "MICROSOFT_365_UNARCHIVE_CHANNEL",
+        "name": "Unarchive channel",
+        "description": "Tool to unarchive a channel in a Microsoft Teams team. Use when you need to restore an archived channel to active state."
+      },
+      {
+        "slug": "MICROSOFT_365_UNARCHIVE_GROUP_TEAM_CHANNEL",
+        "name": "Unarchive group team channel",
+        "description": "Tool to unarchive a channel in a Microsoft Teams group's team. Use when you need to restore an archived channel to active state."
+      },
+      {
+        "slug": "MICROSOFT_365_UNARCHIVE_TEAM",
+        "name": "Unarchive Teams team",
+        "description": "Tool to unarchive a Microsoft Teams team. Use when you need to restore an archived team to active state."
+      },
+      {
+        "slug": "MICROSOFT_365_UNFOLLOW_ITEM",
+        "name": "Delete Drive Following",
+        "description": "Tool to unfollow a driveItem by removing it from the user's followed items collection. Use when you need to stop following a file or folder that was previously marked to follow."
+      },
+      {
+        "slug": "MICROSOFT_365_UNFOLLOW_SITE",
+        "name": "Unfollow SharePoint Sites",
+        "description": "Unfollow one or more SharePoint sites for a user."
+      },
+      {
+        "slug": "MICROSOFT_365_UNHIDE_CHAT_FOR_USER",
+        "name": "Unhide Chat For User",
+        "description": "Tool to unhide a chat for a specific user. Use when you need to make a hidden chat visible again in the user's chat list."
+      },
+      {
+        "slug": "MICROSOFT_365_UNMERGE_RANGE",
+        "name": "Unmerge Range",
+        "description": "Split a merged worksheet range back into separate cells."
+      },
+      {
+        "slug": "MICROSOFT_365_UNPIN_MESSAGE",
+        "name": "Unpin chat message",
+        "description": "Tool to unpin a message from a Microsoft Teams chat. Use when you need to remove a pinned message."
+      },
+      {
+        "slug": "MICROSOFT_365_UNPROTECT_WORKSHEET",
+        "name": "Unprotect Worksheet",
+        "description": "Remove protection from a worksheet so it can be edited again."
+      },
+      {
+        "slug": "MICROSOFT_365_UNPUBLISH_BOOKING_BUSINESS",
+        "name": "Unpublish Booking Business",
+        "description": "Take a booking business's external scheduling page offline and clear its public URL without deleting the business."
+      },
+      {
+        "slug": "MICROSOFT_365_UNPUBLISH_CONTENT_TYPE",
+        "name": "Unpublish SharePoint Content Type",
+        "description": "Unpublish a SharePoint content type from the content type hub site."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_APPOINTMENT",
+        "name": "Update Appointment",
+        "description": "Update an existing appointment's schedule, customers, service, staff, location, notifications, or pricing without cancelling it. The request requires filled and maximum attendee counts plus at least one other appointment field to update."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_BOOKING_BUSINESS",
+        "name": "Update Booking Business",
+        "description": "Update supported contact details, hours, currency, business type, address, or scheduling rules without publishing or unpublishing the business."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_EVENT",
+        "name": "Update calendar event",
+        "description": "Updates specified fields of an existing Outlook calendar event, including subject, time, attendees, location, categories, and recurrence."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_EVENT_IN_CALENDAR",
+        "name": "Update event in specific calendar",
+        "description": "Tool to update an event in a specific Outlook calendar. Use when you need to modify event details like subject, time, attendees, or location in a non-default calendar."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_GROUP",
+        "name": "Update calendar group",
+        "description": "Tool to update the properties of a calendar group object. Use when you need to rename a calendar group."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_GROUP_CALENDAR_PERMISSION",
+        "name": "Update Calendar Group Calendar Permission",
+        "description": "Tool to update a calendar permission within a calendar group. Use when changing access levels for calendars in specific groups."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_GROUPS_CALENDARS",
+        "name": "Update user calendar in calendar group",
+        "description": "Tool to update a calendar within a calendar group in a user's mailbox. Use when modifying calendar properties like name, color, or default calendar status."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_GROUPS_CALENDARS_EVENTS",
+        "name": "Update user calendar group event",
+        "description": "Tool to update an event in a calendar within a calendar group for a specific user. Use when modifying event details for a user's calendar."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALENDAR_PERMISSION",
+        "name": "Update calendar permission",
+        "description": "Tool to update calendar permission levels for share recipients or delegates. Use when you need to change the access level (role) for someone who has been granted access to a calendar."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALL",
+        "name": "Update Call",
+        "description": "Tool to update the navigation property calls in Microsoft Teams communications. Use when you need to modify properties of an existing call."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALL_OPERATION",
+        "name": "Update Call Operation",
+        "description": "Tool to update the navigation property operations in communications. Use when you need to modify properties of an existing call operation."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CALL_PARTICIPANT",
+        "name": "Update Call Participant",
+        "description": "Tool to update a participant in a Microsoft Teams call. Use when you need to modify participant properties such as lobby status."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHANNEL",
+        "name": "Update Teams channel",
+        "description": "Tool to update channel properties in a Microsoft Teams group. Use when you need to modify channel description, display name, or favorite settings."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHANNEL_MESSAGE",
+        "name": "Update Teams channel message",
+        "description": "Tool to update a message in a channel. Use when you need to modify an existing channel message after confirming channel and message IDs."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHART",
+        "name": "Update Chart",
+        "description": "Update a chart in a worksheet using Microsoft Graph API."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHART_COMPONENT",
+        "name": "Update chart component",
+        "description": "Update one Excel chart component: an axis, data labels, chart title, axis title, supported gridlines, axis font, fill, or supported line format."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHART_LEGEND",
+        "name": "Update Chart Legend",
+        "description": "Update a chart legend's visibility, position, or overlay setting."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHART_SERIES",
+        "name": "Update chart series",
+        "description": "Rename one Excel chart series by ID or zero-based collection position."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHAT",
+        "name": "Update Chat",
+        "description": "Updates the topic of a Microsoft Teams chat by ID."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHAT_MESSAGE",
+        "name": "Update Teams chat message",
+        "description": "Tool to update a specific message in a chat. Use when you need to correct or modify a sent chat message."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHECKLIST_ITEM",
+        "name": "Update Checklist Item",
+        "description": "Update a checklist item (subtask) of a Microsoft To Do task: rename it (display_name) and/or check/uncheck it (is_checked). Partial update: only the fields you pass are changed; at least one is required. Setting is_checked=true marks the subtask done."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CHILD_FOLDER_CONTACT",
+        "name": "Update child folder contact",
+        "description": "Tool to update a contact in a child contact folder within a parent contact folder. Use when you need to modify contact properties such as name, email, phone numbers, or company details for contacts in nested folder structures."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CONTACT",
+        "name": "Update Contact",
+        "description": "Updates an existing Outlook contact, identified by `contact_id` for the specified `user_id`, requiring at least one other field to be modified."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CONTACT_FOLDER",
+        "name": "Update user contact folder",
+        "description": "Tool to update the properties of a contact folder for a specific user. Use when you need to rename or move an existing contact folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CONTACT_FOLDER_CHILD_FOLDER",
+        "name": "Update user contact folder child folder",
+        "description": "Tool to update a child folder within a contact folder for a specific user. Use when you need to rename a child contact folder or move it to a different parent folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CONTACT_FOLDERS_CONTACTS",
+        "name": "Update contact in folder",
+        "description": "Tool to update a contact within a specific contact folder. Use when you need to modify contact details for a contact stored in a particular folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CONTENT_SHARING_SESSION",
+        "name": "Update Content Sharing Session",
+        "description": "Send an update request for a content sharing session in a Microsoft Teams call, supplying an OData type and optionally a session entity ID."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CUSTOMER",
+        "name": "Update Customer",
+        "description": "Update a saved customer's name, email, phone numbers, or postal addresses in one booking business."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_CUSTOM_QUESTION",
+        "name": "Update Custom Question",
+        "description": "Update the text of one custom intake question, optionally changing its answer type or choices."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_DAY_NOTE",
+        "name": "Update schedule day note",
+        "description": "Tool to update an existing day note in a team's schedule. Use when you need to modify notes or reminders for a specific date in the team schedule."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_DRIVE_ITEM_METADATA",
+        "name": "Update Drive Item Metadata",
+        "description": "Tool to update the metadata of a specific item (file or folder) in OneDrive. Use this to rename items, change descriptions, or move items to a new parent folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_DRIVE_ITEM_PERMISSION",
+        "name": "Update SharePoint Drive Item Permission",
+        "description": "Update the roles of a direct sharing permission on a SharePoint drive item."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_DRIVE_ITEM_RECORD_LOCK",
+        "name": "Update SharePoint Drive Item Record Lock",
+        "description": "Lock or unlock a document already classified as a record by its retention label."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_DRIVE_ITEMS_PERMISSIONS",
+        "name": "Update Drive Item Permissions",
+        "description": "Tool to update the roles of an existing permission on a OneDrive drive item. Use when you need to change the access level (read, write, owner) for a specific permission on a file or folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_EMAIL",
+        "name": "Update email message",
+        "description": "Updates specified properties of an existing email message; `message_id` must identify a valid message within the specified `user_id`'s mailbox."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_EMAIL_RULE",
+        "name": "Update Email Rule",
+        "description": "Update an existing email rule"
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_EVENT_EXTENSION",
+        "name": "Update event extension",
+        "description": "Tool to update an open extension on a calendar event in Microsoft Graph. Use when you need to modify custom properties stored in an event extension."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_EVENT_EXTENSION_IN_CALENDAR_GROUP",
+        "name": "Update event extension in calendar group",
+        "description": "Tool to update an open extension on a calendar event within a calendar group. Use when modifying custom properties stored in an event extension for events in calendar groups."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_FILE_CONTENT",
+        "name": "Update File Content",
+        "description": "Tool to update an existing file's content in OneDrive. When called without a `file` parameter, creates an upload session and returns its uploadUrl (legacy behavior — caller drives the PUT uploads). When called with a `file`, the action streams the file's bytes in chunks via the upload session and returns the final updated DriveItem. The item's ID is preserved (existing share links remain valid) unless conflict_behavior=rename causes the server to create a new item."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_INFERENCE_CLASSIFICATION",
+        "name": "Update Inference Classification",
+        "description": "Request an update to a user's Focused Inbox inference classification resource. This action cannot change classification settings or rules; manage message classification rules through the overrides collection."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_LIST",
+        "name": "Update SharePoint List",
+        "description": "Update SharePoint list metadata."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_LIST_COLUMN",
+        "name": "Update SharePoint List Column",
+        "description": "Update a SharePoint list column definition."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_LIST_CONTENT_TYPE",
+        "name": "Update SharePoint List Content Type",
+        "description": "Update a SharePoint list content type."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_LIST_ITEM",
+        "name": "Update SharePoint List Item",
+        "description": "Update a SharePoint list item."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_LIST_ITEM_FIELDS",
+        "name": "Update SharePoint List Item Fields",
+        "description": "Update field values for a SharePoint list item."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_MAILBOX_SETTINGS",
+        "name": "Update mailbox settings",
+        "description": "Updates mailbox settings for the signed-in user or a specified user, including automatic replies, default time zone, language, and working hours."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_MAIL_FOLDER",
+        "name": "Update mail folder",
+        "description": "Tool to update the display name of a mail folder. Use when you need to rename an existing mail folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_MASTER_CATEGORY",
+        "name": "Update master category",
+        "description": "Tool to update the color of a category in the user's master category list. Use when you need to change the color of an existing category. Note that the display name cannot be modified after creation."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_ME_CONTACTS_EXTENSIONS",
+        "name": "Update contact extension",
+        "description": "Tool to update an open extension on a contact in a contact folder. Use when you need to modify custom properties stored in a contact extension."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_ME_PAGE_CONTENT",
+        "name": "Update my OneNote page content",
+        "description": "Update the content of a OneNote page for the signed-in user. Sends a PATCH request with patch content commands to modify the HTML structure of a OneNote page. Supports appending children, inserting siblings, replacing elements, and prepending content. Use this action when you need to update or modify the content of an existing OneNote page owned by the signed-in user, such as adding new paragraphs, inserting images, modifying lists, or replacing existing elements. Repeating append, prepend, or insert commands can add duplicate content."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_ME_SECTIONS",
+        "name": "Update my OneNote section",
+        "description": "Updates the navigation property sections in me. Use when you need to modify properties of an existing OneNote section, such as renaming it, within the current user's notebooks. This action uses a PATCH request to update the section entity at the specified path. Use this action when you need to update a specific OneNote section owned by the authenticated user, such as changing its display name. This operation modifies the specified properties while preserving all other existing values. Note: Only the displayName property can be updated via this endpoint. Other properties like isDefault, createdDateTime, etc. are read-only. This PATCH operation is provider-undocumented; its behavior is live-observed."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_NAMED_ITEM",
+        "name": "Update Named Item",
+        "description": "Update a workbook named item's visibility or comment."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_ONLINE_MEETING",
+        "name": "Update online meeting",
+        "description": "Tool to update the properties of an existing Microsoft Teams online meeting. Use when you need to modify meeting details such as subject, start time, or end time."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_OPEN_SHIFT",
+        "name": "Update open shift",
+        "description": "Tool to update an existing open shift in a Microsoft Teams team schedule. Use when you need to modify open shift details such as times, theme, notes, or open slot count."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PAGE_CONTENT",
+        "name": "Update OneNote page content",
+        "description": "Update the content of a OneNote page in a Microsoft 365 group using one or more HTML patch commands. A successful 204 response is returned as a success status and message."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PLANNER_BUCKET",
+        "name": "Update Planner bucket",
+        "description": "Update a Planner bucket name or ordering with ETag concurrency."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PLANNER_TASK",
+        "name": "Update Planner task",
+        "description": "Update selected properties of a Microsoft Planner task using its last known ETag for optimistic concurrency."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PLANNER_TASK_DETAILS",
+        "name": "Update Planner task details",
+        "description": "Conditionally update a Planner task's description, preview mode, checklist, or references and return confirmation or the updated details."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PRESENTATION_CONTENT",
+        "name": "Update Presentation Content",
+        "description": "Update one macro-free PPTX under an exact eTag with a conditional upload, supporting slide, shape, text, comment, chart, image, notes, table and hyperlink operations. Slide, shape and comment deletions are supported, and every call requires irreversible-update approval; packages are limited to 50 MiB and transactions to 100 operations."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PRESENTATION_CONTENT_DESTRUCTIVE",
+        "name": "Update Presentation Content Destructively",
+        "description": "Atomically update one macro-free PPTX with at least one irreversible delete operation, under an exact eTag and one conditional upload. delete_slide permanently removes a slide and eligible private dependencies; delete_shape permanently removes a top-level shape and unreferenced relationships; delete_comment permanently removes a root comment and its replies. Supporting non-delete operations may be included in the same transaction, but every call must contain delete_slide, delete_shape, or delete_comment and requires irreversible-update approval. Validates the package graph and semantic result. Limits include 50 MiB packages, 100 operations, 500,000 text characters, 20 uploaded PNGs, and 10,000 generated line breaks."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PRESENTATION_CONTENT_SAFE",
+        "name": "Update Presentation Content Safely",
+        "description": "Atomically update one macro-free PPTX without delete operations, under an exact eTag and one conditional upload. Allowed operations are add_text_box, add_image, replace_image, set_existing_speaker_notes, add_table, add_slide, duplicate_slide, set_slide_hidden, set_shape_text, format_text_run, set_shape_bounds, set_shape_alt_text, set_shape_hyperlink, set_text_run_hyperlink, add_comment, reply_comment, add_chart, and replace_chart_data. delete_slide, delete_shape, and delete_comment are rejected during request validation before any network request. Validates the package graph and semantic result. Limits include 50 MiB packages, 100 operations, 500,000 text characters, 20 uploaded PNGs, and 10,000 generated line breaks."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_PRESENTATION_METADATA",
+        "name": "Update Presentation Metadata",
+        "description": "Update Microsoft Graph DriveItem metadata or path only: rename a PowerPoint presentation, move it within its current drive, or set supported filesystem metadata. This action does not edit slide text, slide order, document properties inside the PPTX package, or other presentation content. Optionally require a matching eTag. Provide at least one of name, parent_folder_id, description, created_datetime, or last_modified_datetime. OneDrive may accept a description without persisting it; the response reports that limitation."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_RANGE",
+        "name": "Update Range",
+        "description": "Update cell values in a specified worksheet range using Microsoft Graph API."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_RANGE_FORMAT",
+        "name": "Update Range Format",
+        "description": "Update exactly one formatting component on a workbook range."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SCHEDULING_GROUP",
+        "name": "Update scheduling group",
+        "description": "Tool to replace/update a scheduling group in a team's schedule. Use when you need to modify properties of an existing scheduling group such as display name, active status, code, or member list."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SERVICE",
+        "name": "Update Service",
+        "description": "Update a service's name, duration, location, pricing, staff, reminders, questions, visibility, or scheduling rules."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SHAREPOINT_ITEM_PERMISSION",
+        "name": "Update SharePoint Item Permission",
+        "description": "Update an application permission on a SharePoint list or list item using Microsoft Graph beta."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SHAREPOINT_LIST_ITEM_FIELDS",
+        "name": "Update SharePoint List Item Fields",
+        "description": "Update field values on a SharePoint list item using Microsoft Graph through the OneDrive connection. Use when you need to modify one or more columns on an existing SharePoint list item."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SHAREPOINT_RANGE",
+        "name": "Update SharePoint Range",
+        "description": "Update values in a worksheet range in an Excel workbook stored in a SharePoint site's default drive using Microsoft Graph."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SHARE_POINT_SETTINGS",
+        "name": "Update SharePoint Settings",
+        "description": "Update tenant-wide SharePoint and OneDrive settings."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE",
+        "name": "Update SharePoint Site",
+        "description": "Update editable SharePoint site metadata (description)."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_COLUMN",
+        "name": "Update SharePoint Site Column",
+        "description": "Update a SharePoint site column definition."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_CONTENT_TYPE",
+        "name": "Update SharePoint Site Content Type",
+        "description": "Update a SharePoint site content type."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_NOTEBOOKS_SECTIONS",
+        "name": "Update section in site notebook",
+        "description": "Canonical action for updating a OneNote section in a SharePoint site. Use this action when you need to modify properties of an existing section, such as renaming it. This action uses a PATCH request to update the section entity at the specified path within the site's notebook hierarchy. Note: Only the displayName property of a section can be updated via this endpoint. Other properties like createdDateTime, isDefault, etc. are read-only. This PATCH operation is provider-undocumented; its behavior is live-observed."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_PAGE",
+        "name": "Update SharePoint Site Page",
+        "description": "Update editable metadata and layout for a SharePoint site page."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_PAGES_CONTENT",
+        "name": "Update site OneNote page content",
+        "description": "Update the content of a OneNote page within a SharePoint site. Sends a PATCH request with patch content commands to modify the HTML structure of a OneNote page. Supports appending children, inserting siblings, replacing elements, and prepending content. Use this action when you need to update or modify the content of an existing OneNote page within a SharePoint site, such as adding new paragraphs, inserting images, modifying lists, or replacing existing elements. Repeating append, prepend, or insert commands can add duplicate content."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_PAGE_SECTION_WEB_PART",
+        "name": "Update SharePoint Site Page Section Web Part",
+        "description": "Update a text or supported standard web part by its section position."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_PAGE_WEB_PART",
+        "name": "Update SharePoint Site Page Web Part",
+        "description": "Update the properties of a web part on a SharePoint site page."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_PERMISSION",
+        "name": "Update SharePoint Site Permission",
+        "description": "Update the roles of an application (Sites.Selected) permission on a SharePoint site."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_SITE_SECTION_GROUPS_SECTIONS",
+        "name": "Update site section group section",
+        "description": "Compatibility alias for updating a OneNote section in a SharePoint site. Prefer UpdateSiteNotebooksSections for new site calls. Legacy notebook and section-group context does not affect the Graph route. Use this action when you need to modify properties of an existing OneNote section, such as updating its display name. This action uses a PATCH request to update the section entity at the specified path within the SharePoint site's notebook hierarchy. Note: Only the displayName property can be updated via this endpoint. Other properties are read-only. This PATCH operation is provider-undocumented; its behavior is live-observed."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_STAFF_MEMBER",
+        "name": "Update Staff Member",
+        "description": "Update a booking staff member's identity, role, time zone, working schedule, calendar behavior, or email notifications."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TAB",
+        "name": "Update Teams channel tab",
+        "description": "Tool to update the properties of a tab in a Microsoft Teams channel. Use when you need to modify tab display name, configuration, or web URL."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TABLE",
+        "name": "Update Table",
+        "description": "Update an Excel workbook table's name, header visibility, totals visibility, or style using Microsoft Graph."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TABLE_COLUMN",
+        "name": "Update Table Column",
+        "description": "Update the name or values of an Excel table column."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TABLE_ROW",
+        "name": "Update Table Row",
+        "description": "Update Table Row"
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TASK",
+        "name": "Update Task",
+        "description": "Update fields of an existing Microsoft To Do task, including title, notes, importance, status, dates, and categories; set status to completed to mark it done. Unspecified fields are omitted, except that providing a reminder date also enables the reminder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TASK_LIST",
+        "name": "Update Task List",
+        "description": "Rename a Microsoft To Do task list (updates its displayName)."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TEAM",
+        "name": "Update Team",
+        "description": "Tool to update the properties of a team. Use when you need to modify team settings such as member, messaging, or fun settings."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TEAM_MEMBER",
+        "name": "Update team member",
+        "description": "Tool to update a team member's roles or properties in Microsoft Teams. Use when you need to change a member's role (e.g., promote to owner or demote to member)."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TEAM_SCHEDULE_SHIFT",
+        "name": "Update team schedule shift",
+        "description": "Tool to update an existing shift in a Microsoft Teams team schedule. Use when you need to modify shift details like times, assigned user, or notes."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TIME_OFF",
+        "name": "Update time off",
+        "description": "Tool to replace an existing timeOff entry in a team's schedule. Use when you need to update time off details including dates, reason, or status."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TIME_OFF_REASON",
+        "name": "Update time off reason",
+        "description": "Tool to update a time off reason in a team's schedule. Use when you need to modify the display name, icon, active status, or code of an existing time off reason."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TODO_CHECKLIST_ITEM",
+        "name": "Update To Do checklist item",
+        "description": "Update selected properties of one checklist item in a Microsoft To Do task. Requires the Tasks.ReadWrite scope, which is not in Outlook's default scopes; the connection must grant it."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_TODO_TASK",
+        "name": "Update To Do task",
+        "description": "Updates an existing Microsoft To Do task's title, status, importance, due date, reminder, body, completion date, or categories. Providing a reminder date also enables the reminder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CALENDAR",
+        "name": "Update user calendar",
+        "description": "Update the name or color of a user's default calendar. At least one of these properties must be supplied."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CALENDAR_CALENDAR_EVENT",
+        "name": "Update user calendar event",
+        "description": "Update an event in a specified user's calendar by calendar ID and event ID. This tool is deprecated."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CALENDAR_EVENT",
+        "name": "Update user calendar event",
+        "description": "Tool to update an event in a specific user's calendar. Use when you need to modify calendar event properties for a user other than the signed-in user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CALENDAR_PERMISSION",
+        "name": "Update user calendar permission",
+        "description": "Tool to update calendar permission levels for a specific user's calendar. Use when you need to change the access level (role) for someone who has been granted access to a user's calendar."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CALENDARS",
+        "name": "Update user calendar by ID",
+        "description": "Tool to update properties of a specific calendar by ID for a specific user. Use when you need to rename a user's calendar, change its color theme, or set it as the default calendar."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CHILD_FOLDER_MESSAGE",
+        "name": "Update user child folder message",
+        "description": "Tool to update a message in a child folder within a user's mailbox. Use when you need to modify message properties such as isRead status, importance, categories, or subject for messages in nested folder structures for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CONTACT_EXTENSION",
+        "name": "Update user contact extension",
+        "description": "Tool to update an open extension on a contact in a user's contact folder. Use when you need to modify custom properties stored in a contact extension for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CONTACTS_EXTENSIONS",
+        "name": "Update user contact extension",
+        "description": "Updates an open extension on a contact in a child folder of a user's contact folder, including its custom properties."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_CONTACTS_EXTENSIONS_DIRECT",
+        "name": "Update user contact extension (v3)",
+        "description": "Tool to update an open extension on a contact directly under a user's contacts collection. Use when you need to modify custom properties stored in a contact extension."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_EVENT_EXTENSION",
+        "name": "Update user event extension",
+        "description": "Update an open extension on a user's event in a calendar group, including its extension name and optional custom properties. This tool is deprecated."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_EVENTS_EXTENSIONS",
+        "name": "Update user events extensions",
+        "description": "Tool to update an open extension on a user's calendar event. Use when modifying custom properties stored in an event extension for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_INFERENCE_CLASSIFICATION_OVERRIDE",
+        "name": "Update User Inference Classification Override",
+        "description": "Tool to update the classification of messages from a specific sender in a user's Focused Inbox. Use when you need to change whether messages from a sender go to Focused or Other inbox for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_MAIL_FOLDER_MESSAGE",
+        "name": "Update user mail folder message",
+        "description": "Tool to update properties of a message in a specific mail folder for a user. Use when you need to modify message attributes like categories, read status, importance, or other properties for a message within a particular user's folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_MAIL_FOLDER_MESSAGE_EXTENSION",
+        "name": "Update user message extension",
+        "description": "Tool to update an open extension on a message within a specific user's mail folder. Use when you need to modify custom properties stored in a message extension for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_MAIL_FOLDER_MESSAGE_RULE",
+        "name": "Update user mail folder message rule",
+        "description": "Tool to update a message rule in a user's mail folder. Use when you need to modify an existing rule's properties, conditions, actions, or exceptions for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_MAIL_FOLDERS_CHILD_FOLDERS",
+        "name": "Update user mail folder child folder",
+        "description": "Tool to update a child folder within a mail folder for a specific user. Use when you need to rename a child mail folder."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_MESSAGE_EXTENSION",
+        "name": "Update user message extension",
+        "description": "Tool to update an open extension on a user's message. Use when you need to modify custom properties stored in a message extension for a specific user."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_USER_NOTEBOOKS_SECTIONS",
+        "name": "Update section in user notebook",
+        "description": "Updates a OneNote section within a user's notebook. Use this action when you need to modify properties of an existing OneNote section, such as renaming it, for a specific user identified by their Microsoft Graph user ID. This action uses a PATCH request to update the section entity at the specified path within the user's notebook hierarchy. Note: Only the displayName property can be updated via this endpoint. Other properties like isDefault, createdDateTime, etc. are read-only. This PATCH operation is provider-undocumented; its behavior is live-observed."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_WORKBOOK_RANGE",
+        "name": "Update Workbook Range",
+        "description": "Updates a range in a workbook worksheet using Microsoft Graph API. Use this action when you need to write data, formulas, or number formats to specific cells in an Excel workbook stored in OneDrive or SharePoint. The address parameter supports various formats including single cells, cell ranges, entire columns, or entire rows."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_WORKBOOK_TABLE",
+        "name": "Update SharePoint Workbook Table",
+        "description": "Update properties of a table in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_UPDATE_WORKSHEET",
+        "name": "Update Worksheet",
+        "description": "Update worksheet properties (name, position) in an Excel workbook using Microsoft Graph API."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_BYTES_TO_SESSION",
+        "name": "Upload Bytes To SharePoint Upload Session",
+        "description": "Upload one byte range (chunk) of a file to an existing SharePoint upload session, or get the session status or cancel it."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_DRIVE_FILE",
+        "name": "Upload drive file",
+        "description": "Upload a file up to 250 MB as a child of a Microsoft drive item. If a file with the same name already exists, this operation replaces its contents."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_FILE",
+        "name": "Upload SharePoint File",
+        "description": "Upload a nonempty file to SharePoint via a chunked Microsoft Graph upload session, creating the destination folder path if needed."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_NEW_PRESENTATION",
+        "name": "Upload New Presentation",
+        "description": "Create a new PPTX in a Microsoft Graph drive folder, with configurable filename-conflict behavior. The file must be a valid, non-macro-enabled PPTX package no larger than 250 MiB."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_SMALL_FILE",
+        "name": "Upload Small SharePoint File",
+        "description": "DEPRECATED: Use SHAREPOINT_GRAPH_UPLOAD_FILE instead. Upload a small file to SharePoint using Microsoft Graph PUT content."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_TASK_ATTACHMENT",
+        "name": "Upload Task Attachment",
+        "description": "Attach a file up to 25 MB to a Microsoft To Do task. The tool automatically uses a single request for files under 3 MB and a chunked upload session for larger files."
+      },
+      {
+        "slug": "MICROSOFT_365_UPLOAD_WORKBOOK",
+        "name": "Upload Workbook from URL",
+        "description": "Tool to upload an external Excel file from a URL into OneDrive/SharePoint. Downloads the file server-side and uploads it to the specified drive location, returning the driveItem metadata for subsequent Excel operations."
+      },
+      {
+        "slug": "MICROSOFT_365_UPSERT_DOCX",
+        "name": "Upsert DOCX",
+        "description": "Create or replace a same-name DOCX containing the same validated content supported by CREATE_DOCX. Replacement is always enabled; use CREATE_DOCX for create-only conflict behavior."
+      },
+      {
+        "slug": "MICROSOFT_365_VALIDATE_CREDENTIAL",
+        "name": "Validate OneNote credentials",
+        "description": "Validates OneNote API credentials by attempting to access the user's notebooks. Use this action when you need to verify that the provided authentication token has valid permissions to access Microsoft OneNote. This action makes a lightweight API call to confirm the credentials work before performing other operations."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_CALCULATE",
+        "name": "Calculate SharePoint Workbook",
+        "description": "Recalculate an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_CLEAR_RANGE",
+        "name": "Clear SharePoint Workbook Range",
+        "description": "Clear the contents and/or formatting of a range in a SharePoint Excel workbook."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_DELETE_RANGE",
+        "name": "Delete SharePoint Workbook Range",
+        "description": "Delete a range from a SharePoint Excel workbook and shift the remaining cells."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_FUNCTION",
+        "name": "Run SharePoint Workbook Function",
+        "description": "Run an Excel workbook function for a workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_INSERT_RANGE",
+        "name": "Insert SharePoint Workbook Range",
+        "description": "Insert a cell or range in an Excel workbook stored in SharePoint, shifting existing cells."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_MERGE_RANGE",
+        "name": "Merge SharePoint Workbook Range",
+        "description": "Merge the cells of a range in a SharePoint Excel workbook, either as one merged cell or separately across each row."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_READ_RANGE",
+        "name": "Read SharePoint Workbook Range",
+        "description": "Read a cell or range from an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_SORT_RANGE",
+        "name": "Sort SharePoint Workbook Range",
+        "description": "Sort a cell range in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_UNMERGE_RANGE",
+        "name": "Unmerge SharePoint Workbook Range",
+        "description": "Unmerge previously merged cells of a range in a SharePoint Excel workbook."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_UPDATE_RANGE",
+        "name": "Update SharePoint Workbook Range",
+        "description": "Update a cell or range in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_UPDATE_RANGE_FILL",
+        "name": "Update SharePoint Workbook Range Fill",
+        "description": "Update the fill of a cell or range in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_UPDATE_RANGE_FONT",
+        "name": "Update SharePoint Workbook Range Font",
+        "description": "Update the font of a cell or range in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_UPDATE_RANGE_FORMAT",
+        "name": "Update SharePoint Workbook Range Format",
+        "description": "Update the format of a cell or range in an Excel workbook stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WORKBOOK_USED_RANGE",
+        "name": "Get SharePoint Workbook Used Range",
+        "description": "Get the used range of an Excel worksheet stored in SharePoint."
+      },
+      {
+        "slug": "MICROSOFT_365_WRITE_WORKBOOK_CELL",
+        "name": "Write Workbook Cell",
+        "description": "Updates the value, formula, or format of a specific cell in an Excel workbook stored in OneDrive. Use this action when you need to write data to a single cell at a specific row and column position. The row and column parameters are 0-indexed (row 0 is the first row, column 0 is column A)."
       }
     ],
     "triggers": [],
@@ -410541,7 +411380,7 @@
     ],
     "toolCount": 4,
     "triggerCount": 0,
-    "version": "20261014_00",
+    "version": "20261120_00",
     "tools": [
       {
         "slug": "NEWS_API_GET_EVERYTHING",
@@ -410556,7 +411395,7 @@
       {
         "slug": "NEWS_API_GET_TOP_HEADLINES",
         "name": "Get Top Headlines",
-        "description": "Tool to retrieve live top and breaking headlines; does not support historical or date-bounded queries (use NEWS_API_GET_EVERYTHING for past date ranges). Results favor major outlets; use NEWS_API_GET_EVERYTHING or COMPOSIO_SEARCH_WEB for niche publications. Use when you need current headlines filtered by country, category, source(s), or keywords."
+        "description": "Tool to retrieve live top and breaking headlines; does not support historical or date-bounded queries (use NEWS_API_GET_EVERYTHING for past date ranges). Results favor major outlets; use NEWS_API_GET_EVERYTHING for niche publications. Use when you need current headlines filtered by country, category, source(s), or keywords."
       },
       {
         "slug": "NEWS_API_GET_V1_ARTICLES",
@@ -446317,6 +447156,357 @@
                 "displayName": "Personal API Key",
                 "type": "string",
                 "description": "Create and copy a personal API key in Postpone at Settings > Integrations > Postpone API (https://www.postpone.app/settings/api). Give the key a name and optionally an expiration date. Generating a replacement key invalidates the previous key, so keep this value secret and update the connection after rotating it.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "predicthq",
+    "name": "PredictHQ",
+    "logo": "https://logos.composio.dev/api/predicthq",
+    "description": "PredictHQ provides event intelligence, demand forecasting, and location analytics APIs for anticipating changes in demand.",
+    "category": "analytics",
+    "authSchemes": [
+      "API_KEY"
+    ],
+    "toolCount": 62,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "PREDICTHQ_CALCULATE_EVENT_FEATURES",
+        "name": "Calculate Event Features",
+        "description": "Calculate one page of daily or weekly ML-ready event features for a required date range using either a Beam analysis or a manually configured location and feature set."
+      },
+      {
+        "slug": "PREDICTHQ_COUNT_BROADCASTS",
+        "name": "Count Broadcasts",
+        "description": "Return the total number of PredictHQ broadcast records matching optional broadcast, schedule, date, viewership, location, and event filters, without returning result records."
+      },
+      {
+        "slug": "PREDICTHQ_COUNT_EVENTS",
+        "name": "Count Events",
+        "description": "Get aggregate event counts by category, label, rank level, and the same date, location, rank, attendance, spend, and event filters supported by search."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_BEAM_ANALYSIS",
+        "name": "Create Beam Analysis",
+        "description": "Create a Beam analysis that correlates an owned location's events with uploaded demand data."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_BEAM_ANALYSIS_GROUP",
+        "name": "Create Beam Analysis Group",
+        "description": "Create a Beam analysis group that aggregates feature importance across compatible analyses."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_FORECAST_MODEL",
+        "name": "Create Forecast Model",
+        "description": "Create a forecast model for a Saved Location. After creation, upload historical demand data and trigger model training with the corresponding Forecasts actions."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_LOOP_LINK",
+        "name": "Create Loop Link",
+        "description": "Create a hosted Loop link for end users to submit missing events or event feedback, and return both shareable URLs. An empty body creates a default-named active link."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_SAVED_LOCATION",
+        "name": "Create Saved Location",
+        "description": "Create a reusable PredictHQ Saved Location from an exact business point, a custom GeoJSON area, or Geonames place IDs."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_SAVED_LOCATION_CLOSURE",
+        "name": "Create Saved Location Closure",
+        "description": "Create a closure period for a PredictHQ Saved Location. The date range must not overlap an existing closure for the location."
+      },
+      {
+        "slug": "PREDICTHQ_CREATE_SAVED_LOCATION_OPENING_HOURS",
+        "name": "Create Saved Location Opening Hours",
+        "description": "Create opening hours for a Saved Location. The effective date range must not overlap another opening-hours record for the same location."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_BEAM_ANALYSIS",
+        "name": "Delete Beam Analysis",
+        "description": "Soft-delete a Beam Analysis. The analysis remains retrievable when filtering for deleted analyses, and containing Analysis Groups are refreshed automatically."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_BEAM_ANALYSIS_GROUP",
+        "name": "Delete Beam Analysis Group",
+        "description": "Delete an existing Beam Analysis Group without deleting the individual analyses in the group."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_FORECAST_MODEL",
+        "name": "Delete Forecast Model",
+        "description": "Permanently deletes a forecast model and all associated demand data and forecasts. The model must not be in `preparing`, `training`, or `forecasting` status. This action is irreversible."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_LOOP_LINK",
+        "name": "Delete Loop Link",
+        "description": "Soft-delete a Loop link. The record remains retrievable with `status=deleted`."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_SAVED_LOCATION",
+        "name": "Delete Saved Location",
+        "description": "Permanently delete a Saved Location and all of its associated insights data. This action is irreversible."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_SAVED_LOCATION_CLOSURE",
+        "name": "Delete Saved Location Closure",
+        "description": "Delete a closure by ID from the specified PredictHQ Saved Location. This action is irreversible."
+      },
+      {
+        "slug": "PREDICTHQ_DELETE_SAVED_LOCATION_OPENING_HOURS",
+        "name": "Delete Saved Location Opening Hours",
+        "description": "Delete an opening hours record by ID from the specified PredictHQ Saved Location. This action is irreversible."
+      },
+      {
+        "slug": "PREDICTHQ_GET_BEAM_ANALYSIS",
+        "name": "Get Beam Analysis",
+        "description": "Return the full details of one Beam Analysis, including its location, demand type, rank, readiness status, and processing state."
+      },
+      {
+        "slug": "PREDICTHQ_GET_BEAM_ANALYSIS_FEATURE_IMPORTANCE",
+        "name": "Get Beam Analysis Feature Importance",
+        "description": "Return the Beam feature groups whose statistical significance indicates how strongly they affect an analysis's demand, including the Features API fields recommended for forecasting models."
+      },
+      {
+        "slug": "PREDICTHQ_GET_BEAM_ANALYSIS_GROUP",
+        "name": "Get Beam Analysis Group",
+        "description": "Return the full details of one Beam Analysis Group, including its member analyses, demand type, readiness status, and processing state."
+      },
+      {
+        "slug": "PREDICTHQ_GET_BEAM_ANALYSIS_GROUP_FEATURE_IMPORTANCE",
+        "name": "Get Beam Analysis Group Feature Importance",
+        "description": "Return feature-importance results aggregated across the analyses in an existing Beam Analysis Group, including each feature group's Features API fields and p-value."
+      },
+      {
+        "slug": "PREDICTHQ_GET_DEMAND_SURGES",
+        "name": "Get Demand Surges",
+        "description": "Return dates with at least the requested demand-surge intensity for a required date and location, including summed predicted attendance."
+      },
+      {
+        "slug": "PREDICTHQ_GET_FORECAST_MODEL",
+        "name": "Get Forecast Model",
+        "description": "Retrieves a forecast model by ID, including its readiness status, configuration, accuracy metrics, and location details."
+      },
+      {
+        "slug": "PREDICTHQ_GET_LOOP_LINK",
+        "name": "Get Loop Link",
+        "description": "Return one Loop Link, including its status, metadata, expiry, and hosted event-submission and event-feedback URLs."
+      },
+      {
+        "slug": "PREDICTHQ_GET_LOOP_SETTINGS",
+        "name": "Get Loop Settings",
+        "description": "Return the organization name displayed in the hosted Loop interface."
+      },
+      {
+        "slug": "PREDICTHQ_GET_PREDICTED_IMPACT_AREA",
+        "name": "Get Predicted Impact Area",
+        "description": "Calculate a polygonal or radial Predicted Impact Area for a business location and industry, returned as GeoJSON."
+      },
+      {
+        "slug": "PREDICTHQ_GET_SAVED_LOCATION",
+        "name": "Get Saved Location",
+        "description": "Retrieve a Saved Location by ID, including its geometry, enrichment status, labels, resolved places, summary insights, opening hours, and closures."
+      },
+      {
+        "slug": "PREDICTHQ_GET_SAVED_LOCATION_CLOSURE",
+        "name": "Get Saved Location Closure",
+        "description": "Return a single closure by ID for the specified Saved Location."
+      },
+      {
+        "slug": "PREDICTHQ_GET_SAVED_LOCATION_OPENING_HOURS",
+        "name": "Get Saved Location Opening Hours",
+        "description": "Return one opening hours record by its ID for a specified PredictHQ Saved Location."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_BEAM_ANALYSES",
+        "name": "List Beam Analyses",
+        "description": "Return one page of Beam Analyses, with filters for lifecycle state, readiness, groups, demand type, location, labels, update date, and name."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_BEAM_ANALYSIS_CORRELATION_RESULTS",
+        "name": "List Beam Analysis Correlation Results",
+        "description": "Return one page of results correlating PredictHQ event data with an analysis's transactional demand data for a required lower and upper date bound."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_BEAM_ANALYSIS_GROUPS",
+        "name": "List Beam Analysis Groups",
+        "description": "Return one page of Beam Analysis Groups, optionally filtered by update date, name, lifecycle state, readiness, demand interval, or industry."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_FORECAST_ALGORITHMS",
+        "name": "List Forecast Algorithms",
+        "description": "Returns the list of available forecasting algorithms. Currently one algorithm is offered (`phq-xgboost`) based on XGBoost."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_FORECAST_MODEL_DEMAND",
+        "name": "List Forecast Model Demand",
+        "description": "Return one page of demand data uploaded to a forecast model, optionally filtered by date, as JSON, CSV, or newline-delimited JSON."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_FORECAST_MODELS",
+        "name": "List Forecast Models",
+        "description": "Return one page of forecast models belonging to the authenticated organization, optionally filtered by text, Saved Location, or readiness status."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_LOOP_EVENT_SUBMISSIONS",
+        "name": "List Loop Event Submissions",
+        "description": "Return one page of Loop-submitted events matching link, event, user, review, state, category, location, and date filters."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_LOOP_FEEDBACK_CONVERSATIONS",
+        "name": "List Loop Feedback Conversations",
+        "description": "Return one page of Loop feedback conversations matching record, link, user, feedback type, status, text, and date filters."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_LOOP_LINKS",
+        "name": "List Loop Links",
+        "description": "Return one page of hosted Loop links matching text, link, user, and sort filters."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_MODEL_FORECAST_RESULTS",
+        "name": "List Model Forecast Results",
+        "description": "Return one page of generated forecast results for a trained model, optionally filtered by date and enriched with features or event explainability."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_PLACE_HIERARCHIES",
+        "name": "List Place Hierarchies",
+        "description": "Return one page of administrative hierarchy chains resolved from either place IDs or coordinates."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_SAVED_LOCATION_CLOSURES",
+        "name": "List Saved Location Closures",
+        "description": "Return one page of closure records for a PredictHQ Saved Location, optionally filtered by the dates on which the records are active."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_SAVED_LOCATION_INSIGHT_EVENTS",
+        "name": "List Saved Location Insight Events",
+        "description": "Return one page of events that impact a specified PredictHQ Saved Location."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_SAVED_LOCATION_OPENING_HOURS",
+        "name": "List Saved Location Opening Hours",
+        "description": "Return one page of opening-hours records for a Saved Location, optionally filtered by the dates on which the records are active."
+      },
+      {
+        "slug": "PREDICTHQ_LIST_SAVED_LOCATIONS",
+        "name": "List Saved Locations",
+        "description": "Search and return one page of Saved Locations, including reusable location IDs, geographic definitions, enrichment state, and summary insights."
+      },
+      {
+        "slug": "PREDICTHQ_REFRESH_BEAM_ANALYSIS",
+        "name": "Refresh Beam Analysis",
+        "description": "Rerun correlation and analysis processing for an existing Beam Analysis. The analysis readiness status becomes pending until processing completes; the request fails if the analysis is already being processed."
+      },
+      {
+        "slug": "PREDICTHQ_REFRESH_BEAM_ANALYSIS_GROUP",
+        "name": "Refresh Beam Analysis Group",
+        "description": "Rerun aggregation for an existing Beam Analysis Group. The group's readiness status becomes pending until processing completes; the request fails if the group is already being processed."
+      },
+      {
+        "slug": "PREDICTHQ_REPLACE_BEAM_ANALYSIS",
+        "name": "Replace Beam Analysis",
+        "description": "Fully replace an existing Beam analysis using PUT. Retrieve the current analysis first and include every value that must be preserved; omitted optional fields may be lost. Use the partial-update action for PATCH semantics."
+      },
+      {
+        "slug": "PREDICTHQ_REPLACE_BEAM_ANALYSIS_GROUP",
+        "name": "Replace Beam Analysis Group",
+        "description": "Fully replace an existing Beam analysis group using PUT. Retrieve the current group first and include all values that must be preserved; use the partial-update action when omitted fields should remain unchanged."
+      },
+      {
+        "slug": "PREDICTHQ_REPLACE_FORECAST_MODEL",
+        "name": "Replace Forecast Model",
+        "description": "Fully replace an existing forecast model's mutable configuration. This is the PUT replacement operation, not the partial PATCH update. Configuration changes may make the model stale and require retraining, and are blocked while it is preparing, training, or forecasting."
+      },
+      {
+        "slug": "PREDICTHQ_REPLACE_LOOP_LINK",
+        "name": "Replace Loop Link",
+        "description": "Fully replace the mutable name, expiry, and metadata of an existing PredictHQ Loop Link using PUT."
+      },
+      {
+        "slug": "PREDICTHQ_REPLACE_SAVED_LOCATION",
+        "name": "Replace Saved Location",
+        "description": "Fully replace an existing PredictHQ Saved Location using PUT. Include every value that must be preserved. To recalculate its Predicted Impact Area, provide origin_geojson without geojson or place_ids."
+      },
+      {
+        "slug": "PREDICTHQ_REPLACE_SAVED_LOCATION_OPENING_HOURS",
+        "name": "Replace Saved Location Opening Hours",
+        "description": "Fully replace one PredictHQ Saved Location opening-hours record. This PUT operation replaces the complete record and rejects date ranges that overlap another opening-hours record for the location."
+      },
+      {
+        "slug": "PREDICTHQ_SEARCH_BROADCASTS",
+        "name": "Search Broadcasts",
+        "description": "Return one page of US county-level live-TV broadcast records matching event, geography, status, and date filters."
+      },
+      {
+        "slug": "PREDICTHQ_SEARCH_EVENTS",
+        "name": "Search Events",
+        "description": "Search for events happening in a location and date range using PredictHQ's event, location, rank, label, attendance, spend, and lifecycle filters. Returns one page and a continuation cursor."
+      },
+      {
+        "slug": "PREDICTHQ_SEARCH_PLACES",
+        "name": "Search Places",
+        "description": "Return one page of places matching text, country, coordinates, place IDs, or administrative type filters."
+      },
+      {
+        "slug": "PREDICTHQ_TRAIN_FORECAST_MODEL",
+        "name": "Train Forecast Model",
+        "description": "Triggers asynchronous training for a forecast model that has uploaded demand data and is in an eligible readiness state. Poll the model's `readiness.status` field to monitor progress."
+      },
+      {
+        "slug": "PREDICTHQ_UPDATE_BEAM_ANALYSIS",
+        "name": "Update Beam Analysis",
+        "description": "Partially update one or more fields on an existing Beam analysis without replacing fields that are omitted."
+      },
+      {
+        "slug": "PREDICTHQ_UPDATE_BEAM_ANALYSIS_GROUP",
+        "name": "Update Beam Analysis Group",
+        "description": "Partially update an existing Beam analysis group using PATCH. Only fields provided in the request are changed; use the replacement action to replace all fields."
+      },
+      {
+        "slug": "PREDICTHQ_UPDATE_FORECAST_MODEL",
+        "name": "Update Forecast Model",
+        "description": "Partially update a forecast model. Changes to location, demand type, forecast window, algorithm, or baseline generation are blocked while the model is preparing, training, or forecasting, and otherwise make it stale until it is retrained."
+      },
+      {
+        "slug": "PREDICTHQ_UPLOAD_BEAM_ANALYSIS_DEMAND",
+        "name": "Upload Beam Analysis Demand",
+        "description": "Upload daily or weekly demand data to an existing Beam analysis. New values replace existing values for matching dates, and individual dates cannot be removed. The complete stored series must remain valid after each upload."
+      },
+      {
+        "slug": "PREDICTHQ_UPLOAD_FORECAST_MODEL_DEMAND",
+        "name": "Upload Forecast Model Demand",
+        "description": "Upload historical demand data to an existing forecast model as typed JSON, CSV, or newline-delimited JSON. The upload changes the model's training data and requires paid Forecasts access."
+      },
+      {
+        "slug": "PREDICTHQ_UPSERT_LOOP_SETTINGS",
+        "name": "Upsert Loop Settings",
+        "description": "Create or replace the organization-wide display name used by the hosted Loop interface. WARNING: this changes the Loop UI for the entire organization. Read and save the current settings first, obtain explicit approval, and have an unconditional restoration plan before calling."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "API_KEY",
+        "name": "predicthq_api_key",
+        "fields": {
+          "auth_config_creation": {
+            "required": [],
+            "optional": []
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "generic_api_key",
+                "displayName": "API Key",
+                "type": "string",
+                "description": "Your PredictHQ API token. In the PredictHQ WebApp, open API Tools, select API Tokens, then create or copy a token. Keep this value secret.",
                 "required": true,
                 "default": null
               }
@@ -587845,6 +589035,1079 @@
                 "displayName": "API Key",
                 "type": "string",
                 "description": "To get your API Key, sign in and click the workspace drop down on the top right, and go to \"Settings\" > \"Developer\" > \"API Keys\". Click \"Create an API\" to generate your token.",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": []
+          }
+        }
+      }
+    ]
+  },
+  {
+    "slug": "zoho_analytics",
+    "name": "Zoho Analytics",
+    "logo": "https://logos.composio.dev/api/zoho_analytics",
+    "description": "Zoho Analytics provides APIs for data, workspaces, reports, dashboards, sharing, user management, automation, and analytics administration.",
+    "category": "analytics",
+    "authSchemes": [
+      "OAUTH2"
+    ],
+    "toolCount": 198,
+    "triggerCount": 0,
+    "version": "00000000_00",
+    "tools": [
+      {
+        "slug": "ZOHO_ANALYTICS_ACTIVATE_USERS",
+        "name": "Activate Users",
+        "description": "Activate Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_AGGREGATE_FORMULA",
+        "name": "Add Aggregate Formula",
+        "description": "Add Aggregate Formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_COLUMN",
+        "name": "Add Column",
+        "description": "Add Column."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_DEFAULT_WORKSPACE",
+        "name": "Add Default Workspace",
+        "description": "Set a workspace as the connected user's default workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_FAVORITE_VIEW",
+        "name": "Add Favorite View",
+        "description": "Mark a view as a favorite for the authenticated user."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_FAVORITE_WORKSPACE",
+        "name": "Add Favourite Workspace",
+        "description": "Add a workspace to the connected user's favourites."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_FORMULA_COLUMN",
+        "name": "Add Custom Formula",
+        "description": "Add Custom Formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_GROUP_MEMBERS",
+        "name": "Add Group Members",
+        "description": "Add Group Members."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_LOOKUP",
+        "name": "Add Lookup",
+        "description": "Add Lookup."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_ROW",
+        "name": "Add Row",
+        "description": "Add one row to a Zoho Analytics view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_TAGS_TO_VIEW",
+        "name": "Add Multiple Tags To View",
+        "description": "Attach up to 1,000 existing workspace tags to one view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_TAG_TO_VIEWS",
+        "name": "Add Tag To Views",
+        "description": "Attach one workspace tag to up to 1,000 views."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_USERS",
+        "name": "Add Users",
+        "description": "Invite users by email to the organization and assign their organization-level roles."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_WORKSPACE_ADMINS",
+        "name": "Add Workspace Admins",
+        "description": "Add Workspace Admins."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_ADD_WORKSPACE_USERS",
+        "name": "Add Workspace Users",
+        "description": "Add Workspace Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_AUTO_ANALYSE_COLUMN",
+        "name": "Auto Analyse Column",
+        "description": "Generate automatic analysis views for one table column."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_AUTO_ANALYSE_VIEW",
+        "name": "Auto Analyse View",
+        "description": "Generate automatic analysis views for a table, optionally replacing a previous run."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_AUTO_ML_WHAT_IF_ANALYSIS",
+        "name": "AutoML What If Analysis",
+        "description": "Generate a prediction from hypothetical feature values using an AutoML model."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_BACKUP_WORKSPACE_NOW",
+        "name": "Backup Workspace Now",
+        "description": "Queue an immediate workspace backup. Requires a paid Zoho Analytics plan."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_BATCH_IMPORT_EXISTING_TABLE",
+        "name": "Batch Import into an Existing Table",
+        "description": "Upload one batch in a multi-part import that appends, updates, or replaces all rows in an existing table; TRUNCATEADD permanently deletes the current rows first."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_BATCH_IMPORT_NEW_TABLE",
+        "name": "Batch Import into a New Table",
+        "description": "Upload one batch in a multi-part import that creates a new table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_ALERT_STATUS",
+        "name": "Change Alert Status",
+        "description": "Activate or pause a set of data alerts in one workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_EMAIL_SCHEDULE_STATUS",
+        "name": "Change Email Schedule Status",
+        "description": "Activate or deactivate an email schedule."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_FOLDER_HIERARCHY",
+        "name": "Change Folder Hierarchy",
+        "description": "Promote a subfolder to the root or nest a root folder under another folder."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_FOLDER_POSITION",
+        "name": "Change Folder Position",
+        "description": "Reorder a folder relative to another folder at the same hierarchy level."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_USER_ROLE",
+        "name": "Change User Role",
+        "description": "Change User Role."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_WORKSPACE_USERS_ROLE",
+        "name": "Change Workspace Users Role",
+        "description": "Change Workspace Users Role."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CHANGE_WORKSPACE_USERS_STATUS",
+        "name": "Change Workspace Users Status",
+        "description": "Change Workspace Users Status."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_COPY_FORMULAS",
+        "name": "Copy Custom Formulas",
+        "description": "Copy Custom Formulas."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_COPY_VIEWS",
+        "name": "Copy Views",
+        "description": "Copy selected views into another workspace, optionally with dependents."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_COPY_WORKSPACE",
+        "name": "Copy Workspace",
+        "description": "Copy a workspace within the connected organization or to an explicitly selected destination organization."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_ALERT",
+        "name": "Create Alert",
+        "description": "Create a data alert for a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_AUTO_ML_ANALYSIS",
+        "name": "Create AutoML Analysis",
+        "description": "Create an AutoML regression, classification, or clustering analysis in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_AUTO_ML_ANALYSIS_DEPLOYMENT",
+        "name": "Create AutoML Analysis Deployment",
+        "description": "Create a scheduled or on-demand deployment for an AutoML analysis model."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_CUSTOM_ROLE",
+        "name": "Create Custom Role",
+        "description": "Create Custom Role."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_DASHBOARD",
+        "name": "Create Dashboard",
+        "description": "Create a dashboard from a JSON-encoded card layout and optional theme and viewer settings."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_EMAIL_SCHEDULE",
+        "name": "Create Email Schedule",
+        "description": "Create a recurring email delivery schedule for workspace views."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_EXPORT_JOB_SQL_QUERY",
+        "name": "Create Export Job using SQL Query",
+        "description": "Create an asynchronous data-export job from a SQL SELECT query."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_EXPORT_JOB_VIEW_ID",
+        "name": "Create Export Job using View ID",
+        "description": "Create an asynchronous data-export job for a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_FOLDER",
+        "name": "Create Folder",
+        "description": "Create a root folder or subfolder in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_GROUP",
+        "name": "Create Group",
+        "description": "Create Group."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_IMPORT_JOB_EXISTING_TABLE",
+        "name": "Create Import Job for an Existing Table",
+        "description": "Queue an asynchronous CSV or JSON import that appends, updates, or replaces all rows in an existing table; TRUNCATEADD permanently deletes the current rows first."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_IMPORT_JOB_NEW_TABLE",
+        "name": "Create Import Job for a New Table",
+        "description": "Upload CSV or JSON data and create an asynchronous import job for a new table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_PRIVATE_URL",
+        "name": "Create Private URL",
+        "description": "Create or update a private view URL; regenerating its key permanently invalidates the previous URL, and access settings can remove its password or expiry."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_QUERY_TABLE",
+        "name": "Create Query Table",
+        "description": "Create Query Table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_REPORT",
+        "name": "Create Report",
+        "description": "Create a chart, pivot, or summary report from a base table and axis configuration."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_SIMILAR_VIEWS",
+        "name": "Create Similar Views",
+        "description": "Replicate a reference table's analysis views for a compatible target table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_SLIDESHOW",
+        "name": "Create Slideshow",
+        "description": "Create Slideshow."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_TABLE",
+        "name": "Create Table",
+        "description": "Create Table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_TAG",
+        "name": "Create Tag",
+        "description": "Create a uniquely named, colored tag in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_VARIABLE",
+        "name": "Create Variable",
+        "description": "Create Variable."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_CREATE_WORKSPACE",
+        "name": "Create Workspace",
+        "description": "Create a workspace in the connected organization."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DE_ACTIVATE_USERS",
+        "name": "Deactivate Users",
+        "description": "Deactivate Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_AGGREGATE_FORMULA",
+        "name": "Delete Aggregate Formula",
+        "description": "Permanently delete an aggregate formula, optionally deleting every dependent view, dashboard, and aggregate formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_ALERTS",
+        "name": "Delete Alerts",
+        "description": "Permanently delete up to 1000 data alerts from a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_AUTO_ML_ANALYSIS",
+        "name": "Delete AutoML Analysis",
+        "description": "Permanently delete an AutoML analysis from a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_AUTO_ML_ANALYSIS_MODEL",
+        "name": "Delete AutoML Analysis Model",
+        "description": "Permanently delete a model generated by an AutoML analysis."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_AUTO_ML_ANALYSIS_MODEL_DEPLOYMENT",
+        "name": "Delete AutoML Analysis Model Deployment",
+        "description": "Permanently delete a deployment of an AutoML analysis model."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_COLUMN",
+        "name": "Delete Column",
+        "description": "Permanently delete a column, optionally deleting every dependent view, report, chart, pivot table, and formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_CUSTOM_ROLE",
+        "name": "Delete Custom Role",
+        "description": "Permanently delete a custom organization role."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_EMAIL_SCHEDULE",
+        "name": "Delete Email Schedule",
+        "description": "Permanently delete an email schedule."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_FOLDER",
+        "name": "Delete Folder",
+        "description": "Permanently delete a workspace folder, optionally also permanently deleting its dependent views and objects."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_FORMULA_COLUMN",
+        "name": "Delete Custom Formula",
+        "description": "Permanently delete a custom formula column, optionally deleting every dependent report, chart, pivot table, and formula column."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_GROUP",
+        "name": "Delete Group",
+        "description": "Permanently delete a workspace group without deleting its users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_ROWS",
+        "name": "Delete Row",
+        "description": "Delete rows selected by criteria, or explicitly delete all rows in a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_SLIDESHOW",
+        "name": "Delete Slideshow",
+        "description": "Permanently delete a slideshow and invalidate its access URL."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_TAG",
+        "name": "Delete Tag",
+        "description": "Permanently delete a workspace tag and remove it from tagged views."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_TRASH_VIEW",
+        "name": "Delete Trash View",
+        "description": "Permanently delete a view from trash, optionally with trashed dependents."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_VARIABLE",
+        "name": "Delete Variable",
+        "description": "Permanently delete a workspace variable."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_VIEW",
+        "name": "Delete View",
+        "description": "Move a view to trash, optionally including all dependent views."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_WORKSPACE",
+        "name": "Delete Workspace",
+        "description": "Permanently delete a workspace and its contents."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DELETE_WORKSPACE_USERS",
+        "name": "Remove Workspace Users",
+        "description": "Remove Workspace Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DOWNLOAD_EXPORTED_DATA",
+        "name": "Download Exported Data",
+        "description": "Download the file produced by a completed asynchronous export job."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_DOWNLOAD_WORKSPACE_BACKUP",
+        "name": "Download Workspace Backup",
+        "description": "Download a completed workspace backup as a file. Requires a paid Zoho Analytics plan."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_EDIT_AGGREGATE_FORMULA",
+        "name": "Edit Aggregate Formula",
+        "description": "Edit Aggregate Formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_EDIT_FORMULA_COLUMN",
+        "name": "Edit Custom Formula",
+        "description": "Edit Custom Formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_EDIT_QUERY_TABLE",
+        "name": "Edit Query Table",
+        "description": "Edit Query Table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_EXPORT_AS_TEMPLATE",
+        "name": "Export as Template",
+        "description": "Export selected workspace views as a downloadable template file."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_EXPORT_DATA_VIEW",
+        "name": "Export Data from a View",
+        "description": "Synchronously export view data and return the downloaded content as a file."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AGGREGATE_FORMULA_DEPENDENTS",
+        "name": "Get Aggregate Formula Dependents",
+        "description": "Return Aggregate Formula Dependents."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AGGREGATE_FORMULA_LIST",
+        "name": "Get Aggregate Formula",
+        "description": "Return Aggregate Formula."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AGGREGATE_FORMULAS_IN_WORKSPACE",
+        "name": "Get Unified Metrics in Workspace",
+        "description": "Return Unified Metrics in Workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AGGREGATE_FORMULA_VALUE",
+        "name": "Get Aggregate Formula Value",
+        "description": "Return Aggregate Formula Value."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ALERT_CONFIGURATION",
+        "name": "Get Alert Configuration",
+        "description": "Return the complete configuration of one data alert."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ALERT_EVENTS",
+        "name": "Get Alert Events",
+        "description": "Return one filtered page of evaluation events for a data alert."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ALERTS_IN_VIEW",
+        "name": "Get Alerts In View",
+        "description": "Return the data alerts configured for a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ALERTS_IN_WORKSPACE",
+        "name": "Get Alerts In Workspace",
+        "description": "Return the data alerts configured in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AUTO_ML_ANALYSIS_DETAILS",
+        "name": "Get AutoML Analysis Details",
+        "description": "Get the configuration, models, and current state of an AutoML analysis."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AUTO_ML_ANALYSIS_IN_ORG",
+        "name": "Get AutoML Analysis In Organization",
+        "description": "List the AutoML analyses available in the connected organization."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_AUTO_ML_ANALYSIS_IN_WORKSPACE",
+        "name": "Get AutoML Analysis In Workspace",
+        "description": "List the AutoML analyses configured in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_COLUMN_DEPENDENTS",
+        "name": "Get Column Dependents",
+        "description": "Return Column Dependents."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_CUSTOM_FORMULA_LIST",
+        "name": "Get Custom Formulas",
+        "description": "Return Custom Formulas."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_CUSTOM_ROLES",
+        "name": "Get Custom Roles",
+        "description": "Return Custom Roles."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_DASHBOARD_METADATA",
+        "name": "Read Dashboard Metadata",
+        "description": "Return all or one section of a non-tabbed dashboard's stored configuration."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_DATASOURCES",
+        "name": "Get Datasources",
+        "description": "Return the datasources and sync intervals configured in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_DEPLOYMENTS_FOR_MODEL",
+        "name": "Get Deployments For A Model",
+        "description": "Get the deployment configured for an AutoML analysis model."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_EMAIL_SCHEDULES",
+        "name": "Get Email Schedules",
+        "description": "Return all email schedules configured in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_EMBED_URL",
+        "name": "Get Embed URL",
+        "description": "Return Embed URL."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_EXPORT_JOB_DETAILS",
+        "name": "Get Export Job Details",
+        "description": "Return the current status and details of an asynchronous export job."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_FOLDERS",
+        "name": "Get Folder List",
+        "description": "Return the folders in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_GROUP_DETAILS",
+        "name": "Get Group Details",
+        "description": "Return Group Details."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_GROUPS",
+        "name": "Get Group List",
+        "description": "Return Group List."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_IMPORT_JOB_DETAILS",
+        "name": "Get Import Job Details",
+        "description": "Return the current status and details of an asynchronous import job."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_LAST_IMPORT_DETAILS",
+        "name": "Get Last Import Details",
+        "description": "Return details and row counts for the most recent import into a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_LINKABLE_WORKSPACES",
+        "name": "Get Linkable Workspaces",
+        "description": "Return workspaces that can be linked to the specified master workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_LINKED_WORKSPACES_FOR_MASTER_WORKSPACE",
+        "name": "Get Linked Workspaces for Master Workspace",
+        "description": "Return workspaces linked to a master workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_LINKED_WORKSPACES_FOR_ORGANIZATION",
+        "name": "Get Linked Workspaces for Organization",
+        "description": "Return all linked workspace relationships in the organization."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_LINKED_WORKSPACE_SYNC_DETAILS",
+        "name": "Get Linked Workspace Sync Details",
+        "description": "Return synchronization details for all or selected linked workspaces."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_META_DETAILS",
+        "name": "Get Meta Details From Name",
+        "description": "Resolve workspace and optional view metadata from their exact display names."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ORG_ACCESS_RESTRICTIONS",
+        "name": "Get Org Access Restrictions",
+        "description": "Return the organization-wide sharing, link, public-view, export, and email restrictions."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ORG_ADMINS",
+        "name": "Get Org Admins",
+        "description": "Return Org Admins."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ORG_DASHBOARDS",
+        "name": "Get Org Dashboards",
+        "description": "Return one page of visible organization dashboards plus a continuation cursor."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ORG_RECENT_ITEMS",
+        "name": "Get Org Recent Items",
+        "description": "Return up to 20 views most recently opened by the connected user in the organization."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_ORG_WORKSPACES",
+        "name": "Get Org Workspaces",
+        "description": "Return organization workspaces visible to the connected user."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_PRIVATE_URL",
+        "name": "Get Private URL",
+        "description": "Return Private URL."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_PUBLISH_CONFIGURATIONS",
+        "name": "Get Publish Configurations",
+        "description": "Return Publish Configurations."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_QUERY_TABLE_DETAILS",
+        "name": "Get Query Table Details",
+        "description": "Return Query Table Details."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_QUERY_TABLES",
+        "name": "Get Query Tables",
+        "description": "Return Query Tables. Returns one page and a continuation cursor."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_REPORT_METADATA",
+        "name": "Read Report Metadata",
+        "description": "Return the stored definition summary of a chart, pivot, or summary report."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_RESOURCE_DETAILS",
+        "name": "Get Resource Details",
+        "description": "Return the organization's plan allocations and current usage by resource type."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_SHARED_DETAILS_FOR_VIEWS",
+        "name": "Get Shared Details For Views",
+        "description": "Return Shared Details For Views."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_SLIDESHOW_DETAILS",
+        "name": "Get Slideshow Details",
+        "description": "Return Slideshow Details."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_SLIDESHOWS",
+        "name": "Get Slideshows",
+        "description": "Return Slideshows."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_SLIDESHOW_URL",
+        "name": "Get Slideshow URL",
+        "description": "Return Slideshow URL."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_SUBSCRIPTION_DETAILS",
+        "name": "Get Subscription Details",
+        "description": "Return the organization's active plan, add-ons, billing date, and trial status."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_TABLE_METADATA",
+        "name": "Get Table Metadata",
+        "description": "Return Table Metadata."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_TAGGED_VIEWS",
+        "name": "Get Tagged Views",
+        "description": "Return one page of views carrying a tag, with a continuation cursor when limited."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_TAGS",
+        "name": "Get Tags",
+        "description": "Return the tags defined in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_TRASH_VIEWS",
+        "name": "Get Trash Views",
+        "description": "Return views currently in a workspace's trash."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_USER_PERMISSIONS",
+        "name": "Get User Permissions",
+        "description": "Return User Permissions."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_USERS",
+        "name": "Get Users",
+        "description": "Return Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VARIABLE_DETAILS",
+        "name": "Get Variable Details",
+        "description": "Return Variable Details."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VARIABLES",
+        "name": "Get Variables",
+        "description": "Return Variables."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VIEW_DEPENDENTS",
+        "name": "Get View Dependents",
+        "description": "Return active views that depend directly or transitively on a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VIEW_DETAILS",
+        "name": "Get View Details",
+        "description": "Return a view's metadata, optionally including type-specific involved objects."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VIEW_METADATA_FOR_ALERT",
+        "name": "Get View Metadata For Alert",
+        "description": "Return the view metadata needed to construct valid data-alert rules."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VIEWS",
+        "name": "Get View List",
+        "description": "Return one filtered, sorted page of workspace views with a continuation cursor when limited."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VIEW_TAGS",
+        "name": "Get View Tags",
+        "description": "Return the tags attached to a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_VIEW_URL",
+        "name": "Get View URL",
+        "description": "Generate a shareable view URL with display, filtering, and custom-domain options."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_ACCESS_RESTRICTIONS",
+        "name": "Get Workspace Access Restrictions",
+        "description": "Return one workspace's effective access restrictions and their configuration source."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_ADMINS",
+        "name": "Get Workspace Admins",
+        "description": "Return Workspace Admins."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_BACKUPS",
+        "name": "Get Workspace Backups",
+        "description": "Return backups for a workspace. Requires a paid Zoho Analytics plan."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_BACKUP_STATUS",
+        "name": "Get Workspace Backup Status",
+        "description": "Return the status of a workspace backup. Requires a paid Zoho Analytics plan."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_DETAILS",
+        "name": "Get Workspace Info",
+        "description": "Return metadata for a workspace, optionally including the requesting user's role."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_LINKING_COMPATIBILITY",
+        "name": "Get Workspace Linking Compatibility",
+        "description": "Check whether candidate client workspaces can be linked to a master workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_RESTORE_STATUS",
+        "name": "Get Workspace Restore Status",
+        "description": "Return the status of a workspace restore. Requires a paid Zoho Analytics plan."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_SHARED_DETAILS",
+        "name": "Get Workspace Shared Details",
+        "description": "Return Workspace Shared Details."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_GET_WORKSPACE_USERS",
+        "name": "Get Workspace Users",
+        "description": "Return Workspace Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_HIDE_COLUMNS",
+        "name": "Hide Columns",
+        "description": "Hide Columns."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_IMPORT_DATA_EXISTING_TABLE",
+        "name": "Import Data into an Existing Table",
+        "description": "Synchronously append, update, or replace all rows in an existing table from an uploaded file or inline data; TRUNCATEADD permanently deletes the current rows first."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_IMPORT_DATA_NEW_TABLE",
+        "name": "Import Data into a New Table",
+        "description": "Synchronously import an uploaded file or inline data into a new table."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_LINK_WORKSPACES",
+        "name": "Link Workspaces",
+        "description": "Link client workspaces to a master workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_MAKE_DEFAULT_FOLDER",
+        "name": "Make Default Folder",
+        "description": "Set a workspace folder as the default folder."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_MAKE_VIEWS_PUBLIC",
+        "name": "Make Views Public",
+        "description": "Make Views Public."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_MOVE_VIEWS_TO_FOLDER",
+        "name": "Move Views to Folder",
+        "description": "Move up to 1000 workspace views into a folder."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REFETCH_DATASOURCE",
+        "name": "Refetch Data",
+        "description": "Refetch source data for a view, incrementally or as a full fetch."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_DEFAULT_WORKSPACE",
+        "name": "Remove Default Workspace",
+        "description": "Remove a workspace from the connected user's default workspace setting."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_FAVORITE_VIEW",
+        "name": "Remove Favorite View",
+        "description": "Remove a view from the authenticated user's favorites."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_FAVORITE_WORKSPACE",
+        "name": "Remove Favourite Workspace",
+        "description": "Remove a workspace from the connected user's favourites."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_GROUP_MEMBERS",
+        "name": "Remove Group Members",
+        "description": "Remove Group Members."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_LOOKUP",
+        "name": "Remove Lookup",
+        "description": "Remove a column lookup relationship, optionally deleting every report, chart, pivot table, and query table that depends on it."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_PRIVATE_ACCESS",
+        "name": "Remove Private Access",
+        "description": "Remove Private Access."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_PUBLIC_PERMISSION",
+        "name": "Remove Public Permission",
+        "description": "Remove Public Permission."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_SHARE",
+        "name": "Remove Share",
+        "description": "Remove Share."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_TAG_FROM_VIEWS",
+        "name": "Remove Tag From Views",
+        "description": "Detach one tag from selected views or every view in a workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_TAGS_FROM_VIEW",
+        "name": "Remove Tags From View",
+        "description": "Detach selected tags or every tag from one view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_USERS",
+        "name": "Remove Users",
+        "description": "Remove Users."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REMOVE_WORKSPACE_ADMINS",
+        "name": "Remove Workspace Admins",
+        "description": "Remove Workspace Admins."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RENAME_COLUMN",
+        "name": "Rename Column",
+        "description": "Rename Column."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RENAME_FOLDER",
+        "name": "Rename Folder",
+        "description": "Rename a workspace folder and update its description."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RENAME_GROUP",
+        "name": "Rename Group",
+        "description": "Rename Group."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RENAME_VIEW",
+        "name": "Rename View",
+        "description": "Replace a view's display name and description."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RENAME_WORKSPACE",
+        "name": "Rename Workspace",
+        "description": "Rename a workspace and update its description."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_REORDER_COLUMNS",
+        "name": "Reorder Columns",
+        "description": "Reorder Columns."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RESTORE_TRASH_VIEW",
+        "name": "Restore Trash View",
+        "description": "Restore a trashed view, optionally restoring required parent objects."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RESTORE_WORKSPACE_FROM_BACKUP",
+        "name": "Restore Workspace from Backup",
+        "description": "Queue a paid-plan restore that replaces the workspace structure and, when selected, its data from a backup."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RUN_ALERT",
+        "name": "Run Alert",
+        "description": "Evaluate a configured data alert immediately and send its configured notifications or run its configured actions when the alert condition matches."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_RUN_AUTO_ML_ANALYSIS",
+        "name": "Run AutoML Analysis",
+        "description": "Run an AutoML deployment and write predictions to its configured output table; the deployment may append, update, or replace all existing rows."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_SAVE_AS_VIEW",
+        "name": "Save As View",
+        "description": "Create an independent copy of a table or analysis view in the same workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_SHARE_VIEWS",
+        "name": "Share Views",
+        "description": "Share Views."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_SHOW_COLUMNS",
+        "name": "Show Columns",
+        "description": "Show Columns."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_SORT_DATA_BY_COLUMNS",
+        "name": "Sort Data by Columns",
+        "description": "Sort Data by Columns."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_SYNC_DATASOURCE",
+        "name": "Sync Data",
+        "description": "Start a sync for a datasource, optionally targeting one sync interval."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_SYNC_LINKED_WORKSPACES",
+        "name": "Sync Linked Workspaces",
+        "description": "Synchronize all or selected client workspaces with a master workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UNLINK_WORKSPACES",
+        "name": "Unlink Workspaces",
+        "description": "Unlink all or selected client workspaces from a master workspace."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_ALERT",
+        "name": "Update Alert",
+        "description": "Replace the configuration of an existing data alert."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_CUSTOM_ROLE",
+        "name": "Update Custom Role",
+        "description": "Update Custom Role."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_DASHBOARD",
+        "name": "Update Dashboard",
+        "description": "Replace selected layout, theme, or viewer settings of a non-tabbed dashboard."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_EMAIL_SCHEDULE",
+        "name": "Update Email Schedule",
+        "description": "Update an existing email delivery schedule."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_ORG_ACCESS_RESTRICTIONS",
+        "name": "Update Org Access Restrictions",
+        "description": "Update organization-wide sharing, link, public-view, export, or email restrictions."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_PUBLISH_CONFIGURATIONS",
+        "name": "Update Publish Configurations",
+        "description": "Update Publish Configurations."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_REPORT",
+        "name": "Update Report",
+        "description": "Replace the definition of an existing chart, pivot, or summary report."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_ROWS",
+        "name": "Update Rows",
+        "description": "Update rows selected by criteria, or explicitly update all rows in a view."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_SHARED_DETAILS_FOR_VIEW",
+        "name": "Update Shared Details For View",
+        "description": "Update Shared Details For View."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_SLIDESHOW",
+        "name": "Update Slideshow",
+        "description": "Update a slideshow; regenerating its access key permanently invalidates the previous slideshow URL."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_TAG",
+        "name": "Update Tag",
+        "description": "Change a workspace tag's name, color, or both."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_VARIABLE",
+        "name": "Edit Variable",
+        "description": "Edit Variable."
+      },
+      {
+        "slug": "ZOHO_ANALYTICS_UPDATE_WORKSPACE_ACCESS_RESTRICTIONS",
+        "name": "Update Workspace Access Restrictions",
+        "description": "Switch a workspace's configuration source or update its sharing, link, export, and email restrictions."
+      }
+    ],
+    "triggers": [],
+    "authConfigDetails": [
+      {
+        "mode": "OAUTH2",
+        "name": "zoho_analytics_oauth2",
+        "fields": {
+          "auth_config_creation": {
+            "required": [
+              {
+                "name": "client_id",
+                "displayName": "Client id",
+                "type": "string",
+                "description": "Client id of the app",
+                "required": true,
+                "default": null
+              },
+              {
+                "name": "client_secret",
+                "displayName": "Client secret",
+                "type": "string",
+                "description": "Client secret of the app",
+                "required": true,
+                "default": null
+              }
+            ],
+            "optional": [
+              {
+                "name": "oauth_redirect_uri",
+                "displayName": "Redirect URI",
+                "type": "string",
+                "description": "Add this Redirect URL to your app's OAuth allow list.",
+                "required": false,
+                "default": "https://backend.composio.dev/api/v1/auth-apps/add"
+              },
+              {
+                "name": "scopes",
+                "displayName": "Scopes",
+                "type": "string",
+                "description": "Scopes to request from the user, comma separated",
+                "required": false,
+                "default": "ZohoAnalytics.data.read,ZohoAnalytics.data.create,ZohoAnalytics.data.update,ZohoAnalytics.data.delete,ZohoAnalytics.modeling.read,ZohoAnalytics.modeling.create,ZohoAnalytics.modeling.update,ZohoAnalytics.modeling.delete,ZohoAnalytics.metadata.read,ZohoAnalytics.metadata.create,ZohoAnalytics.metadata.update,ZohoAnalytics.share.read,ZohoAnalytics.share.create,ZohoAnalytics.share.update,ZohoAnalytics.share.delete,ZohoAnalytics.embed.read,ZohoAnalytics.embed.create,ZohoAnalytics.embed.update,ZohoAnalytics.embed.delete,ZohoAnalytics.usermanagement.read,ZohoAnalytics.usermanagement.create,ZohoAnalytics.usermanagement.update,ZohoAnalytics.usermanagement.delete"
+              }
+            ]
+          },
+          "connected_account_initiation": {
+            "required": [
+              {
+                "name": "region",
+                "displayName": "Zoho Data Center",
+                "type": "string",
+                "description": "Select the data center from your Zoho Analytics sign-in domain. In Zoho API Console, enable Multi DC and use the same OAuth credentials for every data center where this client will be used.",
+                "required": true,
+                "default": "com"
+              },
+              {
+                "name": "generic_id",
+                "displayName": "Zoho Analytics Organization ID",
+                "type": "string",
+                "description": "Open Zoho Analytics, select the required organization, then find its Organization ID under Settings > Organization. Every API request sends this value in the ZANALYTICS-ORGID header.",
                 "required": true,
                 "default": null
               }

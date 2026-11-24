@@ -2414,7 +2414,7 @@ describe('Tools with dangerouslyAllowAutoUploadDownloadFiles', () => {
         dangerouslySkipVersionCheck: true,
       });
       expect(warnSpy).toHaveBeenCalledTimes(1);
-      const msg = String(warnSpy.mock.calls[0]?.[0] ?? '');
+      const msg = warnSpy.mock.calls[0]?.[0];
       expect(msg).toContain('COMPOSIO_TOOL');
       expect(msg).toContain('dangerouslyAllowAutoUploadDownloadFiles');
       expect(msg).toContain('composio.files.upload');

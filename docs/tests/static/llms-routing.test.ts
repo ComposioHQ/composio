@@ -4,12 +4,11 @@ import { source, referenceSource, examplesSource, knowledgeBaseSource } from '..
 
 test('routing map is bounded and covers the current developer decisions', async () => {
   const text = await GET().text();
-  // 6400: the map sat at 5966/6000, so the three DEVREL-333 governance lines
-  // (plus one duplicate link removed) could not fit under the old cap.
+  // Allow room for the three DEVREL-333 governance links.
   expect(text.length).toBeLessThan(6400);
   const primary = text.split('## Optional')[0];
   for (const path of ['docs', 'docs/agent-setup', 'docs/quickstart', 'docs/agent-plugins',
-    'docs/authentication', 'docs/configuring-sessions', 'kb',
+    'docs/authentication', 'docs/sessions/tool-access', 'kb',
     'docs/governance/action-permissions', 'docs/governance/approvals', 'docs/firewall']) {
     expect(primary).toContain(`https://docs.composio.dev/${path}.md`);
   }

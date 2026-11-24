@@ -17,7 +17,7 @@
 import process from 'node:process';
 import path from 'node:path';
 import os from 'node:os';
-import { Config, ConfigProvider, Effect, Logger, Layer, References, Ref } from 'effect';
+import { Formatter, Config, ConfigProvider, Effect, Logger, Layer, References, Ref } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { FileSystem } from 'effect/FileSystem';
@@ -230,7 +230,7 @@ function runVhs(tapePath: string, cliRoot: string, label: string) {
         throw new Error(`vhs exited with code ${r.exitCode}\n${r.stderr.toString()}`);
       }
     },
-    catch: err => new Error(`Failed to record ${label}: ${err}`),
+    catch: err => new Error(`Failed to record ${label}: ${Formatter.format(err)}`),
   });
 }
 

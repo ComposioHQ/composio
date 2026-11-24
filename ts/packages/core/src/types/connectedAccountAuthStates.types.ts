@@ -624,7 +624,6 @@ const SamlConnectionDataSchema = z.discriminatedUnion('status', [
     expired_at: z.string().optional(),
   }).catchall(z.unknown()),
 ]);
-const CustomSamlConnectionDataSchema = BaseSchemeRaw.catchall(z.unknown());
 
 // DCR_OAUTH
 const DcrOauthInitiatingSchema = BaseSchemeRaw.extend({

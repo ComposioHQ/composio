@@ -21,6 +21,10 @@ const EVIDENCED_REDIRECTS = [
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   ...EVIDENCED_REDIRECTS,
+  { from: '/docs/session-configs', to: '/docs/sessions/saved-session-policies' },
+  { from: '/docs/session-configs.md', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/docs/session-configs.mdx', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/llms.mdx/docs/session-configs', to: '/docs/sessions/saved-session-policies.md' },
   { from: "/", to: "/docs" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
@@ -58,11 +62,30 @@ const REDIRECTS = [
   { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
   { from: "/docs/manually-authenticating", to: "/docs/authentication/manually-authenticating" },
   { from: "/docs/security", to: "/docs/security/overview" },
-  { from: "/docs/self-hosting", to: "/docs/security/token-custody#deployment-options" },
+  { from: "/docs/self-hosting", to: "/docs/deployment" },
+  { from: "/docs/byoc", to: "/docs/deployment/byoc" },
+  { from: "/docs/security/byoc", to: "/docs/deployment/byoc" },
+  { from: "/docs/hosting/aws", to: "/docs/deployment/byoc-architecture" },
+  { from: "/docs/hosting/gcp", to: "/docs/deployment" },
   { from: "/docs/auth", to: "/docs/authentication" },
   { from: "/docs/auth-management/overview", to: "/docs/authentication" },
   { from: "/docs/managed-auth", to: "/docs/authentication/custom-app-vs-managed-app" },
   { from: "/docs/authentication/overview", to: "/docs/authentication" },
+  // URL guesses from DEVREL-330 (Gauge agent sessions hit every 404 below).
+  { from: "/docs/mastra", to: "/docs/providers/mastra" },
+  { from: "/docs/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/docs/integrations/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/docs/langchain", to: "/docs/providers/langchain" },
+  { from: "/docs/langgraph", to: "/docs/providers/langchain" },
+  { from: "/docs/providers/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/providers/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/docs/connect-links", to: "/docs/authentication" },
+  { from: "/docs/mcp-auth", to: "/docs/authentication/managed-auth-for-custom-tools" },
+  { from: "/docs/auth-tools/auth-on-mcp", to: "/docs/authentication/managed-auth-for-custom-tools" },
+  { from: "/providers/mcp", to: "/docs/single-toolkit-mcp" },
+  { from: "/docs/providers/mcp", to: "/docs/single-toolkit-mcp" },
+  { from: "/auth/token-custody", to: "/docs/security/token-custody" },
+  { from: "/auth/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
 ];
 
 describe('Vendor security review - retired KB routes', () => {

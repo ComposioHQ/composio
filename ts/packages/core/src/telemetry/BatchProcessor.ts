@@ -54,7 +54,7 @@ export class BatchProcessor {
       });
 
       this.pendingBatches.add(pending);
-      pending.finally(() => {
+      void pending.finally(() => {
         this.pendingBatches.delete(pending);
       });
     }

@@ -1,161 +1,38 @@
 /**
  * Meta Tools Generator Script
  *
- * Fetches meta tool definitions from the Composio Tool Router API and generates:
- * - /public/data/meta-tools.json (complete meta tool schemas from API)
+ * Reads public/data/meta-tools.json and generates:
  * - /content/toolkits/meta-tools/meta.json (sidebar navigation)
  * - /content/toolkits/meta-tools/index.mdx (overview page)
  * - /content/toolkits/meta-tools/{name}.mdx (individual tool pages)
  *
- * All output is derived from the API response — no hardcoded tool definitions.
- *
  * Run: bun run generate:meta-tools
  *
- * Environment variables:
- * - COMPOSIO_API_KEY (required)
- * - COMPOSIO_API_BASE (optional, must resolve to https://backend.composio.dev/api/v3)
+ * Set COMPOSIO_META_TOOLS_SCHEMA_URL to refresh the snapshot from a
+ * production Platform schema export before rendering.
  */
 
-import { writeFile, mkdir, readdir, unlink } from 'fs/promises';
+import { writeFile, readFile, mkdir, readdir, unlink } from 'fs/promises';
 import { join } from 'path';
-import { fetchWithRetry } from './fetch-with-retry';
+import { metaToolsSchema, type MetaTool } from '../lib/meta-tools-data';
 import { META_TOOL_OVERRIDES } from '../lib/meta-tool-overrides';
 import { encodeMarkdownTableCell, encodeYamlString } from '../lib/markdown-escaping';
-import { requireProductionApiV3Url, stripStagingHosts } from './production-api.mjs';
-import { z } from 'zod';
-
-const API_BASE = requireProductionApiV3Url(process.env.COMPOSIO_API_BASE);
-const API_KEY = process.env.COMPOSIO_API_KEY;
+import { STAGING_HOSTS, stripStagingHosts } from './production-api.mjs';
 
 const DATA_DIR = join(process.cwd(), 'public/data');
+const SNAPSHOT_PATH = join(DATA_DIR, 'meta-tools.json');
 const CONTENT_DIR = join(process.cwd(), 'content/toolkits/meta-tools');
 
-interface GeneratedMetaTool {
-  slug: string;
-  name: string;
-  displayName: string;
-  description: string;
-  tags: string[];
-  toolkit: string | null;
-  inputParameters: Record<string, unknown>;
-  responseSchema: Record<string, unknown>;
-}
+type MetaToolPage = Pick<MetaTool, 'slug' | 'displayName' | 'description'>;
 
-// Zod schemas for the Tool Router payloads this script consumes. Parsing is
-// lenient: malformed fields degrade to empty fallbacks instead of aborting.
-
-const stringArraySchema = z
-  .array(z.unknown())
-  .catch([])
-  .transform(items =>
-    items.flatMap(item => {
-      const parsed = z.string().safeParse(item);
-      return parsed.success ? [parsed.data] : [];
-    })
-  );
-
-const recordSchema = z.record(z.string(), z.unknown()).catch({});
-
-const sessionResponseSchema = z
-  .object({
-    session_id: z.string().optional().catch(undefined),
-    tool_router_tools: stringArraySchema,
-  })
-  .catch({ session_id: undefined, tool_router_tools: [] });
-
-const metaToolListSchema = z.union([
-  z.object({ items: z.array(z.unknown()) }).transform(data => data.items),
-  z.array(z.unknown()),
-]);
-
-const rawMetaToolSchema = z.object({
-  slug: z.string().catch(''),
-  name: z.string().catch(''),
-  description: z.string().catch(''),
-  tags: stringArraySchema,
-  toolkit: z.string().optional().catch(undefined),
-  input_parameters: recordSchema,
-  output_parameters: recordSchema,
-});
-
-async function createSession(): Promise<string> {
-  console.log('Creating session...');
-
-  const response = await fetchWithRetry(`${API_BASE}/tool_router/session`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY!,
-    },
-    body: JSON.stringify({
-      user_id: 'default',
-      config: {
-        autoManageConnections: true,
-        recipesEnabled: true,
-        enableWaitForConnections: true,
-      },
-      // Opt-in meta tools are listed only in sessions that enable them.
-      proxy_execute: { enable: true },
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Failed to create session: ${response.status} ${response.statusText}\n${body}`);
+async function readSchemaExport(source: string): Promise<string> {
+  const url = new URL(source);
+  if (url.protocol !== 'https:' || STAGING_HOSTS.includes(url.hostname)) {
+    throw new Error('COMPOSIO_META_TOOLS_SCHEMA_URL must point to a production HTTPS export');
   }
-
-  const data = sessionResponseSchema.parse(await response.json());
-  const sessionId = data.session_id;
-
-  if (!sessionId) {
-    throw new Error('No session_id in response');
-  }
-
-  console.log(`  Session created: ${sessionId}`);
-  console.log(`  Tools available: ${data.tool_router_tools.join(', ')}`);
-  return sessionId;
-}
-
-async function fetchMetaTools(sessionId: string): Promise<unknown[]> {
-  console.log('Fetching meta tools with schemas...');
-
-  const response = await fetchWithRetry(`${API_BASE}/tool_router/session/${sessionId}/tools`, {
-    headers: {
-      'x-api-key': API_KEY!,
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(
-      `Failed to fetch meta tools: ${response.status} ${response.statusText}\n${body}`
-    );
-  }
-
-  const parsed = metaToolListSchema.safeParse(await response.json());
-  if (!parsed.success) {
-    throw new Error('Expected array of tools in response');
-  }
-
-  console.log(`  Found ${parsed.data.length} meta tools`);
-  return parsed.data;
-}
-
-export function transformTool(value: unknown): GeneratedMetaTool {
-  const parsed = rawMetaToolSchema.safeParse(value);
-  const raw = parsed.success ? parsed.data : rawMetaToolSchema.parse({});
-  const { slug, name } = raw;
-
-  return {
-    slug,
-    name,
-    displayName: name.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || slug,
-    description: raw.description,
-    tags: raw.tags,
-    toolkit: raw.toolkit || null,
-    inputParameters: raw.input_parameters,
-    responseSchema: raw.output_parameters,
-  };
+  const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) });
+  if (!response.ok) throw new Error(`Meta-tool schema export responded ${response.status}`);
+  return stripStagingHosts(await response.text());
 }
 
 /** Derive a short page slug from the tool slug: COMPOSIO_SEARCH_TOOLS -> search_tools */
@@ -175,7 +52,7 @@ export function briefDescription(description: string): string {
 }
 
 /** One-line summary for the index table. Prefer hand-written override copy, fall back to the API description. */
-function indexLine(tool: GeneratedMetaTool): string {
+function indexLine(tool: MetaToolPage): string {
   const override = META_TOOL_OVERRIDES[tool.slug];
   if (override) {
     // First sentence of the hand-written summary keeps the table tight.
@@ -186,7 +63,7 @@ function indexLine(tool: GeneratedMetaTool): string {
 }
 
 /** Generate the index.mdx overview page — Modal-voice intro plus a one-line-per-tool table */
-export function generateIndexMdx(tools: GeneratedMetaTool[]): string {
+export function generateIndexMdx(tools: MetaToolPage[]): string {
   let content = `---
 title: Meta Tools
 description: The system tools every Composio session gives your agent to discover, authenticate, execute, and process tools at runtime.
@@ -197,7 +74,7 @@ keywords: [meta tools, session]
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Every Composio [session](/docs/how-composio-works) hands your agent a small set of meta tools instead of hundreds of raw tool definitions. The agent uses them to find the right tools for a task, connect the accounts those tools need, execute them, and process the results, all at runtime and all sharing one \`session_id\`.
+Every Composio [session](/docs/sessions) hands your agent a small set of meta tools instead of hundreds of raw tool definitions. The agent uses them to find the right tools for a task, connect the accounts those tools need, execute them, and process the results, all at runtime and all sharing one \`session_id\`.
 
 This keeps your context window small: you load a handful of meta tools, not a catalog of %TOOLKIT_COUNT% toolkits. The agent searches for what it needs when it needs it.
 
@@ -220,8 +97,17 @@ These schemas are for reference only. We do not guarantee backward compatibility
   return content;
 }
 
+/**
+ * A frontmatter title: plain when it is unambiguous YAML text, quoted otherwise,
+ * so a remote displayName cannot end the frontmatter or change its meaning.
+ */
+function yamlTitle(value: string): string {
+  const plain = /^\w(?:[\w ()-]*[\w)])?$/.test(value) && !/^(?:true|false|null|yes|no|on|off|[\d.+-]+)$/i.test(value);
+  return plain ? value : encodeYamlString(value);
+}
+
 /** Generate an individual tool MDX page */
-export function generateToolMdx(tool: GeneratedMetaTool): string {
+export function generateToolMdx(tool: MetaToolPage): string {
   // The API's search-tool description contains an outdated catalog count.
   const description = tool.slug === 'COMPOSIO_SEARCH_TOOLS'
     ? META_TOOL_OVERRIDES[tool.slug].summary
@@ -229,7 +115,7 @@ export function generateToolMdx(tool: GeneratedMetaTool): string {
   const desc = encodeYamlString(briefDescription(description));
 
   return `---
-title: ${tool.displayName}
+title: ${yamlTitle(tool.displayName)}
 description: ${desc}
 keywords: [${tool.slug}, meta tool]
 ---
@@ -243,7 +129,7 @@ import { MetaToolDetailServer } from '@/components/meta-tools/meta-tool-page';
 }
 
 /** Generate meta.json for sidebar navigation — index.mdx is the folder page */
-function generateMetaJson(tools: GeneratedMetaTool[]): string {
+function generateMetaJson(tools: MetaToolPage[]): string {
   const pages = tools.map(t => pageSlug(t.slug));
   return JSON.stringify({ title: 'Meta Tools', defaultOpen: true, pages }, null, 2) + '\n';
 }
@@ -264,37 +150,29 @@ async function cleanGeneratedMdx() {
 async function main() {
   console.log('Starting meta tools generation...\n');
 
-  await mkdir(DATA_DIR, { recursive: true });
-  await mkdir(CONTENT_DIR, { recursive: true });
-
-  const sessionId = await createSession();
-  const rawTools = await fetchMetaTools(sessionId);
-  const metaTools = rawTools.map(transformTool);
-
-  // Sort alphabetically by slug
+  const source = process.env.COMPOSIO_META_TOOLS_SCHEMA_URL?.trim();
+  const contents = source ? await readSchemaExport(source) : await readFile(SNAPSHOT_PATH, 'utf8');
+  const snapshot: unknown = JSON.parse(contents);
+  const metaTools = metaToolsSchema.parse(snapshot);
   metaTools.sort((a, b) => a.slug.localeCompare(b.slug));
 
-  // 1. Write JSON data
-  await writeFile(
-    join(DATA_DIR, 'meta-tools.json'),
-    stripStagingHosts(JSON.stringify(metaTools, null, 2))
-  );
-  console.log(
-    `\nWrote public/data/meta-tools.json (~${Math.round(JSON.stringify(metaTools).length / 1024)}KB)`
-  );
+  if (source) {
+    await mkdir(DATA_DIR, { recursive: true });
+    await writeFile(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2));
+    console.log('Updated public/data/meta-tools.json from the schema export');
+  } else {
+    console.log('Using the checked-in public/data/meta-tools.json snapshot');
+  }
 
-  // 2. Clean old generated MDX files and regenerate
+  await mkdir(CONTENT_DIR, { recursive: true });
   await cleanGeneratedMdx();
 
-  // 3. Write meta.json
   await writeFile(join(CONTENT_DIR, 'meta.json'), generateMetaJson(metaTools));
   console.log('Wrote content/toolkits/meta-tools/meta.json');
 
-  // 4. Write index.mdx
   await writeFile(join(CONTENT_DIR, 'index.mdx'), generateIndexMdx(metaTools));
   console.log('Wrote content/toolkits/meta-tools/index.mdx');
 
-  // 5. Write individual tool pages
   for (const tool of metaTools) {
     const filename = `${pageSlug(tool.slug)}.mdx`;
     await writeFile(join(CONTENT_DIR, filename), generateToolMdx(tool));
@@ -306,11 +184,6 @@ async function main() {
 }
 
 if (import.meta.main) {
-  if (!API_KEY) {
-    console.error('Error: COMPOSIO_API_KEY environment variable is required');
-    process.exit(1);
-  }
-
   main().catch(error => {
     console.error('Fatal error:', error);
     process.exit(1);

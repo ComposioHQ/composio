@@ -1,6 +1,6 @@
 import { isAPIError } from '@composio/client/effect';
 import { Command as CliCommand, Flag } from 'effect/cli';
-import { Effect, Option } from 'effect';
+import { Effect, Formatter, Option } from 'effect';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -29,6 +29,7 @@ import {
   isClientDecodeError,
   type ClientApiError,
 } from 'src/utils/api-error-extraction';
+import { atomicWritePrivateFileString } from 'src/utils/atomic-write';
 
 /**
  * `composio init` — Initialize a developer project in the current directory.
@@ -124,7 +125,38 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     const path = yield* Path.Path;
 
     const envPath = path.join(cwd, '.env.local');
-    const envExists = yield* fs.exists(envPath);
+    const invalidEnvFile = commandInputError('dev init');
+    const envInfo = yield* fs.lstat(envPath).pipe(
+      Effect.map(Option.some),
+      Effect.catchReason('PlatformError', 'NotFound', () => Effect.succeed(Option.none())),
+      Effect.mapError(() =>
+        invalidEnvFile('Could not inspect .env.local. Check its permissions and run init again.')
+      )
+    );
+    if (Option.isSome(envInfo)) {
+      if (envInfo.value.type === 'SymbolicLink') {
+        return yield* invalidEnvFile(
+          'Refusing to use a symbolic link for .env.local. Secure the target, then replace the link with a private regular file and run init again.'
+        );
+      }
+      if (envInfo.value.type !== 'File') {
+        return yield* invalidEnvFile(
+          'Refusing to use .env.local because it is not a regular file. Move it aside and run init again.'
+        );
+      }
+      if ((envInfo.value.mode & 0o077) !== 0) {
+        yield* fs
+          .chmod(envPath, 0o600)
+          .pipe(
+            Effect.mapError(() =>
+              invalidEnvFile(
+                'Could not make .env.local private. Check that you own the file, set its permissions to 0600, and run init again.'
+              )
+            )
+          );
+      }
+    }
+    const envExists = Option.isSome(envInfo);
     const existingEnvContent = envExists ? yield* fs.readFileString(envPath, 'utf8') : '';
     const hasProjectApiKey = /^COMPOSIO_API_KEY=.*/m.test(existingEnvContent);
     const hasTestUserId = /^COMPOSIO_TEST_USER_ID=.*/m.test(existingEnvContent);
@@ -166,7 +198,8 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     }
 
     if (nextEnvContent !== existingEnvContent) {
-      yield* fs.writeFileString(envPath, nextEnvContent);
+      // Owner-only from creation: the file holds the project API key.
+      yield* atomicWritePrivateFileString({ fs, target: envPath, contents: nextEnvContent });
     }
     yield* writeProjectConfig(composioDir, {
       ...selected,
@@ -213,7 +246,7 @@ const logEnvCreationDecodingError = (ui: TerminalUI) => (e: { cause?: unknown })
   Effect.gen(function* () {
     yield* ui.log.warn('Could not decode API key response; skipping .env.local creation.');
     if (e.cause) {
-      yield* ui.log.error(String(e.cause));
+      yield* ui.log.error(typeof e.cause === 'string' ? e.cause : Formatter.format(e.cause));
     }
   });
 
@@ -373,14 +406,15 @@ const initInteractiveFlow = (params: { composioDir: string; noBrowser: boolean; 
           yield* logEnvCreationHttpError(ui)(e);
         })
       ),
-      // The project is already written; a key the CLI could not resolve is a
-      // warning with manual instructions, never a failed init.
-      Effect.catch(e =>
-        Effect.gen(function* () {
+      // Credential lookup failures can fall back to manual setup. An unsafe
+      // credential file raises a command input error and fails the invocation.
+      Effect.catch(e => {
+        if (e._tag === 'commands/CommandInputError') return Effect.fail(e);
+        return Effect.gen(function* () {
           yield* Effect.logDebug('Failed to resolve the project API key:', e);
           yield* logEnvCreationDecodingError(ui)(e);
-        })
-      )
+        });
+      })
     );
 
     yield* ui.log.success(`Project initialized in ${composioDir}/`);

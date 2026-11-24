@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { verifyPypiProvenance } from '../scripts/sdk-release/provenance';
 import { verifyPypiFiles, type Distribution } from '../scripts/sdk-release/registry';
-import { runOnTestClock, type Fetch } from './sdk-release-harness';
+import { fetchInputUrl, runOnTestClock, type Fetch } from './sdk-release-harness';
 
 const wheel: Distribution = {
   language: 'python',
@@ -28,7 +28,7 @@ const pypi =
   (): Fetch => {
     const pending = [...before];
     return async input => {
-      const url = String(input);
+      const url = fetchInputUrl(input);
       if (url === `https://pypi.org/integrity/composio/0.31.1b8/${wheel.file}/provenance`) {
         const status = pending.shift();
         if (status !== undefined) return new Response('{}', { status });
@@ -61,7 +61,7 @@ describe('PyPI attestations', () => {
     const stallOnce = (): Fetch => {
       const served = pypi(releasePublisher)();
       return async (input, init) => {
-        if (!stalled && String(input).endsWith('/provenance')) {
+        if (!stalled && fetchInputUrl(input).endsWith('/provenance')) {
           stalled = true;
           return new Promise<Response>(() => {});
         }

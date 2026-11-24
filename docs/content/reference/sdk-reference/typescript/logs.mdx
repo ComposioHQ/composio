@@ -8,8 +8,10 @@ description: "`composio.logs` — tool-execution logs."
 Access this class through the `composio.logs` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.logs.list();
+const logs = composio.logs;
 ```
 
 ## Methods
@@ -19,7 +21,7 @@ const result = await composio.logs.list();
 Retrieve one tool-execution log with its full detail (timings, context,
 source and raw `data`).
 
-```typescript
+```typescript signature
 async get(id: string, requestOptions?: ComposioRequestOptions): Promise<ToolExecutionLogDetail>
 ```
 
@@ -48,7 +50,7 @@ console.log(log.status, log.timings?.endTime);
 Search tool-execution logs with filters, a time range and cursor
 pagination.
 
-```typescript
+```typescript signature
 async search(params?: LogSearchParams, requestOptions?: ComposioRequestOptions): Promise<LogSearchResponse>
 ```
 

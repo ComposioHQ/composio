@@ -362,6 +362,8 @@ export const VerifyWebhookParamsSchema = z.object({
    * @default 300 (5 minutes)
    */
   tolerance: z.number().optional().default(300),
+  /** Maximum UTF-8 size of the supplied payload in bytes. */
+  maxBodyBytes: z.number().int().nonnegative().safe().optional(),
 });
 
 export type VerifyWebhookParams = z.input<typeof VerifyWebhookParamsSchema>;
@@ -399,6 +401,8 @@ export type ParseWebhookOptions = {
    * validation.
    */
   tolerance?: number;
+  /** Maximum request body size in bytes. Defaults to 10 MiB. */
+  maxBodyBytes?: number;
 };
 
 /**

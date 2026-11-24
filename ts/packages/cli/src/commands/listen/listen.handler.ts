@@ -221,7 +221,11 @@ const resolveListenSetup = (params: {
   Effect.gen(function* () {
     const consumerUserId = params.consumerUserId;
     const listeningToProjectEvent = isProjectEventType(params.slug);
-    const rawParams = (yield* resolveExplicitTextInput(params.inputParams))?.trim() || '{}';
+    const rawParams =
+      (yield* resolveExplicitTextInput(params.inputParams, {
+        command: 'listen',
+        flag: '--params',
+      }))?.trim() || '{}';
     const createParamsInput = yield* Effect.fromResult(parseCreateParams(rawParams));
     yield* assertSupportedListenParams({
       listeningToProjectEvent,

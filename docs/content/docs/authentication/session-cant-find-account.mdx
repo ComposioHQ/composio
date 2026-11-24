@@ -11,9 +11,9 @@ A session only sees connected accounts that match its project and its `user_id`.
 - **Project.** Your API key picks the project. Auth configs, connected accounts, and sessions never cross projects.
 - **Auth config.** How a toolkit authenticates: Composio managed auth or your own credentials. See [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app).
 - **Connected account.** One user's credentials for one auth config. Each account stores the `user_id` it was created for.
-- **Session.** Created for one `user_id`. At execution time it picks an `ACTIVE` account that belongs to that user, unless you pin one with [`connectedAccounts`](/docs/configuring-sessions#account-selection).
+- **Session.** Created for one `user_id`. At execution time it picks an `ACTIVE` account that belongs to that user, unless you pin one with [`connectedAccounts`](/docs/sessions/connections#account-selection).
 
-Use your application's own stable user ID everywhere: when you create sessions and when you connect accounts. See [userID best practices](/docs/how-composio-works#users).
+Use your application's own stable user ID everywhere: when you create sessions and when you connect accounts. See [userID best practices](/docs/sessions#users).
 
 ## Find the user ID that owns the account
 
@@ -57,7 +57,7 @@ If the user ID matches and the session still can't use the account, check these 
 
 1. **Status.** The account must be `ACTIVE` and not disabled. `INITIATED` means the user never finished the flow. `EXPIRED` means it needs a new grant. See [connection status](/docs/authentication#connection-lifecycle).
 2. **Toolkit restrictions.** If the session sets `toolkits`, the toolkit must be allowed. Toolkit restrictions apply before account lookup.
-3. **Auth config.** If the session passes [`authConfigs`](/docs/configuring-sessions#custom-auth-configs) for the toolkit, the account must belong to that auth config.
+3. **Auth config.** If the session passes [`authConfigs`](/docs/sessions/connections#custom-auth-configs) for the toolkit, the account must belong to that auth config.
 4. **Tool Router flag.** Auth configs that sessions create are enabled for Tool Router automatically. If you created the auth config yourself, in the dashboard or the API, set `is_enabled_for_tool_router` to `true` so sessions can match its accounts by `user_id`.
 5. **Pinned account.** If the session passes `connectedAccounts` for the toolkit, it uses exactly that account and never falls back to another one. Update the session or create a new one to change it.
 

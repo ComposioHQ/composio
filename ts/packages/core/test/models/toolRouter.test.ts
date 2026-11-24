@@ -8,7 +8,6 @@ import ComposioClient, {
   NotFoundError,
   PermissionDeniedError,
 } from '@composio/client';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
@@ -26,9 +25,11 @@ import { ComposioSessionConfigConflictError } from '../../src/errors/ToolRouterE
 import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 
 // Mock dependencies
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -193,7 +194,7 @@ describe('ToolRouter', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(toolRouter).toBeInstanceOf(ToolRouter);
-      expect(telemetry.instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
+      expect(instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
     });
 
     it('should store the config reference', () => {
@@ -270,6 +271,23 @@ describe('ToolRouter', () => {
       expect(bodies[1]).not.toHaveProperty('hooks');
     });
 
+    it('rejects a webhook handler with a misspelled field before calling the API', async () => {
+      await expect(
+        toolRouter.create(userId, {
+          hooks: [
+            {
+              type: 'before_execute',
+              id: 'check_outgoing_email',
+              appliesTo: 'all',
+              // @ts-expect-error the field is fallbackAction
+              handler: { type: 'webhook', fallback_action: 'block' },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
     it('rejects a prompt injection check on a before_execute hook, as the API does', async () => {
       await expect(
         toolRouter.create(userId, {
@@ -278,7 +296,7 @@ describe('ToolRouter', () => {
               type: 'before_execute',
               id: 'block_injection',
               appliesTo: 'all',
-              // @ts-expect-error a before_execute hook only takes a condition_check handler
+              // @ts-expect-error a before_execute hook takes no prompt_injection_check handler
               handler: { type: 'prompt_injection_check', action: 'block' },
             },
           ],

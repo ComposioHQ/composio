@@ -559,7 +559,7 @@ export class ToolRouterSession<
    *
    * @example
    * ```typescript
-   * const session = await composio.sessions.create({ toolkits: ['github'] });
+   * const session = await composio.sessions.create('user_123', { toolkits: ['github'] });
    * const { wasConnected, connectedAccount } = await session.ensureConnected('github');
    * if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
    * ```
@@ -1034,7 +1034,7 @@ export class ToolRouterSession<
     }
     const obj = item as Record<string, unknown>;
     return {
-      tool_slug: String(obj.tool_slug ?? ''),
+      tool_slug: typeof obj.tool_slug === 'string' ? obj.tool_slug : '',
       arguments: (obj.arguments as Record<string, unknown> | undefined) ?? {},
     };
   }

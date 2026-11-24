@@ -30,6 +30,12 @@ import { encodeMarkdownTableCell } from '@/lib/markdown-escaping';
 import type { MetaTool, MetaToolParameter } from '@/lib/meta-tools-data';
 import type { Toolkit, Tool, Trigger, ParameterSchema } from '@/types/toolkit';
 import { apiToolListSchema, apiTriggerListSchema } from '@/lib/toolkit-schema';
+import {
+  createComposioClientFromEnv,
+  LIVE_TRAVERSAL_TIMEOUT_MS,
+  listToolkitTools,
+  listToolkitTriggers,
+} from '@/lib/composio-api';
 import { z } from 'zod';
 import {
   getKnowledgeByProductArea,
@@ -45,90 +51,35 @@ import {
 
 export const revalidate = false;
 
-const API_BASE = process.env.COMPOSIO_API_BASE || 'https://backend.composio.dev/api/v3';
-const API_KEY = process.env.COMPOSIO_API_KEY;
-const API_FETCH_LIMIT = 1000; // Note: Toolkits with more items will be truncated
+// COMPOSIO_BASE_URL selects the API host; production by default.
+const client = process.env.COMPOSIO_API_KEY
+  ? createComposioClientFromEnv(process.env, { revalidate: 3600 })
+  : null;
 
 // Fetch detailed tool info from Composio API
 async function fetchDetailedTools(toolkitSlug: string): Promise<Tool[] | null> {
-  if (!API_KEY) {
+  if (!client) {
     return null;
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE}/tools?toolkit_slug=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&include_pricing=true&limit=${API_FETCH_LIMIT}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        next: { revalidate: 3600 },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[LLM Markdown] Failed to fetch tools for ${toolkitSlug}: ${response.status}`);
-      return null;
-    }
-
-    const parsed = apiToolListSchema.safeParse(await response.json());
-    if (!parsed.success) {
-      console.warn(`[LLM Markdown] Invalid API response format for toolkit ${toolkitSlug}`);
-      return null;
-    }
-
-    if (parsed.data.length >= API_FETCH_LIMIT) {
-      console.warn(
-        `[LLM Markdown] Toolkit ${toolkitSlug} has ${parsed.data.length}+ tools, results may be truncated`
-      );
-    }
-
-    return parsed.data;
-  } catch {
+    return apiToolListSchema.parse(await listToolkitTools(client, toolkitSlug, { signal: AbortSignal.timeout(LIVE_TRAVERSAL_TIMEOUT_MS) }));
+  } catch (error) {
+    console.warn(`[LLM Markdown] Failed to fetch tools for ${toolkitSlug}:`, error);
     return null;
   }
 }
 
 // Fetch detailed trigger info from Composio API
 async function fetchDetailedTriggers(toolkitSlug: string): Promise<Trigger[] | null> {
-  if (!API_KEY) {
+  if (!client) {
     return null;
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE}/triggers_types?toolkit_slugs=${toolkitSlug.toUpperCase()}&toolkit_versions=latest&limit=${API_FETCH_LIMIT}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
-        },
-        next: { revalidate: 3600 },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(
-        `[LLM Markdown] Failed to fetch triggers for ${toolkitSlug}: ${response.status}`
-      );
-      return null;
-    }
-
-    const parsed = apiTriggerListSchema.safeParse(await response.json());
-    if (!parsed.success) {
-      console.warn(`[LLM Markdown] Invalid API response format for triggers ${toolkitSlug}`);
-      return null;
-    }
-
-    if (parsed.data.length >= API_FETCH_LIMIT) {
-      console.warn(
-        `[LLM Markdown] Toolkit ${toolkitSlug} has ${parsed.data.length}+ triggers, results may be truncated`
-      );
-    }
-
-    return parsed.data;
-  } catch {
+    return apiTriggerListSchema.parse(await listToolkitTriggers(client, toolkitSlug, { signal: AbortSignal.timeout(LIVE_TRAVERSAL_TIMEOUT_MS) }));
+  } catch (error) {
+    console.warn(`[LLM Markdown] Failed to fetch triggers for ${toolkitSlug}:`, error);
     return null;
   }
 }

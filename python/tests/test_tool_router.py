@@ -6,6 +6,7 @@ import os
 import traceback
 import typing as t
 import warnings
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -47,6 +48,7 @@ from composio.core.models.tool_router import (
 )
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
+    ToolRouterHook,
     ToolRouterSession,
     ToolRouterSessionExecuteResponse,
     ToolRouterSessionMetaToolSlug,
@@ -3021,7 +3023,7 @@ class TestSessionHooks:
     shape the generated client hands to the SDK.
     """
 
-    _HOOKS: t.List[t.Any] = [
+    _HOOKS: list[ToolRouterHook] = [
         {
             "type": "before_execute",
             "id": "no_external_email",
@@ -3041,11 +3043,37 @@ class TestSessionHooks:
         },
     ]
 
-    def test_create_sends_hooks(self, tool_router, mock_client):
-        tool_router.create(user_id="user_123", hooks=self._HOOKS)
+    _WEBHOOK_HOOKS: list[ToolRouterHook] = [
+        {
+            "type": "before_execute",
+            "id": "check_outgoing_email",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "webhook",
+                "fallback_action": "block",
+                "timeout_ms": 2000,
+            },
+        },
+        {
+            "type": "after_execute",
+            "id": "redact_results",
+            "applies_to": "all",
+            "handler": {"type": "webhook", "fallback_action": "continue"},
+        },
+    ]
+
+    @pytest.mark.parametrize(
+        "hooks",
+        [
+            pytest.param(_HOOKS, id="built-in"),
+            pytest.param(_WEBHOOK_HOOKS, id="webhook"),
+        ],
+    )
+    def test_create_sends_hooks(self, tool_router, mock_client, hooks):
+        tool_router.create(user_id="user_123", hooks=deepcopy(hooks))
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["hooks"] == self._HOOKS
+        assert kwargs["hooks"] == hooks
 
     def test_create_omits_hooks_by_default(self, tool_router, mock_client):
         tool_router.create(user_id="user_123")
@@ -3054,22 +3082,23 @@ class TestSessionHooks:
         assert "hooks" not in kwargs
 
     @pytest.mark.parametrize(
-        ("hooks", "expected"),
+        "hooks",
         [
-            pytest.param(_HOOKS, _HOOKS, id="replace"),
-            pytest.param(None, None, id="remove"),
+            pytest.param(_HOOKS, id="replace"),
+            pytest.param(_WEBHOOK_HOOKS, id="webhook"),
+            pytest.param(None, id="remove"),
         ],
     )
-    def test_update_sends_hooks(self, hooks, expected):
+    def test_update_sends_hooks(self, hooks):
         client, requests = _transport_client(
             auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
         )
         session = _created_session(client)
 
-        session.update(hooks=hooks)
+        session.update(hooks=deepcopy(hooks))
 
         body = json.loads(requests[-1].content)
-        assert body["hooks"] == expected
+        assert body["hooks"] == hooks
 
     @pytest.mark.parametrize(
         "hooks",
@@ -3227,6 +3256,28 @@ class TestSessionHooks:
         assert result.hook_results == [
             {"id": "block_injection", "status": "unavailable"}
         ]
+
+    def test_unavailable_webhook_hook_says_why(self):
+        unavailable = {
+            "id": "check_outgoing_email",
+            "status": "unavailable",
+            "detail": "The webhook endpoint timed out",
+        }
+        client, _ = _answering_client(
+            {
+                **_BLOCKED_CALL_JSON,
+                "reason": {
+                    "type": "request_blocked",
+                    "hook_id": "check_outgoing_email",
+                },
+                "hook_results": [unavailable],
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+        assert result.result_type == "blocked"
+        assert result.hook_results == [unavailable]
 
     @pytest.mark.parametrize(
         "run",
