@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `composio init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.
+
 ## 0.6.3
 
 ### Patch Changes
