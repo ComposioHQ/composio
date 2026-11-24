@@ -504,13 +504,26 @@ export function listCodeExampleFiles(docsRoot: string): CodeExampleFile[] {
 }
 
 
+export const PYTHON_REFERENCE_DIR = 'content/reference/sdk-reference/python';
+
+export function listPythonReferenceFiles(docsRoot: string): CodeExampleFile[] {
+  const directory = join(docsRoot, PYTHON_REFERENCE_DIR);
+  return readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.mdx'))
+    .map(({ name }) => ({
+      path: `${PYTHON_REFERENCE_DIR}/${name}`,
+      source: readFileSync(join(directory, name), 'utf8'),
+    }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+}
+
 export type CodeExampleInventoryEntry = {
   path: string;
   line: number;
   kind: string;
   language?: string;
   options: string[];
-  validation: 'maintained' | 'generated-copy' | 'symbol-reference' | 'historical' | 'framework-source';
+  validation: 'maintained' | 'generated-copy' | 'symbol-reference' | 'workspace-checked' | 'historical' | 'framework-source';
   reason?: string;
 };
 
@@ -529,11 +542,16 @@ export function inventoryCodeExamples(docsRoot: string): CodeExampleInventoryEnt
         walkCodeExamples(parsed.units, (unit, ancestors) => {
           if (unit.type !== 'fence' && unit.type !== 'external' && unit.type !== 'package-install') return;
           const group = ancestors.findLast((ancestor) => ancestor.type === 'tabs' && ancestor.groupId === 'language');
+          const pythonReference = path.startsWith(`${PYTHON_REFERENCE_DIR}/`);
           const validation = maintained.has(path) ? 'maintained' : path.startsWith('content/changelog/') ? 'historical' :
+            pythonReference || path.startsWith('content/reference/sdk-reference/typescript/') ? 'workspace-checked' :
             path.startsWith('content/reference/sdk-reference/') ? 'symbol-reference' : 'generated-copy';
           const marker = unit.markers.find((item) => item.reason) ?? (pageReason?.type === 'marker' ? pageReason : undefined);
           const reason = marker?.reason ?? (validation === 'symbol-reference'
             ? 'Language-specific SDK symbol documentation includes signatures and partial API usage; maintained cross-language operation examples live in the guides'
+            : validation === 'workspace-checked' ? pythonReference
+              ? 'Generated from SDK docstrings; check:python-snippets --reference checks runnable examples against the local Python SDK and skips display signatures'
+              : 'Generated from SDK JSDoc; check:docs-reference checks runnable examples against workspace @composio/core and skips display signatures'
             : validation === 'historical' ? 'Immutable release history is inventoried, not rewritten as current API guidance'
             : validation === 'generated-copy' ? 'Generated presentation; canonical api-overviews or kb/source content is checked' : undefined);
           entries.push({ path, line: unit.line, kind: unit.type === 'external' ? unit.name ?? 'external' : unit.type,

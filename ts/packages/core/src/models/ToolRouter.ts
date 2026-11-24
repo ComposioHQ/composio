@@ -56,6 +56,7 @@ import {
   resolveToolRouterSandboxConfig,
   resolveLocalToolsOptions,
   type LocalToolsOptions,
+  type SessionCreateBody,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
@@ -195,9 +196,29 @@ export class ToolRouter<
    *
    * @example
    * ```typescript
-   * import { Composio } from '@composio/core';
+   * import { Composio, experimental_createTool, experimental_createToolkit } from '@composio/core';
+   * import { z } from 'zod';
    *
    * const composio = new Composio();
+   *
+   * const myLocalTool = experimental_createTool('GET_WEATHER', {
+   *   name: 'Get Weather',
+   *   description: 'Get the weather for a city',
+   *   inputParams: z.object({ city: z.string() }),
+   *   execute: async ({ city }) => ({ city, forecast: 'sunny' }),
+   * });
+   * const myLocalToolkit = experimental_createToolkit('DEV_TOOLS', {
+   *   name: 'Dev Tools',
+   *   description: 'Local developer utilities',
+   *   tools: [
+   *     experimental_createTool('ECHO', {
+   *       name: 'Echo',
+   *       description: 'Return the input text',
+   *       inputParams: z.object({ text: z.string() }),
+   *       execute: async ({ text }) => ({ text }),
+   *     }),
+   *   ],
+   * });
    *
    * const session = await composio.sessions.create('user_123', {
    *   toolkits: ['gmail'],
@@ -288,7 +309,7 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
@@ -318,7 +339,13 @@ export class ToolRouter<
     };
 
     const session = await withCancellation(
-      () => this.client.toolRouter.session.create(payload, requestOptions),
+      () =>
+        this.client.toolRouter.session.create(
+          // The `webhook` hook handler is not in `@composio/client` until it
+          // picks up ComposioHQ/platform#15328; the body is serialized as-is.
+          payload as SessionCreateParams,
+          requestOptions
+        ),
       requestOptions?.signal
     );
 
@@ -376,7 +403,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    * const id = 'session_123';
-   * const session = await composio.sessions.use(id);
+   * const session = await composio.sessions.use(id, { mcp: true });
    *
    * console.log(session.mcp.url);
    * console.log(session.mcp.headers);

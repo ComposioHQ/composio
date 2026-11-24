@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import { inspect } from 'node:util';
 import { Predicate } from 'effect';
 import { isBlockedSensitiveFileUploadPath } from '@composio/core';
-import { afterEach, assert, describe, expect, it, vi } from 'vitest';
+import { afterEach, assert, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { agentSessionHeaders } from 'src/services/agent-session';
 import { cliRequestHeaders } from 'src/services/client-provenance';
 import { installRunHelpers, parseJson } from 'src/services/run-helpers-runtime';
@@ -302,8 +302,9 @@ describe('run-helpers-runtime', () => {
     });
 
     it('[Given] a proxy redirect changes origin [Then] only the backend receives the session and credentials', async () => {
+      const redirectSessionHeaders = { ...sessionHeaders, 'x-cli-agent-compaction-count': '2' };
       const fetchMock = await proxyOnce(
-        { ...proxyContext, agentSessionHeaders: sessionHeaders },
+        { ...proxyContext, agentSessionHeaders: redirectSessionHeaders },
         jsonResponse({ session_id: 'session-1' }),
         new Response(null, { status: 307, headers: { location: '/proxy-redirect' } }),
         new Response(null, {
@@ -321,6 +322,7 @@ describe('run-helpers-runtime', () => {
       expect(sameOriginHeaders.get('x-cli-agent-session-id')).toBe(
         sessionHeaders['x-cli-agent-session-id']
       );
+      expect(sameOriginHeaders.get('x-cli-agent-compaction-count')).toBe('2');
       expect(sameOriginHeaders.get('x-user-api-key')).toBe('test-key');
 
       expect(crossOrigin?.[0]).toBe('https://storage.example.test/result');
@@ -328,7 +330,7 @@ describe('run-helpers-runtime', () => {
       expect(crossOrigin?.[1].body).toBeUndefined();
       const crossOriginHeaders = new Headers(crossOrigin?.[1].headers);
       const protectedHeaders = [
-        ...Object.keys(sessionHeaders),
+        ...Object.keys(redirectSessionHeaders),
         'x-user-api-key',
         'x-org-id',
         'x-project-id',
@@ -493,6 +495,7 @@ describe('run-helpers-runtime', () => {
 
   it('[Given] file labels larger than the Linux environment limit [Then] the child reads all labels from a temporary manifest', async () => {
     const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-batch-'));
+    vi.stubEnv('TMPDIR', outputDir);
     const childScript = [
       'const fs = require("node:fs");',
       'const manifestPath = process.env.COMPOSIO_RUN_STAGED_FILES_FILE;',
@@ -500,7 +503,7 @@ describe('run-helpers-runtime', () => {
       'const labels = JSON.parse(manifest);',
       'const input = process.argv[process.argv.indexOf("--data") + 1];',
       'const data = JSON.parse(fs.readFileSync(input.slice(1), "utf8"));',
-      'console.log(JSON.stringify({ successful: true, data: { manifestPath, manifestBytes: Buffer.byteLength(manifest), mode: fs.statSync(manifestPath).mode & 0o777, count: Object.keys(labels).length, dataCount: data.files.length, first: labels[data.files[0]], last: labels[data.files.at(-1)] } }));',
+      'console.log(JSON.stringify({ successful: true, data: { manifestPath, argumentsPath: input.slice(1), manifestBytes: Buffer.byteLength(manifest), mode: fs.statSync(manifestPath).mode & 0o777, count: Object.keys(labels).length, dataCount: data.files.length, first: labels[data.files[0]], last: labels[data.files.at(-1)] } }));',
     ].join('\n');
     const mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
     const fileName = (i: number) => `${i}-${'a'.repeat(200)}.pptx`;
@@ -521,6 +524,7 @@ describe('run-helpers-runtime', () => {
           typeof result.data.manifestPath === 'string'
       );
       expect(result.data).toMatchObject({
+        argumentsPath: path.join(path.dirname(result.data.manifestPath), 'arguments.json'),
         count: 512,
         dataCount: 512,
         mode: 0o600,
@@ -534,6 +538,8 @@ describe('run-helpers-runtime', () => {
       expect(result.data.manifestBytes).toBeGreaterThan(128 * 1024);
       expect(Buffer.byteLength(result.data.manifestPath)).toBeLessThan(1024);
       expect(fs.existsSync(result.data.manifestPath)).toBe(false);
+      expect(fs.existsSync(path.dirname(result.data.manifestPath))).toBe(false);
+      expect(fs.readdirSync(outputDir).filter(name => name.startsWith('file-'))).toEqual([]);
     } finally {
       fs.rmSync(outputDir, { recursive: true, force: true });
     }
@@ -583,10 +589,16 @@ describe('run-helpers-runtime', () => {
       'const data = JSON.parse(process.argv[process.argv.indexOf("--data") + 1]);',
       'const stagedFiles = JSON.parse(fs.readFileSync(process.env.COMPOSIO_RUN_STAGED_FILES_FILE, "utf8"));',
       'const exists = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, fs.existsSync(v)]));',
-      'console.log(JSON.stringify({ successful: true, data: { data, stagedFiles, exists } }));',
+      'const directory = require("node:path").dirname(process.env.COMPOSIO_RUN_STAGED_FILES_FILE);',
+      'const mode = (p) => fs.statSync(p).mode & 0o777;',
+      'const fileModes = Object.values(data).map(mode);',
+      'console.log(JSON.stringify({ successful: true, data: { data, stagedFiles, exists, directory, directoryMode: mode(directory), fileModes } }));',
     ].join('\n');
     // A value the run process inherited must not reach the child.
     vi.stubEnv('COMPOSIO_RUN_STAGED_FILES_FILE', '/stale/metadata.json');
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-tmp-'));
+    vi.stubEnv('TMPDIR', tmpRoot);
+    onTestFinished(() => fs.rmSync(tmpRoot, { recursive: true, force: true }));
     await installRunHelpers({ cliPrefix: [process.execPath, '-e', childScript] });
     const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
 
@@ -625,6 +637,18 @@ describe('run-helpers-runtime', () => {
       []
     );
     expect(new Set(stagedPaths).size).toBe(stagedPaths.length);
+    const stagingDirectory = path.dirname(stagedPaths[0] ?? '');
+    expect(path.dirname(stagingDirectory)).toBe(tmpRoot);
+    expect(path.basename(stagingDirectory)).toMatch(/^composio-run-staged-/);
+    expect(new Set(stagedPaths.map(stagedPath => path.dirname(stagedPath)))).toEqual(
+      new Set([stagingDirectory])
+    );
+    expect(result.data).toMatchObject({
+      directory: stagingDirectory,
+      directoryMode: 0o700,
+      fileModes: stagedPaths.map(() => 0o600),
+    });
+    expect(fs.existsSync(stagingDirectory)).toBe(false);
     expect(result.data).toMatchObject({
       exists: Object.fromEntries(Object.keys(staged).map(key => [key, true])),
     });

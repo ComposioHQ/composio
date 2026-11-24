@@ -4,6 +4,18 @@ import { getKnowledgeToolkitSummaries } from '@/lib/knowledge/catalog';
 import * as linkValidation from '../../scripts/validate-links';
 
 describe('link validation', () => {
+  test('recognizes explicit bookmark anchors while ignoring fenced examples', () => {
+    expect(linkValidation.extractHeadingsFromContent([
+      '## Choose a task',
+      '- <span id="users" />[Create and reuse](/docs/sessions/create-and-reuse)',
+      "<a id='old-name' />",
+      '<span data-id="not-an-anchor" />',
+      '```html',
+      '<span id="example-only" />',
+      '```',
+    ].join('\n'))).toEqual(['choose-a-task', 'users', 'old-name']);
+  });
+
   test('accepts known toolkit HTML and Markdown routes while rejecting unknown toolkits', async () => {
     const scanned = await scanURLs({
       preset: 'next',

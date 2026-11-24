@@ -108,6 +108,18 @@ def test_keeps_fields_the_sdk_does_not_know_yet(webhooks: SessionWebhooks) -> No
     assert hook == payload
 
 
+def test_accepts_an_event_from_an_api_version_that_sends_no_tool_call_id(
+    webhooks: SessionWebhooks,
+) -> None:
+    payload = copy.deepcopy(BEFORE_TOOL_CALL)
+    del payload["metadata"]["tool_call_id"]
+    body, headers = signed(payload)
+
+    hook = webhooks.parse(body=body, headers=headers, verify_secret=SECRET)
+
+    assert hook == payload
+
+
 def test_accepts_a_request_when_one_of_several_signatures_matches(
     webhooks: SessionWebhooks,
 ) -> None:

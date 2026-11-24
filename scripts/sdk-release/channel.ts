@@ -22,9 +22,10 @@ export const CHANNELS = {
     commitsVersions: true,
     /**
      * Checks the release PR head needs besides the candidate checks. The docs are checked against
-     * the candidate packages, not the published ones the pull-request docs workflows install.
+     * the candidate packages, not the published ones the pull-request docs workflows install, and
+     * the TypeScript reference that ships in the core tarball is compiled against that tarball.
      */
-    extraChecks: ['SDK candidate docs'],
+    extraChecks: ['SDK candidate docs', 'SDK candidate reference'],
     /** Whether publishing opens a docs PR that pins the released npm versions. */
     pinsDocs: true,
   },
@@ -32,8 +33,9 @@ export const CHANNELS = {
     // `beta` belongs to the 1.0 prerelease train on `main`; previews of `next` use `next`.
     npmTag: 'next',
     commitsVersions: false,
-    // A beta PR does not touch the docs, so no docs check runs on it.
-    extraChecks: [],
+    // A beta PR does not touch the docs, so no docs check runs on it. The core tarball still
+    // ships the TypeScript reference under dist/docs, so that check runs on every channel.
+    extraChecks: ['SDK candidate reference'],
     pinsDocs: false,
   },
 } as const satisfies Record<

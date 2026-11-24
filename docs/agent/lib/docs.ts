@@ -8,6 +8,7 @@
  */
 
 import { resolveToolkitCount } from '../../lib/toolkit-count';
+import { stripTagsOutsideCode } from '../../lib/markdown-code-guard';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -231,15 +232,14 @@ function toPlainText(body: string): string {
 /** Clean MDX into Markdown the model can read: drop frontmatter and bare JSX tags. */
 export function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
-    .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+  return stripTagsOutsideCode(body, /<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
 /**
  * Extract a page's section anchors from its Markdown headings, so the assistant
- * can link a specific section (e.g. `/docs/how-composio-works#users`) instead
+ * can link a specific section (e.g. `/docs/sessions/create-and-reuse#users`) instead
  * of just the page. Anchor slugs match the docs' heading-id convention.
  */
 export function extractSections(markdown: string): { title: string; anchor: string }[] {
@@ -461,7 +461,7 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
         `- **Category:** ${tk.category ?? 'n/a'}`,
         `- **Auth:** ${authSchemesMarkdown(tk.authSchemes)}`,
         '',
-        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions), [Authentication](/docs/authentication), and [auth schemes](/reference/api-reference/auth-configs#auth-schemes) for how its auth mode works.`,
+        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Restrict tool access](/docs/sessions/tool-access), [Authentication](/docs/authentication), and [auth schemes](/reference/api-reference/auth-configs#auth-schemes) for how its auth mode works.`,
       ].join('\n');
       return { title: `${name} toolkit`, raw };
     }

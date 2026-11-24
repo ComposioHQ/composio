@@ -198,7 +198,11 @@ function contentHash(value: string): string {
 // Sections intentionally kept out of search entirely (not just deprioritized).
 // Direct tool execution is the legacy pre-sessions flow — we don't want it
 // surfacing in results at all. Matches the prefix and anything beneath it.
-const SEARCH_EXCLUDED_PREFIXES = ['/docs/tools-direct'];
+const SEARCH_EXCLUDED_PREFIXES = [
+  '/docs/tools-direct',
+  '/docs/configuring-sessions',
+  '/docs/how-composio-works',
+];
 
 function isExcludedFromSearch(url: string): boolean {
   const path = url.replace(/\/$/, '');
@@ -328,10 +332,10 @@ function pageRank(url: string, sourceType: KnowledgeSourceType): number {
     const path = url.replace(/\/$/, '');
     if (path === '/docs') return 2_400;
     if (path === '/docs/quickstart') return 2_300;
-    if (path === '/docs/how-composio-works') return 2_250;
+    if (path === '/docs/sessions') return 2_250;
     if (path === '/docs/authentication') return 2_220;
     if (path.startsWith('/docs/tools-direct/')) return 2_180;
-    if (path === '/docs/configuring-sessions') return 2_120;
+    if (path.startsWith('/docs/sessions/')) return 2_120;
     if (path.startsWith('/docs/auth-configuration/')) return 2_080;
     if (path === '/docs/triggers' || path.startsWith('/docs/setting-up-triggers/')) return 2_060;
     return 2_000;

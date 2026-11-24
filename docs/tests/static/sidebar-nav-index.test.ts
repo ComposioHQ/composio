@@ -95,7 +95,7 @@ describe('buildSidebarNavIndex', () => {
     // Core concepts opens a new group, so its first entry restarts at 1 rather
     // than continuing Get Started's numbering.
     expect(index['/docs'].position).toBe(1);
-    expect(index['/docs/how-composio-works'].position).toBe(1);
+    expect(index['/docs/sessions'].position).toBe(1);
   });
 
   test('a folder counts as one entry for its siblings', () => {

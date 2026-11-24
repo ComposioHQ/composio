@@ -1,0 +1,21 @@
+---
+title: "WebhookEndpoints"
+---
+
+## Methods
+
+### list()
+
+**Example**
+
+```typescript
+const { items } = await composio.webhookEndpoints.list();
+```
+
+---
+
+### verify()
+
+```typescript nocheck="Express handler types are not installed"
+app.post('/webhooks', verify);
+```

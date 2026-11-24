@@ -65,7 +65,7 @@ curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_I
 
 Ask your agent: “Read https://composio.dev and summarize what the company offers.” With Instant enabled and no existing Firecrawl connection, it can use a supported tool without asking for a Firecrawl API key.
 
-This example hands the tools straight to your agent, so it can spend without per-call approval. To gate spending, use [per-call approval](#approve-a-tool-call-before-spending). Instant works with `session.tools()`, `session.execute()`, and the Session's [MCP endpoint](/docs/sessions-via-mcp). For general filters and agent setup, see [Configuring Sessions](/docs/configuring-sessions) and the [Quickstart](/docs/quickstart).
+This example hands the tools straight to your agent, so it can spend without per-call approval. To gate spending, use [per-call approval](#approve-a-tool-call-before-spending). Instant works with `session.tools()`, `session.execute()`, and the Session's [MCP endpoint](/docs/sessions-via-mcp). For general filters and agent setup, see [Restrict tool access](/docs/sessions/tool-access) and the [Quickstart](/docs/quickstart).
 
 ## Know which account runs the tool
 

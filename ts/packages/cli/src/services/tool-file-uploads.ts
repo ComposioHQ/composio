@@ -6,19 +6,42 @@
 import type * as FileSystem from 'effect/FileSystem';
 import type * as Path from 'effect/Path';
 import type { ComposioClientShape, ComposioError } from '@composio/client/effect';
-import { Data, Effect, Predicate, Schema } from 'effect';
+import { Data, Effect, Option, Predicate, Schema } from 'effect';
 import mime from 'mime';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
 import { isPlainRecord } from 'src/utils/parse-json';
 import { idempotent } from 'src/services/composio-request';
+import { RUN_STAGED_ARGUMENTS_FILE, RUN_STAGED_FILES_PREFIX } from 'src/constants';
+import { NodeOs } from 'src/services/node-os';
+import { NodeProcess } from 'src/services/node-process';
 
 type JsonSchema = Record<string, unknown>;
 /**
  * Local path -> the name and MIME type to upload it under, for files their caller
  * staged (`composio run` writes each script File to a generated path). Labels
- * only: the path is still read, and checked against the denylist, as given.
+ * only: the path is still read, and checked against the denylist and the
+ * {@link LocalFileScope}, as given. A label never makes a path readable.
  */
 type StagedFiles = ReadonlyMap<string, { readonly name: string; readonly mimetype?: string }>;
+
+/**
+ * Local tool file reads are confined to the working directory and the staging directory
+ * created for this execute call by `composio run`.
+ */
+type LocalFileScope = {
+  readonly cwd: string;
+  readonly tmpdir: string;
+  readonly stagingDirectory?: string;
+};
+
+export const localFileScope = (path: Path.Path, manifestPath: string | undefined) =>
+  Effect.gen(function* () {
+    return {
+      cwd: (yield* NodeProcess).cwd,
+      tmpdir: (yield* NodeOs).tmpdir,
+      stagingDirectory: manifestPath ? path.dirname(manifestPath) : undefined,
+    } satisfies LocalFileScope;
+  });
 
 // The core helpers below are only reached once an execute actually carries
 // a file input, so they are imported on that path rather than at module scope:
@@ -31,7 +54,12 @@ export class ToolFileUploadError extends Data.TaggedError('services/ToolFileUplo
   readonly cause?: unknown;
   readonly message: string;
   readonly reason:
-    'not-uploadable' | 'source-fetch' | 'source-read' | 'unsupported-source' | 'upload';
+    | 'not-uploadable'
+    | 'outside-upload-scope'
+    | 'source-fetch'
+    | 'source-read'
+    | 'unsupported-source'
+    | 'upload';
   readonly status?: number;
 }> {}
 
@@ -476,42 +504,153 @@ const readFileFromUrl = (path: Path.Path, url: string) =>
     };
   });
 
+// Whether `candidate` lies strictly below `root`, compared by path components
+// (so `/work/project-evil` is not inside `/work/project`). Both are canonical.
+const isWithinDirectory = (path: Path.Path, root: string, candidate: string): boolean => {
+  const relative = path.relative(root, candidate);
+  return (
+    relative !== '' &&
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  );
+};
+
+// Resolve the temporary parent, keeping the staging directory's own name
+// literal so a symlink in its place cannot expand the upload scope.
+const canonicalStagingRoot = (fs: FileSystem.FileSystem, path: Path.Path, scope: LocalFileScope) =>
+  Effect.gen(function* () {
+    if (!scope.stagingDirectory) return Option.none<string>();
+    const directory = path.resolve(scope.stagingDirectory);
+    const name = path.basename(directory);
+    if (!name.startsWith(RUN_STAGED_FILES_PREFIX)) return Option.none<string>();
+    const roots = yield* Effect.all([
+      fs.realPath(scope.tmpdir),
+      fs.realPath(path.dirname(directory)),
+    ]).pipe(Effect.option);
+    if (Option.isNone(roots)) return Option.none<string>();
+    const [tmpdir, parent] = roots.value;
+    return path.relative(tmpdir, parent) === ''
+      ? Option.some(path.join(tmpdir, name))
+      : Option.none<string>();
+  });
+
+const outsideUploadScopeError = (params: {
+  readonly filePath: string;
+  readonly cwd: string;
+  readonly operation: 'upload' | 'read';
+}) =>
+  new ToolFileUploadError({
+    reason: 'outside-upload-scope',
+    message:
+      `Refusing to ${params.operation} "${params.filePath}": it is outside the ` +
+      (params.operation === 'upload'
+        ? `allowed upload directories. The current working directory is ${params.cwd}. The tool was not executed. `
+        : `current working directory (${params.cwd}). `) +
+      'Copy the file into the current directory, or run the command from a directory that contains ' +
+      'it, and pass that path.',
+  });
+
+const resolveFilesystemPath = (
+  fs: FileSystem.FileSystem,
+  path: Path.Path,
+  cwd: string,
+  filePath: string
+) =>
+  Effect.gen(function* () {
+    if (path.sep !== '/') return yield* fs.realPath(path.resolve(cwd, filePath));
+
+    // POSIX walks a symlink before interpreting the next parent segment.
+    // The platform realPath implementation normalizes parent segments first.
+    const absolutePath = path.isAbsolute(filePath) ? filePath : `${cwd}/${filePath}`;
+    const [first = '', ...suffixes] = absolutePath.split(/\/\.\.(?=\/|$)/u);
+    let prefix = first;
+    for (const suffix of suffixes) {
+      const directory = yield* fs.realPath(prefix || '/');
+      const info = yield* fs.stat(directory);
+      if (info.type !== 'Directory') {
+        return yield* new ToolFileUploadError({
+          reason: 'source-read',
+          message: `Cannot resolve "${filePath}": a parent segment follows a non-directory path.`,
+        });
+      }
+      prefix = `${path.dirname(directory)}${suffix}`;
+    }
+    return yield* fs.realPath(prefix || '/');
+  });
+
+export const resolveScopedLocalFile = (params: {
+  readonly fs: FileSystem.FileSystem;
+  readonly path: Path.Path;
+  readonly filePath: string;
+  readonly scope: LocalFileScope;
+  readonly operation: 'upload' | 'read';
+  readonly allowStaging: boolean;
+}) =>
+  Effect.gen(function* () {
+    const { fs, path, filePath, scope, operation, allowStaging } = params;
+    const { assertSafeFileUploadPath } = yield* loadCoreFileUploadHelpers;
+    const assertNotSensitive = (candidate: string) =>
+      Effect.try({
+        try: () =>
+          assertSafeFileUploadPath(candidate, {
+            remediation:
+              'The Composio CLI always enforces this denylist and has no opt-out. ' +
+              'Use a file from the working directory outside sensitive locations.',
+          }),
+        catch: asSourceReadError,
+      });
+
+    // Preserve sensitive names in the written path and check the exact target.
+    yield* assertNotSensitive(path.resolve(scope.cwd, filePath));
+    const canonicalPath = yield* resolveFilesystemPath(fs, path, scope.cwd, filePath).pipe(
+      Effect.mapError(asSourceReadError)
+    );
+    const cwd = yield* fs.realPath(scope.cwd).pipe(Effect.option);
+    const staging = allowStaging
+      ? yield* canonicalStagingRoot(fs, path, scope)
+      : Option.none<string>();
+    const allowedStaging =
+      Option.isSome(staging) &&
+      (operation === 'read'
+        ? path.relative(staging.value, canonicalPath) === RUN_STAGED_ARGUMENTS_FILE
+        : isWithinDirectory(path, staging.value, canonicalPath));
+    if (
+      !allowedStaging &&
+      !Option.exists(cwd, root => isWithinDirectory(path, root, canonicalPath))
+    ) {
+      return yield* outsideUploadScopeError({
+        filePath,
+        cwd: Option.getOrElse(cwd, () => scope.cwd),
+        operation,
+      });
+    }
+    yield* assertNotSensitive(canonicalPath);
+    return canonicalPath;
+  });
+
 const readFileFromDisk = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
   filePath: string,
-  stagedFiles: StagedFiles
+  stagedFiles: StagedFiles,
+  scope: LocalFileScope
 ) =>
   Effect.gen(function* () {
-    // Enforce the sensitive-path denylist at the lowest-level local read, so any
-    // caller of this reader (not just `uploadToolInputFiles`) is protected. This
-    // is the single canonical guard shared with `@composio/core`; without it the
-    // CLI's upload path would silently exfiltrate ~/.ssh/id_rsa, ~/.aws/credentials,
-    // .env files, etc. (issue #3746 / GHSA-hp3h-89pf-5q58). URLs and File objects
-    // are intentionally not path-checked, matching the core SDK.
-    //
-    // The CLI intentionally exposes NO opt-out for this guard (unlike the core/Python
-    // SDKs' `sensitiveFileUploadProtection` flag): the primary attack vector is an
-    // agent that has been prompt-injected into supplying its own tool arguments, so a
-    // `--force`/env override would hand that attacker a trivial bypass. Pass a
-    // CLI-appropriate remediation so the error does not advertise an SDK-only opt-out.
-    const { assertSafeFileUploadPath } = yield* loadCoreFileUploadHelpers;
-    yield* Effect.try({
-      try: () =>
-        assertSafeFileUploadPath(filePath, {
-          remediation:
-            'The Composio CLI always enforces this denylist and has no opt-out. To upload this ' +
-            'file, copy it to a location outside sensitive directories (e.g. ~/.ssh, ~/.aws) and ' +
-            'pass the copy instead.',
-        }),
-      catch: asSourceReadError,
+    const staged = stagedFiles.get(filePath);
+    const canonicalPath = yield* resolveScopedLocalFile({
+      fs,
+      path,
+      filePath,
+      scope,
+      operation: 'upload',
+      allowStaging: staged !== undefined,
     });
-    const bytes = yield* fs.readFile(filePath).pipe(Effect.mapError(asSourceReadError));
+    const bytes = yield* fs.readFile(canonicalPath).pipe(Effect.mapError(asSourceReadError));
     // A staged file is uploaded under the name and type its caller declared. A
     // local file carries no Content-Type, so otherwise the type is inferred from
     // the name's extension. Tools validate it (Canva's import rejects a .pptx
     // labelled `application/octet-stream`, #4984).
-    const staged = stagedFiles.get(filePath);
     const stagedName = path.basename(staged?.name ?? '');
     const fileName = stagedName.length > 0 ? stagedName : path.basename(filePath);
     return {
@@ -527,7 +666,8 @@ const readUploadSource = (
   fs: FileSystem.FileSystem,
   path: Path.Path,
   file: string | File,
-  stagedFiles: StagedFiles
+  stagedFiles: StagedFiles,
+  scope: LocalFileScope
 ) => {
   if (isFileLike(file)) {
     return Effect.tryPromise({ try: () => file.arrayBuffer(), catch: asSourceReadError }).pipe(
@@ -544,7 +684,7 @@ const readUploadSource = (
   }
 
   if (typeof file === 'string') {
-    return readFileFromDisk(fs, path, file, stagedFiles);
+    return readFileFromDisk(fs, path, file, stagedFiles, scope);
   }
 
   return Effect.fail(
@@ -563,13 +703,15 @@ const uploadFile = (params: {
   readonly toolkitSlug: string;
   readonly client: ComposioClientShape;
   readonly stagedFiles: StagedFiles;
+  readonly uploadScope: LocalFileScope;
 }) =>
   Effect.gen(function* () {
     const fileData = yield* readUploadSource(
       params.fs,
       params.path,
       params.file,
-      params.stagedFiles
+      params.stagedFiles,
+      params.uploadScope
     );
     // eslint-disable-next-line no-restricted-imports -- MD5 for the presigned-upload checksum is not available in Web Crypto
     const { createHash } = yield* Effect.promise(() => import('node:crypto'));
@@ -650,6 +792,8 @@ export const uploadToolInputFiles = (params: {
   readonly toolkitSlug?: string;
   /** Local path -> name and MIME type its caller staged it under. */
   readonly stagedFiles?: StagedFiles;
+  /** The directories a local path may be read from; see {@link LocalFileScope}. */
+  readonly uploadScope: LocalFileScope;
 }): Effect.Effect<Record<string, unknown>, ToolInputUploadError> =>
   Effect.gen(function* () {
     yield* rejectLocalFilesWithoutUpload(params);
@@ -661,5 +805,6 @@ export const uploadToolInputFiles = (params: {
       toolkitSlug: params.toolkitSlug ?? guessToolkitFromToolSlug(params.toolSlug) ?? 'unknown',
       client: params.client,
       stagedFiles: params.stagedFiles ?? new Map(),
+      uploadScope: params.uploadScope,
     });
   });

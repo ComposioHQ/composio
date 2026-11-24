@@ -8,8 +8,10 @@ description: "`composio.sessionConfigs` — saved, reusable Session configs.  A 
 Access this class through the `composio.sessionConfigs` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.sessionConfigs.list();
+const sessionConfigs = composio.sessionConfigs;
 ```
 
 ## Methods
@@ -21,7 +23,7 @@ policy. A missing or cross-project id surfaces as the backend's 404.
 
 Requires Session configs to be enabled for the project.
 
-```typescript
+```typescript signature
 async get(id: string, requestOptions?: ComposioRequestOptions): Promise<SessionConfig>
 ```
 
@@ -54,7 +56,7 @@ archived ones. The backend defaults `limit` to 20 and caps it at 100.
 
 Requires Session configs to be enabled for the project.
 
-```typescript
+```typescript signature
 async list(params?: SessionConfigListParams, requestOptions?: ComposioRequestOptions): Promise<SessionConfigListResponse>
 ```
 

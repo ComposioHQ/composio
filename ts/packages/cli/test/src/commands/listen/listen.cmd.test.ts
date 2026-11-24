@@ -9,6 +9,7 @@ import { ConnectedAccountResolutionError } from 'src/services/connected-account-
 import { MissingActingUserError } from 'src/commands/surface';
 import { ComposioCliUserConfig } from 'src/services/cli-user-config';
 import { ComposioUserContext } from 'src/services/user-context';
+import { NodeProcess } from 'src/services/node-process';
 import { TriggerRealtimeSubscriptionError, TriggersRealtime } from 'src/services/triggers-realtime';
 import {
   makeShutdownController,
@@ -676,17 +677,52 @@ describe('CLI: composio listen', () => {
   )('listen validation and domain failures', it => {
     // Business-level validation (only knowable after parsing) raises `CommandInputError`;
     // see `src/commands/errors.ts`.
-    it.effect('reports malformed trigger params as CLI input validation', () =>
+    it.effect('parses trigger params from a file inside the working directory', () =>
       Effect.gen(function* () {
         yield* enableListen;
+        const fs = yield* FileSystem.FileSystem;
+        const cwd = (yield* NodeProcess).cwd;
+        const paramsFile = yield* fs.makeTempFileScoped({ directory: cwd });
+        yield* fs.writeFileString(paramsFile, '[]');
         const failure = yield* cli([
           'listen',
           'composio.connected_account.expired',
           '--params',
-          '[]',
+          `@${paramsFile}`,
         ]).pipe(Effect.flip);
 
-        expect(failure).toMatchObject({ _tag: 'commands/CommandInputError', command: 'listen' });
+        expect(failure).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'listen',
+          option: '--params',
+          message: expect.stringContaining('Expected --params to be an object'),
+        });
+      })
+    );
+
+    it.effect('applies the sensitive-path guard to trigger params files', () =>
+      Effect.gen(function* () {
+        yield* enableListen;
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const directory = yield* fs.makeTempDirectoryScoped({
+          directory: (yield* NodeProcess).cwd,
+        });
+        const paramsFile = path.join(directory, '.env.fixture');
+        yield* fs.writeFileString(paramsFile, '{}');
+        const failure = yield* cli([
+          'listen',
+          'GMAIL_NEW_GMAIL_MESSAGE',
+          '--params',
+          `@${paramsFile}`,
+        ]).pipe(Effect.flip);
+
+        expect(failure).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'listen',
+          option: '--params',
+          message: expect.stringContaining('looks like a credential'),
+        });
       })
     );
 

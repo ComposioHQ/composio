@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `composio init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.
+- `composio execute` and `composio dev playground-execute` accept local uploads and `-d @file` arguments under the current working directory. The same scope applies to `composio proxy -d @file` and `composio listen --params @file`. Symlinks must resolve within that directory and sensitive paths remain blocked. Copy files into the working directory or run the command from a directory that contains them. `composio run` stages script-provided Files, Blobs, and argument files in a private temporary directory for each execute call and removes it when the call finishes.
+
 ## 0.6.3
 
 ### Patch Changes
@@ -228,6 +231,17 @@
   configured backend origin, including when a request redirects. Builds
   without a PostHog project key also send these headers. The telemetry
   switches above remove both headers.
+
+- The CLI now reports how many times the Claude Code or Codex chat it runs in
+  was compacted: as `agent_compaction_count` on telemetry events, and as the
+  `x-cli-agent-compaction-count` header on the three kinds of request that
+  carry the agent session. The count is the number of lines in a file the
+  Composio agent plugin's hook keeps for the chat,
+  `~/.composio/agent-compactions/<host>/<host session ID>`, which the CLI only
+  reads. The README describes the file under "Agent compaction state". No
+  plugin writes it yet, so the count stays absent until one does. A missing,
+  unreadable, or oversized file changes nothing about a command, and the
+  telemetry switches above turn off both the read and the value.
 
 ### Patch Changes
 

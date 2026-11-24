@@ -1,6 +1,7 @@
 /**
- * Compile every rendered Python fence (including exempted/legacy examples) and
- * type-check current SDK examples against the local Python SDK and providers.
+ * Compile maintained Python fences and type-check current SDK examples against
+ * local SDK and provider source. Reference mode checks generated examples and
+ * skips display signatures and explicit opt-outs.
  *
  * The Python helper attributes diagnostics using mypy's resolved AST symbols
  * and fully qualified types, not error-message class names. SDK call,
@@ -19,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import {
   listCodeExampleFiles,
+  listPythonReferenceFiles,
   parseCodeExamples,
   walkCodeExamples,
   type CodeExampleFile,
@@ -41,17 +43,35 @@ export type PythonSnippetViolation = { path: string; line: number; rule: PythonS
 
 
 const PYTHON_LANGS: Record<string, true> = { python: true, py: true };
+type ReferenceOptOut = { path: string; line: number; reason: string };
+
 const LEGACY_RE = /\(previous\)/i;
 
 /** Every Python fence in `files`, in file and document order. */
-export function collectPythonSnippets(files: CodeExampleFile[]): PythonSnippet[] {
+export function collectPythonSnippets(
+  files: CodeExampleFile[],
+  reference?: { optOuts: ReferenceOptOut[] },
+): PythonSnippet[] {
   const snippets: PythonSnippet[] = [];
   for (const file of files) {
     walkCodeExamples(parseCodeExamples(file.source, file.path).units, (unit, ancestors) => {
       if (unit.type !== 'fence' || PYTHON_LANGS[unit.lang] !== true) return;
+      if (reference) {
+        const meta = unit.info.slice(unit.lang.length).trim();
+        if (meta === 'signature') return;
+        if (meta) {
+          const reason = /^nocheck="([^"]*)"$/u.exec(meta)?.[1]?.trim();
+          if (!reason) {
+            throw new Error(`${file.path}:${unit.line} Invalid Python reference fence options: ${meta}`);
+          }
+          reference.optOuts.push({ path: file.path, line: unit.line, reason });
+          return;
+        }
+      }
       const legacy =
-        LEGACY_RE.test(unit.info) ||
-        ancestors.some((ancestor) => ancestor.type === 'tab' && LEGACY_RE.test(ancestor.value ?? ''));
+        !reference &&
+        (LEGACY_RE.test(unit.info) ||
+          ancestors.some((ancestor) => ancestor.type === 'tab' && LEGACY_RE.test(ancestor.value ?? '')));
       snippets.push({
         id: `snippet_${String(snippets.length).padStart(4, '0')}`,
         path: file.path,
@@ -61,6 +81,7 @@ export function collectPythonSnippets(files: CodeExampleFile[]): PythonSnippet[]
       });
     });
   }
+  if (reference && snippets.length === 0) throw new Error('No checkable Python reference fences');
   return snippets;
 }
 
@@ -144,15 +165,20 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
 }
 
 function main(): void {
-  const USAGE = 'Usage: bun scripts/check-python-snippets.ts [--json] [--syntax-only]';
+  const USAGE = 'Usage: bun scripts/check-python-snippets.ts [--json] [--syntax-only] [--reference]';
   const args = process.argv.slice(2);
-  const unknown = args.filter((arg) => arg !== '--json' && arg !== '--syntax-only');
+  const unknown = args.filter((arg) => arg !== '--json' && arg !== '--syntax-only' && arg !== '--reference');
   if (unknown.length) {
     console.error(`Unknown argument(s): ${unknown.join(' ')}\n${USAGE}`);
     process.exit(2);
   }
 
-  const snippets = collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
+  const reference: { optOuts: ReferenceOptOut[] } | undefined = args.includes('--reference')
+    ? { optOuts: [] }
+    : undefined;
+  const snippets = reference
+    ? collectPythonSnippets(listPythonReferenceFiles(DOCS_ROOT), reference)
+    : collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
   const helper = runPythonHelper(snippets, args.includes('--syntax-only'));
   const violations = pythonSnippetViolations(snippets, helper);
   violations.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
@@ -161,7 +187,7 @@ function main(): void {
   for (const violation of violations) counts[violation.rule] = (counts[violation.rule] ?? 0) + 1;
 
   if (args.includes('--json')) {
-    console.log(JSON.stringify({ snippets: snippets.length, violations, counts }, null, 2));
+    console.log(JSON.stringify({ snippets: snippets.length, violations, counts, ...reference }, null, 2));
   } else if (violations.length) {
     for (const { path, line, rule, message } of violations) console.log(`${path}:${line} ${rule} ${message}`);
     const fileCount = new Set(violations.map((violation) => violation.path)).size;
@@ -171,6 +197,9 @@ function main(): void {
     for (const rule of Object.keys(counts).sort()) console.log(`  ${rule}: ${counts[rule]}`);
   } else {
     console.log(`No Python snippet violations in ${snippets.length} snippet(s).`);
+  }
+  if (reference && !args.includes('--json')) {
+    for (const { path, line, reason } of reference.optOuts) console.log(`${path}:${line} opted out: ${reason}`);
   }
   process.exit(violations.length ? 1 : 0);
 }

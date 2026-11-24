@@ -21,6 +21,10 @@ const EVIDENCED_REDIRECTS = [
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   ...EVIDENCED_REDIRECTS,
+  { from: '/docs/session-configs', to: '/docs/sessions/saved-session-policies' },
+  { from: '/docs/session-configs.md', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/docs/session-configs.mdx', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/llms.mdx/docs/session-configs', to: '/docs/sessions/saved-session-policies.md' },
   { from: "/", to: "/docs" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
