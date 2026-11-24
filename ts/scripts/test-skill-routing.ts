@@ -79,6 +79,16 @@ const probes = [
     terms: ['Fumadocs', 'ADR-style records', 'docs decisions', 'docs review guidance'],
   },
   {
+    task: 'rewrite a docs page with the MCP Tasks-inspired page pattern and improve its section pacing',
+    expect: 'docs-page-rewrite',
+    terms: [
+      'MCP Tasks-inspired page pattern',
+      'page rewrites',
+      'section pacing',
+      'diagram placement',
+    ],
+  },
+  {
     task: 'define a new Context.Service with an explicit layer and a Schema.TaggedErrorClass, and bump the Effect beta pins',
     expect: 'effect-v4',
     terms: [
