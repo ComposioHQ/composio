@@ -12,6 +12,7 @@ import { PusherService } from '../../src/services/pusher/Pusher';
 import {
   ComposioFailedToSubscribeToPusherChannelError,
   ComposioTriggerTypeNotFoundError,
+  ComposioWebhookPayloadError,
   ComposioWebhookSignatureVerificationError,
 } from '../../src/errors/TriggerErrors';
 
@@ -361,7 +362,7 @@ describe('Triggers', () => {
         auth_config_id: 'auth-456',
         user_id: 'user-789',
       },
-      data: { subject: 'Test email', from: 'test@example.com' },
+      data: { subject: 'Résumé', from: 'test@example.com' },
     };
 
     // Mirrors the signing format used by Composio: HMAC-SHA256(id.timestamp.payload).
@@ -388,12 +389,15 @@ describe('Triggers', () => {
         body,
       });
 
-      const result = await triggers.parse(request, { verifySecret: webhookSecret });
+      const result = await triggers.parse(request, {
+        verifySecret: webhookSecret,
+        maxBodyBytes: new TextEncoder().encode(body).byteLength,
+      });
 
       expect(result.version).toBe('V3');
       expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
       expect(result.payload.payload).toEqual({
-        subject: 'Test email',
+        subject: 'Résumé',
         from: 'test@example.com',
       });
     });
@@ -409,10 +413,36 @@ describe('Triggers', () => {
       expect(result.version).toBe('V3');
       expect(result.payload.triggerSlug).toBe('GMAIL_NEW_GMAIL_MESSAGE');
       expect(result.payload.payload).toEqual({
-        subject: 'Test email',
+        subject: 'Résumé',
         from: 'test@example.com',
       });
     });
+
+    it('rejects a request whose declared size exceeds the default limit', async () => {
+      const request = new Request('https://example.com/webhooks/composio', {
+        method: 'POST',
+        headers: { 'content-length': String(10 * 1024 * 1024 + 1) },
+        body: JSON.stringify(v3Payload),
+      });
+
+      await expect(triggers.parse(request)).rejects.toThrow(ComposioWebhookPayloadError);
+    });
+
+    it.each([undefined, '1'])(
+      'enforces the actual UTF-8 byte limit with Content-Length %s',
+      async contentLength => {
+        const body = JSON.stringify(v3Payload);
+        const request = new Request('https://example.com/webhooks/composio', {
+          method: 'POST',
+          headers: contentLength === undefined ? undefined : { 'content-length': contentLength },
+          body,
+        });
+
+        await expect(triggers.parse(request, { maxBodyBytes: body.length })).rejects.toThrow(
+          ComposioWebhookPayloadError
+        );
+      }
+    );
 
     it('should throw when verifySecret is set but the signature is invalid', async () => {
       const timestamp = String(Math.floor(Date.now() / 1000));
