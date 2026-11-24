@@ -143,6 +143,37 @@
       }
     },
     {
+      // Shared script helpers run on Bun with Effect platform services.
+      "files": ["scripts/lib/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "child_process", "message": "Use ChildProcess from effect/process instead." },
+              { "name": "node:child_process", "message": "Use ChildProcess from effect/process instead." },
+              { "name": "fs", "message": "Use FileSystem from effect instead." },
+              { "name": "node:fs", "message": "Use FileSystem from effect instead." },
+              { "name": "path", "message": "Use Path from effect instead." },
+              { "name": "node:path", "message": "Use Path from effect instead." }
+            ],
+            "patterns": [{ "group": ["fs/*", "node:fs/*"], "message": "Use FileSystem from effect instead." }]
+          }
+        ],
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][property.name=/^(env|argv)$/]",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          }
+        ]
+      }
+    },
+    {
       "files": ["ts/packages/cli/src/**/*.{ts,tsx}"],
       "excludeFiles": [
         "**/*.test.*",
