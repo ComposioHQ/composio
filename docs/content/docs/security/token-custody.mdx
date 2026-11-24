@@ -138,6 +138,8 @@ Use tool execution or Proxy Execute when you need to act on an account. Reading 
 
 This redaction has a specific scope. It does not sanitize every provider response, a secret your own code supplies, or every log your application writes. Tool results can contain sensitive business data even when the authentication token stays inside the execution service.
 
+For checks on tool content, experimental [Firewall](/docs/firewall) provides prompt-injection checks on tool results and natural-language block rules on calls and results. These checks block whole calls or results. They do not redact PII or provide deterministic DLP.
+
 ## Execution paths
 
 | Path | Where code runs and credentials are used |

@@ -43,7 +43,7 @@ If unclear, distinguish application integration from connecting apps to the codi
 - [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
 - [Per-action permissions](https://docs.composio.dev/docs/governance/action-permissions.md): Restrict which tools a session can run.
 - [Approvals](https://docs.composio.dev/docs/governance/approvals.md): Ask the user before your agent runs the tools you choose.
-- [Firewall](https://docs.composio.dev/docs/firewall.md): Block tool calls and results you don't want your agent to act on.
+- [Firewall](https://docs.composio.dev/docs/firewall.md): Experimental: prompt-injection checks on tool results and natural-language block rules on calls and results.
 - [Restrict tool access](https://docs.composio.dev/docs/sessions/tool-access.md): Select allowed toolkits, tools, tags, and approval rules.
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose a framework provider.
 - [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
