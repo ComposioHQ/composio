@@ -79,14 +79,9 @@ const probes = [
     terms: ['Fumadocs', 'ADR-style records', 'docs decisions', 'docs review guidance'],
   },
   {
-    task: 'rewrite a docs page with the MCP Tasks-inspired page pattern and improve its section pacing',
+    task: "rewrite a docs page around the reader's primary purpose and improve its section pacing",
     expect: 'docs-page-rewrite',
-    terms: [
-      'MCP Tasks-inspired page pattern',
-      'page rewrites',
-      'section pacing',
-      'diagram placement',
-    ],
+    terms: ["reader's primary purpose", 'page rewrites', 'section pacing', 'diagram placement'],
   },
   {
     task: 'define a new Context.Service with an explicit layer and a Schema.TaggedErrorClass, and bump the Effect beta pins',
@@ -106,12 +101,12 @@ const probes = [
   {
     task: 'draft a new guide in the house documentation voice',
     expect: 'good-docs-writing',
-    terms: ['writing style guide', "modal's documentation voice", 'second-person', 'example-first'],
+    terms: ['writing style guide', 'house documentation voice', 'second-person', "page's purpose"],
   },
   {
-    task: 'review a README for voice and tone violations and report suggested rewrites',
+    task: 'review a README for sentence clarity and voice violations and report suggested rewrites',
     expect: 'good-docs-audit',
-    terms: ['report violations', 'critique', 'suggested rewrite', 'rule violated'],
+    terms: ['report violations', 'sentence clarity', 'suggested rewrite', 'rule violated'],
   },
   {
     task: 'create a Python provider adapter under python/providers with metadata',

@@ -1,6 +1,21 @@
 # Reference observations
 
-Inspected on 2026-11-23:
+## Events: motivation before mechanism
+
+The [MCP Events overview](https://modelcontextprotocol.io/extensions/events/overview)
+is the primary reference for explaining why a capability matters before how it
+works. Inspected on 2026-11-24, it explains the need for agents to react to
+upstream activity, describes gaps in existing notifications, then introduces
+the event flow. Use that order of reader questions for Composio overviews.
+
+The diagram placement rule comes from Composio's structure guide. It is not a
+claim that the Events page has a diagram. Keep deeper setup and contract details
+on linked Composio pages instead of copying all of the upstream sections.
+
+## Tasks: diagram and table placement
+
+Tasks is a secondary reference for representations within an explanation.
+The following capture was inspected on 2026-11-23:
 
 - [MCP Tasks page](https://modelcontextprotocol.io/extensions/tasks/overview)
 - [Markdown export](https://modelcontextprotocol.io/extensions/tasks/overview.md)
@@ -26,12 +41,20 @@ sit beside the steps they support.
 
 HTML source has a main prose column, a separate linked contents rail, and
 responsive width classes. Its embedded compiled MDX includes `Card`, `Mermaid`,
-and `Step` components. HTML text extraction omits the sequence diagram; the
+and `Step` components. HTML text extraction omits the sequence diagram. The
 Markdown and embedded source retain it. This was source inspection, not a
 browser measurement of pixels, typography, or mobile rendering.
 
-The reusable idea is the progression of reader questions and changes of
-representation. The following template uses Composio's renderer rather than
-copying Mintlify markup. All suggested lengths in the structure guide are
-editorial defaults, not measurements of this page. Future agents can use
-these observations without assuming the upstream page still has this shape.
+Use these observations for diagram and table placement, not as a required
+section list or a length target. Composio's template uses its own renderer
+rather than copying Mintlify markup. Suggested lengths in the structure guide
+are editorial defaults, not measurements of this page. These observations do
+not assume that the upstream page still has this shape.
+
+## Toolkits: Composio rendering and technical preservation
+
+The [Toolkits page](../../../../docs/content/docs/toolkits.mdx) demonstrates
+Composio's Mermaid rendering, accessible diagram summary, language tabs, and
+technical caveats. Its code example precedes the mechanism, so it is not the
+model for the overview order. Use the structure guide's why, how, and essential
+details progression when adapting an overview.
