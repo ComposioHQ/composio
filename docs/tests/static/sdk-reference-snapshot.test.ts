@@ -15,6 +15,7 @@ import {
   promoteSnapshot,
   resolveStableReferenceSource,
   reviseSnapshot,
+  shouldRenderStableReference,
   snapshotDirectory,
   stableReferenceRoot,
   verifySnapshot,
@@ -218,4 +219,27 @@ test('snapshot verification rejects tampering, unexpected files, and meta.json d
     mkdirSync(join(directory, 'pages/nested'));
     expect(() => pageNames(join(directory, 'pages'))).toThrow('Unexpected SDK reference file');
   });
+});
+
+test('only production outside next dev renders the frozen reference', () => {
+  const env = { NODE_ENV: process.env.NODE_ENV, VERCEL_ENV: process.env.VERCEL_ENV };
+  const workspace = { kind: 'workspace', dir: 'content/reference' } as const;
+  const renders = (nodeEnv: string, vercelEnv?: string) => {
+    process.env.NODE_ENV = nodeEnv;
+    if (vercelEnv === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = vercelEnv;
+    return shouldRenderStableReference(workspace);
+  };
+  try {
+    expect(renders('production')).toBe(true);
+    expect(renders('production', 'production')).toBe(true);
+    expect(renders('production', 'preview')).toBe(false);
+    expect(renders('development')).toBe(false);
+    expect(shouldRenderStableReference({ kind: 'assembled', dir: '.stable-reference' })).toBe(false);
+  } finally {
+    for (const [key, value] of Object.entries(env)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });

@@ -33,12 +33,14 @@ export const resolveStableReference = (docsRoot: string): StableReference => {
 };
 
 /**
- * Production serves the frozen copy; previews keep serving the workspace pages.
+ * Production serves the frozen copy; previews and `next dev` keep serving the workspace pages.
  * `vercel-build.sh` treats an unset VERCEL_ENV as production, so this must too,
  * otherwise a local production build silently indexes different content than it serves.
  */
 export const shouldRenderStableReference = (reference: StableReference): boolean =>
-  reference.kind === 'workspace' && (process.env.VERCEL_ENV ?? 'production') === 'production';
+  reference.kind === 'workspace' &&
+  process.env.NODE_ENV !== 'development' &&
+  (process.env.VERCEL_ENV ?? 'production') === 'production';
 
 export function resolveStableReferenceSource(
   docsRoot: string,
