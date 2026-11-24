@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { evaluate } from './calibrate.ts';
 import { JEV_MODEL, classifyWithJev } from './jev.ts';
 import { forwardIssueToPlain } from './plain.ts';
-import { QUESTIONS } from './route.ts';
+import { QUESTIONS, THRESHOLDS, type JevAnswers } from './route.ts';
 
 function validJevResponse() {
   return {
@@ -83,8 +84,58 @@ describe('forwardIssueToPlain', () => {
     title: 'Hosted toolkit broken',
     body: 'Secret issue body',
     htmlUrl: 'https://github.com/ComposioHQ/composio/issues/42',
-    author: { login: 'reporter', id: 7, email: 'reporter@example.com', name: 'Reporter' },
+    author: { login: 'reporter', id: 7 },
   };
+
+  // Benign mocked Plain: records every request and answers each operation with a synthetic success.
+  function mockPlain(existingThread = false) {
+    const requests: { op: string; variables: Record<string, unknown>; raw: string }[] = [];
+    const fetchFn = (async (_u: unknown, init: RequestInit = {}) => {
+      const raw = String(init.body);
+      const { query, variables } = JSON.parse(raw) as { query: string; variables: Record<string, unknown> };
+      const op = String(query.match(/\b(?:query|mutation)\s+(\w+)/)?.[1]);
+      requests.push({ op, variables, raw });
+      if (op === 'supportThread') return new Response(JSON.stringify({ data: { threadsByExternalId: { edges: existingThread ? [{ node: { id: 't_0' } }] : [] } } }));
+      if (op === 'upsertCustomer') return new Response(JSON.stringify({ data: { upsertCustomer: { customer: { id: 'c_1' } } } }));
+      return new Response(JSON.stringify({ data: { createThread: { thread: { id: 't_2', ref: 'T-2' } } } }));
+    }) as typeof fetch;
+    return { requests, options: { apiKey: 'plain-secret-sentinel', fetchFn } };
+  }
+
+  test('identifies the customer by namespaced GitHub user ID with an unverified placeholder address, never by profile data', async () => {
+    const { requests, options } = mockPlain();
+    await forwardIssueToPlain(sampleIssue, options);
+    expect(requests.map(r => r.op)).toEqual(['supportThread', 'upsertCustomer', 'createThread']);
+    const input = (requests[1].variables as { input: Record<string, unknown> }).input;
+    expect(input.identifier).toEqual({ externalId: 'github:user-id:7' });
+    expect(input.onCreate).toEqual({
+      fullName: 'reporter',
+      shortName: 'reporter',
+      email: { email: '7@github-user.invalid', isVerified: false },
+      externalId: 'github:user-id:7',
+    });
+    expect(input.onUpdate).toEqual({});
+    expect(requests[1].raw).not.toContain('emailAddress');
+    expect(requests[2].variables).toMatchObject({ input: { customerIdentifier: { customerId: 'c_1' }, externalId: 'github:ComposioHQ/composio:issues/42' } });
+
+    // A renamed login keeps the same identity.
+    const renamed = mockPlain();
+    await forwardIssueToPlain({ ...sampleIssue, author: { login: 'renamed-reporter', id: 7 } }, renamed.options);
+    const renamedInput = (renamed.requests[1].variables as { input: Record<string, unknown> }).input;
+    expect(renamedInput.identifier).toEqual({ externalId: 'github:user-id:7' });
+    expect((renamedInput.onCreate as { email: unknown }).email).toEqual({ email: '7@github-user.invalid', isVerified: false });
+  });
+
+  test('missing or unsafe GitHub user IDs fail after the thread lookup; an existing thread is still reused', async () => {
+    for (const id of [undefined, 0, -3, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1]) {
+      const { requests, options } = mockPlain();
+      await expect(forwardIssueToPlain({ ...sampleIssue, author: { login: 'reporter', id } }, options)).rejects.toThrow('GitHub author ID is unavailable');
+      expect(requests.map(r => r.op)).toEqual(['supportThread']);
+    }
+    const { requests, options } = mockPlain(true);
+    expect(await forwardIssueToPlain({ ...sampleIssue, author: { login: 'reporter' } }, options)).toEqual({ id: 't_0' });
+    expect(requests.map(r => r.op)).toEqual(['supportThread']);
+  });
 
   test('reuses existing thread by external ID, or creates customer and thread when absent', async () => {
     const existingQueries: string[] = [];
@@ -138,5 +189,30 @@ describe('forwardIssueToPlain', () => {
           new Response(JSON.stringify({ errors: [{ message: 'secret', extensions: { code: 'CUSTOM_LEAK' } }] })),
       })
     ).rejects.toThrow('unrecognized GraphQL error');
+  });
+});
+
+describe('calibration metrics', () => {
+  const base: JevAnswers = {
+    account_specific: 0.05, hosted_problem: 0.05, sdk_code: 0.1, new_toolkit: 0.05, is_bug: 0.05, missing_details: 0.05,
+    feature_request: 0.05, sdk_area: { ts: 0.05, py: 0.05, cli: 0.05, docs: 0.05, none: 0.8 },
+  };
+  const scored = (number: number, labels: string[], answers: Partial<JevAnswers>) => ({
+    number, title: 'Synthetic', body: 'Synthetic', labels, created_at: '2026-04-02T00:00:00Z', answers: { ...base, ...answers },
+  });
+
+  test('support precision is scoped to SDK-labeled negatives; other labels never become negatives', () => {
+    const result = evaluate(
+      [
+        scored(1, ['support'], { hosted_problem: 0.9 }), // true positive
+        scored(2, ['ts'], { hosted_problem: 0.9 }), // SDK-labeled negative flagged as support
+        scored(3, ['py'], {}), // SDK-labeled negative, correctly not support
+        scored(4, ['bug'], { hosted_problem: 0.9 }), // bug label does not establish a support negative
+      ],
+      {},
+      THRESHOLDS
+    );
+    expect(result).toMatchObject({ tp: 1, fp: 1, fn: 0, sdkTotal: 2, precisionVsSdkLabeledNegatives: 0.5 });
+    expect('precision' in result).toBe(false);
   });
 });

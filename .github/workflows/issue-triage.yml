@@ -63,7 +63,7 @@ jobs:
     outputs:
       mode: ${{ steps.classify.outputs.mode }}
       answers: ${{ steps.classify.outputs.answers }}
-      issue_number: ${{ steps.classify.outputs.issue_number }}
+      batches: ${{ steps.classify.outputs.batches }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -83,10 +83,23 @@ jobs:
             const load = p => import(pathToFileURL(resolve(p)).href);
             const { needsClassification, parseEvent } = await load(".github/scripts/issue-triage/route.ts");
             const { classifyWithJev } = await load(".github/scripts/issue-triage/jev.ts");
+            function setBatches(numbers) {
+              const batches = new Map();
+              for (const number of numbers) {
+                const group = number % 64;
+                if (!batches.has(group)) batches.set(group, []);
+                batches.get(group).push(number);
+              }
+              core.setOutput("batches", JSON.stringify([...batches].map(([group, numbers]) => ({ group, numbers }))));
+            }
+
             const raw = (process.env.ISSUE_NUMBER || "").trim();
             if (context.eventName === "workflow_dispatch" && !raw) {
+              const listed = await github.paginate(github.rest.issues.listForRepo, { owner: context.repo.owner, repo: context.repo.repo, state: "open", labels: "support: forward failed", per_page: 100 });
+              const numbers = listed.filter(i => !i.pull_request).map(i => i.number);
+              if (numbers.length === 0) return;
               core.setOutput("mode", "sweep");
-              core.setOutput("issue_number", "");
+              setBatches(numbers);
               return;
             }
             const issue_number = Number(raw);
@@ -96,7 +109,7 @@ jobs:
             const event = parseEvent(context.eventName, context.payload);
             if (issue.state === "closed" && event.type !== "author-comment") return;
             const labels = (issue.labels || []).map(l => (typeof l === "string" ? l : l.name));
-            core.setOutput("issue_number", String(issue_number));
+            setBatches([issue_number]);
             if (!needsClassification(event, labels)) {
               core.setOutput("mode", "none");
               return;
@@ -113,12 +126,19 @@ jobs:
   apply:
     needs: classify
     if: needs.classify.outputs.mode != ''
+    # Every event for an issue uses the same group. Batching keeps a sweep within GitHub's matrix limit.
+    # A failing batch must not cancel other groups.
+    strategy:
+      fail-fast: false
+      matrix:
+        # The fallback only keeps the matrix parseable when the job is skipped by `if`.
+        batch: ${{ fromJSON(needs.classify.outputs.batches || '[{"group":0,"numbers":[]}]') }}
     concurrency:
-      group: issue-triage-${{ needs.classify.outputs.mode == 'sweep' && 'sweep' || needs.classify.outputs.issue_number }}
+      group: issue-triage-apply-${{ matrix.batch.group }}
       cancel-in-progress: false
       queue: max
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: ${{ needs.classify.outputs.mode == 'sweep' && 120 || 5 }}
     permissions:
       issues: write
       contents: read
@@ -134,91 +154,118 @@ jobs:
         env:
           MODE: ${{ needs.classify.outputs.mode }}
           ANSWERS: ${{ needs.classify.outputs.answers }}
-          ISSUE_NUMBER: ${{ needs.classify.outputs.issue_number }}
+          ISSUE_NUMBERS: ${{ toJSON(matrix.batch.numbers) }}
           PLAIN_API_KEY: ${{ secrets.PLAIN_API_KEY }}
         with:
           script: |
             const [{ pathToFileURL }, { resolve }] = await Promise.all([import("node:url"), import("node:path")]);
             const load = p => import(pathToFileURL(resolve(p)).href);
-            const { LABEL_METADATA, SUPPORT_STATE_LABELS, parseEvent, route } = await load(".github/scripts/issue-triage/route.ts");
+            const { LABEL_METADATA, REDIRECT_COMMENT, REDIRECT_MARKER, REDIRECT_PENDING, SUPPORT_STATE_LABELS, parseEvent, route } = await load(".github/scripts/issue-triage/route.ts");
             const { forwardIssueToPlain } = await load(".github/scripts/issue-triage/plain.ts");
             const { owner, repo } = context.repo;
-            const plainApiKey = process.env.PLAIN_API_KEY || "";
-
-            async function ensureLabel(name) {
-              const meta = LABEL_METADATA[name];
-              if (!meta) return;
-              try { await github.rest.issues.getLabel({ owner, repo, name }); }
-              catch (e) { if (e.status !== 404) throw e; await github.rest.issues.createLabel({ owner, repo, name, ...meta }); }
-            }
-            async function removeLabel(issue_number, name) {
-              await github.rest.issues.removeLabel({ owner, repo, issue_number, name }).catch(e => { if (e.status !== 404) throw e; });
-            }
-            async function forwardOne(issue) {
-              const login = issue.user?.login || "unknown";
-              let email = issue.user?.email || null;
-              let name = issue.user?.name || login;
-              if (login !== "unknown") {
-                try {
-                  const { data: u } = await github.rest.users.getByUsername({ username: login });
-                  email = u.email || email;
-                  name = u.name || name;
-                } catch {}
-              }
-              return forwardIssueToPlain(
-                { owner, repo, number: issue.number, title: issue.title || "", body: issue.body || "", htmlUrl: issue.html_url, author: { login, id: issue.user?.id, email, name } },
-                { apiKey: plainApiKey }
-              );
-            }
-
+            const FAILED = "support: forward failed";
             const mode = process.env.MODE;
-            if (mode === "sweep") {
-              const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: "open", labels: "support: forward failed" });
-              let failed = 0;
-              for (const issue of issues) {
-                if (issue.pull_request) continue;
-                try {
-                  await forwardOne(issue);
-                  await ensureLabel("support: forwarded");
-                  await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: ["support: forwarded"] });
-                  await removeLabel(issue.number, "support: forward failed");
-                  await removeLabel(issue.number, "triage");
-                } catch (e) { failed++; core.warning(`Retry failed for #${issue.number}: ${e instanceof Error ? e.message : String(e)}`); }
+            const issueNumbers = JSON.parse(process.env.ISSUE_NUMBERS || "[]");
+            if (!Array.isArray(issueNumbers) || issueNumbers.length === 0 ||
+                issueNumbers.some(number => !Number.isSafeInteger(number) || number <= 0)) {
+              throw new Error("Invalid apply issue numbers");
+            }
+
+            async function applyIssue(issue_number) {
+              async function ensureLabel(name) {
+                const meta = LABEL_METADATA[name];
+                if (!meta) return;
+                try { await github.rest.issues.getLabel({ owner, repo, name }); }
+                catch (e) {
+                  if (e.status !== 404) throw e;
+                  // Another issue's run may create the same label first; "already exists" is success.
+                  try { await github.rest.issues.createLabel({ owner, repo, name, ...meta }); }
+                  catch (e2) { if (!(e2.status === 422 && (e2.response?.data?.errors || []).some(x => x.code === "already_exists"))) throw e2; }
+                }
               }
-              if (failed > 0) core.setFailed(`Plain retry failed for ${failed} issue(s).`);
-              return;
+              async function addLabels(names) {
+                const labels = [...new Set(names)];
+                if (labels.length === 0) return;
+                for (const l of labels) await ensureLabel(l);
+                await github.rest.issues.addLabels({ owner, repo, issue_number, labels });
+              }
+              async function removeLabel(name) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name }).catch(e => { if (e.status !== 404) throw e; });
+              }
+
+              // Re-fetch under the per-issue lock; everything below decides from this fresh state.
+              const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number });
+              if (issue.pull_request) return;
+              const labels = (issue.labels || []).map(l => (typeof l === "string" ? l : l.name));
+              if (mode === "sweep" && (issue.state !== "open" || !labels.includes(FAILED))) {
+                core.info(`Skipping #${issue_number}: no longer an open issue awaiting a Plain retry.`);
+                return;
+              }
+              const input = mode === "answers" ? { kind: "answers", answers: JSON.parse(process.env.ANSWERS || "{}") } : { kind: mode === "failed" ? "failed" : "none" };
+              const actions = route(parseEvent(context.eventName, context.payload), { labels, state: issue.state, closedByWorkflow: issue.closed_by?.login === "github-actions[bot]" }, input);
+              const has = type => actions.some(a => a.type === type);
+              const adds = [...new Set(actions.filter(a => a.type === "add-label").map(a => a.label))];
+              const removes = [...new Set(actions.filter(a => a.type === "remove-label").map(a => a.label))];
+              const closeIssue = a => github.rest.issues.update({ owner, repo, issue_number, state: "closed", state_reason: a.reason });
+
+              if (actions.some(a => a.type === "comment" && a.body === REDIRECT_COMMENT)) {
+                // Save the recovery label and pending state before publishing the reply instructions.
+                await addLabels(labels.includes(REDIRECT_PENDING) ? adds : [...adds, REDIRECT_PENDING]);
+                for (const l of removes) if (l !== "triage") await removeLabel(l);
+                const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+                if (!comments.some(c => c.user?.login === "github-actions[bot]" && String(c.body || "").includes(REDIRECT_MARKER))) {
+                  await github.rest.issues.createComment({ owner, repo, issue_number, body: REDIRECT_COMMENT });
+                }
+                await closeIssue(actions.find(a => a.type === "close") || {});
+                await removeLabel(REDIRECT_PENDING);
+                if (removes.includes("triage")) await removeLabel("triage");
+                return;
+              }
+
+              let forwardError = null;
+              const forwarding = has("forward");
+              if (forwarding) {
+                // Fail-safe marker first: any later failure (reopen, Plain, label writes) leaves an issue the sweep, a
+                // numbered dispatch, or the reporter's next reply can resume. Plain thread lookup keeps retries idempotent.
+                await addLabels(["support", FAILED].filter(l => !labels.includes(l)));
+              }
+              if (has("reopen")) await github.rest.issues.update({ owner, repo, issue_number, state: "open" });
+              if (forwarding) {
+                try {
+                  await forwardIssueToPlain(
+                    { owner, repo, number: issue.number, title: issue.title || "", body: issue.body || "", htmlUrl: issue.html_url, author: { login: issue.user?.login || "unknown", id: issue.user?.id } },
+                    { apiKey: process.env.PLAIN_API_KEY || "" }
+                  );
+                } catch (e) { forwardError = e instanceof Error ? e.message : String(e); }
+              }
+
+              let finalAdds = adds;
+              let finalRemoves = removes;
+              if (forwardError) {
+                finalAdds = adds.filter(l => l !== "support: forwarded");
+                finalRemoves = labels.filter(l => SUPPORT_STATE_LABELS.includes(l) && l !== FAILED);
+              }
+              if (forwarding && labels.includes(REDIRECT_PENDING)) finalRemoves = [...finalRemoves, REDIRECT_PENDING];
+              await addLabels(finalAdds);
+              for (const label of finalRemoves) {
+                if (label !== "triage" && label !== FAILED) await removeLabel(label);
+              }
+              for (const a of actions) {
+                if (a.type === "add-assignees") await github.rest.issues.addAssignees({ owner, repo, issue_number, assignees: [...a.assignees] });
+                else if (a.type === "comment") await github.rest.issues.createComment({ owner, repo, issue_number, body: a.body });
+                else if (a.type === "close") await closeIssue(a);
+              }
+              if (finalRemoves.includes("triage")) await removeLabel("triage");
+              if (forwarding && !forwardError) await removeLabel(FAILED);
+              if (forwardError) core.setFailed(`Plain forwarding failed: ${forwardError}`);
+              else if (mode === "failed") core.setFailed("Classification failed; added triage label for retry.");
             }
 
-            const issue_number = Number(process.env.ISSUE_NUMBER);
-            const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number });
-            const labels = (issue.labels || []).map(l => (typeof l === "string" ? l : l.name));
-            const input = mode === "answers" ? { kind: "answers", answers: JSON.parse(process.env.ANSWERS || "{}") } : { kind: mode === "failed" ? "failed" : "none" };
-            const actions = route(parseEvent(context.eventName, context.payload), { labels, state: issue.state, closedByWorkflow: issue.closed_by?.login === "github-actions[bot]" }, input);
-
-            let forwardError = null;
-            if (actions.some(a => a.type === "reopen")) await github.rest.issues.update({ owner, repo, issue_number, state: "open" });
-            if (actions.some(a => a.type === "forward")) {
-              try { await forwardOne(issue); }
-              catch (e) { forwardError = e instanceof Error ? e.message : String(e); }
+            for (const number of issueNumbers) {
+              try {
+                await applyIssue(number);
+              } catch (error) {
+                if (mode !== "sweep") throw error;
+                core.setFailed(`Retry failed for #${number}: ${error instanceof Error ? error.message : String(error)}`);
+              }
             }
-            const toAdd = [];
-            const toRemove = [];
-            for (const a of actions) {
-              if (a.type === "add-label") {
-                const label = forwardError && a.label === "support: forwarded" ? "support: forward failed" : a.label;
-                if (!toAdd.includes(label)) toAdd.push(label);
-              } else if (a.type === "remove-label" && !(forwardError && (a.label === "triage" || a.label === "support: forward failed"))) {
-                toRemove.push(a.label);
-              } else if (a.type === "add-assignees") await github.rest.issues.addAssignees({ owner, repo, issue_number, assignees: [...a.assignees] });
-              else if (a.type === "comment") await github.rest.issues.createComment({ owner, repo, issue_number, body: a.body });
-              else if (a.type === "close") await github.rest.issues.update({ owner, repo, issue_number, state: "closed", state_reason: a.reason });
-            }
-            if (forwardError) {
-              if (!toAdd.includes("support: forward failed") && !labels.includes("support: forward failed")) toAdd.push("support: forward failed");
-              for (const l of labels) if (SUPPORT_STATE_LABELS.includes(l) && l !== "support: forward failed" && !toRemove.includes(l)) toRemove.push(l);
-            }
-            for (const l of toAdd) await ensureLabel(l);
-            if (toAdd.length > 0) await github.rest.issues.addLabels({ owner, repo, issue_number, labels: toAdd });
-            for (const l of toRemove) await removeLabel(issue_number, l);
-            if (forwardError) core.setFailed(`Plain forwarding failed: ${forwardError}`);
-            else if (mode === "failed") core.setFailed("Classification failed; added triage label for retry.");

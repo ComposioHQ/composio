@@ -23,9 +23,11 @@ export type TriageAction =
 
 export const SUPPORT_LABEL = 'support';
 export const TRIAGE_LABEL = 'triage';
+export const REDIRECT_PENDING = 'triage: redirect pending';
 export const SUPPORT_STATE_LABELS: readonly SupportStateLabel[] = ['support: redirected', 'support: forwarded', 'support: needs human', 'support: forward failed'];
 export const LABEL_METADATA: Readonly<Record<string, { readonly color: string; readonly description: string }>> = {
   [SUPPORT_LABEL]: { color: '0e8a16', description: 'Needs support team follow-up' },
+  [REDIRECT_PENDING]: { color: 'cfd3d7', description: 'Redirect started; apply can finish it on retry' },
   'support: redirected': { color: 'cfd3d7', description: 'Redirected to the dashboard Support page' },
   'support: forwarded': { color: '0e8a16', description: 'Forwarded to the support team in Plain' },
   'support: needs human': { color: 'fbca04', description: 'Support signal unclear; needs maintainer triage' },
@@ -36,8 +38,10 @@ export const ASSIGNEES: Readonly<Record<SdkArea, readonly string[]>> = {
 };
 
 export const DASHBOARD_SUPPORT_URL = 'https://dashboard.composio.dev/~/org/support';
+// Deterministic marker so a retried redirect can detect that its comment was already posted.
+export const REDIRECT_MARKER = '<!-- composio-support-redirected -->';
 export const REDIRECT_COMMENT = [
-  '<!-- composio-support-redirected -->',
+  REDIRECT_MARKER,
   `This looks like an account-specific support request. Please open a ticket from the Support page in your Composio dashboard: ${DASHBOARD_SUPPORT_URL}. Tickets filed there are tied to your account, so the team can inspect your connections and logs and reply directly.`,
   '',
   'If this problem is not specific to your account, reply here and this issue will be reopened and forwarded to the support team.',
@@ -102,7 +106,8 @@ export const QUESTIONS = {
   },
 } as const;
 
-// Calibrated on 2026-04+ labeled issues via calibrate.ts (recall 0.955, precision 0.922, 0 false redirects).
+// Calibrated on 2026-04+ labeled issues via calibrate.ts. Previously reported (not re-measured): recall 0.955,
+// precision against SDK-labeled negatives 0.922, 0 false redirects. SDK labels do not establish every negative.
 // Every boundary uses >= so a score equal to a threshold activates that branch.
 export const THRESHOLDS = {
   // Catches account-only login/org issues (#3321 at 0.80, #5173 at 0.78) above the highest hosted issue (#3930 at 0.76).
@@ -138,11 +143,22 @@ export function parseEvent(eventName: string, payload: { action?: string; label?
   return { type: (payload.action as 'opened' | 'reopened' | 'edited') ?? 'opened' };
 }
 
+const NEEDS_HUMAN = 'support: needs human';
+const FORWARD_FAILED = 'support: forward failed';
+const REDIRECTED = 'support: redirected';
+
+// An explicit maintainer request: the triage label or a numbered dispatch.
+function isTriageRequest(event: TriageEvent): boolean {
+  return event.type === 'dispatch' || (event.type === 'labeled' && event.label === TRIAGE_LABEL);
+}
+
 export function needsClassification(event: TriageEvent, labels: readonly string[]): boolean {
-  if (event.type === 'dispatch') return true;
   if (event.type === 'author-comment') return false;
-  if (event.type === 'labeled') return event.label === TRIAGE_LABEL && !labels.some(isSupportStateLabel);
-  return !labels.includes(SUPPORT_LABEL) && !labels.some(isSupportStateLabel);
+  const states = labels.filter(isSupportStateLabel);
+  // Triage on needs human requests a fresh classification; every other explicit state is preserved or retried directly.
+  if (isTriageRequest(event)) return states.every(l => l === NEEDS_HUMAN);
+  if (event.type === 'labeled') return false;
+  return !labels.includes(SUPPORT_LABEL) && states.length === 0;
 }
 
 function swapSupportState(actions: TriageAction[], labels: readonly string[], target: SupportStateLabel): void {
@@ -169,27 +185,40 @@ export function route(
 ): TriageAction[] {
   const { labels, state, closedByWorkflow } = issue;
   if (event.type === 'author-comment') {
-    if (state !== 'closed' || !closedByWorkflow || !labels.includes('support: redirected')) return [];
-    const actions: TriageAction[] = [{ type: 'reopen' }];
+    // Open issues can still be forwarded if redirect or reply recovery is in progress.
+    const pendingOpen = labels.includes(FORWARD_FAILED) || labels.includes(REDIRECT_PENDING);
+    const resumable = labels.includes(REDIRECTED) && (state === 'closed' ? closedByWorkflow : pendingOpen);
+    if (!resumable) return [];
+    const actions: TriageAction[] = state === 'closed' ? [{ type: 'reopen' }] : [];
     swapSupportState(actions, labels, 'support: forwarded');
     actions.push({ type: 'forward' });
+    if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
     return actions;
   }
   if (state === 'closed') return [];
   if (input.kind === 'failed') {
     return labels.includes(TRIAGE_LABEL) ? [] : [{ type: 'add-label', label: TRIAGE_LABEL }];
   }
+  const explicit = isTriageRequest(event);
   if (input.kind === 'none') {
     const actions: TriageAction[] = [];
-    if (event.type === 'labeled') {
+    if (explicit && labels.includes(FORWARD_FAILED)) {
+      // Direct Plain retry (no Jev); the failed state is retained by the caller until forwarding succeeds.
+      swapSupportState(actions, labels, 'support: forwarded');
+      actions.push({ type: 'forward' });
+      if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
+    } else if (event.type === 'reopened' && labels.includes(REDIRECT_PENDING)) {
+      actions.push({ type: 'remove-label', label: REDIRECT_PENDING });
+    } else if ((event.type === 'opened' || explicit) && labels.includes(REDIRECTED) && labels.includes(REDIRECT_PENDING)) {
+      actions.push({ type: 'comment', body: REDIRECT_COMMENT }, { type: 'close', reason: 'not_planned' });
+      if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
+    } else if (event.type === 'labeled') {
       const manualForward =
         (event.label === SUPPORT_LABEL && labels.includes(SUPPORT_LABEL)) ||
         (event.label === 'support: forwarded' && labels.includes('support: forwarded'));
-      const retryFailed = event.label === TRIAGE_LABEL && labels.includes('support: forward failed');
-      if (manualForward || retryFailed) {
+      if (manualForward) {
         swapSupportState(actions, labels, 'support: forwarded');
         actions.push({ type: 'forward' });
-        if (retryFailed) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
       }
     }
     return actions;
@@ -197,13 +226,17 @@ export function route(
 
   const { answers } = input;
   const actions: TriageAction[] = [];
-  const hasState = labels.some(isSupportStateLabel);
+  // Only opened events and explicit triage requests may auto-close; edits and reopens fall back to needs human.
+  const canClose = event.type === 'opened' || explicit;
+  // Explicit states other than needs human are preserved; triage on needs human is a fresh classification.
+  const keptState = labels.some(l => isSupportStateLabel(l) && l !== NEEDS_HUMAN);
   let supportOutcome: 'redirected' | 'forwarded' | 'needs-human' | null = null;
-  if (!hasState && answers.account_specific >= thresholds.accountRedirect) supportOutcome = 'redirected';
+  if (keptState) supportOutcome = null;
+  else if (answers.account_specific >= thresholds.accountRedirect) supportOutcome = canClose ? 'redirected' : 'needs-human';
   else if (answers.account_specific >= thresholds.accountUnclear) supportOutcome = 'needs-human';
   else if (answers.hosted_problem >= thresholds.hostedForward) supportOutcome = 'forwarded';
   else if (answers.hosted_problem >= thresholds.hostedUnclear) supportOutcome = 'needs-human';
-  else if (labels.includes(SUPPORT_LABEL)) supportOutcome = 'forwarded';
+  else if (labels.includes(SUPPORT_LABEL)) supportOutcome = labels.includes(NEEDS_HUMAN) ? 'needs-human' : 'forwarded';
 
   if (supportOutcome === 'redirected') {
     swapSupportState(actions, labels, 'support: redirected');
@@ -218,7 +251,7 @@ export function route(
     swapSupportState(actions, labels, 'support: needs human');
   }
 
-  const isSupport = supportOutcome !== null;
+  const isSupport = supportOutcome !== null || keptState;
   const isBug = answers.is_bug >= thresholds.isBug;
   const isFeatureRequest = answers.feature_request >= thresholds.featureRequest;
   const sdkArea = pickSdkArea(answers.sdk_area, thresholds.sdkArea);
@@ -232,8 +265,8 @@ export function route(
   const closeAsToolRequest = !isSupport && isToolRequest;
   if (closeAsToolRequest) {
     if (!labels.includes('tool-request')) actions.push({ type: 'add-label', label: 'tool-request' });
-    actions.push({ type: 'comment', body: TOOL_REQUEST_COMMENT }, { type: 'close', reason: 'not_planned' });
-  } else if (!isToolRequest && !isBug && !sdkArea && isFeatureRequest && !labels.includes('feature-request')) {
+    if (canClose) actions.push({ type: 'comment', body: TOOL_REQUEST_COMMENT }, { type: 'close', reason: 'not_planned' });
+  } else if (!isBug && isFeatureRequest && !labels.includes('feature-request')) {
     actions.push({ type: 'add-label', label: 'feature-request' });
   }
   if (!isSupport && !closeAsToolRequest && answers.missing_details >= thresholds.missingDetails) {

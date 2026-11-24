@@ -3,6 +3,8 @@ import {
   DASHBOARD_SUPPORT_URL,
   MISSING_DETAILS_COMMENT,
   REDIRECT_COMMENT,
+  REDIRECT_MARKER,
+  REDIRECT_PENDING,
   THRESHOLDS,
   TOOL_REQUEST_COMMENT,
   needsClassification,
@@ -43,8 +45,14 @@ describe('needsClassification', () => {
     expect(needsClassification({ type: 'labeled', label: 'support: forwarded' }, ['support: needs human'])).toBe(false);
     expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', 'triage'])).toBe(true);
     expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', 'support: forward failed', 'triage'])).toBe(false);
-    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support: needs human', 'triage'])).toBe(false);
-    expect(needsClassification({ type: 'dispatch' }, ['support: forwarded'])).toBe(true);
+    // Triage or a numbered dispatch on needs human is a fresh classification; other explicit states are preserved.
+    expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', 'support: needs human', 'triage'])).toBe(true);
+    expect(needsClassification({ type: 'dispatch' }, ['support', 'support: needs human'])).toBe(true);
+    expect(needsClassification({ type: 'dispatch' }, [])).toBe(true);
+    for (const state of ['support: forwarded', 'support: redirected', 'support: forward failed']) {
+      expect(needsClassification({ type: 'dispatch' }, ['support', state])).toBe(false);
+      expect(needsClassification({ type: 'labeled', label: 'triage' }, ['support', state, 'triage'])).toBe(false);
+    }
   });
 });
 
@@ -70,6 +78,15 @@ describe('non-support triage characterization', () => {
     const actions = runAnswers({ is_bug: 0.85, missing_details: 0.85 });
     expect(added(actions)).toEqual(['bug']);
     expect(actions.find(a => a.type === 'comment')?.body).toBe(MISSING_DETAILS_COMMENT);
+    expect(actions.some(a => a.type === 'close')).toBe(false);
+  });
+
+  test('an SDK feature request gets both its area and feature-request labels', () => {
+    const actions = runAnswers({
+      feature_request: 0.85,
+      sdk_area: { ...baseAnswers.sdk_area, ts: 0.9, none: 0.05 },
+    });
+    expect(added(actions)).toEqual(['ts', 'feature-request']);
     expect(actions.some(a => a.type === 'close')).toBe(false);
   });
 
@@ -135,14 +152,50 @@ describe('support routing outcomes', () => {
     expect(actions.some(a => a.type === 'forward')).toBe(true);
   });
 
-  test('existing support state is never redirected again on dispatch', () => {
-    const actions = runAnswers(
-      { account_specific: 0.99, hosted_problem: 0.9 },
-      { labels: ['support', 'support: forwarded'] },
-      { type: 'dispatch' }
-    );
-    expect(added(actions)).not.toContain('support: redirected');
-    expect(actions.some(a => a.type === 'close')).toBe(false);
+  test('existing explicit support states are preserved when answers arrive', () => {
+    for (const state of ['support: forwarded', 'support: redirected', 'support: forward failed']) {
+      const actions = runAnswers(
+        { account_specific: 0.99, hosted_problem: 0.9, new_toolkit: 0.95 },
+        { labels: ['support', state] },
+        { type: 'dispatch' }
+      );
+      expect(actions).toEqual([]);
+    }
+  });
+
+  test('only opened events and explicit triage may auto-close; edits and reopens go to needs human', () => {
+    for (const type of ['edited', 'reopened'] as const) {
+      const actions = runAnswers({ account_specific: 0.95 }, {}, { type });
+      expect(added(actions)).toEqual(['support', 'support: needs human']);
+      expect(actions.some(a => a.type === 'close' || a.type === 'comment')).toBe(false);
+
+      // A tool request on edit is labeled but never commented on or closed.
+      const tool = runAnswers({ new_toolkit: 0.9 }, {}, { type });
+      expect(added(tool)).toEqual(['tool-request']);
+      expect(tool.some(a => a.type === 'close' || a.type === 'comment')).toBe(false);
+    }
+    for (const event of [{ type: 'dispatch' }, { type: 'labeled', label: 'triage' }] as const) {
+      const actions = runAnswers({ account_specific: 0.95 }, { labels: ['triage'] }, event);
+      expect(actions.some(a => a.type === 'close')).toBe(true);
+      expect(removed(actions)).toEqual(['triage']);
+    }
+  });
+
+  test('fresh classification of needs human can redirect or forward, and weak signals keep needs human', () => {
+    const labels = ['support', 'support: needs human', 'triage'];
+    const redirect = runAnswers({ account_specific: 0.95 }, { labels }, { type: 'labeled', label: 'triage' });
+    expect(added(redirect)).toEqual(['support: redirected']);
+    expect(removed(redirect)).toEqual(['support: needs human', 'triage']);
+    expect(redirect.some(a => a.type === 'close')).toBe(true);
+
+    const forward = runAnswers({ hosted_problem: 0.9 }, { labels }, { type: 'labeled', label: 'triage' });
+    expect(added(forward)).toEqual(['support: forwarded']);
+    expect(forward.some(a => a.type === 'forward')).toBe(true);
+
+    const weak = runAnswers({ new_toolkit: 0.95 }, { labels }, { type: 'labeled', label: 'triage' });
+    expect(added(weak)).toEqual([]);
+    expect(removed(weak)).toEqual(['triage']);
+    expect(weak.some(a => a.type === 'forward' || a.type === 'close' || a.type === 'comment')).toBe(false);
   });
 });
 
@@ -169,6 +222,45 @@ describe('overrides, recovery, closed issues, and boundaries', () => {
     expect(
       route({ type: 'author-comment' }, { labels: ['bug'], state: 'closed', closedByWorkflow: true }, { kind: 'none' })
     ).toEqual([]);
+  });
+
+  test('author-comment resumes a half-recovered open issue but never a maintainer-reopened redirect', () => {
+    const open = (labels: string[]) => ({ labels, state: 'open' as const, closedByWorkflow: false });
+    const resumed = route({ type: 'author-comment' }, open(['support', 'support: redirected', 'support: forward failed']), { kind: 'none' });
+    expect(resumed.some(a => a.type === 'forward')).toBe(true);
+    expect(resumed.some(a => a.type === 'reopen')).toBe(false);
+    expect(route({ type: 'author-comment' }, open(['support', 'support: redirected']), { kind: 'none' })).toEqual([]);
+
+    // An early reply that lands before an unfinished redirect closes is forwarded, not lost to a later close.
+    const early = route({ type: 'author-comment' }, open(['support', 'support: redirected', REDIRECT_PENDING]), { kind: 'none' });
+    expect(early.some(a => a.type === 'forward')).toBe(true);
+    expect(removed(early)).toEqual(['support: redirected']);
+    expect(early.some(a => a.type === 'close' || a.type === 'reopen')).toBe(false);
+  });
+
+  test('forward failed retries directly on dispatch or triage, and unfinished redirects resume only with the pending marker', () => {
+    const none = { kind: 'none' } as const;
+    const failed = { ...openIssue, labels: ['support', 'support: forward failed'] };
+    const dispatch = route({ type: 'dispatch' }, failed, none);
+    expect(dispatch.some(a => a.type === 'forward')).toBe(true);
+    expect(added(dispatch)).toEqual(['support: forwarded']);
+    expect(removed(dispatch)).toEqual(['support: forward failed']);
+    // Failed state wins over a stale redirected label left by a partial recovery.
+    const both = route({ type: 'dispatch' }, { ...openIssue, labels: ['support', 'support: redirected', 'support: forward failed', 'triage'] }, none);
+    expect(both.some(a => a.type === 'forward')).toBe(true);
+    expect(both.some(a => a.type === 'close')).toBe(false);
+
+    const pending = { ...openIssue, labels: ['support', 'support: redirected', REDIRECT_PENDING, 'triage'] };
+    for (const event of [{ type: 'dispatch' }, { type: 'labeled', label: 'triage' }] as const) {
+      const resume = route(event, pending, none);
+      expect(resume.filter(a => a.type === 'comment').map(a => a.body)).toEqual([REDIRECT_COMMENT]);
+      expect(resume.some(a => a.type === 'close')).toBe(true);
+      expect(removed(resume)).toEqual(['triage']);
+    }
+    expect(route({ type: 'edited' }, pending, none)).toEqual([]);
+    expect(route({ type: 'reopened' }, pending, none)).toEqual([{ type: 'remove-label', label: REDIRECT_PENDING }]);
+    expect(route({ type: 'dispatch' }, { ...openIssue, labels: ['support', 'support: redirected'] }, none)).toEqual([]);
+    expect(REDIRECT_COMMENT.startsWith(REDIRECT_MARKER)).toBe(true);
   });
 
   test('closed issues ignore all events except author-comment; failures add only triage', () => {

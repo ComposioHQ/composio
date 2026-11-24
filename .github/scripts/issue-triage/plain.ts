@@ -16,7 +16,8 @@ export type PlainIssue = {
   readonly title: string;
   readonly body: string;
   readonly htmlUrl: string;
-  readonly author: { readonly login: string; readonly id?: number; readonly email?: string | null; readonly name?: string | null };
+  // Identity comes only from the numeric GitHub user ID; public profile fields (email, name) are never used.
+  readonly author: { readonly login: string; readonly id?: number };
 };
 export type PlainOptions = { readonly apiKey: string; readonly timeoutMs?: number; readonly fetchFn?: typeof fetch };
 export type PlainThread = { readonly id: string; readonly ref?: string };
@@ -66,18 +67,22 @@ export async function forwardIssueToPlain(issue: PlainIssue, options: PlainOptio
     return edges[0].node;
   }
 
+  // Checked after the thread lookup so an existing thread is still reused when identity data is missing.
+  const userId = issue.author.id;
+  if (typeof userId !== 'number' || !Number.isSafeInteger(userId) || userId <= 0) {
+    throw new Error('GitHub author ID is unavailable; cannot identify the Plain customer.');
+  }
   const login = issue.author.login || 'unknown';
-  const email =
-    issue.author.email ||
-    (issue.author.id ? `${issue.author.id}+${login}@users.noreply.github.com` : `${login}@users.noreply.github.com`);
-  const fullName = issue.author.name || login;
+  const customerExternalId = `github:user-id:${userId}`;
+  // Unverified, ID-only placeholder in a reserved TLD; it never matches a real dashboard customer's address.
+  const email = `${userId}@github-user.invalid`;
   const customerData = await plainGraphql<{ upsertCustomer?: { customer?: { id: string }; error?: { type?: string } } }>(
     'mutation upsertCustomer($input: UpsertCustomerInput!) { upsertCustomer(input: $input) { result customer { id } error { message type code } } }',
     {
       input: {
-        identifier: { emailAddress: email },
-        onCreate: { fullName, shortName: login, email: { email, isVerified: Boolean(issue.author.email) }, externalId: `github:user:${login}` },
-        onUpdate: { fullName: { value: fullName }, shortName: { value: login }, externalId: { value: `github:user:${login}` } },
+        identifier: { externalId: customerExternalId },
+        onCreate: { fullName: login, shortName: login, email: { email, isVerified: false }, externalId: customerExternalId },
+        onUpdate: {},
       },
     },
     options
