@@ -1,5 +1,5 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, FileSystem, Option, Path } from 'effect';
+import { Effect, FileSystem, Path, PlatformError } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { retryHint } from 'src/effects/retry-advice';
 import { NodeProcess } from 'src/services/node-process';
@@ -182,23 +182,94 @@ describe('CLI: composio dev init', () => {
     });
 
     layer(TestLive(testData))(it => {
-      it.effect(
-        '[Given] .env.local is a symbolic link [Then] replaces the link with a private file and leaves its target alone',
-        () =>
+      it.effect.each([true, false])(
+        '[Given] .env.local is a symbolic link with target present=%s [Then] refuses it',
+        targetExists =>
           Effect.gen(function* () {
             const { fs, path, envPath } = yield* envFile;
-            const linkTarget = path.join(path.dirname(envPath), 'shared.env');
-            yield* fs.writeFileString(linkTarget, 'OTHER=1\n');
-            yield* fs.chmod(linkTarget, 0o644);
+            const linkTarget = path.join(
+              path.dirname(envPath),
+              targetExists ? 'shared.env' : 'missing.env'
+            );
+            if (targetExists) {
+              yield* fs.writeFileString(linkTarget, generatedEnv);
+              yield* fs.chmod(linkTarget, 0o644);
+            }
             yield* fs.symlink(linkTarget, envPath);
+            yield* Effect.addFinalizer(() => fs.remove(envPath).pipe(Effect.orDie));
 
-            yield* cli(['dev', 'init', '--yes']);
+            const failure = yield* cli(['dev', 'init', '--yes']).pipe(Effect.flip);
 
-            expect(yield* fs.readLink(envPath).pipe(Effect.option)).toEqual(Option.none());
-            expect(yield* fs.readFileString(envPath)).toBe(`OTHER=1\n${generatedEnv}`);
-            expect(yield* modeOf(fs, envPath)).toBe(0o600);
-            expect(yield* fs.readFileString(linkTarget)).toBe('OTHER=1\n');
-            expect(yield* modeOf(fs, linkTarget)).toBe(0o644);
+            expect(failure).toMatchObject({
+              _tag: 'commands/CommandInputError',
+              message: expect.stringContaining('Refusing to use a symbolic link for .env.local'),
+            });
+            expect(yield* fs.readLink(envPath)).toBe(linkTarget);
+            if (targetExists) {
+              expect(yield* fs.readFileString(linkTarget)).toBe(generatedEnv);
+              expect(yield* modeOf(fs, linkTarget)).toBe(0o644);
+            } else {
+              expect(yield* fs.exists(linkTarget)).toBe(false);
+            }
+          })
+      );
+    });
+
+    layer(TestLive(testData))(it => {
+      it.effect('[Given] .env.local is a directory [Then] refuses it without chmod', () =>
+        Effect.gen(function* () {
+          const { fs, envPath } = yield* envFile;
+          yield* fs.makeDirectory(envPath);
+          yield* fs.chmod(envPath, 0o755);
+
+          const failure = yield* cli(['dev', 'init', '--yes']).pipe(Effect.flip);
+
+          expect(failure).toMatchObject({
+            _tag: 'commands/CommandInputError',
+            message: expect.stringContaining('.env.local because it is not a regular file'),
+          });
+          expect(yield* modeOf(fs, envPath)).toBe(0o755);
+        })
+      );
+    });
+
+    layer(TestLive(testData))(it => {
+      it.effect(
+        '[Given] chmod fails [Then] init reports the failure before reading .env.local',
+        () =>
+          Effect.gen(function* () {
+            const { fs, envPath } = yield* envFile;
+            yield* fs.writeFileString(envPath, generatedEnv);
+            yield* fs.chmod(envPath, 0o644);
+            const chmodError = PlatformError.systemError({
+              _tag: 'PermissionDenied',
+              module: 'FileSystem',
+              method: 'chmod',
+              pathOrDescriptor: envPath,
+            });
+            const guardedFs: FileSystem.FileSystem = {
+              ...fs,
+              chmod: (target, mode) =>
+                target === envPath ? Effect.fail(chmodError) : fs.chmod(target, mode),
+              readFileString: (target, encoding) =>
+                target === envPath
+                  ? Effect.die(new Error('Read .env.local after chmod failed'))
+                  : fs.readFileString(target, encoding),
+            };
+            const terminal = redirectedTerminalUI();
+
+            const exit = yield* cli(['dev', 'init', '--yes']).pipe(
+              Effect.provideService(FileSystem.FileSystem, guardedFs),
+              Effect.provide(terminal.layer),
+              Effect.exit
+            );
+
+            expect(exitCodeOf(exit)).toBe(1);
+            expect(terminal.stderr()).toContain('Could not make .env.local private.');
+            expect(terminal.stderr()).toContain('set its permissions to 0600');
+            expect(terminal.stdout()).toBe('');
+            expect(yield* fs.readFileString(envPath)).toBe(generatedEnv);
+            expect(yield* modeOf(fs, envPath)).toBe(0o644);
           })
       );
     });

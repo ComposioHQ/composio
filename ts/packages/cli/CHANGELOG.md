@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- `composio init` writes `.env.local`, which holds the project API key, readable only by its owner (mode `0600`). A `.env.local` that an earlier version left readable by other users is tightened to `0600` on the next `composio init`, even when nothing in it changes. If `.env.local` is a symbolic link, `composio init` leaves the link target's permissions unchanged. When it adds keys, it replaces the link with a private file instead of writing through it.
+- `composio init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.
 - `composio execute` and `composio dev playground-execute` accept local uploads and `-d @file` arguments under the current working directory. Symlinks must resolve within that directory and sensitive paths remain blocked. Copy files into the working directory or run the command from a directory that contains them. `composio run` stages script-provided Files, Blobs, and argument files in a private temporary directory for each execute call and removes it when the call finishes.
 
 ## 0.6.3
