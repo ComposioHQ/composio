@@ -416,6 +416,53 @@ test(
 );
 
 test(
+  '--installed-package is a deprecated alias for --package',
+  async () => {
+    await withPackage(async (root, put) => {
+      await put('dist/index.d.mts', 'export declare class Composio { sourceOnly(): void }');
+      const run = (flag: string, ...options: string[]) =>
+        Bun.spawnSync(['bun', 'scripts/docs-reference-check/main.ts', flag, root, ...options, join(root, 'pages')], {
+          cwd: REPO,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        });
+      const canonical = run('--package');
+      const deprecated = run('--installed-package');
+      expect(canonical.exitCode).toBe(0);
+      expect(deprecated.exitCode).toBe(0);
+      expect(deprecated.stdout.toString()).toBe(canonical.stdout.toString());
+      expect(deprecated.stderr.toString()).toBe('--installed-package is deprecated. Use --package instead.\n');
+
+      const compared = run('--installed-package', '--compare-packaged');
+      expect(compared.exitCode).not.toBe(0);
+      expect(compared.stdout.toString()).toContain('Missing packaged reference');
+    });
+  },
+  TIMEOUT
+);
+
+test('--compare-packaged requires a package directory', () => {
+  const result = Bun.spawnSync(['bun', 'scripts/docs-reference-check/main.ts', '--compare-packaged'], {
+    cwd: REPO,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr.toString()).toContain('Usage: bun scripts/docs-reference-check/main.ts');
+});
+
+test('--built-package is rejected as an unknown option', () => {
+  const result = Bun.spawnSync(['bun', 'scripts/docs-reference-check/main.ts', '--built-package', PAGES], {
+    cwd: REPO,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr.toString()).toContain('Unknown option');
+  expect(result.stderr.toString()).toContain('Usage: bun scripts/docs-reference-check/main.ts');
+});
+
+test(
   'a program-level diagnostic fails the run',
   async () => {
     const result = await check(REPORT, {

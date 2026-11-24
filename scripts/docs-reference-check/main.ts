@@ -199,7 +199,8 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
   });
 
 const USAGE =
-  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--package <dir> [--compare-packaged]] [directory]';
+  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--package <dir> [--compare-packaged]] [directory]\n' +
+  'Deprecated alias for --package: --installed-package <dir>';
 
 const main = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args;
@@ -210,16 +211,24 @@ const main = Effect.gen(function* () {
       options: {
         json: { type: 'boolean' },
         package: { type: 'string' },
+        // Remove this alias once #5530 lands.
+        'installed-package': { type: 'string' },
         'compare-packaged': { type: 'boolean' },
       },
     }),
     catch: cause => new UsageError({ message: `${String(cause)}\n${USAGE}` }),
   });
-  const packageDir = values.package;
+  const installedPackage = values['installed-package'];
+  const packageDir = values.package ?? installedPackage;
   const comparePackaged = values['compare-packaged'] ?? false;
-  if (positionals.length > 1 || (comparePackaged && packageDir === undefined)) {
+  if (
+    positionals.length > 1 ||
+    (installedPackage !== undefined && values.package !== undefined) ||
+    (comparePackaged && packageDir === undefined)
+  ) {
     return yield* new UsageError({ message: USAGE });
   }
+  if (installedPackage !== undefined) yield* Console.error('--installed-package is deprecated. Use --package instead.');
   const path = yield* Path.Path;
   const json = values.json ?? false;
   const result = yield* checkReferencePages(positionals[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
