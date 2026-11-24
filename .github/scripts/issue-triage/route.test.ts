@@ -152,12 +152,12 @@ describe('support routing outcomes', () => {
     expect(actions.some(a => a.type === 'forward')).toBe(true);
   });
 
-  test('existing explicit support states are preserved when answers arrive', () => {
+  test('existing support states are preserved when unrelated edits have saved answers', () => {
     for (const state of ['support: forwarded', 'support: redirected', 'support: forward failed']) {
       const actions = runAnswers(
         { account_specific: 0.99, hosted_problem: 0.9, new_toolkit: 0.95 },
         { labels: ['support', state] },
-        { type: 'dispatch' }
+        { type: 'edited' }
       );
       expect(actions).toEqual([]);
     }

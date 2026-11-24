@@ -165,6 +165,7 @@ jobs:
             const { owner, repo } = context.repo;
             const FAILED = "support: forward failed";
             const mode = process.env.MODE;
+            const rerun = Number(process.env.GITHUB_RUN_ATTEMPT) > 1;
             const issueNumbers = JSON.parse(process.env.ISSUE_NUMBERS || "[]");
             if (!Array.isArray(issueNumbers) || issueNumbers.length === 0 ||
                 issueNumbers.some(number => !Number.isSafeInteger(number) || number <= 0)) {
@@ -202,7 +203,9 @@ jobs:
                 return;
               }
               const input = mode === "answers" ? { kind: "answers", answers: JSON.parse(process.env.ANSWERS || "{}") } : { kind: mode === "failed" ? "failed" : "none" };
-              const actions = route(parseEvent(context.eventName, context.payload), { labels, state: issue.state, closedByWorkflow: issue.closed_by?.login === "github-actions[bot]" }, input);
+              const actions = route(parseEvent(context.eventName, context.payload), {
+                labels, state: issue.state, closedByWorkflow: issue.closed_by?.login === "github-actions[bot]", rerun,
+              }, input);
               const has = type => actions.some(a => a.type === type);
               const adds = [...new Set(actions.filter(a => a.type === "add-label").map(a => a.label))];
               const removes = [...new Set(actions.filter(a => a.type === "remove-label").map(a => a.label))];
@@ -217,8 +220,8 @@ jobs:
                   await github.rest.issues.createComment({ owner, repo, issue_number, body: REDIRECT_COMMENT });
                 }
                 await closeIssue(actions.find(a => a.type === "close") || {});
-                await removeLabel(REDIRECT_PENDING);
                 if (removes.includes("triage")) await removeLabel("triage");
+                await removeLabel(REDIRECT_PENDING);
                 return;
               }
 
@@ -248,7 +251,7 @@ jobs:
               if (forwarding && labels.includes(REDIRECT_PENDING)) finalRemoves = [...finalRemoves, REDIRECT_PENDING];
               await addLabels(finalAdds);
               for (const label of finalRemoves) {
-                if (label !== "triage" && label !== FAILED) await removeLabel(label);
+                if (label !== "triage" && label !== FAILED && label !== REDIRECT_PENDING) await removeLabel(label);
               }
               for (const a of actions) {
                 if (a.type === "add-assignees") await github.rest.issues.addAssignees({ owner, repo, issue_number, assignees: [...a.assignees] });
@@ -256,6 +259,7 @@ jobs:
                 else if (a.type === "close") await closeIssue(a);
               }
               if (finalRemoves.includes("triage")) await removeLabel("triage");
+              if (finalRemoves.includes(REDIRECT_PENDING)) await removeLabel(REDIRECT_PENDING);
               if (forwarding && !forwardError) await removeLabel(FAILED);
               if (forwardError) core.setFailed(`Plain forwarding failed: ${forwardError}`);
               else if (mode === "failed") core.setFailed("Classification failed; added triage label for retry.");

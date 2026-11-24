@@ -12,7 +12,12 @@ export type JevAnswers = {
   readonly feature_request: number; readonly sdk_area: Readonly<Record<SdkAreaChoice, number>>;
 };
 export type TriageEvent = { readonly type: 'opened' | 'reopened' | 'edited' | 'author-comment' | 'dispatch' } | { readonly type: 'labeled'; readonly label: string };
-export type IssueContext = { readonly labels: readonly string[]; readonly state: 'open' | 'closed'; readonly closedByWorkflow: boolean };
+export type IssueContext = {
+  readonly labels: readonly string[];
+  readonly state: 'open' | 'closed';
+  readonly closedByWorkflow: boolean;
+  readonly rerun?: boolean;
+};
 export type ClassificationInput = { readonly kind: 'answers'; readonly answers: JevAnswers } | { readonly kind: 'failed' | 'none' };
 export type TriageAction =
   | { readonly type: 'add-label' | 'remove-label'; readonly label: string }
@@ -195,23 +200,38 @@ export function route(
     if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
     return actions;
   }
-  if (state === 'closed') return [];
+  if (state === 'closed') {
+    if (issue.rerun && closedByWorkflow && labels.includes(REDIRECTED) && labels.includes(REDIRECT_PENDING)) {
+      const actions: TriageAction[] = [];
+      if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
+      actions.push({ type: 'remove-label', label: REDIRECT_PENDING });
+      return actions;
+    }
+    return [];
+  }
   if (input.kind === 'failed') {
     return labels.includes(TRIAGE_LABEL) ? [] : [{ type: 'add-label', label: TRIAGE_LABEL }];
   }
   const explicit = isTriageRequest(event);
+  const canClose = event.type === 'opened' || explicit;
+  // Rerunning apply can replay Jev answers from before the workflow recorded these states.
+  const retryForward = (explicit || issue.rerun) && labels.includes(FORWARD_FAILED);
+  if (!retryForward && canClose && labels.includes(REDIRECTED) && labels.includes(REDIRECT_PENDING)) {
+    const actions: TriageAction[] = [];
+    swapSupportState(actions, labels, REDIRECTED);
+    actions.push({ type: 'comment', body: REDIRECT_COMMENT }, { type: 'close', reason: 'not_planned' });
+    if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
+    return actions;
+  }
   if (input.kind === 'none') {
     const actions: TriageAction[] = [];
-    if (explicit && labels.includes(FORWARD_FAILED)) {
+    if (retryForward) {
       // Direct Plain retry (no Jev); the failed state is retained by the caller until forwarding succeeds.
       swapSupportState(actions, labels, 'support: forwarded');
       actions.push({ type: 'forward' });
       if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
     } else if (event.type === 'reopened' && labels.includes(REDIRECT_PENDING)) {
       actions.push({ type: 'remove-label', label: REDIRECT_PENDING });
-    } else if ((event.type === 'opened' || explicit) && labels.includes(REDIRECTED) && labels.includes(REDIRECT_PENDING)) {
-      actions.push({ type: 'comment', body: REDIRECT_COMMENT }, { type: 'close', reason: 'not_planned' });
-      if (labels.includes(TRIAGE_LABEL)) actions.push({ type: 'remove-label', label: TRIAGE_LABEL });
     } else if (event.type === 'labeled') {
       const manualForward =
         (event.label === SUPPORT_LABEL && labels.includes(SUPPORT_LABEL)) ||
@@ -226,12 +246,11 @@ export function route(
 
   const { answers } = input;
   const actions: TriageAction[] = [];
-  // Only opened events and explicit triage requests may auto-close; edits and reopens fall back to needs human.
-  const canClose = event.type === 'opened' || explicit;
   // Explicit states other than needs human are preserved; triage on needs human is a fresh classification.
   const keptState = labels.some(l => isSupportStateLabel(l) && l !== NEEDS_HUMAN);
   let supportOutcome: 'redirected' | 'forwarded' | 'needs-human' | null = null;
-  if (keptState) supportOutcome = null;
+  if (retryForward) supportOutcome = 'forwarded';
+  else if (keptState) supportOutcome = null;
   else if (answers.account_specific >= thresholds.accountRedirect) supportOutcome = canClose ? 'redirected' : 'needs-human';
   else if (answers.account_specific >= thresholds.accountUnclear) supportOutcome = 'needs-human';
   else if (answers.hosted_problem >= thresholds.hostedForward) supportOutcome = 'forwarded';

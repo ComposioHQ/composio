@@ -226,7 +226,7 @@ function createWorld(init: { state?: 'open' | 'closed'; labels?: string[]; close
     failures: [] as string[],
     failOn: undefined as ((op: string, arg: string) => Error | undefined) | undefined,
     /** Runs the real inline apply step once; resolves to the thrown error, if any. */
-    async run(opts: { mode: string; eventName?: string; payload?: Record<string, unknown>; answers?: JevAnswers; issueNumbers?: number[] }) {
+    async run(opts: { mode: string; eventName?: string; payload?: Record<string, unknown>; answers?: JevAnswers; issueNumbers?: number[]; runAttempt?: number }) {
       w.failures = [];
       const hit = (op: string, arg = '') => {
         w.calls.push(arg ? `${op}:${arg}` : op);
@@ -234,7 +234,8 @@ function createWorld(init: { state?: 'open' | 'closed'; labels?: string[]; close
         if (error) throw error;
       };
       const fetchFn = (async (_url: unknown, init: RequestInit = {}) => {
-        const { query } = JSON.parse(String(init.body)) as { query: string };
+        if (typeof init.body !== 'string') throw new Error('Expected a JSON request body');
+        const { query } = JSON.parse(init.body) as { query: string };
         const op = String(query.match(/\b(?:query|mutation)\s+(\w+)/)?.[1]);
         w.plainOps.push(op);
         if (w.plainDown) return new Response(JSON.stringify({ errors: [{ extensions: { code: 'INTERNAL_SERVER_ERROR' } }] }), { status: 500 });
@@ -292,7 +293,7 @@ function createWorld(init: { state?: 'open' | 'closed'; labels?: string[]; close
         await runInNewContext(`(async () => {\n${applyScript}\n})()`, {
           __load: async (p: string) =>
             p.endsWith('route.ts') ? routeMod : { forwardIssueToPlain: (i: never, o: object) => plainMod.forwardIssueToPlain(i, { ...o, fetchFn } as never) },
-          process: { env: { MODE: opts.mode, ANSWERS: JSON.stringify(opts.answers ?? {}), ISSUE_NUMBERS: JSON.stringify(opts.issueNumbers ?? [42]), PLAIN_API_KEY: 'mock-plain-key' } },
+          process: { env: { MODE: opts.mode, ANSWERS: JSON.stringify(opts.answers ?? {}), ISSUE_NUMBERS: JSON.stringify(opts.issueNumbers ?? [42]), PLAIN_API_KEY: 'mock-plain-key', GITHUB_RUN_ATTEMPT: String(opts.runAttempt ?? 1) } },
           context: { eventName: opts.eventName ?? 'workflow_dispatch', repo: { owner: 'ComposioHQ', repo: 'composio' }, payload: opts.payload ?? {} },
           github,
           core: { setFailed: (m: string) => { w.failures.push(m); }, info: () => {}, warning: () => {} },
@@ -329,20 +330,35 @@ test('a failed redirect label write posts nothing and closes nothing', async () 
   expect(w.state).toBe('open');
 });
 
-test('a partially applied redirect is retried by numbered dispatch without a duplicate comment', async () => {
+test('re-running a failed apply finishes its redirect without a duplicate comment', async () => {
   for (const failing of ['comment', 'close']) {
     const w = createWorld();
+    const apply = { mode: 'answers', answers: answers({ account_specific: 0.95 }), ...opened };
     w.failOn = op => (op === failing ? boom() : undefined);
-    expect(await w.run({ mode: 'answers', answers: answers({ account_specific: 0.95 }), ...opened })).toBeDefined();
+    expect(await w.run(apply)).toBeDefined();
     expect(w.state).toBe('open');
     expect(w.labels.has('support: redirected') && w.labels.has(REDIRECT_PENDING)).toBe(true);
 
     w.failOn = undefined;
-    expect(await w.run({ mode: 'none' })).toBeUndefined();
+    expect(await w.run({ ...apply, runAttempt: 2 })).toBeUndefined();
     expect(w.comments).toHaveLength(1);
     expect(w.state).toBe('closed');
     expect(sorted(w)).toEqual(['support', 'support: redirected']);
   }
+});
+
+test('re-running apply finishes cleanup on an already closed redirect', async () => {
+  const w = createWorld();
+  const apply = { mode: 'answers', answers: answers({ account_specific: 0.95 }), ...opened };
+  w.failOn = (op, arg) => (op === 'removeLabel' && arg === REDIRECT_PENDING ? boom() : undefined);
+  expect(await w.run(apply)).toBeDefined();
+  expect(w.state).toBe('closed');
+  expect(w.labels.has(REDIRECT_PENDING)).toBe(true);
+
+  w.failOn = undefined;
+  expect(await w.run({ ...apply, runAttempt: 2 })).toBeUndefined();
+  expect(sorted(w)).toEqual(['support', 'support: redirected']);
+  expect(w.comments).toHaveLength(1);
 });
 
 test('maintainer reopen or dispatch on a finished redirect never closes it again; edits never auto-close', async () => {
@@ -400,6 +416,22 @@ test('numbered retry of forward failed goes straight to Plain, keeps the failed 
   w.plainOps = [];
   expect(await w.run({ mode: 'none' })).toBeUndefined();
   expect(w.plainOps).toEqual(['supportThread']);
+  expect(sorted(w)).toEqual(['support', 'support: forwarded']);
+  expect(w.failures).toHaveLength(0);
+});
+
+test('re-running apply retries Plain forwarding with saved Jev answers', async () => {
+  const w = createWorld();
+  const apply = { mode: 'answers', answers: answers({ hosted_problem: 0.9 }), ...opened };
+  w.plainDown = true;
+  await w.run(apply);
+  expect(w.failures).toHaveLength(1);
+  expect(sorted(w)).toEqual(['support', 'support: forward failed']);
+
+  w.plainDown = false;
+  w.plainOps = [];
+  await w.run({ ...apply, runAttempt: 2 });
+  expect(w.plainOps).toEqual(['supportThread', 'upsertCustomer', 'createThread']);
   expect(sorted(w)).toEqual(['support', 'support: forwarded']);
   expect(w.failures).toHaveLength(0);
 });
