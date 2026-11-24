@@ -1,75 +1,134 @@
-# Style Guide
+# Style guide
 
-Apply every rule below while drafting. Each rule is an imperative followed by a real Modal example as evidence (this guide is derived from Modal's documentation voice).
+Use this shared standard when drafting, restructuring, or auditing Composio docs.
+It adapts the [pstack technical-writing standard](https://github.com/cursor/plugins/blob/ca782ed8b3c2c521cead8e1720d55c3a5dbf2347/pstack/skills/technical-writing/SKILL.md)
+and its [unslop rules](https://github.com/cursor/plugins/blob/ca782ed8b3c2c521cead8e1720d55c3a5dbf2347/pstack/skills/unslop/SKILL.md).
+The original guide borrowed Modal's tone. The rules and Composio examples here
+govern the house voice. Fix a sentence another way when a rule makes it harder
+to understand.
 
-## Voice & Tone
+## Choose the page's purpose
 
-- **Address the reader as "you"; speak directly.** Don't hide behind "the user" or "one."
-  > "Modal's goal is to make running code in the cloud feel like you're running code locally."
-- **Be confident and plain, not hedgy or salesy.** State what's true. Lead with the benefit, not the disclaimer.
-  > "Modal makes it trivially easy to scale compute across thousands of containers."
-- **Reassure when something is automatic.** Tell the reader what they _don't_ have to worry about.
-  > "For the most part, scaling out will happen automatically, and you won't need to think about it."
-- **Explain the "why" before prescribing the "how."** Motivate the solution, then give it.
-- **Use contractions naturally** ("you don't," "won't," "it's"). They keep the tone human.
-- **Allow occasional warmth and personality** ("That's it!", "Take a breath of fresh air"), sparingly, never goofy.
+Give each page one primary purpose. Split and link when a section serves a
+different reader task. Use the [structure guide](../../../../docs/agent-guidance/guides/page-structure.md)
+and its templates for layout.
 
-## Structure
+- Overviews and explanations establish why the feature matters to you, then
+  explain how it works with a focused diagram. Add essential details and links
+  to deeper pages. Use an example after the mechanism when it helps explain it.
+- How-tos solve a specific task. State the outcome, give prerequisites, and
+  show the shortest complete path with its expected result. Link background.
+- Tutorials teach through a sequence of visible results. Say what you will
+  build and what you should see after each step. Keep explanations brief and
+  link conceptual or reference material.
+- References describe the contract. Lead with scope, versions, fields, defaults,
+  limits, and errors. Keep examples specific to the item being described.
+  Link setup and procedures instead of turning the reference into a tutorial.
 
-- **Open by defining the concept or stating the benefit in one sentence**, then elaborate. No throat-clearing.
-  > "An `App` represents an application running on Modal. It groups one or more Functions for atomic deployment and acts as a shared namespace."
-- **Order content as concept → simple example → advanced cases → gotchas.** Progressive disclosure.
-- **Lead with a minimal runnable example early**, then explain what just happened.
-- **Keep paragraphs short.** Break dense information into bullet lists and numbered steps.
-- **Use signposting transitions** to mark explanatory shifts: "What just happened?", "But why does this matter?", "Now, as before, …".
-- **Mix sentence lengths.** Short declarative sentences carry the load; longer ones add necessary nuance.
-  > "The timeout duration is a measure of a Function's _execution_ time. It does not include scheduling time or any other period besides the time your code is executing in Modal."
+Keep choices and tradeoffs in explanations. Keep reference prose factual.
+Decision records and changelogs use their own templates. An overview's why-first
+order does not replace their decision-first or release-summary openings.
+
+## Voice and sentence clarity
+
+- Address the reader as "you" in the present tense. Name the app, agent, or end
+  user when that actor is distinct from the reader.
+- Say who does what. Use passive voice only when the actor is unknown or
+  irrelevant.
+- Write instructions as commands. Put conditions and warnings before the
+  actions they govern. Show the common case before options and exceptions.
+- Use one instruction per sentence and one thought per sentence. Review
+  instructions longer than about 20 words and other sentences longer than
+  about 25. Split for clarity, not to enforce a count. Vary sentence lengths.
+- Make every "it", "they", and "this" refer to one clear thing. Repeat the noun
+  when needed. Put "only" and "not" beside the word they modify.
+- Keep articles and verbs. Break up long noun strings. Say which parts "and"
+  or "or" joins when the sentence could be read two ways.
+- Use one name per concept and one verb per action. Prefer "start" consistently
+  over alternating between "start" and "initiate". Avoid ambiguous "-ing"
+  constructions when a direct verb is clearer.
+- Use short, familiar words and natural contractions. Cut filler, redundant
+  hedges, vague intensifiers, and ceremonial transitions. Don't call a step
+  "simple", "easy", or "quick". Show the steps and result.
+- Explain through concrete behavior and examples. Avoid metaphors, analogies,
+  idioms, figurative encouragement, and rhetorical question-and-answer hooks.
+  Keep the tone friendly without praise, slogans, or promises about future work.
 
 ## Terminology
 
-- **Capitalize your product's core nouns as proper concepts** the way Modal capitalizes App, Function, Image, Volume, Secret, Sandbox, Cls. Capitalize a noun when it names the product, lowercase for the generic idea.
-- **Name the product consistently**; never "the Modal platform" filler.
-- **Prefer precise technical terms over hand-waving**: "cold start," "autoscaler," "ephemeral," "atomic deployment," "warm pool," "scaledown window." Introduce a term in context the first time, then use it freely.
-  > "This is known as a _cold start_, and it is often associated with higher latency."
-- **Avoid marketing fluff and vague intensifiers** ("seamlessly," "powerful," "robust," "cutting-edge"). If a thing is easy, show it being easy.
-- **Use analogies to ground unfamiliar concepts**, then move on.
-  > "Containers are like light-weight virtual machines."
+Use public Composio APIs and the terminology appropriate to the example.
+Preserve exact identifiers and established product names. Define unfamiliar
+terms when first needed. Don't invent names for existing concepts.
 
-## Punctuation
+Use concrete descriptions, such as "A toolkit groups related tools for an app
+or service" and "A connected account stores a user's authenticated connection
+to a toolkit." Follow `docs/AGENTS.md` and the relevant product decisions for
+catalog terminology. Generic nouns such as tool, toolkit, session, and connected
+account stay lowercase unless a product name or identifier requires otherwise.
 
-- **Do not use em-dashes.** Rewrite the sentence with a period, comma, colon, or parentheses instead. This is a hard rule; remove every em-dash before you ship. (This overrides Modal's softer "em-dashes for genuine asides only" guidance: em-dashes are banned here.)
-- **Use the Oxford comma.**
-- **Use backticks for every code identifier, command, parameter, path, and filename**: `@app.function()`, `modal deploy`, `scaledown_window`, `/gpu-glossary/`.
-- **Use italics for fine distinctions and negation**, not for general emphasis.
-  > "This automatic upgrade does _not_ change the cost of the GPU."
-- **Capitalize acronyms and hardware names** as conventional: GPU, ASGI, A100, H100.
+Name the mechanism or observable effect instead of using words such as
+"seamlessly", "powerful", or "robust". A specific fact is more useful than a
+claim that a feature is easy.
 
-## Code examples
+## Punctuation and formatting
 
-- **Show a complete, runnable snippet first**: imports, decorator, function, not a fragment the reader can't paste.
-- **Keep examples minimal.** Use simple names (`f`, `app`) and elide irrelevant bodies with `...`.
-- **Show the decorator pattern Modal uses** (`@app.function()`, `@app.cls()`) and method chaining for Images.
-- **Put comments only where behavior is non-obvious**; let clean code speak otherwise. Show expected output inline where it teaches something (`# 42`).
-- **Show real CLI invocation forms** with realistic prompts: `$ ` or `%` for shell, `>>>` for the Python REPL.
-  > "modal run script.py::app.f"
-- **When a flag is a footgun, say so right after the example.**
-  > "Remember to remove `force_build=True` after you've rebuilt the Image, or it will rebuild every time you run your code."
+- Use sentence case for authored headings, including reference headings.
+  Preserve product names, acronyms, and identifiers. Make headings specific to
+  the question or task. Avoid generic labels when a descriptive phrase fits.
+- Use one page title and a heading hierarchy without skipped levels. Count
+  headings supplied by the renderer, not just those in the Markdown source.
+- Replace an em dash with a period or comma. Don't substitute an en dash,
+  a hyphen used as a dash, or parentheses. Use colons to introduce lists or
+  examples. Keep parentheses for grammatical parenthetical information.
+- Use periods instead of semicolons. Use the Oxford comma and straight quotes.
+  Spell out alternatives instead of using slashes in prose, and write the
+  appropriate singular or plural instead of appending "(s)". Preserve syntax in
+  code identifiers, paths, commands, URLs, and quoted source text.
+- Backtick code identifiers, commands, parameters, paths, and filenames.
+  Use bold for UI labels. Don't bold every concept or acronym.
+- Use numbered lists for sequences, bullets for parallel items, and tables for
+  lookup or comparison. Introduce a list with a complete sentence. Keep items
+  parallel and paragraphs focused on one subject.
+- Use descriptive link text. Cut decorative emojis, chatbot phrases, and
+  generic conclusions. Finish with a specific next action when one is needed.
 
-## Formatting
+## Code examples and caveats
 
-- **Use heading case consistently within a doc.** Modal leans toward sentence case for conceptual guides ("How do Web Functions run in the cloud?", "Scaling out") and title case for reference-style headings ("Volume commits and reloads"). Pick one convention per page and don't drift.
-- **Prefer descriptive, specific headings** over generic ones: "Entrypoints for ephemeral Apps," not "Entrypoints."
-- **Use callouts for warnings, notes, gated features, and beta status** rather than burying them in prose.
-  > "Deployment rollbacks are available on the Team and Enterprise plans."
-- **Correct gently with a "Note that …" or "Gotchas" aside** instead of stern warnings.
-- **Link with descriptive anchor text**, embedded naturally in the sentence, never a bare URL or "click here."
-- **Bold key concepts on first definition**, then stop bolding them.
+Task examples must include or clearly identify their setup, imports, identity,
+and initialization. Show the smallest complete operation that serves the task.
+Use public APIs and meaningful names. Don't replace required executable code
+with ellipses while calling the example runnable.
 
-## Quick self-check while drafting
+Allow checked hidden setup and reference fragments when their context is
+explicit. A signature is a contract, not a runnable program. Flag missing
+context and misleading claims of runnability instead of requiring every fence
+to stand alone. Follow [code example coverage](../../../../docs/agent-guidance/context/code-examples.md)
+and [Twoslash guidance](../../../../docs/agent-guidance/context/twoslash.md)
+for language parity, checking scope, and hidden setup.
 
-- Did I open with the concept or benefit in the first sentence?
-- Is there a runnable example near the top?
-- Am I saying "you," not "the user"?
-- Did I remove every em-dash?
-- Did I cut every "seamlessly," "powerful," and other vague intensifier?
-- Are all code identifiers in backticks and core nouns (App, Function, Volume) capitalized?
+Show the expected result beside the example. Use observed output when available.
+Otherwise describe the expected shape or effect. Label illustrative data.
+Comments explain non-obvious behavior. Commands intended for copying omit
+shell prompts unless the block is explicitly a transcript.
+
+Put warnings before the command or example that requires them. State the
+condition and consequence. Keep permissions, cost, version, and support limits
+beside the relevant claim or step. Use a callout when prominence helps, and
+never hide a required caveat inside optional collapsed content.
+
+## Repository exceptions and review scope
+
+- Follow the repository formatter and language conventions for indentation.
+  `.prettierrc` uses spaces. Do not adopt upstream's blanket tab indentation.
+- Changelog entries begin their content headings at `h3` because the renderer
+  supplies the page title and each entry's `h2`. Follow the
+  [changelog guide](../../../../docs/agent-guidance/guides/changelog.md).
+- Keep specialized records in their owning format. Use the decision-record
+  template for decisions and the release template for changelogs.
+- `good-docs-audit` reviews this writing standard. The docs correctness reviewer
+  checks whether readers can complete the task without being misled. Its narrower
+  scope does not waive this standard or turn every style finding into a blocker.
+
+Before handing over prose, check its purpose, example context, warning placement,
+sentence clarity, consistent names, and heading case. Preserve verified contracts
+and caveats even when shortening a page.

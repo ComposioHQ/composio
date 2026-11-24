@@ -7,9 +7,10 @@ Keep the overview short and move deeper explanations to linked sub-pages.
 
 ## Start with the reader's job
 
-Choose the page's primary purpose before adapting the
-[template](../templates/docs-page.md). The template is a set of slots to edit
-or delete, not mandatory headings.
+Choose one primary purpose before adapting the matching outline in the
+[template](../templates/docs-page.md). Split and link when a section serves a
+different reader task. The outlines are slots to edit or delete, not mandatory
+headings. The overview's why-first order does not apply to every page type.
 
 | Page type           | Useful progression                                                                              | Usually omit or link elsewhere                |
 | ------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
@@ -44,7 +45,7 @@ Use this order when adapting the template for a concept or overview:
 The [MCP Events overview](https://modelcontextprotocol.io/extensions/events/overview)
 is a reference for explaining the need before the mechanism. Follow that
 progression, rather than copying every section into a Composio overview.
-Use headings specific to the feature; literal "Why" and "How" headings are
+Use headings specific to the feature. Literal "Why" and "How" headings are
 optional.
 
 ## Pace the page
@@ -52,8 +53,9 @@ optional.
 These are starting points for editing, not measured reference-page properties
 or acceptance gates:
 
-- An opener of roughly 40–80 words should name the problem, the capability,
-  and the useful consequence. Move setup details into prerequisites.
+- An overview opener of roughly 40–80 words can name the problem, the capability,
+  and the useful consequence. A task page states the outcome, and a reference
+  states the scope. Move setup details into prerequisites on task pages.
 - Most paragraphs work well at 1–3 sentences, about 25–70 words. Split when
   the subject changes, not to hit a count.
 - A section often needs 80–200 words or one compact example plus its
@@ -63,9 +65,10 @@ or acceptance gates:
   mechanism, and the next step. Prefer a short summary with a descriptive link
   when a detail answers a separate implementation or lookup question. Don't
   expand the page to reach a word count or delete a required caveat to shorten it.
-- Keep a minimal verified example early, after the why and how in an overview.
-  For how-tos and tutorials, lead with the successful path before optional
-  branches. Remove repeated explanations before reducing example completeness.
+- In an overview, place an illustrative example after the why and how when it
+  helps explain the mechanism. In how-tos and tutorials, put the shortest
+  complete path before optional branches. A reference example stays beside
+  the contract it illustrates. Remove repetition before reducing completeness.
 
 Use the existing content width and heading hierarchy. Change content density
 through shorter blocks and useful representations, not custom CSS, font sizes,
@@ -86,10 +89,10 @@ why it matters. Place it just after the first explanation of the mechanism it de
 Keep it focused on that question. If it needs tiny labels, split it or link
 the detailed view. Use real names and label conditional paths. Don't encode a
 distinction only in color. Add a caption or adjacent prose that states the
-takeaway; all required facts must remain available without seeing the image.
+takeaway. All required facts must remain available without seeing the image.
 Use Mermaid `accTitle` and `accDescr` where supported, plus the prose summary.
 Check mobile width, light/dark readability, and exported Markdown when a page
-is rendered. Omit a diagram when it adds nothing to the explanation; other
+is rendered. Omit a diagram when it adds nothing to the explanation. Other
 page types don't need one by default.
 
 Use the registered components in `docs/mdx-components.tsx`: normal Mermaid
@@ -99,10 +102,12 @@ Check nearby authored usage before choosing props. Do not copy the reference's
 
 ## Keep examples and caveats useful
 
-Show the smallest complete operation that demonstrates the section's point.
-Keep prerequisites, imports, identity, and initialization explicit or in the
-existing checked hidden setup. State the expected result beside the example.
-Use verified output when available; otherwise describe the expected shape or
+Task examples show the smallest complete operation that serves the task.
+Keep prerequisites, imports, identity, and initialization explicit or clearly
+identify their checked hidden setup. Reference fragments and signatures are
+valid when their context is explicit. Don't present a fragment as a standalone
+runnable program. State the expected result beside an operation example.
+Use verified output when available. Otherwise describe the expected shape or
 effect without fabricating a transcript. Label illustrative data as such.
 
 Follow [code example coverage](../context/code-examples.md) and
