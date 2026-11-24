@@ -38,7 +38,7 @@ const main = Effect.gen(function* () {
   for (const language of LANGUAGES) {
     const version = versions[language];
     if (version === undefined) continue;
-    const promoted = yield* Effect.try(() =>
+    const outcome = yield* Effect.try(() =>
       promoteSnapshot(
         snapshotDirectory(join('next', 'docs'), language),
         join('docs/content/reference/sdk-reference', language),
@@ -46,7 +46,7 @@ const main = Effect.gen(function* () {
         sourceCommit
       )
     );
-    if (promoted) yield* Console.log(`Prepared ${language} SDK reference ${version}`);
+    yield* Console.log(`${language} SDK reference ${outcome}`);
   }
 });
 

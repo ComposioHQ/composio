@@ -145,7 +145,9 @@ corrections to the same package version in place.
 
 Production uses the Git-tracked snapshots under `docs/sdk-reference-snapshots/`
 for both HTML and Markdown. Each page displays the package version and the exact
-install command. Preview builds use the workspace reference. After this workflow
+install command. Snapshot source links are pinned to the manifest's `sourceCommit`
+at render time, so line numbers in snapshot pages must match that commit.
+Preview builds use the workspace reference. After this workflow
 lands, require the **Stable SDK reference** check on `next` so the docs PR must pass
 its installed-package checks and production-mode build before it merges.
 

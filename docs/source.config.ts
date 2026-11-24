@@ -11,6 +11,7 @@ import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs
 import { remarkMdxMermaid } from 'fumadocs-core/mdx-plugins';
 import { z } from 'zod';
 import { resolveToolkitCount } from './lib/toolkit-count';
+import { resolveStableReference } from './lib/sdk-reference-snapshot';
 
 // You can customise Zod schemas for frontmatter and `meta.json` here
 // see https://fumadocs.dev/docs/mdx/collections
@@ -135,7 +136,7 @@ const historicalMdxOptions = applyMdxPreset({
 });
 
 export const reference = defineDocs({
-  dir: process.env.COMPOSIO_STABLE_REFERENCE_DIR || 'content/reference',
+  dir: resolveStableReference(process.cwd()).dir,
   docs: {
     schema: docsSchema,
     postprocess: {

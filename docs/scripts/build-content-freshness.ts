@@ -4,7 +4,7 @@ import {
   source, getReferenceSource, examplesSource, toolkitsSource,
   changelogEntries, dateToChangelogUrl,
 } from '../lib/source';
-import { resolveStableReferenceSource } from '../lib/sdk-reference-snapshot';
+import { resolveStableReference, resolveStableReferenceSource } from '../lib/sdk-reference-snapshot';
 import {
   buildContentFreshness, getExplicitLastUpdated, type FreshnessPage,
 } from '../lib/content-freshness-build';
@@ -33,14 +33,14 @@ for (const collection of [source, examplesSource, toolkitsSource]) {
 }
 
 const reference = await getReferenceSource();
+const stableReference = resolveStableReference(root);
 for (const page of reference.getPages()) {
-  const assembled = process.env.COMPOSIO_STABLE_REFERENCE_DIR;
   const path = page.absolutePath;
-  if (!assembled || !path || !path.startsWith(`${assembled}/`)) {
+  if (stableReference.kind !== 'assembled' || !path?.startsWith(`${stableReference.dir}/`)) {
     authored(page.url, path);
     continue;
   }
-  authored(page.url, resolveStableReferenceSource(root, assembled, path));
+  authored(page.url, resolveStableReferenceSource(root, stableReference.dir, path));
 }
 
 for (const entry of changelogEntries) {

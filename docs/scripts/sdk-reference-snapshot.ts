@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { z } from 'zod';
 import { prepareStableReference } from '../lib/sdk-reference-content';
 import {
@@ -11,21 +13,31 @@ import {
   parseSnapshot,
   reviseSnapshot,
   snapshotDirectory,
+  stableReferenceRoot,
   verifySnapshot,
 } from '../lib/sdk-reference-snapshot';
 
 const docsRoot = fileURLToPath(new URL('..', import.meta.url));
 const repo = join(docsRoot, '..');
 const commitSha = z.string().regex(/^[a-f0-9]{40}$/);
+const usage = () => new Error(
+  'Usage: bun scripts/sdk-reference-snapshot.ts prepare | revise <typescript|python> | check [<commit>]'
+);
 
-const argumentsSchema = z.union([
-  z.tuple([z.literal('prepare'), z.string()]),
-  z.tuple([z.literal('revise'), z.enum(languages)]),
-  z.tuple([z.literal('check')]),
-  z.tuple([z.literal('check'), commitSha]),
-]);
+const installWithRetry = async (command: string, args: string[]) => {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      execFileSync(command, args, { cwd: repo, stdio: 'inherit', timeout: 120_000 });
+      return;
+    } catch (error) {
+      console.error(`${command} install failed (attempt ${attempt}/5): ${String(error)}`);
+      if (attempt === 5) throw error;
+      await setTimeout(30_000);
+    }
+  }
+};
 
-function checkSnapshots(base?: string): void {
+async function checkSnapshots(base?: string): Promise<void> {
   const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' });
   if (base !== undefined) git('cat-file', '-e', `${base}^{commit}`);
 
@@ -48,7 +60,7 @@ function checkSnapshots(base?: string): void {
     for (const { language, snapshot: { version }, pages } of snapshots) {
       console.log(`Checking the ${language} SDK reference against ${version}`);
       if (language === 'typescript') {
-        run('npm', [
+        await installWithRetry('npm', [
           'install', '--prefix', scratch, '--no-audit', '--no-fund', '--ignore-scripts',
           '--registry=https://registry.npmjs.org', `@composio/core@${version}`,
         ]);
@@ -61,7 +73,7 @@ function checkSnapshots(base?: string): void {
         run('uv', ['venv', '--no-project', '--python', '3.12', venv]);
         const python = join(venv, process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
         if (!existsSync(python)) throw new Error(`Could not find Python at ${python}`);
-        run('uv', [
+        await installWithRetry('uv', [
           'pip', 'install', '--python', python, '--only-binary', 'composio',
           '--default-index', 'https://pypi.org/simple', `composio==${version}`,
         ]);
@@ -76,15 +88,28 @@ function checkSnapshots(base?: string): void {
   }
 }
 
-const args = argumentsSchema.parse(process.argv.slice(2));
-switch (args[0]) {
-  case 'prepare':
-    prepareStableReference(docsRoot, args[1]);
+const { positionals } = parseArgs({ allowPositionals: true, options: {} });
+const [command, value, ...extra] = positionals;
+if (extra.length > 0) throw usage();
+
+switch (command) {
+  case 'prepare': {
+    if (value !== undefined) throw usage();
+    const destination = stableReferenceRoot(docsRoot);
+    prepareStableReference(docsRoot, destination);
+    console.log(destination);
     break;
-  case 'revise':
-    reviseSnapshot(snapshotDirectory(docsRoot, args[1]));
+  }
+  case 'revise': {
+    const language = languages.find(language => language === value);
+    if (language === undefined) throw usage();
+    reviseSnapshot(snapshotDirectory(docsRoot, language));
     break;
+  }
   case 'check':
-    checkSnapshots(args[1]);
+    if (value !== undefined && !commitSha.safeParse(value).success) throw usage();
+    await checkSnapshots(value);
     break;
+  default:
+    throw usage();
 }

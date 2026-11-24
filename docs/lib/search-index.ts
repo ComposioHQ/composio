@@ -1,7 +1,7 @@
 // Use direct imports from collections to avoid top-level await in lib/source.ts.
 import { resolveToolkitCount } from './toolkit-count';
 import { renderStableReferencePages } from './sdk-reference-content';
-import { languages, snapshotDirectory } from './sdk-reference-snapshot';
+import { languages, resolveStableReference, shouldRenderStableReference, snapshotDirectory } from './sdk-reference-snapshot';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -538,44 +538,44 @@ function getToolkitSearchFields(slug: string): Pick<Parameters<typeof recordsFro
 
 interface SearchContentEntry {
   relPath: string;
-  read: () => string;
-}
-
-function fileEntry(file: string, relPath: string): SearchContentEntry {
-  return { relPath, read: () => readFileSync(file, 'utf8') };
+  source: string;
 }
 
 function listSearchContentEntries(): SearchContentEntry[] {
   const docsRoot = process.cwd();
   const contentDir = join(docsRoot, 'content');
-  const stableReferenceDir = process.env.COMPOSIO_STABLE_REFERENCE_DIR;
-  const useProductionSnapshots = !stableReferenceDir && process.env.VERCEL_ENV === 'production';
+  const reference = resolveStableReference(docsRoot);
+  const useProductionSnapshots = shouldRenderStableReference(reference);
 
   const entries: SearchContentEntry[] = [];
+  const addFile = (file: string, relPath: string) => {
+    const route = urlFromRelativeContentPath(relPath);
+    if (route && !isExcludedFromSearch(route.url)) {
+      entries.push({ relPath, source: readFileSync(file, 'utf8') });
+    }
+  };
   for (const file of listContentFiles(contentDir)) {
     const relPath = relative(contentDir, file).replace(/\\/g, '/');
-    if (stableReferenceDir && relPath.startsWith('reference/')) continue;
+    if (reference.kind === 'assembled' && relPath.startsWith('reference/')) continue;
     if (
       useProductionSnapshots &&
       languages.some((language) => relPath.startsWith(`reference/sdk-reference/${language}/`))
     ) {
       continue;
     }
-    entries.push(fileEntry(file, relPath));
+    addFile(file, relPath);
   }
 
-  if (stableReferenceDir) {
-    for (const file of listContentFiles(stableReferenceDir)) {
-      const relPath = `reference/${relative(stableReferenceDir, file).replace(/\\/g, '/')}`;
-      entries.push(fileEntry(file, relPath));
+  if (reference.kind === 'assembled') {
+    for (const file of listContentFiles(reference.dir)) {
+      const relPath = `reference/${relative(reference.dir, file).replace(/\\/g, '/')}`;
+      addFile(file, relPath);
     }
   } else if (useProductionSnapshots) {
-    // Render the snapshots exactly as the stable collection publishes them so
-    // search keeps the version banner and pinned install commands.
     for (const language of languages) {
       if (!existsSync(snapshotDirectory(docsRoot, language))) continue;
       for (const { name, source } of renderStableReferencePages(docsRoot, language)) {
-        entries.push({ relPath: `reference/sdk-reference/${language}/${name}`, read: () => source });
+        entries.push({ relPath: `reference/sdk-reference/${language}/${name}`, source });
       }
     }
   }
@@ -584,12 +584,12 @@ function listSearchContentEntries(): SearchContentEntry[] {
 }
 
 function getFilesystemRecords(): AlgoliaDocsRecord[] {
-  return listSearchContentEntries().flatMap(({ relPath, read }) => {
+  return listSearchContentEntries().flatMap(({ relPath, source: raw }) => {
     const route = urlFromRelativeContentPath(relPath);
     if (!route) return [];
     if (isExcludedFromSearch(route.url)) return [];
 
-    const source = resolveToolkitCount(read());
+    const source = resolveToolkitCount(raw);
     const frontmatter = getFrontmatter(source);
     const title = getFrontmatterValue(frontmatter, 'title');
     if (!title) return [];

@@ -10,6 +10,7 @@ import {
   resolveStableReferenceSource,
   reviseSnapshot,
   snapshotDirectory,
+  stableReferenceRoot,
   verifySnapshot,
 } from '../../lib/sdk-reference-snapshot';
 
@@ -33,7 +34,7 @@ function withReference(verify: (root: string, pages: string) => void): void {
 test('a release retry preserves the corrected revision and old promotions cannot downgrade it', () => {
   withReference((root, pages) => {
     const dir = snapshotDirectory(root, 'typescript');
-    expect(promoteSnapshot(dir, pages, '0.31.0', RELEASE)).toBe(true);
+    expect(promoteSnapshot(dir, pages, '0.31.0', RELEASE)).toBe('prepared 0.31.0');
     const initial = verifySnapshot(dir);
     const tools = join(dir, 'pages/tools.mdx');
     writeFileSync(tools, readFileSync(tools, 'utf8').replace('Stable tools', 'Corrected tools'));
@@ -45,10 +46,11 @@ test('a release retry preserves the corrected revision and old promotions cannot
     expect(() => assertForwardSnapshot(initial, corrected)).not.toThrow();
     expect(() => assertForwardSnapshot(corrected, initial)).toThrow('Invalid SDK reference promotion');
 
-    expect(promoteSnapshot(dir, pages, '0.31.0', RELEASE)).toBe(false);
-    expect(promoteSnapshot(dir, pages, '0.30.0', RELEASE)).toBe(false);
+    expect(promoteSnapshot(dir, pages, '0.31.0', RELEASE)).toBe('already current');
+    expect(promoteSnapshot(dir, pages, '0.31.0', NEXT_RELEASE)).toBe('not ahead of 0.31.0 revision 2');
+    expect(promoteSnapshot(dir, pages, '0.30.0', RELEASE)).toBe('not ahead of 0.31.0 revision 2');
     expect(verifySnapshot(dir)).toEqual(corrected);
-    expect(promoteSnapshot(dir, pages, '0.32.0', NEXT_RELEASE)).toBe(true);
+    expect(promoteSnapshot(dir, pages, '0.32.0', NEXT_RELEASE)).toBe('prepared 0.32.0');
     const next = verifySnapshot(dir);
     expect(next.revision).toBe(1);
     expect(() => assertForwardSnapshot(corrected, next)).not.toThrow();
@@ -91,26 +93,35 @@ test('the production collection uses both verified snapshots at the canonical re
     const nodeWidget = '<PackageInstall\n  packages="@composio/core@latest zod"\n  comment="Use this SDK version."\n/>';
     const pythonWidget = '<PackageInstall ecosystem="python" packages="composio composio-openai" />';
     const unrelatedWidget = '<PackageInstall packages="eslint" />';
-    const fencedLiteral = '```mdx\n<PackageInstall packages="@composio/core" />\n```';
+    const sourceUrl = 'https://github.com/composiohq/composio/blob/next/src/tools.ts#L42';
+    const fencedLiteral = '```mdx\n<PackageInstall packages="@composio/core" />\n' +
+      `[Main](https://github.com/composiohq/composio/blob/main/x)\n${sourceUrl}\n\`\`\``;
+    const inlineLiteral = `\`${sourceUrl}\``;
+    const sourceLink = `[View source](${sourceUrl})`;
+    const externalLink = '[External](https://example.com/blob/next/x)';
     const index = join(pages, 'index.mdx');
     const indexHeader = '---\ntitle: SDK\n---\n\n';
-    writeFileSync(join(sdk, 'typescript/index.mdx'), indexHeader + nodeWidget);
+    const workspaceIndex = indexHeader + [nodeWidget, sourceLink].join('\n\n');
+    writeFileSync(join(sdk, 'typescript/index.mdx'), workspaceIndex);
     writeFileSync(join(worktreeReference, 'limits.mdx'), unrelatedWidget);
-    const output = join(root, 'assembly');
-    mkdirSync(output);
+    const output = stableReferenceRoot(root);
     const ts = snapshotDirectory(root, 'typescript');
     const py = snapshotDirectory(root, 'python');
-    writeFileSync(index, indexHeader + [nodeWidget, unrelatedWidget].join('\n\n') + '\n');
+    writeFileSync(index, indexHeader + [nodeWidget, unrelatedWidget, externalLink].join('\n\n') + '\n');
     const tools = join(pages, 'tools.mdx');
-    writeFileSync(tools, readFileSync(tools, 'utf8') + '\n' + fencedLiteral + '\n');
+    writeFileSync(tools, [readFileSync(tools, 'utf8'), sourceLink, fencedLiteral, inlineLiteral].join('\n\n') + '\n');
     promoteSnapshot(ts, pages, '0.31.0', RELEASE);
 
     expect(() => prepareStableReference(root, output)).toThrow('manifest.json');
     writeFileSync(index, indexHeader + pythonWidget + '\n');
     promoteSnapshot(py, pages, '0.34.0', RELEASE);
     prepareStableReference(root, output);
-    expect(readFileSync(join(output, 'sdk-reference/typescript/tools.mdx'), 'utf8'))
-      .toContain('npm install @composio/core@0.31.0');
+    const nodeTools = readFileSync(join(output, 'sdk-reference/typescript/tools.mdx'), 'utf8');
+    expect(nodeTools).toContain('npm install @composio/core@0.31.0');
+    expect(nodeTools).toContain(sourceLink.replace('/blob/next/', `/blob/${RELEASE}/`));
+    expect(nodeTools).not.toContain(sourceLink);
+    expect(nodeTools).toContain(fencedLiteral);
+    expect(nodeTools).toContain(inlineLiteral);
     expect(readFileSync(join(output, 'sdk-reference/python/tools.mdx'), 'utf8'))
       .toContain('pip install composio==0.34.0');
     const nodeIndex = readFileSync(join(output, 'sdk-reference/typescript/index.mdx'), 'utf8');
@@ -118,12 +129,18 @@ test('the production collection uses both verified snapshots at the canonical re
     expect(nodeIndex).toContain(nodeWidget.replace('@composio/core@latest', '@composio/core@0.31.0'));
     expect(pythonIndex).toContain(pythonWidget.replace('composio ', 'composio==0.34.0 '));
     expect(nodeIndex).toContain(unrelatedWidget);
-    expect(readFileSync(join(output, 'sdk-reference/typescript/tools.mdx'), 'utf8')).toContain(fencedLiteral);
+    expect(nodeIndex).toContain(externalLink);
     expect(readFileSync(join(output, 'limits.mdx'), 'utf8')).toBe(unrelatedWidget);
-    expect(readFileSync(join(sdk, 'typescript/index.mdx'), 'utf8')).toBe(indexHeader + nodeWidget);
+    expect(readFileSync(join(sdk, 'typescript/index.mdx'), 'utf8')).toBe(workspaceIndex);
     expect(existsSync(join(output, 'sdk-reference/typescript/unreleased.mdx'))).toBe(false);
     expect(existsSync(join(sdk, 'typescript/unreleased.mdx'))).toBe(true);
-    expect(() => prepareStableReference(root, output)).toThrow('must be empty');
+    const stale = join(output, 'stale.mdx');
+    writeFileSync(stale, 'Stale page');
+    expect(() => prepareStableReference(root, worktreeReference)).toThrow('Invalid stable reference destination');
+    prepareStableReference(root, output);
+    expect(existsSync(stale)).toBe(false);
+    expect(readFileSync(join(output, 'sdk-reference/typescript/index.mdx'), 'utf8')).toBe(nodeIndex);
+    expect(readFileSync(join(output, 'sdk-reference/python/index.mdx'), 'utf8')).toBe(pythonIndex);
 
     expect(
       resolveStableReferenceSource(root, output, join(output, 'sdk-reference/typescript/tools.mdx'))

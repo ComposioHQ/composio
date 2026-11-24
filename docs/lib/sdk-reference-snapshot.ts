@@ -17,6 +17,18 @@ export type Snapshot = z.infer<typeof Manifest>;
 export const snapshotDirectory = (docsRoot: string, language: Language) =>
   join(docsRoot, 'sdk-reference-snapshots', language);
 
+export const stableReferenceRoot = (docsRoot: string): string => join(docsRoot, '.stable-reference');
+
+type StableReference = { kind: 'assembled'; dir: string } | { kind: 'workspace'; dir: string };
+
+export const resolveStableReference = (docsRoot: string): StableReference => {
+  const dir = process.env.COMPOSIO_STABLE_REFERENCE_DIR;
+  return dir ? { kind: 'assembled', dir } : { kind: 'workspace', dir: join(docsRoot, 'content/reference') };
+};
+
+export const shouldRenderStableReference = (reference: StableReference): boolean =>
+  reference.kind === 'workspace' && process.env.VERCEL_ENV === 'production';
+
 export function resolveStableReferenceSource(
   docsRoot: string,
   assembledDir: string,
@@ -76,13 +88,17 @@ function compareVersions(left: string, right: string): number {
   return diffs.find(diff => diff !== 0) ?? 0;
 }
 
-export function assertForwardSnapshot(current: Snapshot, proposed: Snapshot): void {
+export const isForwardSnapshot = (current: Snapshot, proposed: Snapshot): boolean => {
   const versionOrder = compareVersions(proposed.version, current.version);
-  if (versionOrder > 0) return;
-  if (versionOrder === 0 && proposed.sourceCommit === current.sourceCommit) {
-    if (proposed.revision === current.revision && proposed.digest === current.digest) return;
-    if (proposed.revision > current.revision && proposed.digest !== current.digest) return;
-  }
+  return versionOrder > 0 || (
+    versionOrder === 0 && proposed.sourceCommit === current.sourceCommit &&
+    ((proposed.revision === current.revision && proposed.digest === current.digest) ||
+      (proposed.revision > current.revision && proposed.digest !== current.digest))
+  );
+};
+
+export function assertForwardSnapshot(current: Snapshot, proposed: Snapshot): void {
+  if (isForwardSnapshot(current, proposed)) return;
   throw new Error(
     `Invalid SDK reference promotion from ${current.version} revision ${current.revision} to ${proposed.version} revision ${proposed.revision}`
   );
@@ -97,17 +113,21 @@ export function promoteSnapshot(
   pages: string,
   version: string,
   sourceCommit: string
-): boolean {
+): string {
   const snapshot = Manifest.parse({ version, sourceCommit, revision: 1, digest: digestPages(pages) });
   if (existsSync(manifestPath(directory))) {
     const current = verifySnapshot(directory);
-    if (compareVersions(version, current.version) <= 0) return false;
+    const notAhead = `not ahead of ${current.version} revision ${current.revision}`;
+    if (version === current.version) {
+      return sourceCommit === current.sourceCommit ? 'already current' : notAhead;
+    }
+    if (!isForwardSnapshot(current, snapshot)) return notAhead;
   }
   const destination = join(directory, 'pages');
   rmSync(destination, { recursive: true, force: true });
   cpSync(pages, destination, { recursive: true });
   writeManifest(directory, snapshot);
-  return true;
+  return `prepared ${version}`;
 }
 
 export function reviseSnapshot(directory: string): boolean {

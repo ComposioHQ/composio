@@ -7,11 +7,7 @@ if [ "$(git rev-parse --is-shallow-repository 2>/dev/null)" = true ]; then
 fi
 
 if [ "${VERCEL_ENV:-production}" = production ]; then
-  COMPOSIO_STABLE_REFERENCE_DIR="$PWD/.stable-reference"
-  export COMPOSIO_STABLE_REFERENCE_DIR
-  rm -rf "$COMPOSIO_STABLE_REFERENCE_DIR"
-  mkdir "$COMPOSIO_STABLE_REFERENCE_DIR"
-  bun scripts/sdk-reference-snapshot.ts prepare "$COMPOSIO_STABLE_REFERENCE_DIR"
+  COMPOSIO_STABLE_REFERENCE_DIR="$(bun scripts/sdk-reference-snapshot.ts prepare)" && export COMPOSIO_STABLE_REFERENCE_DIR || exit $?
 fi
 
 bun run build

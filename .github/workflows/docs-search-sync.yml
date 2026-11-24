@@ -50,11 +50,7 @@ jobs:
         run: bun install
 
       - name: Prepare stable SDK reference snapshots
-        run: |
-          rm -rf .stable-reference
-          mkdir .stable-reference
-          bun scripts/sdk-reference-snapshot.ts prepare "$PWD/.stable-reference"
-          echo "COMPOSIO_STABLE_REFERENCE_DIR=$PWD/.stable-reference" >> "$GITHUB_ENV"
+        run: dir="$(bun scripts/sdk-reference-snapshot.ts prepare)" && printf 'COMPOSIO_STABLE_REFERENCE_DIR=%s\n' "$dir" >> "$GITHUB_ENV"
 
       - name: Validate search index generation
         run: bun run sync:search --dry-run

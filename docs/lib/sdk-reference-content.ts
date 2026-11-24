@@ -1,11 +1,12 @@
-import { cpSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { visit } from 'unist-util-visit';
 import { attributeValue, parseExampleDocument } from './example-document';
 import {
   languages,
   pageNames,
   snapshotDirectory,
+  stableReferenceRoot,
   verifySnapshot,
   type Language,
   type Snapshot,
@@ -54,13 +55,20 @@ function pinInstallWidgets(source: string, language: Language, version: string):
   return source;
 }
 
+function pinSourceLinks(source: string, sourceCommit: string): string {
+  return source.replaceAll(
+    '](https://github.com/composiohq/composio/blob/next/',
+    `](https://github.com/composiohq/composio/blob/${sourceCommit}/`
+  );
+}
+
 function renderVersion(source: string, language: Language, snapshot: Snapshot): string {
   const frontmatter = /^---\r?\n[\s\S]*?\r?\n---\r?\n/.exec(source)?.[0];
   if (!frontmatter) throw new Error('SDK reference page must start with frontmatter');
   const { command, packageName, separator } = installations[language];
   const install = `${command} ${packageName}${separator}${snapshot.version}`;
   const body = pinInstallWidgets(source.slice(frontmatter.length).trimStart(), language, snapshot.version);
-  return `${frontmatter}\n> SDK version \`${snapshot.version}\`. Install with \`${install}\`.\n\n${body}`;
+  return `${frontmatter}\n> SDK version \`${snapshot.version}\`. Install with \`${install}\`.\n\n${pinSourceLinks(body, snapshot.sourceCommit)}`;
 }
 
 export interface StableReferencePage {
@@ -80,12 +88,13 @@ export function renderStableReferencePages(docsRoot: string, language: Language)
 
 /** Assemble one Fumadocs reference collection for all public output formats. */
 export function prepareStableReference(docsRoot: string, destination: string): void {
-  if (readdirSync(destination).length !== 0) {
-    throw new Error(`Stable reference destination must be empty: ${destination}`);
+  if (basename(destination) !== basename(stableReferenceRoot(docsRoot))) {
+    throw new Error(`Invalid stable reference destination: ${destination}`);
   }
   const workspace = join(docsRoot, 'content/reference');
   const plans = languages.map(language => ({ language, pages: renderStableReferencePages(docsRoot, language) }));
   const workspaceSdk = join(workspace, 'sdk-reference');
+  rmSync(destination, { recursive: true, force: true });
   cpSync(workspace, destination, {
     recursive: true,
     filter: path => !languages.some(language => path === join(workspaceSdk, language)),
