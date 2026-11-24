@@ -29,6 +29,7 @@ import {
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import type { CliDebugFlags } from 'src/services/runtime-flags';
 import {
+  executeLocalFileScope,
   readRunStagedFiles,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -38,8 +39,8 @@ import { ToolkitSlugCatalog } from 'src/services/toolkit-slug-catalog';
 import { APP_CONFIG } from 'src/config';
 import { isMetaToolSlug } from 'src/utils/meta-tool-slugs';
 import { toolInputRequiredError, type ToolInputRequiredError } from 'src/utils/tool-input-required';
-import { NodeOs } from 'src/services/node-os';
-import { NodeProcess } from 'src/services/node-process';
+import type { NodeOs } from 'src/services/node-os';
+import type { NodeProcess } from 'src/services/node-process';
 import type { ComposioUserContext } from 'src/services/user-context';
 import type { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import type { TerminalUI } from 'src/services/terminal-ui';
@@ -299,11 +300,7 @@ const prepareToolExecution = (
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const manifestPath = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES_FILE);
-    const uploadScope = {
-      cwd: (yield* NodeProcess).cwd,
-      tmpdir: (yield* NodeOs).tmpdir,
-      stagingDirectory: manifestPath ? path.dirname(manifestPath) : undefined,
-    };
+    const uploadScope = yield* executeLocalFileScope(path, manifestPath);
     const stagedFiles = yield* readRunStagedFiles(fs, manifestPath);
     const preparedArguments = isMetaToolSlug(slug)
       ? params.arguments

@@ -7,7 +7,10 @@ import { readStdin } from 'src/effects/read-stdin';
  * Resolves an input flag such as `-d`: `-` or `@-` reads stdin to its end, `@path` reads the
  * file, anything else is the value itself. No flag means no input; stdin is never read then.
  */
-export const resolveExplicitTextInput = (input: Option.Option<string>) =>
+export const resolveExplicitTextInput = <E = never, R = never>(
+  input: Option.Option<string>,
+  readFile?: (filePath: string) => Effect.Effect<string, E, R>
+) =>
   Effect.gen(function* () {
     if (Option.isNone(input)) {
       return undefined;
@@ -28,6 +31,7 @@ export const resolveExplicitTextInput = (input: Option.Option<string>) =>
           })
         );
       }
+      if (readFile !== undefined) return yield* readFile(filePath);
       const fs = yield* FileSystem.FileSystem;
       return yield* fs.readFileString(filePath, 'utf-8');
     }

@@ -503,7 +503,7 @@ describe('run-helpers-runtime', () => {
       'const labels = JSON.parse(manifest);',
       'const input = process.argv[process.argv.indexOf("--data") + 1];',
       'const data = JSON.parse(fs.readFileSync(input.slice(1), "utf8"));',
-      'console.log(JSON.stringify({ successful: true, data: { manifestPath, manifestBytes: Buffer.byteLength(manifest), mode: fs.statSync(manifestPath).mode & 0o777, count: Object.keys(labels).length, dataCount: data.files.length, first: labels[data.files[0]], last: labels[data.files.at(-1)] } }));',
+      'console.log(JSON.stringify({ successful: true, data: { manifestPath, argumentsPath: input.slice(1), manifestBytes: Buffer.byteLength(manifest), mode: fs.statSync(manifestPath).mode & 0o777, count: Object.keys(labels).length, dataCount: data.files.length, first: labels[data.files[0]], last: labels[data.files.at(-1)] } }));',
     ].join('\n');
     const mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
     const fileName = (i: number) => `${i}-${'a'.repeat(200)}.pptx`;
@@ -524,6 +524,7 @@ describe('run-helpers-runtime', () => {
           typeof result.data.manifestPath === 'string'
       );
       expect(result.data).toMatchObject({
+        argumentsPath: path.join(path.dirname(result.data.manifestPath), 'arguments.json'),
         count: 512,
         dataCount: 512,
         mode: 0o600,

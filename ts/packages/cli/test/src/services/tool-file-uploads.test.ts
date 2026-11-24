@@ -483,6 +483,26 @@ describe('uploadToolInputFiles — local upload scope (SEC-2606)', () => {
       )
   );
 
+  it.effect.skipIf(process.platform === 'win32')(
+    '[Given] a parent segment follows a symlink [Then] the upload follows the filesystem path',
+    () =>
+      withTree(({ project, scope }) =>
+        Effect.gen(function* () {
+          const docs = path.join(project, 'docs');
+          const appendix = path.join(docs, 'appendix');
+          mkdirSync(appendix);
+          writeFileSync(path.join(project, 'report.pdf'), 'root');
+          symlinkSync(appendix, path.join(project, 'latest'));
+          const { result, requests } = yield* upload({
+            attachment: 'latest/../report.pdf',
+            scope,
+          });
+          assert(Result.isSuccess(result));
+          expect(requests).toMatchObject([{ body: { md5: md5('inside') } }]);
+        })
+      )
+  );
+
   it.effect(
     '[Given] a working directory reached through a symlink [Then] files under it are uploaded',
     () =>

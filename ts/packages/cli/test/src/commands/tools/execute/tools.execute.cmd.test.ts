@@ -2096,6 +2096,51 @@ describe('CLI: composio execute', () => {
         })
       );
 
+      it.effect('reads tool arguments from a file in the working directory', () =>
+        Effect.gen(function* () {
+          const cwd = (yield* NodeProcess).cwd;
+          const argsFile = path.join(cwd, `args-${crypto.randomUUID()}.json`);
+          fs.writeFileSync(argsFile, '{"recipient_email":"a@b.com"}', 'utf8');
+          yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', `@${path.basename(argsFile)}`]).pipe(
+            Effect.ensuring(Effect.sync(() => fs.rmSync(argsFile, { force: true })))
+          );
+          const lines = yield* MockConsole.getLines({ stripAnsi: true });
+          expect(parseLastJson(lines).data.arguments).toEqual({ recipient_email: 'a@b.com' });
+        })
+      );
+
+      it.effect.each([
+        {
+          name: 'outside the working directory',
+          inProject: false,
+          filename: 'args.json',
+          expected: 'outside the allowed upload directories',
+        },
+        {
+          name: 'protected by the sensitive-path guard',
+          inProject: true,
+          filename: '.env.fixture',
+          expected: 'looks like a credential',
+        },
+      ])('refuses an arguments file $name', ({ inProject, filename, expected }) =>
+        Effect.gen(function* () {
+          const cwd = (yield* NodeProcess).cwd;
+          const directory = fs.mkdtempSync(
+            path.join(inProject ? cwd : os.tmpdir(), 'composio-args-')
+          );
+          const argsFile = path.join(directory, filename);
+          fs.writeFileSync(argsFile, '{"recipient_email":"a@b.com"}', 'utf8');
+
+          const failure = yield* cli(['execute', 'GMAIL_SEND_EMAIL', '-d', `@${argsFile}`]).pipe(
+            Effect.flip,
+            Effect.ensuring(
+              Effect.sync(() => fs.rmSync(directory, { recursive: true, force: true }))
+            )
+          );
+          expect(failure).toMatchObject({ message: expect.stringContaining(expected) });
+        })
+      );
+
       it.effect(
         'refuses a local path outside the working directory before any upload request (SEC-2606)',
         () =>

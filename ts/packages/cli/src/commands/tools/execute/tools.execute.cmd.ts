@@ -20,7 +20,7 @@ const parallel = Flag.Boolean('parallel').pipe(
 
 const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
-  Flag.withDescription('JSON arguments, @file, or - for stdin'),
+  Flag.withDescription('JSON arguments, @file under the current directory, or - for stdin'),
   Flag.atLeast(0),
   Flag.map(Array.head)
 );

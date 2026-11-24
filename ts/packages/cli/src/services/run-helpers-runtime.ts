@@ -16,7 +16,7 @@ import { NodeOs } from 'src/services/node-os';
 import { collectText } from 'src/services/command-runner';
 import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
-import { RUN_STAGED_FILES_PREFIX } from 'src/constants';
+import { RUN_STAGED_ARGUMENTS_FILE, RUN_STAGED_FILES_PREFIX } from 'src/constants';
 
 // One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
 // builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
@@ -707,8 +707,8 @@ const createSearchAndExecuteHelpers = (params: {
         const { payload, stagedFiles } = await materializeExecutePayload(data, stageDirectory);
         const serialized = typeof payload === 'string' ? payload : JSON.stringify(payload);
         if (sharedRunOutputDir) {
-          const tmpFile = `${sharedRunOutputDir}/execute-data-${slug}-${executeId()}.json`;
-          fs.writeFileSync(tmpFile, serialized, 'utf8');
+          const tmpFile = path.join(stageDirectory(), RUN_STAGED_ARGUMENTS_FILE);
+          fs.writeFileSync(tmpFile, serialized, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
           args.push('--data', `@${tmpFile}`);
         } else {
           args.push('--data', serialized);

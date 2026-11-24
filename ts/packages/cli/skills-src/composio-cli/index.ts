@@ -109,7 +109,7 @@ const commands: SkillCommand[] = [
     ],
     notes: [
       '`--file` only works when the tool exposes a single uploadable file input. Otherwise use explicit `-d` JSON.',
-      'Local file uploads (via `--file` or a path in `-d`) must resolve, after symlinks, to a file under the current working directory. Copy the file into the current directory, or run the command from a directory that contains it.',
+      'Local file arguments, including `--file`, file uploads in JSON, and `-d @file`, must resolve to a file under the current working directory. Copy the file into the current directory, or run the command from a directory that contains it.',
     ],
   },
   {
