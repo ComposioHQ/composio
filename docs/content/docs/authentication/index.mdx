@@ -32,9 +32,9 @@ When users connect through a Connect Link and your agent acts through tools, you
 - **No token export.** Connected-account API responses redact credentials by default, for both Composio-managed and custom auth configs. Reading account state isn't a supported way to retrieve tokens.
 - **Raw API access without the token.** For endpoints a tool doesn't cover, [Proxy Execute](/docs/extending-sessions/proxy-execute) sends an authenticated request to the provider and returns the response. Session proxy calls accept either the Session tool execution or Proxy execute API key permission with Write only access.
 - **Least-privilege keys and sessions.** [Scoped API keys](/reference/authenticating-to-composio/project-api-key-permissions) separate session management from tool execution, and [session configuration](/docs/sessions/tool-access) limits which toolkits and tools an agent can call.
-- **Custody you choose.** In the default Composio Cloud deployment, Composio holds the encrypted credentials. Private VPC, self-hosted, and customer-managed key deployments change that boundary. With customer-managed keys, a proxy in your cloud decrypts credentials under your KMS keys, and Composio doesn't hold the key material.
+- **Custody you choose.** In Composio Cloud, Composio holds the encrypted credentials. With [BYOC](/docs/deployment/byoc), credentials are stored and used in your own cloud account. With customer-managed keys, a proxy in your cloud decrypts them with your keys. See [Deployment options](/docs/deployment).
 
-If you [import existing credentials](/docs/authentication/importing-existing-connections), your application handles those tokens once before sending them to Composio. See [Token custody architecture](/docs/security/token-custody) for the full request flow, redaction scope, and [deployment options](/docs/security/token-custody#deployment-options).
+If you [import existing credentials](/docs/authentication/importing-existing-connections), your application handles those tokens once before sending them to Composio. See [token custody and credential isolation](/docs/security/token-custody) for the request flow and redaction scope, and [Deployment options](/docs/deployment) for where Composio can run.
 
 ## How Composio handles authentication
 

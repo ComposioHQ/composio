@@ -1238,13 +1238,28 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/:legacy(self-hosting|deployment)',
-        destination: '/docs/security/token-custody#deployment-options',
+        source: '/docs/self-hosting',
+        destination: '/docs/deployment',
+        permanent: true,
+      },
+      {
+        source: '/docs/byoc',
+        destination: '/docs/deployment/byoc',
+        permanent: true,
+      },
+      {
+        source: '/docs/security/byoc',
+        destination: '/docs/deployment/byoc',
+        permanent: true,
+      },
+      {
+        source: '/docs/hosting/aws',
+        destination: '/docs/deployment/byoc-architecture',
         permanent: true,
       },
       {
         source: '/docs/hosting/:path*',
-        destination: '/docs/security/token-custody#deployment-options',
+        destination: '/docs/deployment',
         permanent: true,
       },
       {

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="272" viewBox="0 0 640 272" role="img" aria-labelledby="title description">
+  <title id="title">How a release reaches a BYOC deployment</title>
+  <desc id="description">Composio requests a release. Inside your cloud account, the pipeline builds a preview, your team approves it, and the pipeline applies the change and verifies the services. If you decline, the installed release keeps running.</desc>
+  <style>
+    svg { color: #fbfbfb; }
+    text { fill: currentColor; font-family: Arial, Helvetica, sans-serif; }
+    .label { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; letter-spacing: 1px; }
+    .flow { fill: none; stroke: currentColor; stroke-width: 2; stroke-opacity: 0.75; }
+    .box { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-opacity: 0.4; }
+    .step { font-size: 20px; }
+    .sub { font-size: 15px; opacity: 0.7; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#0f0f0f"/>
+
+  <rect class="box" x="137" y="24" width="495" height="228" rx="12" stroke-dasharray="6 5"/>
+  <text x="156" y="56" class="label" opacity="0.7">YOUR CLOUD ACCOUNT</text>
+
+  <rect class="box" x="8" y="84" width="108" height="72" rx="8"/>
+  <text x="62" y="116" text-anchor="middle" class="step">Request</text>
+  <text x="62" y="140" text-anchor="middle" class="sub">Composio</text>
+  <path class="flow" d="M116 120H154" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="156" y="84" width="104" height="72" rx="8"/>
+  <text x="208" y="116" text-anchor="middle" class="step">Preview</text>
+  <text x="208" y="140" text-anchor="middle" class="sub">Pipeline</text>
+  <path class="flow" d="M260 120H272" marker-end="url(#arrow)"/>
+
+  <rect x="274" y="84" width="104" height="72" rx="8" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.85"/>
+  <text x="326" y="116" text-anchor="middle" class="step">Approve</text>
+  <text x="326" y="140" text-anchor="middle" class="sub">Your team</text>
+  <path class="flow" d="M378 120H390" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="392" y="84" width="104" height="72" rx="8"/>
+  <text x="444" y="116" text-anchor="middle" class="step">Apply</text>
+  <text x="444" y="140" text-anchor="middle" class="sub">Pipeline</text>
+  <path class="flow" d="M496 120H508" marker-end="url(#arrow)"/>
+
+  <rect class="box" x="510" y="84" width="104" height="72" rx="8"/>
+  <text x="562" y="116" text-anchor="middle" class="step">Verify</text>
+  <text x="562" y="140" text-anchor="middle" class="sub">Health checks</text>
+
+  <path class="flow" d="M326 156V196" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+  <text x="326" y="226" text-anchor="middle" font-size="16">If you decline, the installed release keeps running</text>
+</svg>
