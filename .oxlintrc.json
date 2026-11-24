@@ -105,7 +105,7 @@
       // Bun's promise matchers are typed as returning void. Awaiting them
       // preserves sequencing when the matcher has to wait for a pending promise.
       "files": [
-        "test/{sdk-release-*,composio-client-update,issue-triage,provider-compatibility}.test.ts",
+        "test/{sdk-release-*,composio-client-update,issue-triage*,provider-compatibility}.test.ts",
         "ts/e2e-tests/_utils/test/image-lifecycle.test.ts",
         "ts/examples/approvals/test/approval.test.ts",
         "ts/examples/session-management/test/session-config-verification.test.ts"
@@ -143,8 +143,8 @@
       }
     },
     {
-      // Shared script helpers run on Bun with Effect platform services.
-      "files": ["scripts/lib/**/*.ts"],
+      // Shared script helpers and issue triage run on Bun with Effect platform services.
+      "files": ["scripts/lib/**/*.ts", "scripts/issue-triage/**/*.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
