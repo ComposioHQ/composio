@@ -36,8 +36,8 @@ tools = composio.tools.get("user-123", toolkits=["github"])
 
 # Execute a tool
 result = composio.tools.execute(
-    "GITHUB_GET_REPOS",
-    arguments={"owner": "composio"},
+    "GITHUB_LIST_STARGAZERS",
+    arguments={"owner": "ComposioHQ", "repo": "composio"},
     user_id="user-123",
     version="20250909_00",
 )

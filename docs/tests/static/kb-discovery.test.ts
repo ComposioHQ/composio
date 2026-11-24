@@ -82,8 +82,19 @@ describe('public KB discovery', () => {
     const nextConfig = source('next.config.mjs');
 
     expect(nextConfig).toContain("'/kb/**': ['./kb/**']");
-    expect(nextConfig).toContain(
-      "'/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**']",
+
+    // The search route reads every corpus it indexes from disk at request time,
+    // including the stable SDK reference snapshots in production.
+    const knowledgeSearch = nextConfig.match(/'\/api\/knowledge-search\/\*\*': \[([^\]]*)\]/);
+    expect(knowledgeSearch).not.toBeNull();
+    const traced = knowledgeSearch![1].split(',').map((entry) => entry.trim()).filter(Boolean);
+    expect(traced).toEqual(
+      expect.arrayContaining([
+        '...OPENAPI_SPEC_FILES',
+        "'./content/**'",
+        "'./sdk-reference-snapshots/**'",
+        "'./kb/**'",
+      ]),
     );
   });
 });

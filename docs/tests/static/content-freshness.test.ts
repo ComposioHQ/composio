@@ -153,14 +153,14 @@ describe('source-backed page freshness', () => {
     const definitions = [{ pathname: '/page', sources: ['page.mdx'] }];
     expect(buildContentFreshness(docs, definitions).pages['/page']).toBeUndefined();
 
-    // Replace only the expensive app build; exercise the real Git commands.
+    // Use a preview build to exercise Git history with a minimal docs fixture.
     const bin = temporaryDirectory();
     put(bin, 'bun', '#!/bin/sh\nset -eu\ntest "$1" = run\ntest "$2" = build\ngit rev-parse --is-shallow-repository > build-history-state\n');
     chmodSync(join(bin, 'bun'), 0o755);
     const script = fileURLToPath(new URL('../../scripts/vercel-build.sh', import.meta.url));
     const run = () => execFileSync('sh', [script], {
       cwd: docs, stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, VERCEL_ENV: 'preview' },
     });
     run();
     expect(readFileSync(join(docs, 'build-history-state'), 'utf8').trim()).toBe('false');
