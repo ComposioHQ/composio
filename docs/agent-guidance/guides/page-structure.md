@@ -1,8 +1,9 @@
 # Structure a docs page
 
 Use `docs-page-rewrite` to reorganize an existing page. Keep the house voice
-in `good-docs-writing`. This guide covers what each part of the page does,
-how much space it needs, and when a different representation helps.
+in `good-docs-writing`. For a concept or overview, explain why the feature
+matters to you, then how it works with a diagram, then add detail progressively.
+Keep the overview short and move deeper explanations to linked sub-pages.
 
 ## Start with the reader's job
 
@@ -12,7 +13,7 @@ or delete, not mandatory headings.
 
 | Page type           | Useful progression                                                                              | Usually omit or link elsewhere                |
 | ------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Concept or overview | Problem and benefit, early concrete example, mechanism, fit and tradeoffs, details, next action | Exhaustive setup and parameter reference      |
+| Concept or overview | Why it matters to you, how it works with a diagram, essential details, links to deeper pages    | Exhaustive setup and parameter reference      |
 | How-to              | Outcome, prerequisites, shortest verified path, expected result, conditional branches, recovery | Long conceptual motivation                    |
 | Tutorial            | What you will build, setup, incremental steps with visible results, next experiment             | Exhaustive options and unrelated alternatives |
 | Reference           | Scope and version, contract tables, small usage example, edge cases, related specification      | Narrative walkthrough and repeated motivation |
@@ -22,6 +23,29 @@ overview, a short mechanism list can precede a diagram. A how-to usually needs
 the action first. A lifecycle table belongs only where there are real states
 to look up. Split implementation by audience only when those readers have
 different responsibilities. Do not manufacture client/server sections.
+
+## Order an overview: why, then how, then details
+
+Use this order when adapting the template for a concept or overview:
+
+1. Start with why the feature or detail matters to you. Name the problem you
+   face, what the feature lets you do, and why that outcome is useful. Explain
+   the need before introducing the mechanism, setup, or API names. A concrete
+   use case helps make the benefit clear.
+2. Explain how it works. Introduce the main actors and their actions, then
+   place a focused diagram beside that explanation. Show the flow that
+   connects the feature to the benefit you just described. Follow with a
+   minimal verified example when it helps make the mechanism concrete.
+3. Add only the details needed to understand the feature and choose the next
+   step. Put the common case before options and exceptions. Link to sub-pages
+   for setup, full examples, advanced behavior, and parameter reference. Keep
+   constraints that affect the reader's choice beside the relevant claim.
+
+The [MCP Events overview](https://modelcontextprotocol.io/extensions/events/overview)
+is a reference for explaining the need before the mechanism. Follow that
+progression, rather than copying every section into a Composio overview.
+Use headings specific to the feature; literal "Why" and "How" headings are
+optional.
 
 ## Pace the page
 
@@ -35,13 +59,13 @@ or acceptance gates:
 - A section often needs 80–200 words or one compact example plus its
   explanation. A section approaching 300 words merits a check for a second
   reader question, a table, or a linked detail page.
-- For an overview, roughly 600–1,200 words of prose can be a useful first
-  editing budget. A narrow reference may be much shorter. A complete tutorial
-  may be longer. Count one selected language path separately from all tabs;
-  never delete a contract or caveat to meet a budget.
-- Keep a minimal verified example near the top. For long procedures, expose
-  the successful path before optional branches. Remove repeated explanations
-  before reducing example completeness.
+- Keep an overview to a few focused sections that explain the need, the
+  mechanism, and the next step. Prefer a short summary with a descriptive link
+  when a detail answers a separate implementation or lookup question. Don't
+  expand the page to reach a word count or delete a required caveat to shorten it.
+- Keep a minimal verified example early, after the why and how in an overview.
+  For how-tos and tutorials, lead with the successful path before optional
+  branches. Remove repeated explanations before reducing example completeness.
 
 Use the existing content width and heading hierarchy. Change content density
 through shorter blocks and useful representations, not custom CSS, font sizes,
@@ -57,14 +81,16 @@ or new components.
 | What does each status, field, or option mean? | Table                                         |
 | What do I do next?                            | Numbered steps with an observable result      |
 
-Place a diagram just after the first explanation of the mechanism it depicts.
+In an overview, use a diagram to explain how the feature works after establishing
+why it matters. Place it just after the first explanation of the mechanism it depicts.
 Keep it focused on that question. If it needs tiny labels, split it or link
 the detailed view. Use real names and label conditional paths. Don't encode a
 distinction only in color. Add a caption or adjacent prose that states the
 takeaway; all required facts must remain available without seeing the image.
 Use Mermaid `accTitle` and `accDescr` where supported, plus the prose summary.
 Check mobile width, light/dark readability, and exported Markdown when a page
-is rendered. A diagram is optional; there is no diagram or example quota.
+is rendered. Omit a diagram when it adds nothing to the explanation; other
+page types don't need one by default.
 
 Use the registered components in `docs/mdx-components.tsx`: normal Mermaid
 fences, `Callout`, `Tabs`/`Tab`, `Steps`/`Step`, and `Accordion`/`Accordions`.
