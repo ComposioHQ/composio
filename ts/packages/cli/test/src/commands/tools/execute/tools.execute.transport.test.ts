@@ -20,6 +20,7 @@ import * as composioAccount from 'src/services/composio-account';
 import * as consumerShortTermCache from 'src/services/consumer-short-term-cache';
 import * as toolPermissions from 'src/services/tool-permissions';
 import { ComposioUserContext } from 'src/services/user-context';
+import { NodeProcess } from 'src/services/node-process';
 import {
   cli,
   dashboardProcedureError,
@@ -148,9 +149,10 @@ const makeWorld = (options: {
    * URLs in effect: `baseURL` is what the backend client is built with,
    * `webURL` what the Dashboard request is built from.
    */
-  const run = (args: ReadonlyArray<string>) =>
+  const run = (args: ReadonlyArray<string> | ((cwd: string) => ReadonlyArray<string>)) =>
     Effect.gen(function* () {
-      const exit = yield* cli(args).pipe(Effect.exit);
+      const argv = typeof args === 'function' ? args((yield* NodeProcess).cwd) : args;
+      const exit = yield* cli(argv).pipe(Effect.exit);
       const lines = yield* MockConsole.getLines({ stripAnsi: true });
       const { baseURL, webURL } = (yield* ComposioUserContext).data;
       return { exit, lines, output: lines.join('\n'), baseURL, webURL };
@@ -591,8 +593,7 @@ describe('CLI: composio execute transport', () => {
   it.effect('resolves the project and uploads files on the backend before the Dashboard call', () =>
     Effect.gen(function* () {
       const events: Array<string> = [];
-      const tempFile = path.join(os.tmpdir(), `composio-upload-${crypto.randomUUID()}.txt`);
-      fs.writeFileSync(tempFile, 'hello from cli upload', 'utf8');
+      const filename = 'composio-upload.txt';
       const originalFetch = globalThis.fetch;
       vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
         const url =
@@ -636,13 +637,15 @@ describe('CLI: composio execute transport', () => {
         },
       });
 
-      const { exit } = yield* world.run([
-        'execute',
-        'GMAIL_SEND_EMAIL',
-        '-d',
-        JSON.stringify({ recipient_email: 'a@b.com', attachment: tempFile }),
-      ]);
-      fs.rmSync(tempFile, { force: true });
+      const { exit } = yield* world.run(cwd => {
+        fs.writeFileSync(path.join(cwd, filename), 'hello from cli upload', 'utf8');
+        return [
+          'execute',
+          'GMAIL_SEND_EMAIL',
+          '-d',
+          JSON.stringify({ recipient_email: 'a@b.com', attachment: filename }),
+        ];
+      });
 
       expect(Exit.isSuccess(exit)).toBe(true);
       expect(events).toContain('backend:org.consumer.project.resolve');
@@ -653,9 +656,9 @@ describe('CLI: composio execute transport', () => {
       expect(requestJson(world.dashboardRequests[0])?.arguments).toEqual({
         recipient_email: 'a@b.com',
         attachment: {
-          name: path.basename(tempFile),
+          name: filename,
           mimetype: 'text/plain',
-          s3key: `uploads/${path.basename(tempFile)}`,
+          s3key: `uploads/${filename}`,
         },
       });
     })

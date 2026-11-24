@@ -18,6 +18,7 @@ const expectedSkills = [
   'cli-release',
   'cross-sdk-parity',
   'docs-decisions',
+  'docs-page-rewrite',
   'effect-v4',
   'eve',
   'good-docs-audit',

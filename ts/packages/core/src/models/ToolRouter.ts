@@ -56,6 +56,7 @@ import {
   resolveToolRouterSandboxConfig,
   resolveLocalToolsOptions,
   type LocalToolsOptions,
+  type SessionCreateBody,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
@@ -308,7 +309,7 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
@@ -338,7 +339,13 @@ export class ToolRouter<
     };
 
     const session = await withCancellation(
-      () => this.client.toolRouter.session.create(payload, requestOptions),
+      () =>
+        this.client.toolRouter.session.create(
+          // The `webhook` hook handler is not in `@composio/client` until it
+          // picks up ComposioHQ/platform#15328; the body is serialized as-is.
+          payload as SessionCreateParams,
+          requestOptions
+        ),
       requestOptions?.signal
     );
 
