@@ -1,9 +1,8 @@
 import { configure } from 'safe-stable-stringify';
 
 const HTTPS_PREFIX = 'https://';
-const CONNECT_LINK_PREFIX = 'https://connect.composio.dev/';
-const COMPOSIO_MARKER = 'composio';
-const LINK_PATH_MARKER = '/link/';
+const COMPOSIO_DOMAIN = 'composio.dev';
+const CONNECT_HOST = `connect.${COMPOSIO_DOMAIN}`;
 const URL_BOUNDARIES = new Set(['<', '>', ')', '"', "'"]);
 const TRAILING_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?']);
 const stringify = configure({ deterministic: false });
@@ -38,25 +37,28 @@ const classifyToken = (
   connectLinks: Set<string>,
   genericLinks: Set<string>
 ): void => {
-  const normalizedToken = token.toLowerCase();
-  const httpsStart = normalizedToken.indexOf(HTTPS_PREFIX);
+  const httpsStart = token.toLowerCase().indexOf(HTTPS_PREFIX);
   if (httpsStart === -1) return;
 
-  const connectStart = normalizedToken.indexOf(CONNECT_LINK_PREFIX, httpsStart);
-  if (connectStart !== -1 && connectStart + CONNECT_LINK_PREFIX.length < token.length) {
-    connectLinks.add(trimTrailingPunctuation(token.slice(connectStart)));
+  const link = trimTrailingPunctuation(token.slice(httpsStart));
+  let url: URL;
+  try {
+    url = new URL(link);
+  } catch {
+    return;
   }
 
-  const composioStart = normalizedToken.indexOf(COMPOSIO_MARKER, httpsStart + HTTPS_PREFIX.length);
-  if (composioStart === -1) return;
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return;
 
-  const linkPathStart = normalizedToken.indexOf(
-    LINK_PATH_MARKER,
-    composioStart + COMPOSIO_MARKER.length
-  );
-  if (linkPathStart === -1 || linkPathStart + LINK_PATH_MARKER.length >= token.length) return;
-
-  genericLinks.add(trimTrailingPunctuation(token.slice(httpsStart)));
+  const { hostname, pathname } = url;
+  if (hostname === CONNECT_HOST && pathname.length > 1) {
+    connectLinks.add(link);
+  } else if (
+    (hostname === COMPOSIO_DOMAIN || hostname.endsWith(`.${COMPOSIO_DOMAIN}`)) &&
+    /\/link\/./i.test(pathname)
+  ) {
+    genericLinks.add(link);
+  }
 };
 
 export const extractComposioConnectLinks = (value: unknown): string[] => {
@@ -76,5 +78,5 @@ export const extractComposioConnectLinks = (value: unknown): string[] => {
     tokenStart = index + 1;
   }
 
-  return Array.from(new Set([...connectLinks, ...genericLinks]));
+  return [...connectLinks, ...genericLinks];
 };

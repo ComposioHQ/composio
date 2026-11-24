@@ -451,6 +451,16 @@ describe('PiProvider', () => {
     ]);
   });
 
+  it('requires a Composio hostname and an auth path for generic links', () => {
+    expect(
+      extractComposioConnectLinks([
+        'https://auth.example/link/setup',
+        'https://auth.composio.dev/docs?section=/link/setup',
+        'https://composio.dev/link/setup',
+      ])
+    ).toEqual(['https://composio.dev/link/setup']);
+  });
+
   it('returns connect links first and deduplicates links across classifiers', () => {
     const genericLink = 'https://auth.composio.dev/link/generic';
     const connectLink = 'https://connect.composio.dev/link/connect';
