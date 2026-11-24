@@ -17,7 +17,7 @@ In Composio Cloud, requests to connected services, including OAuth authorization
 
 Add all four. Requests can come from any of them, so a partial list makes connections fail intermittently.
 
-A [BYOC deployment](/docs/deployment/byoc) or an existing self-hosted installation sends requests from its own network, not from these addresses. Allowlist that network's egress addresses instead.
+A [BYOC deployment](/docs/deployment/byoc) or a self-hosted installation sends requests from its own network, not from these addresses. Allowlist that network's egress addresses instead.
 
 If the service keeps separate allowlists, such as one for access tokens and one for refresh tokens, add all four addresses to each. Some services take each address as its own range, with the same start and end IP.
 
