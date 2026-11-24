@@ -3,7 +3,7 @@ Explain the motivation and context for this change.
 
 External contributors: link the open issue this PR addresses. PRs without a linked issue may be closed. See the [Contribution Policy](https://github.com/ComposioHQ/composio/blob/next/CONTRIBUTING.md#contribution-policy).
 
-Designated PR reviewer: [@jkomyno](mailto:alberto@composio.dev).
+Docs PRs: leave requested reviewers unassigned unless Brendan explicitly names reviewers. Other PRs: designated reviewer [@jkomyno](mailto:alberto@composio.dev).
 
 Fixes #
 

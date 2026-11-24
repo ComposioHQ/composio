@@ -1,4 +1,5 @@
-docs/ @shawnesquivel @Sushmithamallesh @olearycrew
+# Docs expertise: @shawnesquivel @Sushmithamallesh @olearycrew
+# Leave docs review requests unassigned unless Brendan explicitly names reviewers.
 ts/packages/cli/ @CryogenicPlanet
 ts/ @jkomyno
 python/ @jkomyno
