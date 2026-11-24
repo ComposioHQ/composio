@@ -93,7 +93,9 @@ jobs:
         run: bun run test:agent-workflow
 
       - name: Verify issue triage security boundary
-        run: pnpm test:issue-triage
+        run: |
+          pnpm typecheck:issue-triage
+          pnpm test:issue-triage
 
       - name: Verify API client dependency reconciliation
         run: bun test test/composio-client-update.test.ts
