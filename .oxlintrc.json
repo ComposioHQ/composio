@@ -150,6 +150,14 @@
           "error",
           {
             "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              { "name": "process", "message": "Read environment variables through effect/Config and arguments through Stdio." },
+              { "name": "node:process", "message": "Read environment variables through effect/Config and arguments through Stdio." },
+              { "name": "os", "message": "Use an Effect service instead of importing node:os directly." },
+              { "name": "node:os", "message": "Use an Effect service instead of importing node:os directly." },
               { "name": "child_process", "message": "Use ChildProcess from effect/process instead." },
               { "name": "node:child_process", "message": "Use ChildProcess from effect/process instead." },
               { "name": "fs", "message": "Use FileSystem from effect instead." },
@@ -168,6 +176,18 @@
           },
           {
             "selector": "MemberExpression[object.name='process'][property.name=/^(env|argv)$/]",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value=/^(env|argv)$/]",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          },
+          {
+            "selector": ":matches(VariableDeclarator[init.name='process'], AssignmentExpression[right.name='process'], AssignmentPattern[right.name='process']) > ObjectPattern > Property:matches([key.name=/^(env|argv)$/], [key.value=/^(env|argv)$/])",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          },
+          {
+            "selector": "MemberExpression[object.name='Bun'][property.name='env']",
             "message": "Read environment variables through effect/Config and arguments through Stdio."
           }
         ]
