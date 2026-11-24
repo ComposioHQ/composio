@@ -1,9 +1,10 @@
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect } from 'effect';
+import { Effect, FileSystem, Option, Path } from 'effect';
 import { cli, TestLive, MockConsole } from 'test/__utils__';
 import { retryHint } from 'src/effects/retry-advice';
+import { NodeProcess } from 'src/services/node-process';
 import { exitCodeOf } from 'test/__utils__/exit-code';
-import { makeOrgProject } from 'test/__utils__/models/account';
+import { makeOrgProject, makeSessionInfo } from 'test/__utils__/models/account';
 import { redirectedTerminalUI } from 'test/__utils__/services/redirected-terminal-ui';
 
 describe('CLI: composio dev init', () => {
@@ -107,6 +108,98 @@ describe('CLI: composio dev init', () => {
           ]);
           expect(lines[4]).toMatch(/^Project initialized in /);
         })
+      );
+    });
+  });
+
+  describe('dev init .env.local permissions', () => {
+    const FAKE_PROJECT_KEY = 'ak_fake_project_key';
+    const testData = {
+      fixture: 'user-config-with-global-context',
+      accountData: {
+        projects: [makeOrgProject({ id: 'p1', name: 'One' })],
+        sessionInfo: makeSessionInfo({ apiKey: FAKE_PROJECT_KEY, orgMemberId: 'member_fake' }),
+      },
+    } as const;
+    const generatedEnv = `COMPOSIO_API_KEY=${FAKE_PROJECT_KEY}\nCOMPOSIO_TEST_USER_ID=pg-test-member_fake\n`;
+
+    const envFile = Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const proc = yield* NodeProcess;
+      return { fs, path, envPath: path.join(proc.cwd, '.env.local') };
+    });
+    const modeOf = (fs: FileSystem.FileSystem, target: string) =>
+      fs.stat(target).pipe(Effect.map(info => info.mode & 0o777));
+
+    layer(TestLive(testData))(it => {
+      it.effect('[Given] no .env.local [Then] creates it owner-only', () =>
+        Effect.gen(function* () {
+          const { fs, envPath } = yield* envFile;
+
+          yield* cli(['dev', 'init', '--yes']);
+
+          expect(yield* fs.readFileString(envPath)).toBe(generatedEnv);
+          expect(yield* modeOf(fs, envPath)).toBe(0o600);
+        })
+      );
+    });
+
+    layer(TestLive(testData))(it => {
+      it.effect(
+        '[Given] a world-readable .env.local with both keys [Then] tightens it and keeps its contents',
+        () =>
+          Effect.gen(function* () {
+            const { fs, envPath } = yield* envFile;
+            const existing =
+              'OTHER=1\nCOMPOSIO_API_KEY=ak_fake_existing\nCOMPOSIO_TEST_USER_ID=pg-test-existing\n';
+            yield* fs.writeFileString(envPath, existing);
+            yield* fs.chmod(envPath, 0o644);
+
+            yield* cli(['dev', 'init', '--yes']);
+
+            expect(yield* fs.readFileString(envPath)).toBe(existing);
+            expect(yield* modeOf(fs, envPath)).toBe(0o600);
+          })
+      );
+    });
+
+    layer(TestLive(testData))(it => {
+      it.effect(
+        '[Given] a world-readable .env.local without the keys [Then] appends them and leaves it owner-only',
+        () =>
+          Effect.gen(function* () {
+            const { fs, envPath } = yield* envFile;
+            yield* fs.writeFileString(envPath, 'OTHER=1\n');
+            yield* fs.chmod(envPath, 0o644);
+
+            yield* cli(['dev', 'init', '--yes']);
+
+            expect(yield* fs.readFileString(envPath)).toBe(`OTHER=1\n${generatedEnv}`);
+            expect(yield* modeOf(fs, envPath)).toBe(0o600);
+          })
+      );
+    });
+
+    layer(TestLive(testData))(it => {
+      it.effect(
+        '[Given] .env.local is a symbolic link [Then] replaces the link with a private file and leaves its target alone',
+        () =>
+          Effect.gen(function* () {
+            const { fs, path, envPath } = yield* envFile;
+            const linkTarget = path.join(path.dirname(envPath), 'shared.env');
+            yield* fs.writeFileString(linkTarget, 'OTHER=1\n');
+            yield* fs.chmod(linkTarget, 0o644);
+            yield* fs.symlink(linkTarget, envPath);
+
+            yield* cli(['dev', 'init', '--yes']);
+
+            expect(yield* fs.readLink(envPath).pipe(Effect.option)).toEqual(Option.none());
+            expect(yield* fs.readFileString(envPath)).toBe(`OTHER=1\n${generatedEnv}`);
+            expect(yield* modeOf(fs, envPath)).toBe(0o600);
+            expect(yield* fs.readFileString(linkTarget)).toBe('OTHER=1\n');
+            expect(yield* modeOf(fs, linkTarget)).toBe(0o644);
+          })
       );
     });
   });

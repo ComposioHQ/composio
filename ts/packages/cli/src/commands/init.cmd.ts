@@ -29,6 +29,7 @@ import {
   isClientDecodeError,
   type ClientApiError,
 } from 'src/utils/api-error-extraction';
+import { atomicWritePrivateFileString, ensurePrivateFileMode } from 'src/utils/atomic-write';
 
 /**
  * `composio init` — Initialize a developer project in the current directory.
@@ -124,7 +125,19 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     const path = yield* Path.Path;
 
     const envPath = path.join(cwd, '.env.local');
+    // `exists` follows symlinks, so a dangling link reads as absent; the private
+    // write below replaces the link itself and never creates its target.
     const envExists = yield* fs.exists(envPath);
+    const envIsSymlink = Option.isSome(yield* fs.readLink(envPath).pipe(Effect.option));
+    if (envExists && !envIsSymlink) {
+      // A `.env.local` written by an older CLI kept the default mode; tighten it
+      // before reading, whether or not this run rewrites it.
+      yield* ensurePrivateFileMode({ fs, target: envPath });
+    } else if (envExists) {
+      yield* ui.log.warn(
+        '.env.local is a symbolic link; its target keeps its current permissions.'
+      );
+    }
     const existingEnvContent = envExists ? yield* fs.readFileString(envPath, 'utf8') : '';
     const hasProjectApiKey = /^COMPOSIO_API_KEY=.*/m.test(existingEnvContent);
     const hasTestUserId = /^COMPOSIO_TEST_USER_ID=.*/m.test(existingEnvContent);
@@ -166,18 +179,23 @@ const ensureProjectApiKeyInEnv = (params: { cwd: string; selected: ProjectKeys }
     }
 
     if (nextEnvContent !== existingEnvContent) {
-      yield* fs.writeFileString(envPath, nextEnvContent);
+      // Owner-only from creation: the file holds the project API key.
+      yield* atomicWritePrivateFileString({ fs, target: envPath, contents: nextEnvContent });
     }
     yield* writeProjectConfig(composioDir, {
       ...selected,
       testUserId: Option.some(composioTestUserId),
     });
     if (nextEnvContent !== existingEnvContent) {
-      yield* ui.log.step(
-        envExists
-          ? 'Updated .env.local with Composio credentials'
-          : 'Created .env.local with Composio credentials'
-      );
+      if (envIsSymlink) {
+        yield* ui.log.step('Replaced the .env.local symbolic link with a private file');
+      } else {
+        yield* ui.log.step(
+          envExists
+            ? 'Updated .env.local with Composio credentials'
+            : 'Created .env.local with Composio credentials'
+        );
+      }
     }
   });
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `composio init` writes `.env.local`, which holds the project API key, readable only by its owner (mode `0600`). A `.env.local` that an earlier version left readable by other users is tightened to `0600` on the next `composio init`, even when nothing in it changes. If `.env.local` is a symbolic link, `composio init` leaves the link target's permissions unchanged. When it adds keys, it replaces the link with a private file instead of writing through it.
+
 ## 0.6.3
 
 ### Patch Changes
