@@ -74,19 +74,21 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-- `id`: An identifier you set for the hook. It's used in two places: to map each hook to its result in the response, and to identify the hook that blocked a tool call.
-- `name`: An optional name for the hook. It's included in the agent-facing error message when a built-in hook blocks a tool call.
+You can add several hooks to a session, and replace them later with `session.update()`. Each hook has the following fields:
+
+- `id`: An identifier you set for the hook. It's mainly used in two places: to map each hook to its result in the response, and to identify the hook that blocked a tool call.
+- `name`: An optional name for the hook. It's included in the agent-facing error message that Composio generates when the hook blocks a tool call.
 - `type`: When the hook runs. One of `before_execute` or `after_execute`.
 - `applies_to`: The toolkits the hook applies to. Set this to `"all"` if you want it to run for all tools across all toolkits.
-- `handler`: This determines the behaviour of the hook. There are currently three types of handlers.
+- `handler`: This determines the behaviour of the hook. The types of handlers are listed below.
 
-Each type of handler gives you a different kind of hook:
+## Types of handlers
 
-- **Condition check:** This is a built-in hook that can be used to block unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example: "Sharing internal pricing with anyone outside acme.com". Details: [Firewall > Condition check](/docs/firewall#custom-prompt-checks).
-- **Prompt injection check:** This is another built-in hook that can be used to scan tool results for prompt injection before they reach your agent. Details: [Firewall > Prompt injection check](/docs/firewall#prompt-injection-detection).
-- **Webhook:** This is a hook that sends an HTTP request to an endpoint you configure, and uses the response to allow, block, or transform the tool call. It gives you a powerful way to observe and control tool calls with your own code. Details: [Webhooks](#webhooks).
+There are currently three types of handlers:
 
-You can add several hooks to a session, and replace them later with `session.update()`.
+- **Condition check:** This can be used to block unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. Details: [Firewall > Condition check](/docs/firewall#custom-prompt-checks).
+- **Prompt injection check:** This can be used to scan tool results for prompt injection before they reach your agent. Details: [Firewall > Prompt injection check](/docs/firewall#prompt-injection-detection).
+- **Webhook:** This sends an HTTP request to an endpoint you configure, and uses the response to allow, block, or transform the tool call. It gives you a powerful way to observe and control tool calls with your own code. Details: [Webhooks](#webhooks).
 
 ## Webhooks
 
@@ -103,12 +105,12 @@ Here are a few examples of what you can do with webhooks:
 - **Redact tool results:** Strip secrets from a tool's response before your agent reads it.
 
 <Callout type="info">
-You may also want to explore [before](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) and [after](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) execution modifiers as an alternative to webhooks. They can offer a simpler way to wrap tool calls with custom logic. Webhooks are a better fit when you have the workbench enabled or your agents connect via [session MCP](/docs/sessions-via-mcp), since modifiers don't run for those calls.
+You may also want to explore [before](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) and [after](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) execution modifiers as an alternative to webhooks. They can offer a simpler way to wrap tool calls with custom logic. Webhooks are a better fit when you have the workbench enabled, since modifiers don't run for tool calls made from the workbench.
 </Callout>
 
 ### How to set up a webhook URL
 
-You can configure the webhook URL from the dashboard, under [Sessions](https://dashboard.composio.dev/~/project/sessions?utm_source=docs&utm_medium=content&utm_campaign=session-hooks) → Webhooks. This is a project-level setting, so Composio will call this endpoint for all sessions in the project. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
+You can configure the webhook URL from the dashboard, under [Sessions](https://dashboard.composio.dev/~/project/sessions?utm_source=docs&utm_medium=content&utm_campaign=session-hooks) → Webhooks. This is a project-level setting, so Composio will call this endpoint for every session in the project that has a webhook. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
 
 <Figure src="/images/session-webhook-settings.png" alt="The Webhooks tab under Sessions in the Composio dashboard, with the webhook endpoint URL and its masked signing secret" caption="The webhook URL and its signing secret, under Sessions → Webhooks" />
 
@@ -283,6 +285,12 @@ Respond with HTTP `200` and a JSON body. There are three ways to respond:
 | `{ "action": "block", "message": "..." }` | The tool call is blocked. |
 | `{ "action": "continue", "override": { ... } }` | The tool call goes ahead with your changes. |
 
+When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why the call was blocked.
+
+If you execute the tool yourself with `session.execute()`, the result has `result_type` set to `blocked` and your `message` in `error`, the same as when [any other hook blocks a call](/docs/firewall#custom-prompt-checks).
+
+You can block a call from `after_execute` in the same way. By then the tool has already run, but its result is withheld from your agent. Your agent sees an error with your message instead.
+
 What goes in `override` also depends on the kind of call and on when the webhook runs:
 
 | | `before_execute` | `after_execute` |
@@ -290,42 +298,23 @@ What goes in `override` also depends on the kind of call and on when the webhook
 | Tool call | `{ "tool_call": { "arguments": { ... } } }` | `{ "tool_response": { "data": { ... } } }` |
 | Proxy call | `{ "http_request": { ... } }` | `{ "http_response": { ... } }` |
 
-For a proxy call, include only the fields you want to change. In `http_request`, these are `method`, `endpoint`, `parameters`, and `body`. In `http_response`, they are `data` and `headers`.
+For a tool call, Composio uses exactly the arguments or data you return, so start from the originals and change only what you need. For a proxy call, include only the fields you want to change. In `http_request`, these are `method`, `endpoint`, `parameters`, and `body`. In `http_response`, they are `data` and `headers`.
 
 For the full schema of the request and of your response, see the reference for [`before_execute`](/reference/api-reference/session-webhooks/composio_session_hook_before_execute) and [`after_execute`](/reference/api-reference/session-webhooks/composio_session_hook_after_execute).
 
 #### Example
 
-Here's an example that receives a request and blocks the tool call if it contains a US Social Security number. The Python example uses FastAPI, and the TypeScript example is a Next.js route.
+Here's an example that receives a request, verifies it, and responds. The example uses FastAPI.
 
-{/* code-example: no-api reason="parse() runs inside your webhook endpoint; it verifies and types the incoming request in the SDK" */}
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
+{/* code-example: single-language reason="the endpoint is written with FastAPI, a Python web framework" */}
 ```python
-import json
 import os
-import re
 
-from composio import (
-    Composio,
-    SessionWebhookBeforeExecuteEvent,
-    SessionWebhookBeforeExecuteResponse,
-)
+from composio import Composio
 from fastapi import FastAPI, Request
 
 composio = Composio()
 app = FastAPI()
-
-SSN = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
-
-
-def before_execute(
-    hook: SessionWebhookBeforeExecuteEvent,
-) -> SessionWebhookBeforeExecuteResponse:
-    data = hook["data"]
-    if data["type"] == "tool_execute" and SSN.search(json.dumps(data["tool_call"]["arguments"])):
-        return {"action": "block", "message": "The call contains a Social Security number"}
-    return {"action": "continue"}
 
 
 @app.post("/composio/session-webhook")
@@ -339,171 +328,15 @@ async def session_webhook(request: Request):
         verify_secret=os.environ["COMPOSIO_SESSION_WEBHOOK_SECRET"],
     )
 
-    # Respond with HTTP 200 and a JSON body that tells Composio how to proceed.
-    if hook["type"] == "composio.session_hook.before_execute":
-        return before_execute(hook)
+    # Decide if the tool call in `hook` should run.
+    # To block it: return {"action": "block", "message": "..."}
+    # To change it: return {"action": "continue", "override": {...}}
     return {"action": "continue"}
 ```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-// app/composio/session-webhook/route.ts
-import {
-  Composio,
-  type SessionWebhookBeforeExecuteEvent,
-  type SessionWebhookBeforeExecuteResponse,
-} from '@composio/core';
-
-const composio = new Composio();
-
-const SSN = /\b\d{3}-\d{2}-\d{4}\b/;
-
-function beforeExecute(hook: SessionWebhookBeforeExecuteEvent): SessionWebhookBeforeExecuteResponse {
-  const { data } = hook;
-  if (data.type === 'tool_execute' && SSN.test(JSON.stringify(data.tool_call.arguments))) {
-    return { action: 'block', message: 'The call contains a Social Security number' };
-  }
-  return { action: 'continue' };
-}
-
-export async function POST(request: Request) {
-  // parse() verifies the request signature against your secret and returns
-  // the typed event. It throws an error if verification fails.
-  // Pass the raw body: the signature is computed over its exact bytes.
-  const hook = await composio.sessions.webhooks.parse({
-    body: await request.text(),
-    headers: request.headers,
-    verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
-  });
-
-  // Respond with HTTP 200 and a JSON body that tells Composio how to proceed.
-  if (hook.type === 'composio.session_hook.before_execute') {
-    return Response.json(beforeExecute(hook));
-  }
-  return Response.json({ action: 'continue' });
-}
-```
-</Tab>
-</Tabs>
-
-The following sections show how to block and modify tool calls.
-
-#### Blocking a call
-
-To block a call, respond with `action: "block"` and a `message`, as the example above does:
-
-```json
-{ "action": "block", "message": "The call contains a Social Security number" }
-```
-
-Your agent sees the tool call fail, with your `message` as the error. Use the message to explain why the call was blocked.
-
-If you execute the tool yourself with `session.execute()`, the result has `result_type` set to `blocked` and your `message` in `error`, the same as when [any other hook blocks a call](/docs/firewall#custom-prompt-checks).
-
-You can block a call from `after_execute` in the same way. By then the tool has already run, but its result is withheld from your agent. Your agent isn't told that the tool ran, so say so in your message if it matters.
-
-#### Modifying a tool's arguments
-
-To run a call with different arguments, respond with `action: "continue"` and an `override`. Composio runs the call with exactly the arguments you return, so start from the originals and change only what you need. This example adds your compliance team as a BCC on every email your agent sends:
-
-{/* code-example: no-api reason="builds the answer your webhook endpoint returns; it runs in your own server, not through the API" */}
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-from composio import (
-    SessionWebhookBeforeExecuteEvent,
-    SessionWebhookBeforeExecuteResponse,
-)
-
-
-def before_execute(
-    hook: SessionWebhookBeforeExecuteEvent,
-) -> SessionWebhookBeforeExecuteResponse:
-    data = hook["data"]
-    if data["type"] == "tool_execute" and data["tool_call"]["tool_slug"] == "GMAIL_SEND_EMAIL":
-        arguments = {**data["tool_call"]["arguments"], "bcc": ["compliance@acme.com"]}
-        return {"action": "continue", "override": {"tool_call": {"arguments": arguments}}}
-    return {"action": "continue"}
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import type {
-  SessionWebhookBeforeExecuteEvent,
-  SessionWebhookBeforeExecuteResponse,
-} from '@composio/core';
-
-function beforeExecute(hook: SessionWebhookBeforeExecuteEvent): SessionWebhookBeforeExecuteResponse {
-  const { data } = hook;
-  if (data.type === 'tool_execute' && data.tool_call.tool_slug === 'GMAIL_SEND_EMAIL') {
-    const args = { ...data.tool_call.arguments, bcc: ['compliance@acme.com'] };
-    return { action: 'continue', override: { tool_call: { arguments: args } } };
-  }
-  return { action: 'continue' };
-}
-```
-</Tab>
-</Tabs>
-
-#### Modifying a tool's response
-
-In `after_execute`, return an `override` to replace the tool's response before it reaches your agent. This example redacts anything that looks like an API key from a tool result. To use it, add an `after_execute` webhook to your session and call this function from your endpoint for `composio.session_hook.after_execute` requests:
-
-{/* code-example: no-api reason="builds the answer your webhook endpoint returns; it runs in your own server, not through the API" */}
-<Tabs groupId="language" items={['Python', 'TypeScript']} persist>
-<Tab value="Python">
-```python
-import json
-import re
-
-from composio import (
-    SessionWebhookAfterExecuteEvent,
-    SessionWebhookAfterExecuteResponse,
-)
-
-
-def after_execute(
-    hook: SessionWebhookAfterExecuteEvent,
-) -> SessionWebhookAfterExecuteResponse:
-    data = hook["data"]
-    if data["type"] != "tool_execute":
-        return {"action": "continue"}
-
-    result = json.dumps(data["tool_response"]["data"])
-    redacted = re.sub(r"sk-[A-Za-z0-9]{20,}", "[redacted]", result)
-    return {
-        "action": "continue",
-        "override": {"tool_response": {"data": json.loads(redacted)}},
-    }
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import type {
-  SessionWebhookAfterExecuteEvent,
-  SessionWebhookAfterExecuteResponse,
-} from '@composio/core';
-
-function afterExecute(hook: SessionWebhookAfterExecuteEvent): SessionWebhookAfterExecuteResponse {
-  const { data } = hook;
-  if (data.type !== 'tool_execute') {
-    return { action: 'continue' };
-  }
-
-  const result = JSON.stringify(data.tool_response.data);
-  const redacted = result.replace(/sk-[A-Za-z0-9]{20,}/g, '[redacted]');
-  return { action: 'continue', override: { tool_response: { data: JSON.parse(redacted) } } };
-}
-```
-</Tab>
-</Tabs>
 
 ### Timeouts
 
-By default, Composio waits up to 3 seconds for your response. You can change this by setting `timeout_ms` on the handler to any value between `100` and `5000` milliseconds. The tool call is held until you respond, so respond as quickly as you can.
+By default, Composio waits up to 3 seconds for your response. You can change this by setting `timeout_ms` on the handler to any value between `100` and `5000` milliseconds.
 
 ```json
 { "type": "webhook", "fallback_action": "block", "timeout_ms": 1000 }
@@ -530,12 +363,8 @@ Composio sends each request once, with no retries. When the fallback applies, th
 
 ### Limits
 
-You can add one `before_execute` webhook and one `after_execute` webhook to a session.
+Right now you can only add one `before_execute` webhook and one `after_execute` webhook to a session.
 
 ### Order of execution
 
-When a webhook and built-in hooks apply to the same tool call, the webhook always runs first.
-
-If you block the tool call from your webhook, the built-in hooks don't run. If you allow it, they run next, on the tool call as you returned it, so any changes you made are checked too.
-
-This order is the same for `before_execute` and `after_execute`, and doesn't depend on the order of your `hooks` list.
+A webhook can modify a tool call, so it always runs before condition check and prompt injection check hooks. That way, those hooks evaluate the tool call with your changes. This is the same for `before_execute` and `after_execute`.
