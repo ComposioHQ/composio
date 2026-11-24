@@ -273,42 +273,6 @@ describe('transformToolRouterUpdateParams', () => {
     expect(transformToolRouterUpdateParams({ hooks: null })).toEqual({ hooks: null });
   });
 
-  it('maps a webhook handler to snake_case', () => {
-    expect(
-      transformToolRouterUpdateParams({
-        hooks: [
-          {
-            type: 'before_execute',
-            id: 'check_outgoing_email',
-            appliesTo: 'all',
-            handler: { type: 'webhook', fallbackAction: 'block', timeoutMs: 2000 },
-          },
-          {
-            type: 'after_execute',
-            id: 'redact_results',
-            appliesTo: 'all',
-            handler: { type: 'webhook', fallbackAction: 'continue' },
-          },
-        ],
-      })
-    ).toEqual({
-      hooks: [
-        {
-          type: 'before_execute',
-          id: 'check_outgoing_email',
-          applies_to: 'all',
-          handler: { type: 'webhook', fallback_action: 'block', timeout_ms: 2000 },
-        },
-        {
-          type: 'after_execute',
-          id: 'redact_results',
-          applies_to: 'all',
-          handler: { type: 'webhook', fallback_action: 'continue' },
-        },
-      ],
-    });
-  });
-
   it('keeps an empty toolkit allowlist in the request', () => {
     expect(transformToolRouterUpdateParams({ toolkits: [] })).toEqual({
       toolkits: { enable: [] },

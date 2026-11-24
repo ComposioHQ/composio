@@ -234,7 +234,6 @@ export type SessionPatchExperimentalBody = WithNull<
 
 type GeneratedSessionHook = NonNullable<SessionCreateParams['hooks']>[number];
 
-/** The `webhook` handler as the API takes it. */
 type SessionWebhookHandlerBody = {
   type: 'webhook';
   fallback_action: 'block' | 'continue';
@@ -246,17 +245,12 @@ type SessionWebhookHandlerBody = {
  * `webhook` handler, which `@composio/client` does not declare until it picks
  * up ComposioHQ/platform#15328.
  */
-export type SessionHooksBody = Array<
+type SessionHooksBody = Array<
   Omit<GeneratedSessionHook, 'handler'> & {
     handler: GeneratedSessionHook['handler'] | SessionWebhookHandlerBody;
   }
 >;
 
-/**
- * `hooks` as sent on create and update: `appliesTo` becomes `applies_to`, and
- * a `webhook` handler's fields become snake_case. Create and patch take the
- * same hook shape.
- */
 export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHooksBody =>
   hooks.map(({ appliesTo, handler, ...hook }) => ({
     ...hook,
@@ -271,10 +265,6 @@ export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): Session
         : handler,
   }));
 
-/**
- * Request body of `sessions.create()`: the generated `SessionCreateParams`
- * with `hooks` widened to `SessionHooksBody`.
- */
 export type SessionCreateBody = Omit<SessionCreateParams, 'hooks'> & { hooks?: SessionHooksBody };
 
 /**

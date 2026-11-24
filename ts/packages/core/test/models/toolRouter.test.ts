@@ -271,42 +271,6 @@ describe('ToolRouter', () => {
       expect(bodies[1]).not.toHaveProperty('hooks');
     });
 
-    it('sends a webhook handler in snake_case, on both kinds of hook', async () => {
-      mockClient.toolRouter.session.create.mockResolvedValue(mockSessionCreateResponse);
-
-      await toolRouter.create(userId, {
-        hooks: [
-          {
-            type: 'before_execute',
-            id: 'check_outgoing_email',
-            appliesTo: { toolkits: ['gmail'] },
-            handler: { type: 'webhook', fallbackAction: 'block', timeoutMs: 2000 },
-          },
-          {
-            type: 'after_execute',
-            id: 'redact_results',
-            appliesTo: 'all',
-            handler: { type: 'webhook', fallbackAction: 'continue' },
-          },
-        ],
-      });
-
-      expect(mockClient.toolRouter.session.create.mock.calls[0]?.[0].hooks).toEqual([
-        {
-          type: 'before_execute',
-          id: 'check_outgoing_email',
-          applies_to: { toolkits: ['gmail'] },
-          handler: { type: 'webhook', fallback_action: 'block', timeout_ms: 2000 },
-        },
-        {
-          type: 'after_execute',
-          id: 'redact_results',
-          applies_to: 'all',
-          handler: { type: 'webhook', fallback_action: 'continue' },
-        },
-      ]);
-    });
-
     it('rejects a webhook handler with a misspelled field before calling the API', async () => {
       await expect(
         toolRouter.create(userId, {

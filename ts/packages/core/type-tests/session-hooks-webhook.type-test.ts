@@ -1,7 +1,3 @@
-/**
- * `sessions.create()` and `session.update()` take a hook with a `webhook`
- * handler, and an unavailable hook result carries an optional `detail`.
- */
 import { Composio } from '../src';
 import type { ToolRouterHook, ToolRouterHookResult } from '../src';
 
