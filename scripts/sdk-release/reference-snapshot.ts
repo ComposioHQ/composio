@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { Config, Console, Effect, Schema } from 'effect';
+import { renderSnapshotPages } from '../../docs/lib/sdk-reference-content';
 import { promoteSnapshot, snapshotDirectory } from '../../docs/lib/sdk-reference-snapshot';
 import { LANGUAGES, PYTHON_RELEASE_MARKER, REGISTRY_VERSION, type Language } from './lanes';
 import { readJson, runMain } from './runtime';
@@ -41,7 +42,11 @@ const main = Effect.gen(function* () {
     const outcome = yield* Effect.try(() =>
       promoteSnapshot(
         snapshotDirectory(join('next', 'docs'), language),
-        join('docs/content/reference/sdk-reference', language),
+        renderSnapshotPages(
+          join('docs/content/reference/sdk-reference', language),
+          language,
+          { version, sourceCommit }
+        ),
         version,
         sourceCommit
       )

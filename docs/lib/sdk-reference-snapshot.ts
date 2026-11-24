@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { z } from 'zod';
 
@@ -14,6 +14,12 @@ const Manifest = z.strictObject({
 });
 export type Snapshot = z.infer<typeof Manifest>;
 
+/** One committed snapshot file. `meta.json` travels with the pages verbatim. */
+export interface StablePage {
+  name: string;
+  source: string;
+}
+
 export const snapshotDirectory = (docsRoot: string, language: Language) =>
   join(docsRoot, 'sdk-reference-snapshots', language);
 
@@ -26,8 +32,13 @@ export const resolveStableReference = (docsRoot: string): StableReference => {
   return dir ? { kind: 'assembled', dir } : { kind: 'workspace', dir: join(docsRoot, 'content/reference') };
 };
 
+/**
+ * Production serves the frozen copy; previews keep serving the workspace pages.
+ * `vercel-build.sh` treats an unset VERCEL_ENV as production, so this must too,
+ * otherwise a local production build silently indexes different content than it serves.
+ */
 export const shouldRenderStableReference = (reference: StableReference): boolean =>
-  reference.kind === 'workspace' && process.env.VERCEL_ENV === 'production';
+  reference.kind === 'workspace' && (process.env.VERCEL_ENV ?? 'production') === 'production';
 
 export function resolveStableReferenceSource(
   docsRoot: string,
@@ -66,74 +77,108 @@ export function pageNames(directory: string): string[] {
   return names;
 }
 
-function digestPages(directory: string): string {
-  const files = pageNames(directory).map(name => [
-    name,
-    createHash('sha256').update(readFileSync(join(directory, name))).digest('hex'),
-  ]);
+/** Read a snapshot directory as committed bytes, ordered by page name. */
+export function readSnapshotPages(directory: string): StablePage[] {
+  return pageNames(directory).map(name => ({ name, source: readFileSync(join(directory, name), 'utf8') }));
+}
+
+export function digestPages(pages: readonly StablePage[]): string {
+  const files = [...pages]
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .map(page => [page.name, createHash('sha256').update(page.source).digest('hex')]);
   return createHash('sha256').update(JSON.stringify(files)).digest('hex');
 }
 
 export function verifySnapshot(directory: string): Snapshot {
   const snapshot = readSnapshot(directory);
-  if (snapshot.digest !== digestPages(join(directory, 'pages'))) {
+  if (snapshot.digest !== digestPages(readSnapshotPages(join(directory, 'pages')))) {
     throw new Error(`SDK reference snapshot digest mismatch: ${directory}`);
   }
   return snapshot;
 }
 
+/**
+ * Compare dotted release versions. -1, 0, or 1 — a bare difference would still
+ * order correctly but invites a future caller to use it as a distance.
+ */
 function compareVersions(left: string, right: string): number {
-  const current = right.split('.').map(Number);
-  const diffs = left.split('.').map((value, index) => Number(value) - current[index]);
-  return diffs.find(diff => diff !== 0) ?? 0;
+  const leftParts = left.split('.').map(Number);
+  const rightParts = right.split('.').map(Number);
+  for (let index = 0; index < leftParts.length; index++) {
+    if (leftParts[index] === rightParts[index]) continue;
+    return leftParts[index] > rightParts[index] ? 1 : -1;
+  }
+  return 0;
 }
 
+/**
+ * A promotion may move the version forward, or replace its own earlier first
+ * promotion of the same version. It may never go backwards, and it may never
+ * overwrite a revision that a human corrected — those only move through
+ * `reviseSnapshot`, which bumps the revision.
+ */
 export const isForwardSnapshot = (current: Snapshot, proposed: Snapshot): boolean => {
-  const versionOrder = compareVersions(proposed.version, current.version);
-  return versionOrder > 0 || (
-    versionOrder === 0 && proposed.sourceCommit === current.sourceCommit &&
-    ((proposed.revision === current.revision && proposed.digest === current.digest) ||
-      (proposed.revision > current.revision && proposed.digest !== current.digest))
-  );
+  const order = compareVersions(proposed.version, current.version);
+  if (order !== 0) return order > 0;
+  if (proposed.sourceCommit !== current.sourceCommit) return false;
+  if (proposed.revision !== current.revision) {
+    return proposed.revision > current.revision && proposed.digest !== current.digest;
+  }
+  // Same version, same commit, same revision: identical bytes, or repairing a
+  // first promotion that no one corrected yet.
+  return proposed.digest === current.digest || current.revision === 1;
 };
 
 export function assertForwardSnapshot(current: Snapshot, proposed: Snapshot): void {
   if (isForwardSnapshot(current, proposed)) return;
   throw new Error(
-    `Invalid SDK reference promotion from ${current.version} revision ${current.revision} to ${proposed.version} revision ${proposed.revision}`
+    `Invalid SDK reference promotion from ${current.version} revision ${current.revision} to ${proposed.version} revision ${proposed.revision}. ` +
+      'Correct an already published snapshot with `bun docs/scripts/sdk-reference-snapshot.ts revise <language>`.'
   );
 }
 
-function writeManifest(directory: string, snapshot: Snapshot): void {
+export function writeSnapshot(directory: string, pages: readonly StablePage[], snapshot: Snapshot): void {
+  const destination = join(directory, 'pages');
+  rmSync(destination, { recursive: true, force: true });
+  mkdirSync(destination, { recursive: true });
+  for (const { name, source } of pages) writeFileSync(join(destination, name), source);
   writeFileSync(manifestPath(directory), `${JSON.stringify(snapshot, null, 2)}\n`);
 }
 
+/**
+ * Write already-rendered pages as the frozen copy for `version`. The caller
+ * renders, because pins and the version banner are content concerns this module
+ * deliberately knows nothing about.
+ */
 export function promoteSnapshot(
   directory: string,
-  pages: string,
+  pages: readonly StablePage[],
   version: string,
   sourceCommit: string
 ): string {
-  const snapshot = Manifest.parse({ version, sourceCommit, revision: 1, digest: digestPages(pages) });
+  const proposed = Manifest.parse({ version, sourceCommit, revision: 1, digest: digestPages(pages) });
   if (existsSync(manifestPath(directory))) {
     const current = verifySnapshot(directory);
-    const notAhead = `not ahead of ${current.version} revision ${current.revision}`;
-    if (version === current.version) {
-      return sourceCommit === current.sourceCommit ? 'already current' : notAhead;
+    if (!isForwardSnapshot(current, proposed)) {
+      return `not ahead of ${current.version} revision ${current.revision}`;
     }
-    if (!isForwardSnapshot(current, snapshot)) return notAhead;
+    if (
+      current.version === proposed.version &&
+      current.sourceCommit === proposed.sourceCommit &&
+      current.digest === proposed.digest
+    ) {
+      return 'already current';
+    }
   }
-  const destination = join(directory, 'pages');
-  rmSync(destination, { recursive: true, force: true });
-  cpSync(pages, destination, { recursive: true });
-  writeManifest(directory, snapshot);
+  writeSnapshot(directory, pages, proposed);
   return `prepared ${version}`;
 }
 
+/** Accept an edit already made on disk and bump the revision that records it. */
 export function reviseSnapshot(directory: string): boolean {
   const current = readSnapshot(directory);
-  const digest = digestPages(join(directory, 'pages'));
+  const digest = digestPages(readSnapshotPages(join(directory, 'pages')));
   if (digest === current.digest) return false;
-  writeManifest(directory, { ...current, revision: current.revision + 1, digest });
+  writeFileSync(manifestPath(directory), `${JSON.stringify({ ...current, revision: current.revision + 1, digest }, null, 2)}\n`);
   return true;
 }

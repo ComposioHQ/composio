@@ -144,16 +144,29 @@ advance independently. The tag checkout supplies the reference pages; a fresh
 corrections to the same package version in place.
 
 Production uses the Git-tracked snapshots under `docs/sdk-reference-snapshots/`
-for both HTML and Markdown. Each page displays the package version and the exact
-install command. Snapshot source links are pinned to the manifest's `sourceCommit`
-at render time, so line numbers in snapshot pages must match that commit.
+for both HTML and Markdown. A snapshot stores exactly what production serves: each
+page carries a banner naming the package version with the exact install command,
+its `PackageInstall` widgets already name that version, and its source links already
+point at the manifest's `sourceCommit`. Pinning happens once, when the snapshot is
+promoted, so the file a reviewer reads is the file users get. Line numbers in
+snapshot pages must therefore match that commit.
 Preview builds use the workspace reference. After this workflow
 lands, require the **Stable SDK reference** check on `next` so the docs PR must pass
 its installed-package checks and production-mode build before it merges.
 
+Promotion never moves backwards. A release may advance the version, and it may also
+replace its own first promotion of the same version while that promotion is still
+revision 1 — that is how a bad release-tool render is repaired without hand edits.
+Once anyone corrects a snapshot, the revision moves past 1 and the release job
+stands down: it reports `not ahead of <version> revision <n>` instead of overwriting
+the correction.
+
 To correct the current reference between SDK releases, edit the affected snapshot's
 pages and run `bun docs/scripts/sdk-reference-snapshot.ts revise <language>` from the
-repository root. CI verifies the new digest against the current snapshot revision
+repository root. The command refuses a page that is not frozen — a missing version
+banner, an unpinned install command, or a source link back to `next` — then records
+the new digest against a bumped revision. CI verifies the new digest against the
+current snapshot revision
 and checks the pages against the same registry package. Also correct any affected
 source example and regenerate the workspace reference so the next release carries
 the fix. For immediate rollback, redeploy the previous successful Vercel

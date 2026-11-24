@@ -3,6 +3,8 @@ title: "MCP"
 description: "MCP (Model Control Protocol) class Handles MCP server operations. When `config.experimental.mcp` is enabled, this class augments the features of `composio.mcp`."
 ---
 
+> SDK version `0.31.0`. Install with `npm install @composio/core@0.31.0`.
+
 <Callout type="warn" title="Deprecated">
 Use a session's MCP endpoint instead: `composio.create(userId, \{ mcp: true \})`
 returns a session that exposes `session.mcp.url` / `session.mcp.headers`. MCP is now

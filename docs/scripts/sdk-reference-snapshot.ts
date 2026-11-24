@@ -6,7 +6,7 @@ import { setTimeout } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { z } from 'zod';
-import { prepareStableReference } from '../lib/sdk-reference-content';
+import { assertFrozenPages, assertFrozenSnapshot, prepareStableReference } from '../lib/sdk-reference-content';
 import {
   assertForwardSnapshot,
   languages,
@@ -14,7 +14,6 @@ import {
   reviseSnapshot,
   snapshotDirectory,
   stableReferenceRoot,
-  verifySnapshot,
 } from '../lib/sdk-reference-snapshot';
 
 const docsRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -43,7 +42,7 @@ async function checkSnapshots(base?: string): Promise<void> {
 
   const snapshots = languages.map(language => {
     const directory = snapshotDirectory(docsRoot, language);
-    const snapshot = verifySnapshot(directory);
+    const snapshot = assertFrozenSnapshot(directory, language);
     const path = relative(repo, join(directory, 'manifest.json'));
     if (base !== undefined && git('ls-tree', base, '--', path).trim()) {
       assertForwardSnapshot(parseSnapshot(git('show', `${base}:${path}`)), snapshot);
@@ -103,7 +102,12 @@ switch (command) {
   case 'revise': {
     const language = languages.find(language => language === value);
     if (language === undefined) throw usage();
-    reviseSnapshot(snapshotDirectory(docsRoot, language));
+    const directory = snapshotDirectory(docsRoot, language);
+    // A hand correction still has to stay frozen: no unpinned install command,
+    // no `next` source link, banner still naming the snapshot's version. The
+    // digest is deliberately not compared here — recording it is this command's job.
+    assertFrozenPages(directory, language);
+    if (reviseSnapshot(directory)) console.log(`Revised the ${language} SDK reference`);
     break;
   }
   case 'check':

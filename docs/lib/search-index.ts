@@ -1,7 +1,6 @@
 // Use direct imports from collections to avoid top-level await in lib/source.ts.
 import { resolveToolkitCount } from './toolkit-count';
-import { renderStableReferencePages } from './sdk-reference-content';
-import { languages, resolveStableReference, shouldRenderStableReference, snapshotDirectory } from './sdk-reference-snapshot';
+import { languages, pageNames, resolveStableReference, shouldRenderStableReference, snapshotDirectory } from './sdk-reference-snapshot';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -573,9 +572,18 @@ function listSearchContentEntries(): SearchContentEntry[] {
     }
   } else if (useProductionSnapshots) {
     for (const language of languages) {
-      if (!existsSync(snapshotDirectory(docsRoot, language))) continue;
-      for (const { name, source } of renderStableReferencePages(docsRoot, language)) {
-        entries.push({ relPath: `reference/sdk-reference/${language}/${name}`, source });
+      const pages = join(snapshotDirectory(docsRoot, language), 'pages');
+      if (!existsSync(pages)) {
+        // The workspace copy was already skipped above, so a missing snapshot
+        // would silently drop the SDK reference from search. Fail instead.
+        throw new Error(`Missing stable SDK reference for search: ${pages}`);
+      }
+      for (const name of pageNames(pages)) {
+        if (!name.endsWith('.mdx')) continue;
+        entries.push({
+          relPath: `reference/sdk-reference/${language}/${name}`,
+          source: readFileSync(join(pages, name), 'utf8'),
+        });
       }
     }
   }
