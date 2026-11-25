@@ -1,226 +1,14 @@
 ---
-title: Tool execution hooks
-description: Control your agent's tool calls before a tool runs and after it returns
-keywords: [hooks, tool execution hooks, session hooks, webhook, session webhook, before_execute, after_execute, fallback_action, guardrails]
+title: Webhooks
+description: Allow, block, or modify your agent's tool calls from an endpoint you host
+keywords: [webhook, session webhook, tool execution webhook, hooks, before_execute, after_execute, fallback_action, timeout_ms, signing secret]
 ---
 
-Tool execution hooks let you intercept the tool calls your agent makes and the results it gets back. Hooks run before or after a tool call. You can use them to block unwanted tool calls, or to modify a tool's arguments and results.
+A webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
 
 <Callout type="warn">
-Hooks are in beta and available on paid plans, with webhooks limited to the Enterprise plan.
+Webhooks are in beta and available only on the Enterprise plan.
 </Callout>
-
-You configure hooks on a session, by passing a `hooks` parameter when you create or update it:
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-session = composio.create(
-    user_id="user_123",
-    hooks=[
-        {
-            "id": "no_pricing_to_customers",
-            "type": "before_execute",
-            "applies_to": {"toolkits": ["gmail"]},
-            "handler": {
-                "type": "condition_check",
-                "condition": "Sharing internal pricing with anyone outside acme.com",
-                "action": "block",
-            },
-        },
-    ],
-)
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-// ---cut---
-const session = await composio.create('user_123', {
-  hooks: [
-    {
-      id: 'no_pricing_to_customers',
-      type: 'before_execute',
-      appliesTo: { toolkits: ['gmail'] },
-      handler: {
-        type: 'condition_check',
-        condition: 'Sharing internal pricing with anyone outside acme.com',
-        action: 'block',
-      },
-    },
-  ],
-});
-```
-</Tab>
-<Tab value="API">
-```bash
-curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user_123",
-    "hooks": [
-      {
-        "id": "no_pricing_to_customers",
-        "type": "before_execute",
-        "applies_to": {"toolkits": ["gmail"]},
-        "handler": {
-          "type": "condition_check",
-          "condition": "Sharing internal pricing with anyone outside acme.com",
-          "action": "block"
-        }
-      }
-    ]
-  }'
-```
-</Tab>
-</Tabs>
-
-You can add several hooks to a session, and replace them later with `session.update()`. Each hook has the following fields:
-
-- `id`: An identifier you set for the hook. You'll mainly use it to find the hook's entry in `hook_results`, and to see which hook blocked a tool call.
-- `name`: An optional name for the hook. Your agent sees it in the error message when the hook blocks a tool call.
-- `type`: When the hook runs. One of `before_execute` or `after_execute`.
-- `applies_to`: The toolkits the hook applies to. Set this to `"all"` if you want it to run for all tools across all toolkits.
-- `handler`: What the hook does. The types of handlers are listed below.
-
-## Types of handlers
-
-There are three types of handlers:
-
-- **Condition check:** Blocks unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. See [Firewall > Custom prompt checks](/docs/firewall#custom-prompt-checks).
-- **Prompt injection check:** Scans tool results for prompt injection before they reach your agent. See [Firewall > Prompt injection detection](/docs/firewall#prompt-injection-detection).
-- **Webhook:** Sends an HTTP request to an endpoint you host, and uses your response to allow, block, or modify the tool call. Use it to observe and control tool calls programmatically. See [Webhooks](#webhooks).
-
-## Which tool calls hooks run on
-
-A hook runs on tool calls to the toolkits in its `applies_to`. This includes [proxy calls](/docs/extending-sessions/proxy-execute) to a toolkit's API, and tool calls your agent makes from a workbench script or with multi-execute.
-
-Hooks don't run on Composio's meta tools themselves. For example, a hook can't stop your agent from running a workbench script, but it does run on the tool calls that script makes.
-
-## Blocked tool calls
-
-When a hook blocks a tool call, the tool call fails, and your agent sees an error message.
-
-If you execute the tool yourself with `session.execute()`, the result shows which hook blocked it. For example, this is what you get when the `no_pricing_to_customers` hook from the top of this page blocks an email:
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-result = session.execute(
-    "GMAIL_SEND_EMAIL",
-    arguments={
-        "recipient_email": "jane@customer.com",
-        "subject": "Pricing",
-        "body": "Our internal floor price is $40 per seat.",
-    },
-)
-
-print(result.result_type)   # 'blocked'
-print(result.error)         # 'Blocked by session policy'
-print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
-print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create('user_123');
-// ---cut---
-const result = await session.execute('GMAIL_SEND_EMAIL', {
-  recipient_email: 'jane@customer.com',
-  subject: 'Pricing',
-  body: 'Our internal floor price is $40 per seat.',
-});
-
-console.log(result);
-// {
-//   resultType: 'blocked',
-//   data: {},
-//   error: 'Blocked by session policy',
-//   blockReason: { type: 'request_blocked', hookId: 'no_pricing_to_customers' },
-//   hookResults: [
-//     { id: 'no_pricing_to_customers', status: 'evaluated', outcome: 'block' },
-//   ],
-// }
-```
-</Tab>
-<Tab value="API">
-```bash
-# SESSION_ID is the session_id returned when you created the session
-curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool_slug": "GMAIL_SEND_EMAIL",
-    "arguments": {
-      "recipient_email": "jane@customer.com",
-      "subject": "Pricing",
-      "body": "Our internal floor price is $40 per seat."
-    }
-  }'
-```
-</Tab>
-</Tabs>
-
-In this result:
-
-- `error` is the message your agent sees.
-- `block_reason.hook_id` is the `id` of the hook that blocked the tool call.
-- `block_reason.type` is `request_blocked` if the hook ran before the tool call, and `response_blocked` if it ran after.
-- `hook_results` has one entry for each hook that ran on the tool call.
-
-If more than one hook runs on a tool call, any one of them can block it.
-
-An `after_execute` hook can also block a tool call. By then the tool has already run, and the hook can't undo that, but your agent doesn't get the tool's result.
-
-## Update hooks
-
-To change a session's hooks, pass a new `hooks` list to `session.update()`. The new list replaces the old one, so include every hook you want to keep. To remove them all, pass `null` (`None` in Python).
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-session.update(hooks=[...])  # every hook you want to keep
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create('user_123');
-// ---cut---
-await session.update({ hooks: [/* every hook you want to keep */] });
-```
-</Tab>
-<Tab value="API">
-```bash
-# Every hook you want to keep; send "hooks": null to remove them all
-curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "hooks": [
-      {
-        "id": "block_injection",
-        "type": "after_execute",
-        "applies_to": "all",
-        "handler": {"type": "prompt_injection_check", "action": "block"}
-      }
-    ]
-  }'
-```
-</Tab>
-</Tabs>
-
-## Webhooks
-
-A webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
 
 Here are a few examples of what you can do with webhooks:
 
@@ -232,7 +20,7 @@ Here are a few examples of what you can do with webhooks:
 [Before](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) and [after](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) execution modifiers are an alternative to webhooks. They can offer a simpler way to wrap tool calls with custom logic. Webhooks are a better fit when you have the workbench enabled, since modifiers don't run for tool calls made from the workbench.
 </Callout>
 
-### Set up a webhook URL
+## Set up a webhook URL
 
 You can configure the webhook URL from the dashboard, under [Project Settings → General](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=session-hooks). In the Configuration section, find **Tool execution webhook** and click **Configure**. This is a project-level setting, so every session in the project that has a webhook uses the same URL. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
 
@@ -240,9 +28,9 @@ When you save the URL, the dashboard displays a signing secret. Every request is
 
 The dashboard shows the secret only once, either when you first save the URL or when you rotate the secret, so copy it and save it in your project's environment. If you change the URL later, the secret stays the same.
 
-### Add a webhook to a session
+## Add a webhook to a session
 
-Once you've configured the URL, you can add webhooks to your sessions. To add one, set the handler `type` to `webhook`:
+Once you've configured the URL, you can add webhooks to your sessions. To add one, add a [hook](/docs/hooks) whose handler `type` is `webhook`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -313,11 +101,11 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 Set `fallback_action` to choose what happens to a tool call if there's no valid response from your endpoint, and `timeout_ms` to choose how long to wait for one. See [Timeouts](#timeouts) and [Fallback](#fallback).
 
-### Request and response payloads
+## Request and response payloads
 
 For every tool call a webhook applies to, your endpoint receives a `POST` request. Read the request, decide what should happen to the tool call, and respond.
 
-#### Request payload
+### Request payload
 
 This is the request for a tool call, sent before the tool runs:
 
@@ -400,7 +188,7 @@ And this is `data` for a proxy call after it has run:
 
 Use `metadata.tool_call_id` to match the `before_execute` and `after_execute` requests for the same tool call. Both carry the same ID.
 
-#### Response payload
+### Response payload
 
 Respond with HTTP `200` and a JSON body. There are three ways to respond:
 
@@ -410,7 +198,7 @@ Respond with HTTP `200` and a JSON body. There are three ways to respond:
 | `{ "action": "block", "message": "..." }` | The tool call is blocked. |
 | `{ "action": "continue", "override": { ... } }` | The tool call goes ahead with your changes. |
 
-When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why you blocked the tool call. This works the same way from `before_execute` and `after_execute`. See [Blocked tool calls](#blocked-tool-calls) for what's returned.
+When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why you blocked the tool call. This works the same way from `before_execute` and `after_execute`. See [Blocked tool calls](/docs/hooks#blocked-tool-calls) for what's returned.
 
 What goes in `override` also depends on the kind of call and on when the webhook runs:
 
@@ -423,7 +211,7 @@ For a tool call, the arguments or data you return replace the originals entirely
 
 For the full schema of the request and of your response, see the reference for [`before_execute`](/reference/api-reference/session-webhooks/composio_session_hook_before_execute) and [`after_execute`](/reference/api-reference/session-webhooks/composio_session_hook_after_execute).
 
-#### Example
+### Example
 
 Here's an example that receives a request, verifies it, and responds. The example uses FastAPI.
 
@@ -455,7 +243,7 @@ async def session_webhook(request: Request):
     return {"action": "continue"}
 ```
 
-### Timeouts
+## Timeouts
 
 By default, you have 3 seconds to respond. You can change this by setting `timeout_ms` on the handler to any value between `100` and `5000` milliseconds.
 
@@ -463,7 +251,7 @@ By default, you have 3 seconds to respond. You can change this by setting `timeo
 { "type": "webhook", "fallback_action": "block", "timeout_ms": 1000 }
 ```
 
-### Fallback
+## Fallback
 
 `fallback_action` is a required field. Set it to choose what happens to a tool call when there's no valid response from your endpoint:
 
@@ -482,10 +270,10 @@ Your endpoint receives each request once, with no retries. When the fallback app
 { "id": "check_gmail_calls", "status": "unavailable", "detail": "The webhook endpoint timed out" }
 ```
 
-### Limits
+## Limits
 
 You can add one `before_execute` webhook and one `after_execute` webhook to a session.
 
-### Order of execution
+## Order of execution
 
-A webhook can modify a tool call, so it always runs before condition check and prompt injection check hooks. That way, those hooks evaluate the tool call with your changes. This is the same for `before_execute` and `after_execute`.
+A webhook can modify a tool call, so it always runs before custom prompt check and prompt injection detection hooks. That way, those hooks evaluate the tool call with your changes. This is the same for `before_execute` and `after_execute`.

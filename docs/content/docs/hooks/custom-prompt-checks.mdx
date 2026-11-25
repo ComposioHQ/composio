@@ -1,0 +1,180 @@
+---
+title: Custom prompt checks
+description: Block tool calls and tool results that match a condition you write in natural language
+keywords: [custom prompt checks, condition_check, hooks, firewall, guardrails, before_execute, after_execute]
+---
+
+A custom prompt check blocks a tool call, or its result, if it matches a condition you write in natural language. To add one, add a [hook](/docs/hooks) with the `condition_check` handler.
+
+<Callout type="warn">
+Custom prompt checks are in beta and available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
+</Callout>
+
+Here's a `before_execute` hook that stops your agent from sharing internal pricing with customers:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "no_pricing_to_customers",
+            "type": "before_execute",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "Sharing internal pricing with anyone outside acme.com",
+                "action": "block",
+            },
+        },
+    ],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  hooks: [
+    {
+      id: 'no_pricing_to_customers',
+      type: 'before_execute',
+      appliesTo: { toolkits: ['gmail'] },
+      handler: {
+        type: 'condition_check',
+        condition: 'Sharing internal pricing with anyone outside acme.com',
+        action: 'block',
+      },
+    },
+  ],
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "no_pricing_to_customers",
+        "type": "before_execute",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "condition_check",
+          "condition": "Sharing internal pricing with anyone outside acme.com",
+          "action": "block"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
+
+When your agent tries to email internal pricing to someone outside your company, the email isn't sent, and your agent sees the tool call fail with an error. See [Blocked tool calls](/docs/hooks#blocked-tool-calls) for what's returned when a hook blocks a tool call.
+
+Here's an `after_execute` hook that keeps emails with passwords or API keys away from your agent:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "no_secrets_in_results",
+            "type": "after_execute",
+            "name": "No secrets in emails",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "An email that contains a password, API key or access token",
+                "action": "block",
+            },
+        },
+    ],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  hooks: [
+    {
+      id: 'no_secrets_in_results',
+      type: 'after_execute',
+      name: 'No secrets in emails',
+      appliesTo: { toolkits: ['gmail'] },
+      handler: {
+        type: 'condition_check',
+        condition: 'An email that contains a password, API key or access token',
+        action: 'block',
+      },
+    },
+  ],
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "no_secrets_in_results",
+        "type": "after_execute",
+        "name": "No secrets in emails",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "condition_check",
+          "condition": "An email that contains a password, API key or access token",
+          "action": "block"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
+
+When Gmail returns an email with a password in it, your agent doesn't receive the email.
+
+Use a `before_execute` hook to block something your agent is about to do, like emailing internal pricing to a customer. Use an `after_execute` hook to block something a tool returns before your agent reads it, like an email that contains a password or API key. Note that an `after_execute` hook can't undo the tool call, since the tool has already run.
+
+## Writing a condition
+
+It's important to write a condition as a description of the tool call or result you want blocked, not as an instruction for your agent to follow. A hook blocks a tool call or result when it matches the condition, and an instruction like "Don't share internal pricing with anyone outside acme.com" doesn't describe anything to match. Here are some good and bad ways to write a condition:
+
+**Good:**
+
+- "Sharing internal pricing with anyone outside acme.com"
+- "An email that contains a password, API key or access token"
+
+**Bad:**
+
+- "Don't share internal pricing with anyone outside acme.com"
+- "Hide emails that contain a password, API key or access token"
+
+## How we evaluate a condition
+
+We use a classifier to compare each tool call to your condition. It sees which tool your agent is calling and the arguments it passes. In an `after_execute` hook, it also sees the data the tool returned.
+
+The classifier also takes your agent's earlier activity in the session into account. This is important because a single tool call might seem harmless on its own, but when chained together with earlier tool calls, your agent might be doing something it's not allowed to do. For example, an email to a customer with a few numbers in it looks fine, unless your agent just copied those numbers from your internal pricing sheet.
+
+<Callout type="info">
+For projects with ZDR enabled, we don't have context about your agent's historical activity, so our classifier can only judge a tool call in isolation. This may not work for certain kinds of checks.
+</Callout>

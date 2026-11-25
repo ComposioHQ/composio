@@ -16,7 +16,6 @@ const expectedPages = [
   ['Set sandbox options', '/docs/sessions/sandbox-settings'],
   ['Update a session', '/docs/sessions/updating-sessions'],
   ['Execute session tools', '/docs/sessions/executing-tools'],
-  ['Tool execution hooks', '/docs/sessions/hooks'],
 ];
 
 // Public bookmarks from the two pages split in November 2026.
@@ -146,7 +145,7 @@ describe('Sessions task pages', () => {
     expect(config).not.toMatch(/source:\s*['"]\/docs\/sessions['"]/);
   });
 
-  test('both sidebars link the Sessions header to the overview with nine task children', () => {
+  test('both sidebars link the Sessions header to the overview with eight task children', () => {
     for (const tree of [source.pageTree, buildProductPageTree(source.pageTree, 'platform')]) {
       const folder = tree.children.find(node => node.type === 'folder' && node.name === 'Sessions');
       expect(folder?.type).toBe('folder');

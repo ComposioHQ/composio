@@ -128,6 +128,7 @@ export const DOCS_PRODUCTS = {
       '/docs/production-readiness',
       '/docs/providers',
       '/docs/sessions',
+      '/docs/hooks',
       '/docs/how-composio-works',
       '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
@@ -179,6 +180,7 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/extending-sessions/custom-mcp' },
             ],
           },
+          { type: 'folder', path: 'hooks' },
           {
             type: 'group',
             label: 'Governance',

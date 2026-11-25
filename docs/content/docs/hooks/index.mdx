@@ -1,0 +1,220 @@
+---
+title: Overview
+description: Control your agent's tool calls before a tool runs and after it returns
+keywords: [hooks, tool execution hooks, session hooks, webhook, session webhook, before_execute, after_execute, fallback_action, guardrails]
+---
+
+Tool execution hooks let you intercept the tool calls your agent makes and the results it gets back. Hooks run before or after a tool call. You can use them to block unwanted tool calls, or to modify a tool's arguments and results.
+
+<Callout type="warn">
+Hooks are in beta and available on paid plans, with webhooks limited to the Enterprise plan.
+</Callout>
+
+You configure hooks on a session, by passing a `hooks` parameter when you create or update it:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.create(
+    user_id="user_123",
+    hooks=[
+        {
+            "id": "no_pricing_to_customers",
+            "type": "before_execute",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "Sharing internal pricing with anyone outside acme.com",
+                "action": "block",
+            },
+        },
+    ],
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create('user_123', {
+  hooks: [
+    {
+      id: 'no_pricing_to_customers',
+      type: 'before_execute',
+      appliesTo: { toolkits: ['gmail'] },
+      handler: {
+        type: 'condition_check',
+        condition: 'Sharing internal pricing with anyone outside acme.com',
+        action: 'block',
+      },
+    },
+  ],
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "hooks": [
+      {
+        "id": "no_pricing_to_customers",
+        "type": "before_execute",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "condition_check",
+          "condition": "Sharing internal pricing with anyone outside acme.com",
+          "action": "block"
+        }
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
+
+You can add several hooks to a session, and replace them later with `session.update()`. Each hook has the following fields:
+
+- `id`: An identifier you set for the hook. You'll mainly use it to find the hook's entry in `hook_results`, and to see which hook blocked a tool call.
+- `name`: An optional name for the hook. Your agent sees it in the error message when the hook blocks a tool call.
+- `type`: When the hook runs. One of `before_execute` or `after_execute`.
+- `applies_to`: The toolkits the hook applies to. Set this to `"all"` if you want it to run for all tools across all toolkits.
+- `handler`: What the hook does. The types of handlers are listed below.
+
+## Types of handlers
+
+There are three types of handlers:
+
+- **Custom prompt checks** (`condition_check`): Block unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. See [Custom prompt checks](/docs/hooks/custom-prompt-checks).
+- **Prompt injection detection** (`prompt_injection_check`): Scans tool results for prompt injection before they reach your agent. See [Prompt injection detection](/docs/hooks/prompt-injection-detection).
+- **Webhooks** (`webhook`): Send an HTTP request to an endpoint you host, and use your response to allow, block, or modify the tool call. Use them to observe and control tool calls programmatically. See [Webhooks](/docs/hooks/webhooks).
+
+
+## Which tool calls hooks run on
+
+A hook runs on tool calls to the toolkits in its `applies_to`. This includes [proxy calls](/docs/extending-sessions/proxy-execute) to a toolkit's API, and tool calls your agent makes from a workbench script or with multi-execute.
+
+Hooks don't run on Composio's meta tools themselves. For example, a hook can't stop your agent from running a workbench script, but it does run on the tool calls that script makes.
+
+## Blocked tool calls
+
+When a hook blocks a tool call, the tool call fails, and your agent sees an error message.
+
+If you execute the tool yourself with `session.execute()`, the result shows which hook blocked it. For example, this is what you get when the `no_pricing_to_customers` hook from the top of this page blocks an email:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+result = session.execute(
+    "GMAIL_SEND_EMAIL",
+    arguments={
+        "recipient_email": "jane@customer.com",
+        "subject": "Pricing",
+        "body": "Our internal floor price is $40 per seat.",
+    },
+)
+
+print(result.result_type)   # 'blocked'
+print(result.error)         # 'Blocked by session policy'
+print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
+print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+const result = await session.execute('GMAIL_SEND_EMAIL', {
+  recipient_email: 'jane@customer.com',
+  subject: 'Pricing',
+  body: 'Our internal floor price is $40 per seat.',
+});
+
+console.log(result);
+// {
+//   resultType: 'blocked',
+//   data: {},
+//   error: 'Blocked by session policy',
+//   blockReason: { type: 'request_blocked', hookId: 'no_pricing_to_customers' },
+//   hookResults: [
+//     { id: 'no_pricing_to_customers', status: 'evaluated', outcome: 'block' },
+//   ],
+// }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GMAIL_SEND_EMAIL",
+    "arguments": {
+      "recipient_email": "jane@customer.com",
+      "subject": "Pricing",
+      "body": "Our internal floor price is $40 per seat."
+    }
+  }'
+```
+</Tab>
+</Tabs>
+
+In this result:
+
+- `error` is the message your agent sees.
+- `block_reason.hook_id` is the `id` of the hook that blocked the tool call.
+- `block_reason.type` is `request_blocked` if the hook ran before the tool call, and `response_blocked` if it ran after.
+- `hook_results` has one entry for each hook that ran on the tool call.
+
+If more than one hook runs on a tool call, any one of them can block it.
+
+An `after_execute` hook can also block a tool call. By then the tool has already run, and the hook can't undo that, but your agent doesn't get the tool's result.
+
+## Update hooks
+
+To change a session's hooks, pass a new `hooks` list to `session.update()`. The new list replaces the old one, so include every hook you want to keep. To remove them all, pass `null` (`None` in Python).
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session.update(hooks=[...])  # every hook you want to keep
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+await session.update({ hooks: [/* every hook you want to keep */] });
+```
+</Tab>
+<Tab value="API">
+```bash
+# Every hook you want to keep; send "hooks": null to remove them all
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hooks": [
+      {
+        "id": "block_injection",
+        "type": "after_execute",
+        "applies_to": "all",
+        "handler": {"type": "prompt_injection_check", "action": "block"}
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
