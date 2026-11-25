@@ -61,7 +61,10 @@ const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
   'utf8'
 );
-const cliDocsGuide = readFileSync(new URL('../docs/content/docs/cli.mdx', import.meta.url), 'utf8');
+const cliDocsGuide = readFileSync(
+  new URL('../docs/content/docs/cli/installation.mdx', import.meta.url),
+  'utf8'
+);
 const resolveTargetScriptUrl = new URL(
   '../.github/scripts/cli-release/resolve-release-target.sh',
   import.meta.url
@@ -1087,7 +1090,7 @@ if (installHealthCheck.includes('rm -rf "$HOME/.composio"')) {
 // --- uninstall file lists: the hand-maintained copies must stay in sync ---
 
 // The uninstall file list mirrors the release bundle layout and is duplicated in INSTALL.md,
-// docs/content/docs/cli.mdx, and cli.install-health-check.yml. Drift between them ships
+// docs/content/docs/cli/installation.mdx, and cli.install-health-check.yml. Drift between them ships
 // uninstall guidance (or a health-check reset) that leaves release artifacts behind.
 function readUninstallEntries(source, command, label) {
   const block = requireMatch(
@@ -1106,7 +1109,7 @@ function readUninstallEntries(source, command, label) {
 
 const uninstallGuides = [
   { label: 'INSTALL.md', source: installGuide },
-  { label: 'docs/content/docs/cli.mdx', source: cliDocsGuide },
+  { label: 'docs/content/docs/cli/installation.mdx', source: cliDocsGuide },
   { label: 'cli.install-health-check.yml', source: installHealthCheck },
 ].map(({ label, source }) => ({
   label,
