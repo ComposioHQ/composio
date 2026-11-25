@@ -1,5 +1,5 @@
 ---
-title: Hooks
+title: Add tool execution hooks
 description: Control your agent's tool calls before a tool runs and after it returns
 keywords: [hooks, tool execution hooks, session hooks, webhook, session webhook, before_execute, after_execute, fallback_action, guardrails]
 ---
@@ -77,7 +77,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 You can add several hooks to a session, and replace them later with `session.update()`. Each hook has the following fields:
 
 - `id`: An identifier you set for the hook. It's mainly used in two places: to map each hook to its result in the response, and to identify the hook that blocked a tool call.
-- `name`: An optional name for the hook. It's included in the agent-facing error message that Composio generates when the hook blocks a tool call.
+- `name`: An optional name for the hook. It's included in the agent-facing error message that's generated when the hook blocks a tool call.
 - `type`: When the hook runs. One of `before_execute` or `after_execute`.
 - `applies_to`: The toolkits the hook applies to. Set this to `"all"` if you want it to run for all tools across all toolkits.
 - `handler`: This determines the behaviour of the hook. The types of handlers are listed below.
@@ -92,9 +92,9 @@ There are currently three types of handlers:
 
 ## Webhooks
 
-Tool execution webhooks let you run your own code before or after a tool call. Composio sends the tool call to your webhook endpoint and waits for your response. In that response, you can allow the tool call, block it, or modify it.
+Use a webhook when you want your own code to decide what happens to a tool call.
 
-<Callout type="warn" title="Experimental">
+<Callout type="warn">
 Webhooks are in beta, and their API may change. They are available on the Enterprise plan.
 </Callout>
 
@@ -110,11 +110,11 @@ You may also want to explore [before](/docs/tools-direct/modify-tool-behavior/be
 
 ### How to set up a webhook URL
 
-You can configure the webhook URL from the dashboard, under [Sessions](https://dashboard.composio.dev/~/project/sessions?utm_source=docs&utm_medium=content&utm_campaign=session-hooks) → Webhooks. This is a project-level setting, so Composio will call this endpoint for every session in the project that has a webhook. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
+You can configure the webhook URL from the dashboard, under [Sessions → Webhooks](https://dashboard.composio.dev/~/project/sessions?utm_source=docs&utm_medium=content&utm_campaign=session-hooks). This is a project-level setting, so the same endpoint is called for every session in the project that has a webhook. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
 
 <Figure src="/images/session-webhook-settings.png" alt="The Webhooks tab under Sessions in the Composio dashboard, with the webhook endpoint URL and its masked signing secret" caption="The webhook URL and its signing secret, under Sessions → Webhooks" />
 
-When you save the URL, the dashboard displays a signing secret. Composio signs every request with this secret, so you can verify that a request came from Composio before acting on it. If the secret is ever exposed, rotate it from the same page. The previous secret is invalidated immediately.
+When you save the URL, the dashboard displays a signing secret. Every request is signed with this secret, so you can verify that a request came from Composio before acting on it. If the secret is ever exposed, rotate it from the same page. The previous secret is invalidated immediately.
 
 Note that the secret is only shown once, either when the URL is first created or when the secret is rotated, so copy it and save it in your project's environment. If you change the URL later, the secret stays the same.
 
@@ -186,11 +186,11 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-Set `fallback_action` to choose what happens to a tool call if Composio can't get a response from your endpoint. See [Fallback](#fallback).
+Set `fallback_action` to choose what happens to a tool call if there's no valid response from your endpoint. See [Fallback](#fallback).
 
 ### How to implement a webhook endpoint
 
-For every tool call a webhook applies to, Composio sends a `POST` request to your endpoint and waits for your response. Your endpoint reads the request, decides what should happen to the tool call, and responds.
+For every tool call a webhook applies to, your endpoint receives a `POST` request. It reads the request, decides what should happen to the tool call, and responds.
 
 #### Request payload
 
@@ -298,7 +298,7 @@ What goes in `override` also depends on the kind of call and on when the webhook
 | Tool call | `{ "tool_call": { "arguments": { ... } } }` | `{ "tool_response": { "data": { ... } } }` |
 | Proxy call | `{ "http_request": { ... } }` | `{ "http_response": { ... } }` |
 
-For a tool call, Composio uses exactly the arguments or data you return, so start from the originals and change only what you need. For a proxy call, include only the fields you want to change. In `http_request`, these are `method`, `endpoint`, `parameters`, and `body`. In `http_response`, they are `data` and `headers`.
+For a tool call, the arguments or data you return replace the originals entirely, so start from them and change only what you need. For a proxy call, include only the fields you want to change. In `http_request`, these are `method`, `endpoint`, `parameters`, and `body`. In `http_response`, they are `data` and `headers`.
 
 For the full schema of the request and of your response, see the reference for [`before_execute`](/reference/api-reference/session-webhooks/composio_session_hook_before_execute) and [`after_execute`](/reference/api-reference/session-webhooks/composio_session_hook_after_execute).
 
@@ -336,7 +336,7 @@ async def session_webhook(request: Request):
 
 ### Timeouts
 
-By default, Composio waits up to 3 seconds for your response. You can change this by setting `timeout_ms` on the handler to any value between `100` and `5000` milliseconds.
+By default, you have 3 seconds to respond. You can change this by setting `timeout_ms` on the handler to any value between `100` and `5000` milliseconds.
 
 ```json
 { "type": "webhook", "fallback_action": "block", "timeout_ms": 1000 }
@@ -344,7 +344,7 @@ By default, Composio waits up to 3 seconds for your response. You can change thi
 
 ### Fallback
 
-`fallback_action` is a required field. Set it to choose what happens to a tool call when Composio doesn't get a valid response from your endpoint:
+`fallback_action` is a required field. Set it to choose what happens to a tool call when there's no valid response from your endpoint:
 
 - `block`: The tool call is blocked. Use this when a tool call must never go through unchecked.
 - `continue`: The tool call goes ahead without your check. Use this when your agent should keep working even if your endpoint is down.
@@ -355,7 +355,7 @@ The fallback applies when:
 - you respond with a status other than `200`
 - your response doesn't match the [expected format](/reference/api-reference/session-webhooks)
 
-Composio sends each request once, with no retries. When the fallback applies, the webhook is reported as `unavailable` in the call's hook results:
+Each request is sent once, with no retries. When the fallback applies, the webhook is reported as `unavailable` in the call's hook results:
 
 ```json
 { "id": "check_gmail_calls", "status": "unavailable", "detail": "The webhook endpoint timed out" }
