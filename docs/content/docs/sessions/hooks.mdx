@@ -6,6 +6,10 @@ keywords: [hooks, tool execution hooks, session hooks, webhook, session webhook,
 
 Tool execution hooks let you intercept the tool calls your agent makes and the results it gets back. Hooks run before or after a tool call. You can use them to block unwanted tool calls, or to modify a tool's arguments and results.
 
+<Callout type="warn">
+Hooks are in beta, and their API may change. They are available on paid plans. Webhooks are available only on the Enterprise plan.
+</Callout>
+
 You configure hooks on a session, by passing a `hooks` parameter when you create or update it:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
@@ -86,8 +90,8 @@ You can add several hooks to a session, and replace them later with `session.upd
 
 There are three types of handlers:
 
-- **Condition check:** Blocks unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. See [Firewall > Condition check](/docs/firewall#custom-prompt-checks).
-- **Prompt injection check:** Scans tool results for prompt injection before they reach your agent. See [Firewall > Prompt injection check](/docs/firewall#prompt-injection-detection).
+- **Condition check:** Blocks unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. See [Firewall > Custom prompt checks](/docs/firewall#custom-prompt-checks).
+- **Prompt injection check:** Scans tool results for prompt injection before they reach your agent. See [Firewall > Prompt injection detection](/docs/firewall#prompt-injection-detection).
 - **Webhook:** Sends an HTTP request to an endpoint you host, and uses your response to allow, block, or modify the tool call. Use it to observe and control tool calls programmatically. See [Webhooks](#webhooks).
 
 ## Which tool calls hooks run on
@@ -217,10 +221,6 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION
 ## Webhooks
 
 A webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
-
-<Callout type="warn">
-Webhooks are in beta, and their API may change. They are available on the Enterprise plan.
-</Callout>
 
 Here are a few examples of what you can do with webhooks:
 
