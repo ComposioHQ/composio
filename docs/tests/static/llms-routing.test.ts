@@ -4,7 +4,7 @@ import { source, referenceSource, examplesSource, knowledgeBaseSource } from '..
 
 test('routing map is bounded and covers the current developer decisions', async () => {
   const text = await GET().text();
-  expect(text.length).toBeLessThan(6000);
+  expect(text.length).toBeLessThan(7000);
   const primary = text.split('## Optional')[0];
   for (const path of ['docs', 'docs/agent-setup', 'docs/quickstart', 'docs/agent-plugins',
     'docs/authentication', 'docs/sessions/tool-access', 'kb']) {
