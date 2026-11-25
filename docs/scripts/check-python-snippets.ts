@@ -15,7 +15,8 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import {
@@ -37,7 +38,7 @@ export type PythonSnippet = {
   typeCheck: boolean;
 };
 
-export type PythonSnippetRule = 'python-syntax' | 'python-api' | 'python-directive';
+export type PythonSnippetRule = 'python-syntax' | 'python-api' | 'python-directive' | 'python-reference';
 
 export type PythonSnippetViolation = { path: string; line: number; rule: PythonSnippetRule; message: string };
 
@@ -102,12 +103,14 @@ export type PythonHelperResult = z.infer<typeof HelperResult>;
 export function pythonSnippetViolations(
   snippets: PythonSnippet[],
   result: PythonHelperResult,
+  strict = false,
 ): PythonSnippetViolation[] {
   const byId = new Map(snippets.map((snippet) => [snippet.id, snippet]));
   return [
     ...result.syntax.map((diagnostic) => ({ ...diagnostic, rule: 'python-syntax' as const })),
     ...result.api.map((diagnostic) => ({ ...diagnostic, rule: 'python-api' as const })),
     ...result.directives.map((diagnostic) => ({ ...diagnostic, rule: 'python-directive' as const })),
+    ...(strict ? result.other.map((diagnostic) => ({ ...diagnostic, rule: 'python-reference' as const })) : []),
   ].map(({ id, line, message, rule }) => {
     const snippet = byId.get(id);
     if (!snippet) throw new Error(`Python helper returned unknown snippet ${id}`);
@@ -124,7 +127,12 @@ const SDK_PYTHON = join(SDK_ENV, process.platform === 'win32' ? 'Scripts/python.
 const HELPER = join(DOCS_ROOT, 'scripts/python-snippets/check_snippets.py');
 
 /** Runs the Python helper in the SDK env; exits 2 when `uv` is unavailable or the helper fails. */
-export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): PythonHelperResult {
+export function runPythonHelper(
+  snippets: PythonSnippet[],
+  syntaxOnly = false,
+  installedPython?: string,
+  reference = false,
+): PythonHelperResult {
   const workDir = mkdtempSync(join(tmpdir(), 'python-snippets-'));
   try {
     const requestPath = join(workDir, 'request.json');
@@ -132,7 +140,9 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
       requestPath,
       JSON.stringify({
         workDir,
-        sdkPython: SDK_PYTHON,
+        sdkPython: installedPython ?? SDK_PYTHON,
+        installed: installedPython !== undefined,
+        reference,
         syntaxOnly,
         snippets: snippets.map(({ id, code, typeCheck }) => ({ id, code, typeCheck })),
       }),
@@ -141,13 +151,18 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
       'uv',
       [
         'run', '--quiet', '--frozen', '--project', PYTHON_ROOT, '--python', '3.12',
-        '--no-default-groups', '--group', 'docs-snippets', 'python', HELPER, requestPath,
+        '--no-default-groups',
+        installedPython === undefined ? '--group' : '--only-group', 'docs-snippets',
+        'python', HELPER, requestPath,
       ],
       {
         encoding: 'utf8',
         maxBuffer: 256 * 1024 * 1024,
         stdio: ['ignore', 'pipe', 'inherit'],
-        env: { ...process.env, UV_PROJECT_ENVIRONMENT: SDK_ENV },
+        env: {
+          ...process.env,
+          UV_PROJECT_ENVIRONMENT: installedPython === undefined ? SDK_ENV : join(workDir, 'checker-env'),
+        },
       },
     );
     if (result.error && 'code' in result.error && result.error.code === 'ENOENT') {
@@ -165,28 +180,40 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
 }
 
 function main(): void {
-  const USAGE = 'Usage: bun scripts/check-python-snippets.ts [--json] [--syntax-only] [--reference]';
-  const args = process.argv.slice(2);
-  const unknown = args.filter((arg) => arg !== '--json' && arg !== '--syntax-only' && arg !== '--reference');
-  if (unknown.length) {
-    console.error(`Unknown argument(s): ${unknown.join(' ')}\n${USAGE}`);
-    process.exit(2);
+  const { values } = parseArgs({
+    options: {
+      json: { type: 'boolean' },
+      'syntax-only': { type: 'boolean' },
+      reference: { type: 'boolean' },
+      directory: { type: 'string' },
+      'installed-python': { type: 'string' },
+    },
+  });
+  const installed = values['installed-python'];
+  const directory = values.directory === undefined ? undefined : resolve(values.directory);
+  if ((!values.reference && (directory !== undefined || installed !== undefined)) ||
+      (installed !== undefined && values['syntax-only'])) {
+    throw new Error('Use --reference with --directory or --installed-python. Installed checks require type checking.');
   }
-
-  const reference: { optOuts: ReferenceOptOut[] } | undefined = args.includes('--reference')
+  const reference: { optOuts: ReferenceOptOut[] } | undefined = values.reference
     ? { optOuts: [] }
     : undefined;
   const snippets = reference
-    ? collectPythonSnippets(listPythonReferenceFiles(DOCS_ROOT), reference)
+    ? collectPythonSnippets(listPythonReferenceFiles(DOCS_ROOT, directory), reference)
     : collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
-  const helper = runPythonHelper(snippets, args.includes('--syntax-only'));
-  const violations = pythonSnippetViolations(snippets, helper);
+  const helper = runPythonHelper(
+    snippets,
+    values['syntax-only'],
+    installed === undefined ? undefined : resolve(installed),
+    Boolean(reference),
+  );
+  const violations = pythonSnippetViolations(snippets, helper, Boolean(reference));
   violations.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
 
   const counts: Record<string, number> = {};
   for (const violation of violations) counts[violation.rule] = (counts[violation.rule] ?? 0) + 1;
 
-  if (args.includes('--json')) {
+  if (values.json) {
     console.log(JSON.stringify({ snippets: snippets.length, violations, counts, ...reference }, null, 2));
   } else if (violations.length) {
     for (const { path, line, rule, message } of violations) console.log(`${path}:${line} ${rule} ${message}`);
@@ -198,7 +225,7 @@ function main(): void {
   } else {
     console.log(`No Python snippet violations in ${snippets.length} snippet(s).`);
   }
-  if (reference && !args.includes('--json')) {
+  if (reference && !values.json) {
     for (const { path, line, reason } of reference.optOuts) console.log(`${path}:${line} opted out: ${reason}`);
   }
   process.exit(violations.length ? 1 : 0);

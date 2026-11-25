@@ -410,10 +410,14 @@ jobs:
               --repository https://github.com/ComposioHQ/composio "$url"
           done
 
-  # Pins the docs to the released npm versions. It follows the npm job, so a Python-only release,
-  # which skips that job, skips this one too.
+  # The tagged checkout supplies the exact release reference. The second checkout
+  # gives each verified language a reviewed promotion PR based on current next.
   docs:
-    needs: publish-npm
+    needs: [publish-npm, publish-pypi]
+    if: ${{ !cancelled() && (needs.publish-npm.result == 'success' || needs.publish-pypi.result == 'success') }}
+    concurrency:
+      group: sdk-release-docs-promotion
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -430,6 +434,7 @@ jobs:
           path: next
           persist-credentials: false
       - name: Pin the docs to the released npm versions
+        if: needs.publish-npm.result == 'success'
         run: |
           # Run report.ts from the root: next/docs/bunfig.toml preloads docs packages that aren't installed here.
           specs=$(bun scripts/sdk-release/report.ts docs-pins next/docs/package.json)
@@ -443,14 +448,31 @@ jobs:
             sleep 30
           done
           exit 1
+      # The reference renderer imports the tagged checkout's docs packages.
+      - working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Prepare stable SDK reference snapshots
+        env:
+          NPM_VERIFIED: ${{ needs.publish-npm.result == 'success' }}
+          PYPI_VERIFIED: ${{ needs.publish-pypi.result == 'success' }}
+        run: bun scripts/sdk-release/reference-snapshot.ts
+      - name: Check whether the docs need promotion
+        id: changes
+        working-directory: next
+        run: |
+          if [[ -n "$(git status --porcelain -- docs/package.json docs/bun.lock docs/sdk-reference-snapshots)" ]]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
       # A dedicated release App, installed with only the permissions the runbook lists.
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
         id: app
+        if: steps.changes.outputs.needed == 'true'
         with:
           client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
       # Opens nothing when the docs already pin these versions.
-      - name: Open the docs pin PR
+      - name: Open the docs promotion PR
+        if: steps.changes.outputs.needed == 'true'
         uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
           token: ${{ steps.app.outputs.token }}
@@ -460,10 +482,11 @@ jobs:
           add-paths: |
             docs/package.json
             docs/bun.lock
-          commit-message: 'docs: pin the SDK packages released in ${{ github.ref_name }}'
-          title: 'docs: pin the SDK packages released in ${{ github.ref_name }}'
+            docs/sdk-reference-snapshots
+          commit-message: 'docs: promote the SDK reference for ${{ github.ref_name }}'
+          title: 'docs: promote the SDK reference for ${{ github.ref_name }}'
           body: |
-            Pins the docs to the npm versions published by ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}, so twoslash type-checks every snippet against the released types.
+            Updates the docs for the stable SDK packages verified by ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.
 
             Merge after the docs checks pass.
 

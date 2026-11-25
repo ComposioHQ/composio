@@ -381,7 +381,7 @@ describe('docs workflows', () => {
     expect(JSON.stringify(reference)).not.toContain('secrets.');
     const steps = reference.steps as { if?: string; run?: string }[];
     const check = steps.find(step => step.run?.includes('check:docs-reference'));
-    expect(check?.run).toContain('--built-package docs/node_modules/@composio/core');
+    expect(check?.run).toContain('--package docs/node_modules/@composio/core --compare-packaged');
     expect(check?.if).toBe("needs.select-candidates.outputs.core == 'true'");
     // Every step that needs the candidate is skipped together when there is no core candidate.
     for (const step of steps.slice(1))

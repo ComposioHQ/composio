@@ -31,3 +31,6 @@ _Avoid_: Artifact, build
 **Publication**:
 One package version on one registry.
 _Avoid_: Upload, deploy
+
+**Reference snapshot**:
+The checked SDK reference for a specific stable package version and documentation revision.

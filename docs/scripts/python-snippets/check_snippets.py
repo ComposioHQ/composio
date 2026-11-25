@@ -120,7 +120,12 @@ def run_mypy(files: list[str], request: dict, trees: dict[str, ast.Module], prel
 
     # Editable installs use an import hook mypy cannot follow. Resolve the SDK
     # and ALL local provider packages from source, not a published SDK wheel.
-    os.environ["MYPYPATH"] = os.pathsep.join([str(PYTHON_ROOT), *(str(path.parent) for path in provider_packages())])
+    if request.get("installed"):
+        os.environ.pop("MYPYPATH", None)
+    elif request.get("reference"):
+        os.environ["MYPYPATH"] = str(PYTHON_ROOT)
+    else:
+        os.environ["MYPYPATH"] = os.pathsep.join([str(PYTHON_ROOT), *(str(path.parent) for path in provider_packages())])
     sources, options = process_options([
         "--config-file=",
         "--python-version=3.12",

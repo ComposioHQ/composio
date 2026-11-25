@@ -18,6 +18,11 @@ uv.lock linguist-generated=true
 # not by reading the diff)
 **/__snapshots__/*.snap linguist-generated=true
 
+# SDK reference pages (written by `generate:docs` and the snapshot tooling; verify by
+# rerunning the generator, not by reading the diff)
+docs/content/reference/sdk-reference/** linguist-generated=true
+docs/sdk-reference-snapshots/** linguist-generated=true
+
 # Managed-block conformance fixtures are byte-exact inputs/outputs shared by
 # the sh harness and the TS reconciler test; never normalize their line endings.
 test/managed-block-fixtures/** -text

@@ -4,6 +4,7 @@ import {
   source, getReferenceSource, examplesSource, toolkitsSource,
   changelogEntries, dateToChangelogUrl,
 } from '../lib/source';
+import { resolveStableReference, resolveStableReferenceSource } from '../lib/sdk-reference-snapshot';
 import {
   buildContentFreshness, getExplicitLastUpdated, type FreshnessPage,
 } from '../lib/content-freshness-build';
@@ -32,8 +33,14 @@ for (const collection of [source, examplesSource, toolkitsSource]) {
 }
 
 const reference = await getReferenceSource();
+const stableReference = resolveStableReference(root);
 for (const page of reference.getPages()) {
-  authored(page.url, page.absolutePath);
+  const path = page.absolutePath;
+  if (stableReference.kind !== 'assembled' || !path?.startsWith(`${stableReference.dir}/`)) {
+    authored(page.url, path);
+    continue;
+  }
+  authored(page.url, resolveStableReferenceSource(root, stableReference.dir, path));
 }
 
 for (const entry of changelogEntries) {

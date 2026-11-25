@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { Effect } from 'effect';
 import type { Channel } from '../scripts/sdk-release/channel';
-import type { Language } from '../scripts/sdk-release/lanes';
+import { PYTHON_RELEASE_MARKER, type Language } from '../scripts/sdk-release/lanes';
 import {
   NpmCli,
   loadOriginalDistributions,
@@ -10,9 +10,11 @@ import {
   waitForRegistry,
   type Distribution,
 } from '../scripts/sdk-release/registry';
+import { publishedReferenceVersions } from '../scripts/sdk-release/reference-snapshot';
 import { docsPinSpecs } from '../scripts/sdk-release/report';
 import { CommandError, sha256Hex } from '../scripts/sdk-release/runtime';
-import { batch, head } from './sdk-release-controller-fixture';
+import type { ReleaseBatch } from '../scripts/sdk-release/source';
+import { batch, betaBatch, head } from './sdk-release-controller-fixture';
 import { fetchInputUrl, runOnTestClock, runRelease, type Fetch } from './sdk-release-harness';
 
 const distribution = async (file: string, language: Language = 'python'): Promise<Distribution> => {
@@ -330,4 +332,38 @@ test('docs pins move only used packages forward, so an older retry never downgra
       { '@composio/core': '^0.28.0', '@composio/openai': '0.13.3', react: '^19' }
     )
   ).toEqual(['@composio/core@0.29.0']);
+});
+
+test('reference promotion includes only verified stable core publications', () => {
+  const combined: ReleaseBatch = {
+    ...batch,
+    plan: {
+      ...batch.plan,
+      choices: { ...batch.plan.choices, python: 'auto' },
+      releases: [
+        ...batch.plan.releases,
+        {
+          name: PYTHON_RELEASE_MARKER,
+          type: 'patch',
+          oldVersion: '2.0.0',
+          newVersion: '2.0.1',
+          changesets: [],
+          language: 'python',
+        },
+      ],
+    },
+  };
+  const both = { typescript: true, python: true };
+  expect(publishedReferenceVersions(combined, both)).toEqual({
+    typescript: '1.0.1',
+    python: '2.0.1',
+  });
+  expect(publishedReferenceVersions(combined, { typescript: false, python: true })).toEqual({
+    python: '2.0.1',
+  });
+  expect(publishedReferenceVersions(combined, { typescript: true, python: false })).toEqual({
+    typescript: '1.0.1',
+  });
+  expect(publishedReferenceVersions(batch, both)).toEqual({ typescript: '1.0.1' });
+  expect(publishedReferenceVersions(betaBatch, both)).toEqual({});
 });
