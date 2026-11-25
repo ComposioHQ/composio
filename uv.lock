@@ -614,7 +614,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "composio" },
-    { name = "google-genai", specifier = ">=2.14.0,<3" },
+    { name = "google-genai", specifier = ">=2.34.0,<4" },
 ]
 
 [[package]]

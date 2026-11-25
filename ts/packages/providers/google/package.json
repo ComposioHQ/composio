@@ -34,7 +34,8 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit"
   },
   "keywords": [
     "composio",

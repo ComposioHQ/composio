@@ -134,9 +134,12 @@ export class GoogleProvider extends BaseNonAgenticProvider<
   wrapTool(tool: Tool): GoogleTool {
     const inputParameters = ensureObjectTypeOnProperties(
       deduplicateJsonSchemaRequiredArrays(
-        dereferenceJsonSchema(tool.inputParameters ?? { type: 'object', properties: {} }, {
-          onUnresolved: 'sentinel',
-        })
+        dereferenceJsonSchema(
+          tool.inputParameters ?? { type: 'object', properties: {}, required: [] },
+          {
+            onUnresolved: 'sentinel',
+          }
+        )
       )
     );
 

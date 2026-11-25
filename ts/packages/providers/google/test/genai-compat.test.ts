@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GoogleGenAI, type FunctionCall, type FunctionDeclaration } from '@google/genai';
 import type { Tool } from '@composio/core';
-import { GoogleProvider, type GoogleGenAIFunctionCall } from '../src';
+import { GoogleProvider } from '../src';
 
 const tool: Tool = {
   slug: 'GET_WEATHER',
@@ -32,7 +32,13 @@ describe('@google/genai compatibility', () => {
   it('executeToolCall accepts the SDK FunctionCall type', async () => {
     const { provider, execute } = makeProvider();
     const call: FunctionCall = { name: 'GET_WEATHER', args: { city: 'Rome' } };
-    const result = await provider.executeToolCall('user_1', call as GoogleGenAIFunctionCall);
+    if (!call.name || !call.args) {
+      throw new Error('Expected function call with name and args');
+    }
+    const result = await provider.executeToolCall('user_1', {
+      name: call.name,
+      args: call.args,
+    });
     expect(JSON.parse(result)).toEqual({ data: { temp: 21 }, error: null, successful: true });
     expect(execute).toHaveBeenCalledOnce();
   });
@@ -50,7 +56,13 @@ describe.skipIf(!process.env.GEMINI_API_KEY)('live Gemini API', () => {
     });
     const call = response.functionCalls?.[0];
     expect(call?.name).toBe('GET_WEATHER');
-    const result = await provider.executeToolCall('user_1', call as GoogleGenAIFunctionCall);
+    if (!call?.name) {
+      throw new Error('Expected function call with name');
+    }
+    const result = await provider.executeToolCall('user_1', {
+      name: call.name,
+      args: call.args ?? {},
+    });
     expect(JSON.parse(result).successful).toBe(true);
   }, 60_000);
 });

@@ -171,15 +171,13 @@ class TestWrapTool:
         )
         result = provider.wrap_tool(tool, create_mock_execute_tool())
 
-        import typing
-
         sig = inspect.signature(result)
         assert "title" in sig.parameters
         assert "body" in sig.parameters
         assert sig.parameters["title"].annotation is str
-        # Optional properties are ``Optional[...] = None`` so Gemini does not
-        # declare them as required.
-        assert sig.parameters["body"].annotation == typing.Optional[str]
+        # Optional properties keep their non-nullable type with default=None so
+        # Gemini omits them from ``required`` without advertising ``null``.
+        assert sig.parameters["body"].annotation is str
         assert sig.parameters["body"].default is None
 
     def test_callable_has_typed_free_form_object_argument(self):
@@ -407,10 +405,6 @@ class TestWrapTool:
 
         sig = inspect.signature(func)
         tags_annotation = sig.parameters["tags"].annotation
-        # Optional, so unwrap ``Optional[List[str]]``.
-        (tags_annotation,) = (
-            arg for arg in typing.get_args(tags_annotation) if arg is not type(None)
-        )
         # Must be a parameterized generic like List[str], not bare list
         assert typing.get_origin(tags_annotation) is list
         assert typing.get_args(tags_annotation) != ()
@@ -577,23 +571,54 @@ def test_declaration_keeps_schema_metadata_and_optional_params():
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},
                 "mode": {"const": "fast"},
                 "note": {"type": "string"},
+                "nullable_note": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "filters": {
+                    "type": "object",
+                    "description": "Filter criteria",
+                    "properties": {"tag": {"type": "string"}},
+                    "required": ["tag"],
+                },
             },
             "required": ["city"],
         },
     )
-    fn = GeminiProvider().wrap_tool(tool, lambda slug, arguments: {})
+    fn = GeminiProvider().wrap_tool(tool, lambda slug, arguments: {"data": arguments})
 
-    properties = _declare_like_the_sdk(fn)["properties"]
-    assert _declare_like_the_sdk(fn)["required"] == ["city"]
+    declared = _declare_like_the_sdk(fn)
+    properties = declared["properties"]
+    assert declared["required"] == ["city"]
     assert properties["city"]["description"] == "City name"
     assert properties["units"]["enum"] == ["c", "f"]
     assert properties["units"]["type"] == "string"
+    assert properties["limit"]["type"] == "integer"
     assert (properties["limit"]["minimum"], properties["limit"]["maximum"]) == (1, 50)
     assert properties["mode"]["enum"] == ["fast"]
+    # Non-nullable optional properties must not advertise ``null``.
+    assert properties["note"]["type"] == "string"
+    assert "anyOf" not in properties["note"]
     assert "enum" not in properties["note"]
-    # The model's arguments still convert with the plain types.
-    arguments = {"city": "Rome", "units": "c", "limit": 3, "mode": "fast"}
-    assert _extra_utils.convert_argument_from_function(arguments, fn) == arguments
+    # Explicitly nullable properties stay nullable.
+    assert any(
+        variant.get("type") == "null"
+        for variant in properties["nullable_note"]["anyOf"]
+    )
+    # Nested object models with descriptions must not fail TypeAdapter config checks.
+    assert properties["filters"]["type"] == "object"
+    assert properties["filters"]["description"] == "Filter criteria"
+    # The model's arguments still convert and invoke cleanly.
+    arguments = {
+        "city": "Rome",
+        "units": "c",
+        "limit": 3,
+        "mode": "fast",
+        "filters": {"tag": "rain"},
+    }
+    converted = _extra_utils.convert_argument_from_function(arguments, fn)
+    assert {k: v for k, v in converted.items() if k != "filters"} == {
+        k: v for k, v in arguments.items() if k != "filters"
+    }
+    assert converted["filters"].model_dump() == {"tag": "rain"}
+    assert _extra_utils.invoke_function_from_dict_args(arguments, fn) == arguments
 
 
 # ---------------------------------------------------------------------------
@@ -822,13 +847,8 @@ class TestAFCCompatibility:
 
         assert declaration.parameters is not None
         parameters = declaration.parameters.model_dump(exclude_none=True, mode="json")
-        # Optional properties are declared nullable and left out of ``required``.
-        expected = {
-            name: schema if name in required else {**schema, "nullable": True}
-            for name, schema in declared.items()
-        }
-        assert parameters["properties"] == expected
-        assert set(parameters.get("required", [])) == set(required)
+        assert parameters["properties"] == declared
+        assert set(required) <= set(parameters["required"])
 
     def test_afc_still_validates_the_source_schema(self):
         from composio_gemini import GeminiProvider

@@ -118,18 +118,15 @@ def _afc_parameter(param: Parameter, schema: t.Any, required: bool) -> Parameter
     """Return the signature parameter google-genai declares and converts with.
 
     google-genai lists a parameter as required unless it has a default. An
-    optional property is therefore ``Optional[...] = None``, which it
-    declares as a nullable, non-required field. The default never reaches the
-    tool: the callable only receives the arguments the model sent.
+    optional property therefore carries ``default=None`` while keeping its
+    original annotation so non-nullable properties are not advertised as
+    accepting ``null``. The default never reaches the tool: the callable only
+    receives the arguments the model sent.
     """
     annotation = _afc_annotation(param.annotation, schema)
     if required:
         return param.replace(annotation=annotation)
-    if _allowed_values(schema):
-        # ``Optional`` would wrap the enum in ``anyOf``, and Gemini then stops
-        # honouring it.
-        return param.replace(annotation=annotation, default=None)
-    return param.replace(annotation=t.Optional[annotation], default=None)
+    return param.replace(annotation=annotation, default=None)
 
 
 # JSON Schema keywords copied into the declaration as they are.
@@ -309,9 +306,24 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # signature annotation is a string, keeping ``Annotated`` metadata
         # (descriptions, allowed values, bounds), but converts the model's
         # arguments with the plain type from the signature.
+        # BaseModel subclasses cannot be wrapped in ``Annotated`` because
+        # google-genai then passes them to ``TypeAdapter(..., config=...)``,
+        # which Pydantic rejects; attach their description via ``__doc__``.
         annotations: t.Dict[str, t.Any] = {}
         for index, param in enumerate(sig_params):
-            metadata = _afc_metadata(properties.get(param.name))
+            prop_schema = properties.get(param.name)
+            if isinstance(param.annotation, type) and issubclass(
+                param.annotation, BaseModel
+            ):
+                if (
+                    isinstance(prop_schema, dict)
+                    and isinstance(prop_schema.get("description"), str)
+                    and not param.annotation.__doc__
+                ):
+                    param.annotation.__doc__ = prop_schema["description"]
+                annotations[param.name] = param.annotation
+                continue
+            metadata = _afc_metadata(prop_schema)
             if metadata is None:
                 annotations[param.name] = param.annotation
                 continue
