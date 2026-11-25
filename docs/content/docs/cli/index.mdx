@@ -1,0 +1,211 @@
+---
+title: Composio CLI
+description: Use the Composio CLI from Codex, Claude Code, or your terminal for agent workflows and development.
+keywords: [cli, codex, claude code, command line, terminal, agent plugins, knowledge work, dev commands]
+---
+
+Use the Composio CLI to connect apps and run tools from your terminal, Codex, or Claude Code. The CLI also powers the [Composio agent plugins](/docs/agent-plugins).
+
+## Install
+
+Choose the system where you will run the CLI. Your browser selects a tab automatically; mobile devices and unknown systems start on Linux.
+
+<CliInstallTabs>
+<TabsContent value="linux">
+
+Requires `curl` and `unzip`. Supports Linux x64 and ARM64.
+
+```bash
+curl -fsSL https://composio.dev/install | sh
+```
+
+</TabsContent>
+<TabsContent value="macos">
+
+Requires `curl` and `unzip`. Supports Intel and Apple Silicon Macs.
+
+```bash
+curl -fsSL https://composio.dev/install | sh
+```
+
+</TabsContent>
+<TabsContent value="windows">
+
+**Experimental:** requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. Run in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+For a fully supported setup, use the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install). See [Windows support and installer options](/docs/cli/installation#windows-x64-experimental).
+
+</TabsContent>
+</CliInstallTabs>
+
+The installer verifies the release and configures PATH for future terminals. On Linux and macOS, it also sets up plugins for detected, supported agent hosts. Login is a separate step.
+
+Need a pinned version, custom directory, or CI install? See [installation options](/docs/cli/installation).
+
+## Verify the installation
+
+Open a new terminal and check the installed version:
+
+```bash
+composio --version
+```
+
+If your shell cannot find `composio`, run the absolute path printed by the installer. See [shell setup overrides](/docs/cli/installation#shell-setup-overrides) for PATH configuration.
+
+## Log in
+
+```bash
+composio login
+```
+
+For an unattended agent, use [`composio login --agent`](/docs/agent-setup/unattended-authentication). That guide covers constraints, application API key setup, and live-tool verification.
+
+### Set up your agent
+
+If you skipped plugin setup or installed an agent host later, run:
+
+```bash
+composio setup --target auto
+```
+
+`auto` detects supported agents. Use `--target codex` or `--target claude` to choose one. Setup asks before changing local files. Add `--yes` in an agent, script, or CI job.
+
+`composio login` installs the standalone CLI skill for Claude Code by default. For Codex, prefer the native plugin through `composio setup --target codex`. See [Agent plugins](/docs/agent-plugins) for host-specific details.
+
+If you need the standalone skill without the native plugin, install it for your host:
+
+```bash
+composio setup skill claude
+composio setup skill codex
+```
+
+## Update
+
+```bash
+composio upgrade
+```
+
+This replaces the bundle in place. Pass a version, such as `composio upgrade 0.3.1`, to pin a release, or `--beta` for the latest prerelease.
+
+If your installed CLI is too old to upgrade, the command stops before changing anything and prints an install command. Rerun the [installer](#install).
+
+## Use the CLI
+
+Choose the guide for your next task:
+
+- [Agent and terminal workflows](/docs/cli/workflows): search, connect, execute, script, and listen to events.
+- [Platform development](/docs/cli/development): manage projects, auth configs, connected accounts, logs, and triggers.
+- [Configuration and execution behavior](/docs/cli/configuration): backend routing, exit codes, timeouts, and telemetry.
+- [Installation options](/docs/cli/installation): pin releases, configure shells, install manually, or uninstall.
+
+## Help
+
+Use `--help` on the root command or any subcommand:
+
+```bash
+composio --help
+composio help
+composio execute --help
+composio run --help
+composio dev projects switch --help
+```
+
+## Moved sections
+
+These links keep bookmarks to the original CLI page usable.
+
+### Installation options
+
+<span id="windows-x64-experimental" />
+
+- [Windows x64 (experimental)](/docs/cli/installation#windows-x64-experimental)
+
+<span id="install-with-options" />
+
+- [Install with options](/docs/cli/installation#install-with-options)
+
+<span id="shell-setup-overrides" />
+
+- [Shell setup overrides](/docs/cli/installation#shell-setup-overrides)
+
+<span id="install-manually-from-github-releases" />
+
+- [Install manually from GitHub Releases](/docs/cli/installation#install-manually-from-github-releases)
+
+<span id="uninstall" />
+
+- [Uninstall](/docs/cli/installation#uninstall)
+
+### Tools and scripts
+
+<span id="agent-and-terminal-workflows" />
+
+- [Agent and terminal workflows](/docs/cli/workflows)
+
+<span id="search-connect-and-execute-tools" />
+
+- [Search, connect, and execute tools](/docs/cli/workflows#search-connect-and-execute-tools)
+
+<span id="run-scripts" />
+
+- [Run scripts](/docs/cli/workflows#run-scripts)
+
+<span id="listen-to-trigger-events" />
+
+- [Listen to trigger events](/docs/cli/workflows#listen-to-trigger-events)
+
+### Platform development
+
+<span id="build-on-the-composio-platform" />
+
+- [Build on the Composio platform](/docs/cli/development)
+
+<span id="initialize-project-context" />
+
+- [Initialize project context](/docs/cli/development#initialize-project-context)
+
+<span id="inspect-toolkits-and-versions" />
+
+- [Inspect toolkits and versions](/docs/cli/development#inspect-toolkits-and-versions)
+
+<span id="create-and-inspect-auth-configs" />
+
+- [Create and inspect auth configs](/docs/cli/development#create-and-inspect-auth-configs)
+
+<span id="manage-connected-accounts" />
+
+- [Manage connected accounts](/docs/cli/development#manage-connected-accounts)
+
+<span id="execute-and-inspect-logs" />
+
+- [Execute and inspect logs](/docs/cli/development#execute-and-inspect-logs)
+
+<span id="work-with-triggers" />
+
+- [Work with triggers](/docs/cli/development#work-with-triggers)
+
+<span id="generate-type-definitions" />
+
+- [Generate type definitions](/docs/cli/development#generate-type-definitions)
+
+<span id="building-on-top-of-the-cli" />
+
+- [Building on top of the CLI](/docs/cli/development#building-on-top-of-the-cli)
+
+### Execution reference
+
+<span id="backend-and-dashboard-configuration" />
+
+- [Backend and Dashboard configuration](/docs/cli/configuration#backend-and-dashboard-configuration)
+
+<span id="execution-failures-and-exit-codes" />
+
+- [Execution failures and exit codes](/docs/cli/configuration#execution-failures-and-exit-codes)
+
+<span id="execution-telemetry" />
+
+- [Execution telemetry](/docs/cli/configuration#execution-telemetry)

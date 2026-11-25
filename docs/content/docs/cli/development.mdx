@@ -1,0 +1,110 @@
+---
+title: CLI platform development
+description: Manage Composio projects, auth configs, connected accounts, logs, and triggers from the CLI.
+---
+
+[Install and log in](/docs/cli) before running these commands.
+
+Use these commands while building on the Composio developer platform. They initialize local project context, create auth configs, manage connected accounts, test tool execution, inspect logs, and debug trigger flows.
+
+## Initialize project context
+
+```bash
+# Initialize local project context
+composio dev init
+
+# Toggle developer mode
+composio dev --mode on
+composio dev --mode off
+
+# Switch or inspect project scope
+composio dev projects list
+composio dev projects switch
+```
+
+## Inspect toolkits and versions
+
+```bash
+composio dev toolkits list
+composio dev toolkits search "email"
+composio dev toolkits info github
+composio dev toolkits version github
+```
+
+## Create and inspect auth configs
+
+```bash
+# List existing auth configs
+composio dev auth-configs list
+composio dev auth-configs list --toolkits github,gmail
+composio dev auth-configs info ac_xxx
+
+# Create an auth config from provider credentials
+composio dev auth-configs create "GitHub OAuth" \
+  --toolkit github \
+  --auth-scheme OAUTH2 \
+  --scopes "repo,user" \
+  --custom-credentials '{ "client_id": "...", "client_secret": "..." }'
+```
+
+## Manage connected accounts
+
+Top-level `composio link` is the fastest path for personal knowledge work. Use the developer connected-account commands when you're building against project users, auth configs, and playground flows.
+
+```bash
+composio dev connected-accounts list
+composio dev connected-accounts list --toolkits github --user-id user_123
+composio dev connected-accounts list --status ACTIVE --limit 20
+composio dev connected-accounts info ca_xxx
+composio dev connected-accounts whoami ca_xxx
+composio dev connected-accounts link
+```
+
+## Execute and inspect logs
+
+```bash
+# Execute a tool through the developer playground path
+composio dev playground-execute GMAIL_SEND_EMAIL \
+  -d '{ recipient_email: "you@example.com", subject: "Test", body: "Hello" }'
+
+# Inspect tool and trigger logs
+composio dev logs tools --toolkit gmail --limit 20
+composio dev logs tools log_xxx
+composio dev logs triggers --limit 20
+```
+
+## Work with triggers
+
+```bash
+composio dev triggers list gmail
+composio dev triggers info GMAIL_NEW_GMAIL_MESSAGE
+composio dev triggers status
+composio dev triggers create GMAIL_NEW_GMAIL_MESSAGE
+composio dev triggers enable ti_xxx
+composio dev listen --trigger-slug GMAIL_NEW_GMAIL_MESSAGE --json --max-events 5
+```
+
+## Generate type definitions
+
+For legacy direct tool execution projects, generate local TypeScript or Python types from tool schemas:
+
+```bash
+composio generate
+composio generate ts --toolkits github,gmail
+composio generate py --toolkits github,gmail
+```
+
+Reach for this section when you're debugging auth configs, connected accounts, trigger delivery, or tool execution in a Composio project. For user-facing app development, start with the SDK and session docs and keep the CLI as a local debugging companion.
+
+## Building on top of the CLI
+
+<Callout type="warning">
+Don't build a production integration on top of the CLI. It's in constant development, and Composio doesn't offer CLI-level SLAs as an application runtime contract. For a stable integration, build on the Composio SDKs and APIs instead.
+</Callout>
+
+That said, the CLI works well as a bootstrap or helper layer for agent-native products:
+
+- Use `composio connections list` to inspect which connected accounts are available locally.
+- Use `composio run` or `composio proxy` for internal automations where CLI churn is acceptable.
+
+For an example of a product built around CLI-driven agent workflows, see [Houston](https://github.com/gethouston/houston).
