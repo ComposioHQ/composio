@@ -122,12 +122,12 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    *
    * const googleTool = provider.wrapTool(composioTool);
    * // Use with Google GenAI SDK
-   * const genAI = new GoogleGenerativeAI('YOUR_API_KEY');
-   * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+   * const ai = new GoogleGenAI({ apiKey: 'YOUR_API_KEY' });
    *
-   * const result = await model.generateContent({
+   * const result = await ai.models.generateContent({
+   *   model: 'gemini-4-neon',
    *   contents: [{ role: 'user', parts: [{ text: 'Search for Composio' }] }],
-   *   tools: [googleTool]
+   *   config: { tools: [{ functionDeclarations: [googleTool] }] }
    * });
    * ```
    */
@@ -195,12 +195,12 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    * const googleTools = provider.wrapTools(composioTools);
    *
    * // Use with Google GenAI SDK
-   * const genAI = new GoogleGenerativeAI('YOUR_API_KEY');
-   * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+   * const ai = new GoogleGenAI({ apiKey: 'YOUR_API_KEY' });
    *
-   * const result = await model.generateContent({
+   * const result = await ai.models.generateContent({
+   *   model: 'gemini-4-neon',
    *   contents: [{ role: 'user', parts: [{ text: 'How is the weather in New York?' }] }],
-   *   tools: googleTools
+   *   config: { tools: [{ functionDeclarations: googleTools }] }
    * });
    * ```
    */
@@ -241,10 +241,10 @@ export class GoogleProvider extends BaseNonAgenticProvider<
    * console.log(searchResults);
    *
    * // You can also use the result to continue the conversation
-   * const genAI = new GoogleGenerativeAI('YOUR_API_KEY');
-   * const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+   * const ai = new GoogleGenAI({ apiKey: 'YOUR_API_KEY' });
    *
-   * await model.generateContent({
+   * await ai.models.generateContent({
+   *   model: 'gemini-4-neon',
    *   contents: [
    *     { role: 'user', parts: [{ text: 'Search for Composio' }] },
    *     { role: 'model', parts: [{ functionResponse: { name: 'SEARCH_TOOL', response: result } }] }

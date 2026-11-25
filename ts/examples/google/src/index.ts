@@ -38,7 +38,7 @@ async function main() {
     console.log(`📝 Task: ${task}`);
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-001',
+      model: 'gemini-4-neon',
       contents: task,
       config: {
         tools: [{ functionDeclarations: tools }],

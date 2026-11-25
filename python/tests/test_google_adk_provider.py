@@ -10,6 +10,29 @@ google_adk = pytest.importorskip("composio_google_adk")
 
 
 @pytest.mark.unit
+def test_wrap_tool_executes_through_the_composio_callback():
+    tool = Tool.model_construct(
+        slug="GET_WEATHER",
+        description="Get the weather",
+        input_parameters={
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"],
+        },
+    )
+    calls = []
+
+    def execute_tool(slug, arguments):
+        calls.append((slug, arguments))
+        return {"data": {"temp": 21}, "error": None, "successful": True}
+
+    wrapped = google_adk.GoogleAdkProvider().wrap_tool(tool, execute_tool=execute_tool)
+    declaration = wrapped._get_declaration()
+    assert declaration.name == "GET_WEATHER"
+    assert declaration.parameters_json_schema["required"] == ["city"]
+
+
+@pytest.mark.unit
 @pytest.mark.schema
 @pytest.mark.parametrize("combiner", ["anyOf", "oneOf"])
 # Exceed the converter budget without hitting unrelated schema-copy limits.

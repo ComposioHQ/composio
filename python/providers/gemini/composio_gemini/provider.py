@@ -10,7 +10,8 @@ import types as pytypes
 import typing as t
 from inspect import Parameter, Signature
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from pydantic.fields import FieldInfo
 
 from composio.client.types import Tool
 from composio.core.provider import (
@@ -111,6 +112,72 @@ def _afc_annotation(annotation: t.Any, schema: t.Any = None) -> t.Any:
     if annotation is t.Any:
         return _literal_type(schema)
     return annotation
+
+
+def _afc_parameter(param: Parameter, schema: t.Any, required: bool) -> Parameter:
+    """Return the signature parameter google-genai declares and converts with.
+
+    google-genai lists a parameter as required unless it has a default. An
+    optional property is therefore ``Optional[...] = None``, which it
+    declares as a nullable, non-required field. The default never reaches the
+    tool: the callable only receives the arguments the model sent.
+    """
+    annotation = _afc_annotation(param.annotation, schema)
+    if required:
+        return param.replace(annotation=annotation)
+    if _allowed_values(schema):
+        # ``Optional`` would wrap the enum in ``anyOf``, and Gemini then stops
+        # honouring it.
+        return param.replace(annotation=annotation, default=None)
+    return param.replace(annotation=t.Optional[annotation], default=None)
+
+
+# JSON Schema keywords copied into the declaration as they are.
+_DECLARED_KEYWORDS = (
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "minLength",
+    "maxLength",
+    "pattern",
+    "minItems",
+    "maxItems",
+    "format",
+)
+
+
+def _allowed_values(schema: t.Any) -> t.Optional[list]:
+    """The values a property's ``const`` or ``enum`` allows, if it has either."""
+    if not isinstance(schema, dict):
+        return None
+    if "const" in schema:
+        return [schema["const"]]
+    values = schema.get("enum")
+    return values if isinstance(values, list) and values else None
+
+
+def _afc_metadata(schema: t.Any) -> t.Optional[FieldInfo]:
+    """The description, allowed values and bounds of a property, or ``None``.
+
+    google-genai builds the declaration from the callable's annotations, so
+    this travels as ``Annotated[..., Field(...)]``. Allowed values go through
+    ``json_schema_extra`` because a ``Literal`` cannot be converted to.
+    """
+    if not isinstance(schema, dict):
+        return None
+    extra: t.Dict[str, t.Any] = {}
+    allowed = _allowed_values(schema)
+    if allowed:
+        extra["enum"] = allowed
+    extra.update({k: schema[k] for k in _DECLARED_KEYWORDS if k in schema})
+    description = schema.get("description")
+    if not extra and not isinstance(description, str):
+        return None
+    return Field(
+        description=description if isinstance(description, str) else None,
+        json_schema_extra=extra or None,
+    )
 
 
 def _execution_context(execute_tool: AgenticProviderExecuteFn) -> object:
@@ -227,23 +294,37 @@ class GeminiProvider(AgenticProvider[t.Callable, list[t.Callable]], name="gemini
         # The google-genai SDK requires parameterized array types — bare List
         # generates {"type": "ARRAY"} without "items", which the API rejects.
         properties = aliases.schema.get("properties") or {}
+        required = set(aliases.schema.get("required") or [])
         sig_params = [
-            param.replace(
-                annotation=_afc_annotation(param.annotation, properties.get(param.name))
-            )
+            _afc_parameter(param, properties.get(param.name), param.name in required)
             for param in get_pydantic_signature_format_from_schema_params(
                 schema_params=aliases.schema,
                 skip_default=True,
             )
         ]
+        # Parameters with a default must follow those without one.
+        sig_params.sort(key=lambda param: param.default is not Parameter.empty)
+
+        # google-genai declares the function from ``__annotations__`` when a
+        # signature annotation is a string, keeping ``Annotated`` metadata
+        # (descriptions, allowed values, bounds), but converts the model's
+        # arguments with the plain type from the signature.
+        annotations: t.Dict[str, t.Any] = {}
+        for index, param in enumerate(sig_params):
+            metadata = _afc_metadata(properties.get(param.name))
+            if metadata is None:
+                annotations[param.name] = param.annotation
+                continue
+            annotations[param.name] = t.Annotated[param.annotation, metadata]
+            sig_params[index] = param.replace(annotation=str(param.annotation))
         action_func.__signature__ = Signature(parameters=sig_params)  # type: ignore
         action_func.__doc__ = tool.description or f"Execute {tool.slug}"
 
-        # Build __annotations__ for typing.get_type_hints() compatibility
-        annotations: t.Dict[str, t.Any] = {}
-        for param in sig_params:
-            if param.annotation is not Parameter.empty:
-                annotations[param.name] = param.annotation
+        annotations = {
+            name: annotation
+            for name, annotation in annotations.items()
+            if annotation is not Parameter.empty
+        }
         annotations["return"] = dict
         action_func.__annotations__ = annotations
 

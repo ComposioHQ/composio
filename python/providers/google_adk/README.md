@@ -28,7 +28,7 @@ tools = composio_session.tools()
 
 agent = Agent(
     name="personal_assistant",
-    model="gemini-2.0-flash",
+    model="gemini-4-neon",
     instruction="You are a helpful assistant. Use Composio tools to take action.",
     tools=tools,
 )

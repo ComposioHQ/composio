@@ -171,11 +171,16 @@ class TestWrapTool:
         )
         result = provider.wrap_tool(tool, create_mock_execute_tool())
 
+        import typing
+
         sig = inspect.signature(result)
         assert "title" in sig.parameters
         assert "body" in sig.parameters
         assert sig.parameters["title"].annotation is str
-        assert sig.parameters["body"].annotation is str
+        # Optional properties are ``Optional[...] = None`` so Gemini does not
+        # declare them as required.
+        assert sig.parameters["body"].annotation == typing.Optional[str]
+        assert sig.parameters["body"].default is None
 
     def test_callable_has_typed_free_form_object_argument(self):
         from composio_gemini import GeminiProvider
@@ -402,6 +407,10 @@ class TestWrapTool:
 
         sig = inspect.signature(func)
         tags_annotation = sig.parameters["tags"].annotation
+        # Optional, so unwrap ``Optional[List[str]]``.
+        (tags_annotation,) = (
+            arg for arg in typing.get_args(tags_annotation) if arg is not type(None)
+        )
         # Must be a parameterized generic like List[str], not bare list
         assert typing.get_origin(tags_annotation) is list
         assert typing.get_args(tags_annotation) != ()
@@ -535,6 +544,56 @@ class TestWrapTools:
         provider = GeminiProvider()
         result = provider.wrap_tools([], create_mock_execute_tool())
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Optional parameters stay optional in the declaration
+# ---------------------------------------------------------------------------
+
+
+def _declare_like_the_sdk(func):
+    """The declaration google-genai sends for a callable passed as a tool."""
+    from google import genai
+    from google.genai import _transformers
+
+    client = genai.Client(api_key="test")._api_client
+    tool = _transformers.t_tool(client, func)
+    return tool.function_declarations[0].parameters_json_schema
+
+
+@pytest.mark.skipif(not HAS_GENAI, reason="google-genai package not installed")
+def test_declaration_keeps_schema_metadata_and_optional_params():
+    from composio_gemini import GeminiProvider
+    from google.genai import _extra_utils
+
+    tool = Tool.model_construct(
+        slug="GET_WEATHER",
+        description="Get weather",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "city": {"type": "string", "description": "City name"},
+                "units": {"type": "string", "enum": ["c", "f"]},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50},
+                "mode": {"const": "fast"},
+                "note": {"type": "string"},
+            },
+            "required": ["city"],
+        },
+    )
+    fn = GeminiProvider().wrap_tool(tool, lambda slug, arguments: {})
+
+    properties = _declare_like_the_sdk(fn)["properties"]
+    assert _declare_like_the_sdk(fn)["required"] == ["city"]
+    assert properties["city"]["description"] == "City name"
+    assert properties["units"]["enum"] == ["c", "f"]
+    assert properties["units"]["type"] == "string"
+    assert (properties["limit"]["minimum"], properties["limit"]["maximum"]) == (1, 50)
+    assert properties["mode"]["enum"] == ["fast"]
+    assert "enum" not in properties["note"]
+    # The model's arguments still convert with the plain types.
+    arguments = {"city": "Rome", "units": "c", "limit": 3, "mode": "fast"}
+    assert _extra_utils.convert_argument_from_function(arguments, fn) == arguments
 
 
 # ---------------------------------------------------------------------------
@@ -763,8 +822,13 @@ class TestAFCCompatibility:
 
         assert declaration.parameters is not None
         parameters = declaration.parameters.model_dump(exclude_none=True, mode="json")
-        assert parameters["properties"] == declared
-        assert set(required) <= set(parameters["required"])
+        # Optional properties are declared nullable and left out of ``required``.
+        expected = {
+            name: schema if name in required else {**schema, "nullable": True}
+            for name, schema in declared.items()
+        }
+        assert parameters["properties"] == expected
+        assert set(parameters.get("required", [])) == set(required)
 
     def test_afc_still_validates_the_source_schema(self):
         from composio_gemini import GeminiProvider
