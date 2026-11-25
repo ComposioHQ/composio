@@ -18,7 +18,7 @@ Four stable CLI releases, 0.6.0 through 0.6.3, make the CLI easier to script and
 ### What's new
 
 - **Exit code 75 for retryable failures.** `composio` exits 75 (`EX_TEMPFAIL`) instead of 1 when a failed request is safe to send again as it is: a 429, or a timeout, connection failure, 408, or 5xx on an idempotent request. stderr says to run the same command again. Scripts and agents can retry on 75 without parsing text.
-- **Retry advice from `composio execute`.** A failed `composio execute` adds a `retry` field to its `{ "successful": false }` result, set to `"safe"` or `"check-first"`. `"check-first"` means the tool may already have run before the request failed, so repeating it could act twice. Check the outcome before you run it again.
+- **Retry advice from `composio execute`.** Some failed requests add a `retry` field to the `{ "successful": false }` result, set to `"safe"` or `"check-first"`. `"check-first"` means the tool may already have run before the request failed, so repeating it could act twice. Check the outcome before you run it again. The field is optional: a missing `retry` field does not mean repeating the command is safe.
 - **Experimental Windows x64 binaries.** Install the standalone CLI on Windows without WSL:
 
   ```powershell
