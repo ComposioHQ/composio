@@ -16,7 +16,7 @@ const expectedPages = [
   ['Set sandbox options', '/docs/sessions/sandbox-settings'],
   ['Update a session', '/docs/sessions/updating-sessions'],
   ['Execute session tools', '/docs/sessions/executing-tools'],
-  ['Add tool execution hooks', '/docs/sessions/hooks'],
+  ['Tool execution hooks', '/docs/sessions/hooks'],
 ];
 
 // Public bookmarks from the two pages split in November 2026.
