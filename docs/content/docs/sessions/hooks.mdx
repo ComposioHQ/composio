@@ -421,7 +421,7 @@ What goes in `override` also depends on the kind of call and on when the webhook
 | Tool call | `{ "tool_call": { "arguments": { ... } } }` | `{ "tool_response": { "data": { ... } } }` |
 | Proxy call | `{ "http_request": { ... } }` | `{ "http_response": { ... } }` |
 
-For a tool call, the arguments or data you return replace the originals entirely, so start from them and change only what you need. For a proxy call, include only the fields you want to change. In `http_request`, these are `method`, `endpoint`, `parameters`, and `body`. In `http_response`, they are `data` and `headers`.
+For a tool call, the arguments or data you return replace the originals entirely, so start from them and change only what you need. For a proxy call, include only the fields you want to change. Each field you include replaces the original in full.
 
 For the full schema of the request and of your response, see the reference for [`before_execute`](/reference/api-reference/session-webhooks/composio_session_hook_before_execute) and [`after_execute`](/reference/api-reference/session-webhooks/composio_session_hook_after_execute).
 
