@@ -88,7 +88,7 @@ There are currently three types of handlers:
 
 - **Condition check:** This can be used to block unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. Details: [Firewall > Condition check](/docs/firewall#custom-prompt-checks).
 - **Prompt injection check:** This can be used to scan tool results for prompt injection before they reach your agent. Details: [Firewall > Prompt injection check](/docs/firewall#prompt-injection-detection).
-- **Webhook:** This sends an HTTP request to an endpoint you configure, and uses the response to allow, block, or transform the tool call. It gives you a powerful way to observe and control tool calls with your own code. Details: [Webhooks](#webhooks).
+- **Webhook:** This sends an HTTP request to an endpoint you configure, and uses the response to allow, block, or transform the tool call. It gives you a powerful way to observe and control tool calls programmatically. Details: [Webhooks](#webhooks).
 
 ## Which tool calls hooks run on
 
@@ -216,7 +216,7 @@ curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION
 
 ## Webhooks
 
-Use a webhook when you want your own code to decide what happens to a tool call.
+With a webhook, each tool call is sent to an endpoint you host, before or after the tool runs. You respond to allow the call, block it, or modify it.
 
 <Callout type="warn">
 Webhooks are in beta, and their API may change. They are available on the Enterprise plan.
@@ -259,6 +259,7 @@ session = composio.create(
             "handler": {
                 "type": "webhook",
                 "fallback_action": "block",
+                "timeout_ms": 1000,
             },
         },
     ],
@@ -280,6 +281,7 @@ const session = await composio.create('user_123', {
       handler: {
         type: 'webhook',
         fallbackAction: 'block',
+        timeoutMs: 1000,
       },
     },
   ],
@@ -301,7 +303,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
         "applies_to": {"toolkits": ["gmail"]},
         "handler": {
           "type": "webhook",
-          "fallback_action": "block"
+          "fallback_action": "block",
+          "timeout_ms": 1000
         }
       }
     ]
@@ -310,9 +313,9 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-Set `fallback_action` to choose what happens to a tool call if there's no valid response from your endpoint. See [Fallback](#fallback).
+Set `fallback_action` to choose what happens to a tool call if there's no valid response from your endpoint, and `timeout_ms` to choose how long to wait for one. See [Timeouts](#timeouts) and [Fallback](#fallback).
 
-### How to implement a webhook endpoint
+### Request and response payloads
 
 For every tool call a webhook applies to, your endpoint receives a `POST` request. It reads the request, decides what should happen to the tool call, and responds.
 
