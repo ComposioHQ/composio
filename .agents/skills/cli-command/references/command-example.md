@@ -56,7 +56,7 @@ export const listAccounts = ({ toolkit }: ListParams) =>
 
 ## What the checks establish
 
-The root command `bun run validate:cli-skills` runs in Agent Substrate CI. It checks that linked excerpts still match source, compiles standalone Effect examples and the CLI tests, exercises the example, runs existing registration and invocation contracts, and checks Effect diagnostics.
+The root command `bun run validate:cli-skills` runs in Agent Substrate CI (full CLI package checks on CLI/skill changes and pushes to `next`, linked excerpts and standalone Effect examples on all PRs). It checks that linked excerpts still match source, compiles standalone Effect examples and the CLI tests, exercises the example, and runs existing registration and invocation contracts. Effect diagnostics run in `ts.typecheck.yml` via `pnpm --filter @composio/cli run lint:effect`.
 
 The example asserts the organization and project passed to `getFor`, optional-filter request mapping, the acting user, JSON stdout, empty stderr, inherited login enforcement, help/version handling, parse failures, skipped hooks, and lifecycle identity. Existing registration and command-identity tests cover nested providers, reused registrations, root/dev command paths, shared flags, and canonical paths after a rejected command token.
 

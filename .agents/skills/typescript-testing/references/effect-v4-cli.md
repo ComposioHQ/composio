@@ -128,6 +128,6 @@ Port tests by contract, not file count:
 
 ## Authoring-skill examples
 
-`bun run validate:cli-skills` compiles the skill snippets, checks linked excerpts against current source, and runs the documented teaching command through `cliExit()` over `TestLive`. Its request assertions use the native `@composio/client/effect` implementation over the recording HTTP transport from `test/__utils__/services/stub-composio-client.ts`. The same command also runs the existing registration and invocation contracts and Effect diagnostics.
+`bun run validate:cli-skills` compiles the skill snippets, checks linked excerpts against current source, and runs the documented teaching command through `cliExit()` over `TestLive`. Its request assertions use the native `@composio/client/effect` implementation over the recording HTTP transport from `test/__utils__/services/stub-composio-client.ts`. The same command also runs the existing registration and invocation contracts; Effect diagnostics run in `ts.typecheck.yml` via `pnpm --filter @composio/cli run lint:effect`.
 
 This is recipe and contract verification. It does not measure agent performance on an unseen authoring task. The separate trial protocol lives in the `cli-command` command-example reference.

@@ -36,6 +36,7 @@ export const checkLinkedExamples = (
 };
 
 if (import.meta.main) {
+  const excerptsOnly = process.argv.includes('--excerpts-only');
   let count = 0;
   for (const file of references) {
     count += checkLinkedExamples(readFileSync(path.join(root, file), 'utf8'), source =>
@@ -43,38 +44,43 @@ if (import.meta.main) {
     );
   }
   console.log(`${count} CLI skill excerpts match repo source`);
-  const commands = [
-    ['node', '.agents/skills/effect-v4/scripts/check-examples.mjs'],
-    ['pnpm', 'exec', 'turbo', 'run', 'typecheck', '--filter=@composio/cli'],
-    [
-      'pnpm',
-      '--filter',
-      '@composio/cli',
-      'exec',
-      'vitest',
-      'run',
-      'test/skills/command-example.test.ts',
-      'test/src/commands/registration.test.ts',
-      'test/src/commands/surface.test.ts',
-      'test/src/commands/surface.acting-user.test.ts',
-      'test/src/invocation/invocation.test.ts',
-      'test/src/invocation/command-identity.test.ts',
-      'test/src/services/composio-client-singleton.test.ts',
-      'test/src/services/terminal-ui.test.ts',
-      'test/src/run-main.test.ts',
-      'test/src/services/shutdown-signal.test.ts',
-      'test/src/commands/triggers/sink-failures.test.ts',
-      'test/src/commands/listen/listen.cmd.test.ts',
-      'test/src/commands/triggers/triggers.listen.cmd.test.ts',
-    ],
-    ['pnpm', '--filter', '@composio/cli', 'run', 'lint:effect'],
-  ];
+  const commands: string[][] = [['node', '.agents/skills/effect-v4/scripts/check-examples.mjs']];
+  if (!excerptsOnly) {
+    // Effect diagnostics (`pnpm --filter @composio/cli run lint:effect`) are
+    // owned by `ts.typecheck.yml` so they do not run twice in CI.
+    commands.push(
+      ['pnpm', 'exec', 'turbo', 'run', 'typecheck', '--filter=@composio/cli'],
+      [
+        'pnpm',
+        '--filter',
+        '@composio/cli',
+        'exec',
+        'vitest',
+        'run',
+        'test/skills/command-example.test.ts',
+        'test/src/commands/registration.test.ts',
+        'test/src/commands/surface.test.ts',
+        'test/src/commands/surface.acting-user.test.ts',
+        'test/src/invocation/invocation.test.ts',
+        'test/src/invocation/command-identity.test.ts',
+        'test/src/services/composio-client-singleton.test.ts',
+        'test/src/services/terminal-ui.test.ts',
+        'test/src/run-main.test.ts',
+        'test/src/services/shutdown-signal.test.ts',
+        'test/src/commands/triggers/sink-failures.test.ts',
+        'test/src/commands/listen/listen.cmd.test.ts',
+        'test/src/commands/triggers/triggers.listen.cmd.test.ts',
+      ]
+    );
+  }
   for (const cmd of commands) {
     console.log(`Checking: ${cmd.join(' ')}`);
     const result = Bun.spawnSync(cmd, { cwd: root, stdout: 'inherit', stderr: 'inherit' });
     if (result.exitCode !== 0) process.exit(result.exitCode || 1);
   }
   console.log(
-    'CLI skill examples compile and satisfy the selected invocation contracts. Agent task performance is not measured.'
+    excerptsOnly
+      ? 'CLI skill excerpts and standalone Effect examples verified (CLI package contracts skipped: no CLI/skill inputs changed).'
+      : 'CLI skill examples compile and satisfy the selected invocation contracts. Agent task performance is not measured.'
   );
 }
