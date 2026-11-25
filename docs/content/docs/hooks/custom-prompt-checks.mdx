@@ -172,10 +172,10 @@ It's important to write a condition as a description of the tool call or result 
 
 ## How we evaluate a condition
 
-We use a classifier to compare each tool call to your condition. It sees which tool your agent is calling and the arguments it passes. In an `after_execute` hook, it also sees the data the tool returned.
+We use a decision model to compare each tool call to your condition. It sees which tool your agent is calling and the arguments it passes. In an `after_execute` hook, it also sees the data the tool returned.
 
-The classifier also takes your agent's earlier activity in the session into account. This is important because a single tool call might seem harmless on its own, but when chained together with earlier tool calls, your agent might be doing something it's not allowed to do. For example, an email to a customer with a few numbers in it looks fine, unless your agent just copied those numbers from your internal pricing sheet.
+The decision model also takes your agent's earlier activity in the session into account. This is important because a single tool call might seem harmless on its own, but when chained together with earlier tool calls, your agent might be doing something it's not allowed to do. For example, an email to a customer with a few numbers in it looks fine, unless your agent just copied those numbers from your internal pricing sheet.
 
 <Callout type="info">
-For projects with ZDR enabled, we don't have context about your agent's historical activity, so our classifier can only judge a tool call in isolation. This may not work for certain kinds of checks.
+For projects with ZDR enabled, we don't have context about your agent's historical activity, so our decision model can only judge a tool call in isolation. This may not work for certain kinds of checks.
 </Callout>

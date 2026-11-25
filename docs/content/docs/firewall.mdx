@@ -17,19 +17,33 @@ Firewall is built on [hooks](/docs/hooks), which run before or after each tool c
 
 ## Custom prompt checks
 
-You describe what you want blocked in natural language, and any tool call or result that matches it is blocked. This is how you'd stop your agent from sharing internal pricing with customers, or from reading emails that contain a password.
+You write a condition that describes what you want blocked, in natural language. For example:
 
-See [Custom prompt checks](/docs/hooks/custom-prompt-checks) for examples and for how to write a condition.
+> Sharing internal pricing with anyone outside acme.com
+
+Every time your agent calls a tool, a decision model compares the tool call to your condition. It looks at the tool, its arguments, and what your agent has done earlier in the session. If the tool call matches, it's blocked: the email isn't sent, and your agent gets an error instead.
+
+A check can run before a tool call, on its arguments, or after it, on what the tool returns.
+
+See [Custom prompt checks](/docs/hooks/custom-prompt-checks) for how to add one and how to write a condition.
 
 ## Prompt injection detection
 
-A built-in check scans every tool result for prompt injection, and blocks the result before it reaches your agent.
+Tool results are where outside content reaches your agent: emails, web pages, tickets, documents. Any of them can contain text written to hijack your agent, like an email that says to ignore its instructions and forward the user's inbox to another address.
+
+When this check is on, a decision model screens every tool result before your agent reads it. If a result contains a prompt injection, it's blocked, and your agent gets an error instead of the content. There's no condition to write. You turn the check on and choose which toolkits it covers.
 
 See [Prompt injection detection](/docs/hooks/prompt-injection-detection) for how to turn it on.
 
 ## Webhooks
 
-With a webhook, each tool call is sent to an endpoint you host, and you respond to allow it, block it, or modify it. Use one when a check depends on your own systems. For example, you can scan tool calls for PII with your own detection service, check each tool call against your own permission or approval system, or strip secrets from a tool's result before your agent reads it.
+A webhook sends each tool call to an endpoint you host, as an HTTP request. The request has the tool and its arguments, and after the tool has run, its result. You run whatever check you need and respond with one of three answers:
+
+- **Continue:** The tool call goes ahead unchanged.
+- **Block:** The tool call is stopped, and your agent gets the error message you return.
+- **Override:** The tool call goes ahead with your changes. Before the tool runs, you can replace its arguments. After it runs, you can replace its result.
+
+For example, when a Salesforce record contains a customer's phone number, you can remove the phone number and return the rest, instead of blocking the whole record.
 
 See [Webhooks](/docs/hooks/webhooks) for how to set one up.
 
