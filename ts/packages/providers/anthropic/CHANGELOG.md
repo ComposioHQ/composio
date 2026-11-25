@@ -1,5 +1,11 @@
 # @composio/anthropic
 
+## 0.11.9
+
+### Patch Changes
+
+- 1b88005: Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.
+
 ## 0.11.8
 
 ### Patch Changes
