@@ -7,7 +7,7 @@ test('routing map is bounded and covers the current developer decisions', async 
   expect(text.length).toBeLessThan(6000);
   const primary = text.split('## Optional')[0];
   for (const path of ['docs', 'docs/agent-setup', 'docs/quickstart', 'docs/agent-plugins',
-    'docs/authentication', 'docs/configuring-sessions', 'kb']) {
+    'docs/authentication', 'docs/sessions/tool-access', 'kb']) {
     expect(primary).toContain(`https://docs.composio.dev/${path}.md`);
   }
   expect(text).toContain('[Complete documentation index](https://docs.composio.dev/llms-index.txt)');

@@ -1,0 +1,14 @@
+{
+  "title": "Sessions",
+  "defaultOpen": false,
+  "pages": [
+    "create-and-reuse",
+    "tool-access",
+    "saved-session-policies",
+    "loading-tools",
+    "connections",
+    "sandbox-settings",
+    "updating-sessions",
+    "executing-tools"
+  ]
+}

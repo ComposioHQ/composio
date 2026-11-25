@@ -8,6 +8,7 @@
  * @module errors/ComposioError
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error}
  */
+import { describeThrown } from '../utils/userCallback';
 import pc from 'picocolors';
 import { ZodError } from 'zod/v3';
 import { APIError } from '@composio/client';
@@ -183,7 +184,7 @@ export class ComposioError extends Error {
           ? sanitizeApiErrorText(rawCause.message)
           : rawCause instanceof Error
             ? rawCause.message
-            : sanitizeApiErrorText(String(rawCause));
+            : sanitizeApiErrorText(describeThrown(rawCause));
     }
 
     // Add code if exists
@@ -424,7 +425,7 @@ export class ComposioError extends Error {
 
     if (error !== null && error !== undefined) {
       logger.error(pc.gray('Error details:'));
-      logger.error('  ' + pc.white(String(error)));
+      logger.error('  ' + pc.white(describeThrown(error)));
     }
 
     logger.error(''); // Add a trailing empty line

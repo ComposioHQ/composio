@@ -259,7 +259,7 @@ export class TelemetryTransport {
     });
 
     this.pendingImmediateTelemetry.add(pending);
-    pending.finally(() => {
+    void pending.finally(() => {
       this.pendingImmediateTelemetry.delete(pending);
     });
   }

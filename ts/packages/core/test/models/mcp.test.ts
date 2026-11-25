@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MCP } from '../../src/models/MCP';
 import ComposioClient from '@composio/client';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 
 // Mock dependencies
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -48,7 +49,7 @@ describe('MCP', () => {
     });
 
     it('should instrument the class with telemetry', () => {
-      expect(telemetry.instrument).toHaveBeenCalledWith(mcp, 'MCP');
+      expect(instrument).toHaveBeenCalledWith(mcp, 'MCP');
     });
   });
 

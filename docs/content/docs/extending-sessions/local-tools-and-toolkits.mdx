@@ -641,7 +641,7 @@ const localToolkits = session.localToolkits();
 
 ## Reusing a session with local tools
 
-When [reusing a session](/docs/how-composio-works#how-sessions-behave) via `composio.use()`, you can attach local tools at the same time:
+When [reusing a session](/docs/sessions/create-and-reuse#how-sessions-behave) via `composio.use()`, you can attach local tools at the same time:
 
 {/* code-example: no-api reason="attaching local tools on use() needs the SDK to run their handlers locally" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
@@ -727,4 +727,4 @@ qualified slugs instead of choosing one toolkit silently.
 
 ## Next
 
-<Card icon={<Wrench />} title="Configuring sessions" href="/docs/configuring-sessions" description="Filter toolkits and tools, set auth configs, and read tools with session.tools()" />
+<Card icon={<Wrench />} title="Restrict tool access" href="/docs/sessions/tool-access" description="Filter toolkits and tools, set auth configs, and read tools with session.tools()" />

@@ -41,7 +41,7 @@ export interface AnthropicTool {
 export interface InputSchema {
   type: 'object';
 
-  properties?: unknown | null;
+  properties?: unknown;
 
   [k: string]: unknown;
 }

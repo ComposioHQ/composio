@@ -870,7 +870,7 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
       !deletions[0].includes('composio-windows-x64.zip')
     ) {
       throw new Error(
-        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions}`
+        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions.join('\n')}`
       );
     }
   } finally {
@@ -1215,7 +1215,7 @@ esac
     JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
   ) {
     throw new Error(
-      `release script must run build → provider compatibility → publish: ${commands}`
+      `release script must run build → provider compatibility → publish: ${commands.join('\n')}`
     );
   }
 
@@ -1842,6 +1842,10 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
       RUN_NUMBER: '1',
       COMMIT_SHA: 'abc123',
     },
+    releasesFixture: [
+      { tagName: '@composio/cli@0.2.33', isPrerelease: false },
+      { tagName: '@composio/cli@0.3.0-beta.5', isPrerelease: true },
+    ],
     curlFixture: { prerelease: true, target_commitish: 'abc123' },
     // ghViewIsDraft unset ⇒ `gh release view` exits non-zero ⇒ no existing release to refuse.
   });
@@ -1853,6 +1857,9 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
   if (r.outputs.prerelease !== 'false' || r.outputs.make_latest !== 'true') {
     throw new Error('promote-stable must emit prerelease=false and make_latest=true');
+  }
+  if (r.outputs.previous_stable_tag !== '@composio/cli@0.2.33') {
+    throw new Error('promote-stable must start release notes at the previous published stable tag');
   }
   if ('checkout_ref' in r.outputs) {
     throw new Error('promote-stable must not emit an input-derived checkout ref');

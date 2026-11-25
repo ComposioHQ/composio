@@ -48,7 +48,7 @@ const withCountingRepository = <A>(
     readonly cacheDir: string;
   }) => Effect.Effect<
     A,
-    GetToolkitsError | GetProjectToolkitsError,
+    GetProjectToolkitsError,
     ComposioToolkitsRepository | FileSystem.FileSystem
   >,
   config: ReadonlyArray<readonly [string, string]> = [],

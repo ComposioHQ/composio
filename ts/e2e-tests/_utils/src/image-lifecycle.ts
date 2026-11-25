@@ -578,7 +578,7 @@ export async function ensureInstallImage(
   options: EnsureInstallImageOptions = {}
 ): Promise<InstallImage> {
   if (shell !== 'bash' && shell !== 'zsh' && shell !== 'fish') {
-    throw new Error(`ensureInstallImage(${shell}): shell must be bash, zsh, or fish`);
+    throw new Error(`ensureInstallImage(${String(shell)}): shell must be bash, zsh, or fish`);
   }
 
   const repoRoot = options.repoRoot ?? getRepoRoot();

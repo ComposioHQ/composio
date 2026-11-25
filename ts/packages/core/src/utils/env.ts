@@ -1,7 +1,4 @@
-export const getEnvVariable = (
-  name: string,
-  defaultValue: string | undefined = undefined
-): string | undefined => {
+export const getEnvVariable = (name: string, defaultValue?: string): string | undefined => {
   try {
     return process.env[name] || defaultValue;
   } catch (_e) {
@@ -28,7 +25,7 @@ export const getEnvsWithPrefix = (prefix: string): Record<string, unknown> => {
     } else {
       return {};
     }
-  } catch (error) {
+  } catch {
     return {};
   }
 };

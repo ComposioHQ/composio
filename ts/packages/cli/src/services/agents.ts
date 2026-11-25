@@ -236,7 +236,11 @@ export const removeStoredAgentIdentity = Effect.gen(function* () {
   yield* fs.remove(configPath).pipe(Effect.ignore);
 });
 
-const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
+type AgentRequestInit = Omit<RequestInit, 'headers'> & {
+  readonly headers?: Record<string, string>;
+};
+
+const fetchAgentJson = (pathname: string, init: AgentRequestInit = {}) =>
   Effect.gen(function* () {
     const baseURL = yield* agentsBaseURL;
     const response = yield* Effect.tryPromise({
@@ -248,7 +252,7 @@ const fetchAgentJson = (pathname: string, init: RequestInit = {}) =>
             ...cliRequestHeaders(),
             Accept: 'application/json',
             ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(init.headers ?? {}),
+            ...init.headers,
           },
         }),
       catch: cause =>

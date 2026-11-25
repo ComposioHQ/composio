@@ -47,10 +47,14 @@ class ToolRouterHookEvaluatedResult(te.TypedDict):
 
 class ToolRouterHookUnavailableResult(te.TypedDict):
     """A session hook that could not be evaluated, for example because it
-    timed out. It does not block the call."""
+    timed out. ``detail`` says why, when the API gives a reason.
+
+    It does not block the call, unless the hook has a ``webhook`` handler
+    with ``fallback_action="block"``."""
 
     id: str
     status: t.Literal["unavailable"]
+    detail: te.NotRequired[str]
 
 
 ToolRouterHookResult = t.Union[

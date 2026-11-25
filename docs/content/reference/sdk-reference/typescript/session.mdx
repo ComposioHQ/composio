@@ -34,7 +34,7 @@ Experimental — shape may change in future releases.
 `userId` 1..256 characters). Invalid input throws `ValidationError`
 at the SDK boundary.
 
-```typescript
+```typescript signature
 async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: string; experimental?: { accountType?: ConnectedAccountType; aclConfigForShared?: ConnectedAccountAclConfig; }; }, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
@@ -58,7 +58,7 @@ async authorize(toolkit: string, options?: { callbackUrl?: string; alias?: strin
 Use `localToolkits()` instead.
 </Callout>
 
-```typescript
+```typescript signature
 customToolkits(): RegisteredLocalToolkit[]
 ```
 
@@ -74,7 +74,7 @@ customToolkits(): RegisteredLocalToolkit[]
 Use `localTools()` instead.
 </Callout>
 
-```typescript
+```typescript signature
 customTools(options?: { toolkit?: string }): RegisteredLocalTool[]
 ```
 
@@ -97,7 +97,7 @@ Delete this session.
 Deleted sessions immediately stop being retrievable or executable. Deleting
 an already-deleted session surfaces the backend 404.
 
-```typescript
+```typescript signature
 async delete(requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionDeleteResponse>
 ```
 
@@ -127,7 +127,7 @@ for the new connection to become ACTIVE.
 For interactive flows that should surface the redirect URL instead of
 blocking, use `authorize()` and its `waitForConnection()` directly.
 
-```typescript
+```typescript signature
 async ensureConnected(toolkit: string, options?: ToolRouterSessionEnsureConnectedOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionEnsureConnectedResult>
 ```
 
@@ -147,7 +147,7 @@ async ensureConnected(toolkit: string, options?: ToolRouterSessionEnsureConnecte
 **Example**
 
 ```typescript
-const session = await composio.sessions.create({ toolkits: ['github'] });
+const session = await composio.sessions.create('user_123', { toolkits: ['github'] });
 const { wasConnected, connectedAccount } = await session.ensureConnected('github');
 if (!wasConnected) console.log('Newly linked:', connectedAccount?.id);
 ```
@@ -163,7 +163,7 @@ original slug (e.g. "GREP") when that original slug is unique across
 the session's custom tools and toolkits. Custom tools are executed
 in-process; remote tools are sent to the Composio backend.
 
-```typescript
+```typescript signature
 async execute(toolSlug: string, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
 ```
 
@@ -191,7 +191,7 @@ tool slugs, so a typo is a type error instead of a failed request. The call
 is sent to the Composio backend as is: custom tools named in a
 `COMPOSIO_MULTI_EXECUTE_TOOL` call are not run in-process here.
 
-```typescript
+```typescript signature
 async executeMeta(slug: ToolRouterSessionMetaToolSlug, arguments_?: Record<string, unknown>, options?: ToolRouterSessionExecuteMetaOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionExecuteResponse>
 ```
 
@@ -224,7 +224,7 @@ Page through this session's configuration history, newest first. The
 first page starts with the live config (`isCurrent: true`); every
 `session.update()` archives the previous version as a history row.
 
-```typescript
+```typescript signature
 async listConfigHistory(options?: ToolRouterSessionListConfigHistoryOptions, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionListConfigHistoryResponse>
 ```
 
@@ -254,7 +254,7 @@ console.log(items[1].config.toolkits);
 List all toolkits of local tools registered in this session.
 Returns toolkits with their tools showing final slugs.
 
-```typescript
+```typescript signature
 localToolkits(): RegisteredLocalToolkit[]
 ```
 
@@ -269,7 +269,7 @@ localToolkits(): RegisteredLocalToolkit[]
 List all local tools registered in this session.
 Returns tools with their final slugs, schemas, and resolved toolkit.
 
-```typescript
+```typescript signature
 localTools(options?: { toolkit?: string }): RegisteredLocalTool[]
 ```
 
@@ -290,7 +290,7 @@ localTools(options?: { toolkit?: string }): RegisteredLocalTool[]
 Proxy an API call through Composio's auth layer using the session's connected account.
 The backend resolves the connected account from the toolkit within the session.
 
-```typescript
+```typescript signature
 async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionProxyExecuteResponse>
 ```
 
@@ -312,7 +312,7 @@ async proxyExecute(params: SessionProxyExecuteParams, requestOptions?: ComposioR
 Search for tools by semantic use case.
 Returns relevant tools for the given query with schemas and guidance.
 
-```typescript
+```typescript signature
 async search(params: { query: string; toolkits?: string[]; }, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionSearchResponse>
 ```
 
@@ -334,7 +334,7 @@ async search(params: { query: string; toolkits?: string[]; }, requestOptions?: C
 Query the connection state of toolkits in the session.
 Supports pagination and filtering by toolkit slugs.
 
-```typescript
+```typescript signature
 async toolkits(options?: ToolRouterToolkitsOptions, requestOptions?: ComposioRequestOptions): Promise<{ cursor: string | undefined; items: { connection?: { authConfig?: ... | ...; connectedAccount?: { id: ...; status: ... }; isActive: boolean }; isNoAuth: boolean; logo?: string; name: string; slug: string }[]; totalPages: number }>
 ```
 
@@ -359,7 +359,7 @@ Requires a provider to be configured in the Composio constructor.
 When custom tools are bound to the session, execution of COMPOSIO_MULTI_EXECUTE_TOOL
 is intercepted: local tools are executed in-process, remote tools are sent to the backend.
 
-```typescript
+```typescript signature
 async tools(modifiers?: SessionMetaToolOptions, requestOptions?: ComposioRequestOptions): Promise<ReturnType<TProvider['wrapTools']>>
 ```
 
@@ -411,7 +411,7 @@ for example for an archived or missing config, surface unchanged.
 `experimental.sourceSessionConfig` are refreshed in place only after a
 successful response, and the updated `config` is returned.
 
-```typescript
+```typescript signature
 async update(config: ToolRouterUpdateSessionConfig, requestOptions?: ComposioRequestOptions): Promise<ToolRouterSessionConfig>
 ```
 

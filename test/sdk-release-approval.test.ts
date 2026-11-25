@@ -10,7 +10,7 @@ import {
   merge,
   type ControllerOptions,
 } from './sdk-release-controller-fixture';
-import { runRelease } from './sdk-release-harness';
+import { fetchInputUrl, runRelease } from './sdk-release-harness';
 
 const tag = (fetcher: ReturnType<typeof fakeController>['fetcher']) =>
   runRelease(
@@ -108,7 +108,7 @@ describe('source tag', () => {
       conclusion: 'success',
     }));
     const paged: typeof fetcher = (input, init) => {
-      const url = new URL(String(input));
+      const url = new URL(fetchInputUrl(input));
       if (!url.pathname.endsWith('/check-runs')) return fetcher(input, init);
       return (url.searchParams.get('page') ?? '1') === '1'
         ? Promise.resolve(Response.json({ total_count: 103, check_runs: unrelated }))
@@ -139,7 +139,7 @@ describe('source tag', () => {
     expect(await issueOf({ branchSetter: 'writer' })).toEqual(Option.none());
   });
 
-  test('a beta is tagged without either docs check, which never run on a plan-only PR', async () => {
+  test('a beta is tagged without either docs check, which never run on a plan-only PR, but with the reference check', async () => {
     const { fetcher, writes } = fakeController({
       beta: true,
       docs: 'missing',
@@ -187,6 +187,19 @@ describe('source tag', () => {
     ['the docs check failed', { docs: 'failure' }, 'SDK candidate docs'],
     ['the docs check is pending', { docs: 'pending' }, 'SDK candidate docs'],
     ['the docs check is missing', { docs: 'missing' }, 'SDK candidate docs'],
+    ['the reference check failed', { reference: 'failure' }, 'SDK candidate reference'],
+    ['the reference check is pending', { reference: 'pending' }, 'SDK candidate reference'],
+    ['the reference check is missing', { reference: 'missing' }, 'SDK candidate reference'],
+    [
+      'a beta reference check failed',
+      { beta: true, docs: 'missing', reference: 'failure' },
+      'SDK candidate reference',
+    ],
+    [
+      'a beta reference check is missing',
+      { beta: true, docs: 'missing', reference: 'missing' },
+      'SDK candidate reference',
+    ],
     [
       'a re-run of a passed check failed',
       { rerunFailed: 'SDK candidate (typescript)' },
@@ -212,7 +225,7 @@ describe('source tag', () => {
   test('a GitHub error during the gate fails the job for a re-run and refuses nothing', async () => {
     const { fetcher, writes } = fakeController();
     const unavailable: typeof fetcher = (input, init) =>
-      new URL(String(input)).pathname.includes('/check-runs')
+      new URL(fetchInputUrl(input)).pathname.includes('/check-runs')
         ? Promise.resolve(new Response('Bad Gateway', { status: 502 }))
         : fetcher(input, init);
     await expect(tag(unavailable)).rejects.toThrow('(502)');
@@ -223,7 +236,8 @@ describe('source tag', () => {
     const { fetcher, writes } = fakeController();
     const withoutMerged: typeof fetcher = async (input, init) => {
       const response = await fetcher(input, init);
-      if (new URL(String(input)).pathname !== '/repos/ComposioHQ/composio/pulls/9') return response;
+      if (new URL(fetchInputUrl(input)).pathname !== '/repos/ComposioHQ/composio/pulls/9')
+        return response;
       const { merged: _merged, ...rest } = (await response.json()) as Record<string, unknown>;
       return Response.json(rest);
     };

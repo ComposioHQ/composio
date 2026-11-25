@@ -81,6 +81,9 @@
     "prefer-const": "warn",
     "no-console": "warn",
     "typescript/no-explicit-any": "error",
+    // SDK modifiers can return a value or a Promise. Promise.all preserves
+    // ordering and resolves either form.
+    "typescript/await-thenable": ["error", { "allowMixedPromiseArrays": true }],
     "no-unused-vars": [
       "warn",
       {
@@ -91,6 +94,26 @@
     ]
   },
   "overrides": [
+    {
+      // Build and maintenance scripts use stdout and stderr for their output.
+      "files": ["ts/packages/**/scripts/**/*.{ts,tsx,mts,cts}", "tsdown.config.base.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      // Bun's promise matchers are typed as returning void. Awaiting them
+      // preserves sequencing when the matcher has to wait for a pending promise.
+      "files": [
+        "test/{sdk-release-*,composio-client-update,issue-triage,provider-compatibility}.test.ts",
+        "ts/e2e-tests/_utils/test/image-lifecycle.test.ts",
+        "ts/examples/approvals/test/approval.test.ts",
+        "ts/examples/session-management/test/session-config-verification.test.ts"
+      ],
+      "rules": {
+        "typescript/await-thenable": "off"
+      }
+    },
     {
       // These files still enforce the repository-wide no-any rule, but are
       // exempt from source-only policies that do not fit test helpers, large
@@ -117,6 +140,57 @@
         "typescript/ban-ts-comment": "off",
         "typescript/no-empty-object-type": "off",
         "typescript/no-namespace": "off"
+      }
+    },
+    {
+      // Shared script helpers run on Bun with Effect platform services.
+      "files": ["scripts/lib/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "crypto", "message": "Use Web Crypto API instead." },
+              { "name": "node:crypto", "message": "Use Web Crypto API instead." },
+              { "name": "buffer", "message": "Use Uint8Array instead." },
+              { "name": "node:buffer", "message": "Use Uint8Array instead." },
+              { "name": "process", "message": "Read environment variables through effect/Config and arguments through Stdio." },
+              { "name": "node:process", "message": "Read environment variables through effect/Config and arguments through Stdio." },
+              { "name": "os", "message": "Use an Effect service instead of importing node:os directly." },
+              { "name": "node:os", "message": "Use an Effect service instead of importing node:os directly." },
+              { "name": "child_process", "message": "Use ChildProcess from effect/process instead." },
+              { "name": "node:child_process", "message": "Use ChildProcess from effect/process instead." },
+              { "name": "fs", "message": "Use FileSystem from effect instead." },
+              { "name": "node:fs", "message": "Use FileSystem from effect instead." },
+              { "name": "path", "message": "Use Path from effect instead." },
+              { "name": "node:path", "message": "Use Path from effect instead." }
+            ],
+            "patterns": [{ "group": ["fs/*", "node:fs/*"], "message": "Use FileSystem from effect instead." }]
+          }
+        ],
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "TryStatement",
+            "message": "Use Effect.try, Effect.tryPromise, or typed Effect error recovery instead of try/catch."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][property.name=/^(env|argv)$/]",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          },
+          {
+            "selector": "MemberExpression[object.name='process'][computed=true][property.value=/^(env|argv)$/]",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          },
+          {
+            "selector": ":matches(VariableDeclarator[init.name='process'], AssignmentExpression[right.name='process'], AssignmentPattern[right.name='process']) > ObjectPattern > Property:matches([key.name=/^(env|argv)$/], [key.value=/^(env|argv)$/])",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          },
+          {
+            "selector": "MemberExpression[object.name='Bun'][property.name='env']",
+            "message": "Read environment variables through effect/Config and arguments through Stdio."
+          }
+        ]
       }
     },
     {

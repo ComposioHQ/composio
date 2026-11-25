@@ -1,0 +1,64 @@
+---
+title: "SessionWebhooks"
+description: "`composio.sessions.webhooks` — for the endpoint at a project's session webhook URL, which answers session hooks that have a `webhook` handler."
+---
+
+## Usage
+
+Access this class through the `composio.sessions.webhooks` property:
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+const webhooks = composio.sessions.webhooks;
+```
+
+## Methods
+
+### parse()
+
+Verify and parse an event Composio sent to the session webhook URL.
+
+Composio sends one before or after each tool or proxy call that a hook
+with a `webhook` handler applies to, and waits for the endpoint's answer.
+The signature is always verified, with the project's session webhook
+secret. The event is returned as Composio sent it, with the field names of
+the webhook reference.
+
+Pass the raw, unparsed request body: the signature covers its exact bytes.
+
+```typescript signature
+async parse(params: ParseSessionWebhookParams): Promise<SessionWebhookEvent>
+```
+
+**Parameters**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `params` | `ParseSessionWebhookParams` | The request and how to verify it |
+
+**Returns**
+
+`Promise<SessionWebhookEvent>` — The verified event
+
+**Example**
+
+```typescript
+// Next.js App Router, at the project's session webhook URL
+export async function POST(request: Request) {
+  const hook = await composio.sessions.webhooks.parse({
+    body: await request.text(),
+    headers: request.headers,
+    verifySecret: process.env.COMPOSIO_SESSION_WEBHOOK_SECRET!,
+  });
+
+  // Keep a confidential project out of every call and every result
+  if (JSON.stringify(hook.data).includes('Project Titan')) {
+    return Response.json({ action: 'block', message: 'Project Titan is confidential' });
+  }
+  return Response.json({ action: 'continue' });
+}
+```
+
+---

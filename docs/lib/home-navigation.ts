@@ -127,6 +127,8 @@ export const DOCS_PRODUCTS = {
       '/docs/b2b-agents',
       '/docs/production-readiness',
       '/docs/providers',
+      '/docs/sessions',
+      '/docs/hooks',
       '/docs/how-composio-works',
       '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
@@ -145,6 +147,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
+      '/docs/deployment',
       '/docs/security',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
@@ -164,16 +167,8 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Build',
         items: [
-          {
-            type: 'group',
-            label: 'Sessions',
-            links: [
-              { url: '/docs/how-composio-works', label: 'What is a Session?' },
-              { url: '/docs/configuring-sessions' },
-              { url: '/docs/session-configs' },
-              { url: '/docs/sessions-via-mcp' },
-            ],
-          },
+          { type: 'folder', path: 'sessions' },
+          { type: 'page', url: '/docs/sessions-via-mcp' },
           {
             type: 'group',
             label: 'Toolkits & Tools',
@@ -183,6 +178,16 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/instant-tools' },
               { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Hooks',
+            links: [
+              { url: '/docs/hooks' },
+              { url: '/docs/hooks/custom-prompt-checks' },
+              { url: '/docs/hooks/prompt-injection-detection' },
+              { url: '/docs/hooks/webhooks' },
             ],
           },
           {
@@ -248,6 +253,7 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
+          { type: 'folder', path: 'deployment' },
           { type: 'folder', path: 'poc-to-prod' },
         ],
       },
@@ -280,6 +286,7 @@ export const DOCS_PRODUCTS = {
             label: 'Security controls',
             links: [
               { url: '/docs/security/token-custody' },
+              { url: '/docs/deployment/byoc' },
               { url: '/docs/security/audit-logs' },
               { url: '/docs/security/outbound-ips' },
             ],

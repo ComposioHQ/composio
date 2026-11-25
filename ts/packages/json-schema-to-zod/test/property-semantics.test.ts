@@ -40,7 +40,7 @@ const scalarValue: fc.Arbitrary<Serializable> = fc.oneof(
   fc.integer({ min: -100, max: 100 }),
   fc.double({ min: -100, max: 100, noNaN: true, noDefaultInfinity: true }),
   fc.string({
-    unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz', '\u{1D11E}'),
+    unit: fc.constantFrom(...Array.from('abcdefghijklmnopqrstuvwxyz'), '\u{1D11E}'),
     maxLength: 6,
   })
 );
@@ -62,7 +62,8 @@ const scalarSchema: fc.Arbitrary<SchemaRecord> = fc
       enumValues: fc.uniqueArray(scalarValue, {
         minLength: 1,
         maxLength: 4,
-        comparator: 'SameValue',
+        // Draft 7 treats 0 and -0 as the same enum value.
+        comparator: 'SameValueZero',
       }),
       constValue: scalarValue,
       minLength: fc.option(fc.integer({ min: 0, max: 4 }), { nil: undefined }),

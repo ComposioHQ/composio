@@ -44,7 +44,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 Behavior tags describe tool behavior. Inspect the tools the session exposes
 before rollout, especially when a workflow handles sensitive data.
 
-- [Filter tools by tags](https://docs.composio.dev/docs/configuring-sessions#filtering-tools-by-tags)
+- [Filter tools by tags](https://docs.composio.dev/docs/sessions/tool-access#filtering-tools-by-tags)
 
 ## Use exact tool allowlists for the narrowest policy
 
@@ -89,7 +89,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 <!-- end-languages -->
 
-- [Enable and disable specific tools](https://docs.composio.dev/docs/configuring-sessions#enabling-or-disabling-specific-tools)
+- [Enable and disable specific tools](https://docs.composio.dev/docs/sessions/tool-access#enabling-or-disabling-specific-tools)
 
 ## Combine provider scopes with session tool restrictions
 
@@ -149,7 +149,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 <!-- end-languages -->
 
-- [Toolkit-specific tag filters](https://docs.composio.dev/docs/configuring-sessions#filtering-tools-by-tags)
+- [Toolkit-specific tag filters](https://docs.composio.dev/docs/sessions/tool-access#filtering-tools-by-tags)
 
 ## Disable the session sandbox when the workflow does not need code execution
 
@@ -190,4 +190,4 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 <!-- end-languages -->
 
-- [Disable the session sandbox](https://docs.composio.dev/docs/configuring-sessions#disabling-the-sandbox)
+- [Disable the session sandbox](https://docs.composio.dev/docs/sessions/sandbox-settings#disabling-the-sandbox)

@@ -1,6 +1,7 @@
 import { PusherSubscriptionError } from '../errors/PusherErrors';
 import { CLIENT_PUSHER_KEY } from './constants';
 import logger from './logger';
+import { describeThrown } from './userCallback';
 
 const PUSHER_KEY = CLIENT_PUSHER_KEY || 'ff9f18c208855d77a152';
 const PUSHER_CLUSTER = 'mt1';
@@ -124,7 +125,9 @@ export class PusherUtils {
     try {
       await PusherUtils.pusherClient.subscribe(channelName).bind(event, fn);
     } catch (error) {
-      logger.error(`Error subscribing to ${channelName} with event ${event}: ${error}`);
+      logger.error(
+        `Error subscribing to ${channelName} with event ${event}: ${describeThrown(error)}`
+      );
     }
   }
 
@@ -239,7 +242,7 @@ export class PusherUtils {
 
       // Add subscription error handling
       channel.bind('pusher:subscription_error', (data: Record<string, unknown>) => {
-        const error = data.error ? String(data.error) : 'Unknown subscription error';
+        const error = data.error ? describeThrown(data.error) : 'Unknown subscription error';
         throw new PusherSubscriptionError(`Trigger subscription error`, {
           cause: error,
         });

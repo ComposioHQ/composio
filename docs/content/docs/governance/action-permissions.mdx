@@ -106,7 +106,7 @@ The denied call returns:
 </Tab>
 </Tabs>
 
-The same policy shape works with `disable` lists, toolkit allowlists, and hint filters such as `tags: { disable: ["destructiveHint"] }`. See [Configuring sessions](/docs/configuring-sessions#enabling-or-disabling-specific-tools) for every option. If you change the policy with `session.update()`, the next call follows the new policy.
+The same policy shape works with `disable` lists, toolkit allowlists, and hint filters such as `tags: { disable: ["destructiveHint"] }`. See [Configuring sessions](/docs/sessions/tool-access#enabling-or-disabling-specific-tools) for every option. If you change the policy with `session.update()`, the next call follows the new policy.
 
 ## Where the session policy applies
 
@@ -120,7 +120,7 @@ We checked each path below against a test project with an allowed and a blocked 
 | Session MCP URL | Not listed in `tools/list`, so a direct `tools/call` returns `Tool ... not found`. Through `COMPOSIO_MULTI_EXECUTE_TOOL`, it returns the session restriction error |
 | `COMPOSIO_SEARCH_TOOLS` | Left out of results. The response tells the agent the tool is restricted |
 | `session.proxyExecute()` and `COMPOSIO_PROXY_EXECUTE` | Refused with `403` for any toolkit that has a tool allowlist, denylist, or applicable hint filter, so the proxy can't be used to reach an endpoint whose tool you blocked |
-| Tools that need approval | Return `input_required` and don't run until the person answers. Two exceptions: over MCP, a client without elicitation support runs them without asking if you set `no_elicitation_support_fallback` to `"allow"`, and a sandbox script can call a tool the approval check misses. If approval must never be skipped, [disable the sandbox](/docs/configuring-sessions#disabling-the-sandbox). See [Approvals](/docs/governance/approvals) |
+| Tools that need approval | Return `input_required` and don't run until the person answers. Two exceptions: over MCP, a client without elicitation support runs them without asking if you set `no_elicitation_support_fallback` to `"allow"`, and a sandbox script can call a tool the approval check misses. If approval must never be skipped, [disable the sandbox](/docs/sessions/sandbox-settings#disabling-the-sandbox). See [Approvals](/docs/governance/approvals) |
 
 Ownership is checked on both session and direct execution. A session can't be pinned to another user's connected account (`4306`), and a direct execution with a `connected_account_id` that belongs to a different `user_id` fails (`1812`). Which Composio `user_id` a request maps to is still your application's decision. See [Building B2B agents](/docs/b2b-agents) for shared and workspace-owned connections.
 

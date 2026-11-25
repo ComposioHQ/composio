@@ -1,4 +1,4 @@
-# Decision Records
+# Decision records
 
 ## Location
 
@@ -7,6 +7,8 @@ Use `docs/decisions/` for docs decisions and long-running docs plans. Read `docs
 ## Style
 
 - State the decision first.
+- Apply `good-docs-writing` for prose and sentence case. Keep this decision-first
+  format rather than applying an overview's why-first order to a record.
 - Include problem context, architecture, operational rules, and follow-up steps.
 - Prefer durable product/docs constraints over chat transcripts or implementation diary entries.
 - Keep file names lowercase and descriptive.
@@ -15,7 +17,7 @@ Use `docs/decisions/` for docs decisions and long-running docs plans. Read `docs
 ## Template
 
 ```markdown
-# Decision Title
+# Decision title
 
 ## Decision
 
@@ -34,7 +36,7 @@ List operational rules, tradeoffs, and follow-up work.
 Name commands, generated artifacts, or review checks that prove future changes still honor the decision.
 ```
 
-## Updating Existing Decisions
+## Updating existing decisions
 
 When a docs change alters an existing decision:
 

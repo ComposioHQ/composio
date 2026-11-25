@@ -6,6 +6,13 @@
       "target": "import { symlink } from 'node:fs/promises';"
     }
   ],
+  "src/services/agent-session.ts": [
+    {
+      "rule": "no-restricted-imports",
+      "reason": "FileSystem.open cannot request a nonblocking read, which keeps the compaction reader from waiting on a special file.",
+      "target": "import { constants, open } from 'node:fs/promises';"
+    }
+  ],
   "src/services/composio-clients.ts": [
     {
       "rule": "no-restricted-imports",

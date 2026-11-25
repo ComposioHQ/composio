@@ -8,16 +8,22 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 
 ## Core model
 
-- **Session** — the runtime context for one user. \`composio.create(userId)\` (or the canonical \`composio.sessions.create(...)\`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [What is a session?](/docs/how-composio-works)
-- **Configuring a session** — filter toolkits and tools, set auth configs, select connected accounts, preload tools, the direct-tools preset, sandbox tier, and session methods (\`tools()\`, \`toolkits()\`, \`authorize()\`). → [Configuring sessions](/docs/configuring-sessions)
+- **Session** — the runtime context for one user. \`composio.create(userId)\` (or the canonical \`composio.sessions.create(...)\`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [Session concepts](/docs/sessions/create-and-reuse#what-comes-in-a-session)
+- **Tool access**: filter toolkits, tools, and tags, or require approval. → [Restrict tool access](/docs/sessions/tool-access)
+- **Saved session policies**: start or update a session from a named access policy created in Dashboard Sessions → Configs. SDK/API names such as \`sessionConfigId\` are unchanged. → [Saved session policies](/docs/sessions/saved-session-policies)
+- **Tool loading**: preload tools, use the direct-tools preset, or read the provider-formatted list with \`session.tools()\`. → [Load tools](/docs/sessions/loading-tools)
+- **Connection selection**: set auth configs, pin connected accounts, authorize users, and inspect toolkit connection status. → [Select connections](/docs/sessions/connections)
+- **Sandbox options**: disable the sandbox or choose its compute tier. → [Set sandbox options](/docs/sessions/sandbox-settings)
+- **Executing session tools**: run \`session.execute()\` or meta tools, inspect execution results, and handle requests for user input. → [Execute session tools](/docs/sessions/executing-tools)
 - **Sessions via MCP** — create a session with \`{ mcp: true }\` to expose \`session.mcp.url\` / \`session.mcp.headers\` for any MCP client. → [Using sessions via MCP](/docs/sessions-via-mcp)
-- **Reusing sessions** — sessions persist on the server; store the session ID and reuse with \`composio.use(sessionId)\`, or update in place with \`session.update(...)\`. → [What is a session?](/docs/how-composio-works)
+- **Reusing sessions** — sessions persist on the server; store the session ID and reuse with \`composio.use(sessionId)\`. → [Create and reuse](/docs/sessions/create-and-reuse)
+- **Updating sessions**: change configuration in place with \`session.update(...)\`, handle replacement and null semantics, resolve concurrent updates, and inspect configuration history. → [Update a session](/docs/sessions/updating-sessions)
 
 ## Tools and toolkits
 
 - **Apps and toolkits**: an App groups catalog toolkits for comparison. Composio Built toolkits use a product API; Provider MCP toolkits use its hosted MCP server. Each keeps separate tools and connections. Use exact toolkit slugs in session configuration. See [Apps and toolkits](/docs/apps-and-toolkits).
 
-- **Toolkit** — a collection of related tools for a service (e.g. \`github\`, \`gmail\`). A **tool** is one action, named \`{TOOLKIT}_{ACTION}\` (e.g. \`GITHUB_CREATE_AN_ISSUE\`). Every toolkit is discoverable by default; restrict with the \`toolkits\` config. → [Configuring sessions](/docs/configuring-sessions)
+- **Toolkit** — a collection of related tools for a service (e.g. \`github\`, \`gmail\`). A **tool** is one action, named \`{TOOLKIT}_{ACTION}\` (e.g. \`GITHUB_CREATE_AN_ISSUE\`). Every toolkit is discoverable by default; restrict with the \`toolkits\` config. → [Restrict tool access](/docs/sessions/tool-access#enabling-toolkits)
 - **Meta tools** — the fixed set every session exposes (\`COMPOSIO_SEARCH_TOOLS\`, \`COMPOSIO_GET_TOOL_SCHEMAS\`, \`COMPOSIO_MANAGE_CONNECTIONS\`, \`COMPOSIO_MULTI_EXECUTE_TOOL\`, \`COMPOSIO_REMOTE_WORKBENCH\`, \`COMPOSIO_REMOTE_BASH_TOOL\`). → [Meta tools reference](/toolkits/meta-tools)
 - **Providers** — adapter packages that format Composio tools for a framework (OpenAI, Anthropic, Vercel AI SDK, LangChain, Mastra, Pi, …). → [Providers](/docs/providers)
 - **Is a toolkit / integration supported?** Composio has ${TOOLKIT_COUNT_LABEL} toolkits, and \`search_docs\` indexes the catalog. A matching \`/toolkits/<slug>\` result means **yes, it's supported** — answer from the returned content when sufficient, call \`read_doc\` only for more details, and point the user at [the toolkits directory](/toolkits). If nothing matches, it isn't a built-in toolkit; suggest [proxy execute](/docs/extending-sessions/proxy-execute) or a [local tool](/docs/extending-sessions/local-tools-and-toolkits) for an API you already have.

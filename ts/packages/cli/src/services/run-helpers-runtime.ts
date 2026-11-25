@@ -1,5 +1,6 @@
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { cliRequestHeaders } from './client-provenance';
+import { fetchWithAgentSessionRedirects } from './agent-session-fetch';
 // This module is preloaded into the user's spawned child process, where no Effect
 // runtime or @effect/platform layers are provided, so it uses sync Node builtins.
 // eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
@@ -8,13 +9,14 @@ import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
-import { Effect, Result, ManagedRuntime, Predicate, Schema } from 'effect';
+import { Effect, Formatter, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
 import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
 import { collectText } from 'src/services/command-runner';
 import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
+import { RUN_STAGED_ARGUMENTS_FILE, RUN_STAGED_FILES_PREFIX } from 'src/constants';
 
 // One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
 // builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
@@ -40,6 +42,11 @@ export type RunHelperContext = {
   readonly debug?: boolean;
   readonly runOutputDir?: string;
   readonly runLogFilePath?: string;
+  /**
+   * The agent session headers the parent command resolved, for `proxy()` requests. This
+   * module reads no environment variable, so the parent passes them in.
+   */
+  readonly agentSessionHeaders?: Readonly<Record<string, string>>;
 };
 
 type RunHelpersInstallParams = {
@@ -159,7 +166,7 @@ const proxyFailureDetail = (parsed: unknown, raw: string): string | undefined =>
 const executeId = () => crypto.randomUUID().slice(0, 8);
 
 const truncateDebugText = (value: unknown, max = 240) => {
-  const text = typeof value === 'string' ? value : String(value ?? '');
+  const text = value == null ? '' : typeof value === 'string' ? value : Formatter.format(value);
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 };
 
@@ -178,17 +185,17 @@ const previewDebugValue = (value: unknown): string => {
     }
     return `object{${Object.keys(value).slice(0, 4).join(', ')}}`;
   }
-  return truncateDebugText(String(value));
+  return truncateDebugText(value);
 };
 
 const formatHelperDebugEvent = (step: string, details: Record<string, unknown> = {}) => {
   switch (step) {
     case 'execute.prepare':
-      return `[execute] ${details.slug}`;
+      return `[execute] ${truncateDebugText(details.slug)}`;
     case 'search.prepare':
       return `[search] ${truncateDebugText(details.query || '', 96)}`;
     case 'proxy.request':
-      return `[proxy] ${details.method} ${truncateDebugText(details.endpoint || '', 96)}`;
+      return `[proxy] ${truncateDebugText(details.method)} ${truncateDebugText(details.endpoint || '', 96)}`;
     case 'cli.result': {
       const command = typeof details.command === 'string' ? details.command : 'cli';
       const state = details.successful === false ? 'failed' : 'ok';
@@ -214,7 +221,7 @@ const stringifyForPrompt = (value: unknown): string => {
   }
   return Result.getOrElse(
     Result.try(() => JSON.stringify(value, null, 2)),
-    () => String(value)
+    () => Formatter.format(value)
   );
 };
 
@@ -407,13 +414,7 @@ type MaterializedExecutePayload = {
   readonly stagedFiles: ReadonlyArray<readonly [string, StagedFileLabel]>;
 };
 
-const createExecutePayloadMaterializer = (params: {
-  readonly path: Path.Path;
-  readonly tmpdir: string;
-  readonly sharedRunOutputDir: string | null;
-}): ((value: unknown) => Promise<MaterializedExecutePayload>) => {
-  const { path, tmpdir, sharedRunOutputDir } = params;
-
+const createExecutePayloadMaterializer = (path: Path.Path) => {
   // The name the upload sends: a File's own, without any directory part.
   const uploadName = (blob: Blob): string => {
     const baseName = blob instanceof File ? path.basename(blob.name).trim() : '';
@@ -424,10 +425,9 @@ const createExecutePayloadMaterializer = (params: {
 
   const writeTempExecuteFile = async (
     blob: Blob,
-    stagedFiles: Array<readonly [string, StagedFileLabel]>
+    stagedFiles: Array<readonly [string, StagedFileLabel]>,
+    outputDir: string
   ): Promise<string> => {
-    const outputDir = sharedRunOutputDir || path.join(tmpdir, 'composio-run-files');
-    fs.mkdirSync(outputDir, { recursive: true });
     const name = uploadName(blob);
     // Staged under a generated name, never the File's own: the child still runs
     // the sensitive-path denylist on this path, and a script-created
@@ -438,7 +438,10 @@ const createExecutePayloadMaterializer = (params: {
       outputDir,
       `file-${executeId()}${/^\.[A-Za-z0-9]{1,10}$/.test(extension) ? extension : ''}`
     );
-    fs.writeFileSync(filePath, new Uint8Array(await blob.arrayBuffer()));
+    fs.writeFileSync(filePath, new Uint8Array(await blob.arrayBuffer()), {
+      flag: 'wx',
+      mode: 0o600,
+    });
     const mimetype = blob.type.trim();
     stagedFiles.push([filePath, mimetype.length > 0 ? { name, mimetype } : { name }]);
     return filePath;
@@ -446,19 +449,20 @@ const createExecutePayloadMaterializer = (params: {
 
   const materialize = async (
     value: unknown,
-    stagedFiles: Array<readonly [string, StagedFileLabel]>
+    stagedFiles: Array<readonly [string, StagedFileLabel]>,
+    stageDirectory: () => string
   ): Promise<unknown> => {
     if (typeof Blob !== 'undefined' && value instanceof Blob) {
-      return writeTempExecuteFile(value, stagedFiles);
+      return writeTempExecuteFile(value, stagedFiles, stageDirectory());
     }
     if (Array.isArray(value)) {
-      return Promise.all(value.map(item => materialize(item, stagedFiles)));
+      return Promise.all(value.map(item => materialize(item, stagedFiles, stageDirectory)));
     }
     if (isPlainObjectForExecute(value)) {
       const entries = await Promise.all(
         Object.entries(value).map(async ([key, entryValue]) => [
           key,
-          await materialize(entryValue, stagedFiles),
+          await materialize(entryValue, stagedFiles, stageDirectory),
         ])
       );
       return Object.fromEntries(entries);
@@ -466,9 +470,12 @@ const createExecutePayloadMaterializer = (params: {
     return value;
   };
 
-  return async value => {
+  return async (
+    value: unknown,
+    stageDirectory: () => string
+  ): Promise<MaterializedExecutePayload> => {
     const stagedFiles: Array<readonly [string, StagedFileLabel]> = [];
-    const payload = await materialize(value, stagedFiles);
+    const payload = await materialize(value, stagedFiles, stageDirectory);
     return { payload, stagedFiles };
   };
 };
@@ -643,7 +650,7 @@ const createSearchAndExecuteHelpers = (params: {
   readonly path: Path.Path;
   readonly tmpdir: string;
   readonly runCliJson: RunCliJson;
-  readonly materializeExecutePayload: (value: unknown) => Promise<MaterializedExecutePayload>;
+  readonly materializeExecutePayload: ReturnType<typeof createExecutePayloadMaterializer>;
   readonly helperDebugLog: HelperDebugLog;
 }) => {
   const {
@@ -691,34 +698,30 @@ const createSearchAndExecuteHelpers = (params: {
     if (typeof options.account === 'string' && options.account.trim().length > 0) {
       args.push('--account', options.account.trim());
     }
-    // Always set, so a value this process inherited never reaches the child.
-    let stagedFiles: MaterializedExecutePayload['stagedFiles'] = [];
-    if (data !== undefined) {
-      const materialized = await materializeExecutePayload(data);
-      const preparedData = materialized.payload;
-      stagedFiles = materialized.stagedFiles;
-      const serialized =
-        typeof preparedData === 'string' ? preparedData : JSON.stringify(preparedData);
-      if (sharedRunOutputDir) {
-        const tmpFile = `${sharedRunOutputDir}/execute-data-${slug}-${executeId()}.json`;
-        fs.writeFileSync(tmpFile, serialized, 'utf8');
-        args.push('--data', `@${tmpFile}`);
-      } else {
-        args.push('--data', serialized);
-      }
-    }
-    const metadataDirectory =
-      stagedFiles.length > 0
-        ? fs.mkdtempSync(path.join(tmpdir, 'composio-run-staged-'))
-        : undefined;
-    const metadataFile = metadataDirectory ? path.join(metadataDirectory, 'files.json') : '';
+    let stagingDirectory: string | undefined;
+    const stageDirectory = () =>
+      (stagingDirectory ??= fs.mkdtempSync(path.join(tmpdir, RUN_STAGED_FILES_PREFIX)));
     const runWithStagedFiles = async (): Promise<RunCliResult> => {
-      if (metadataFile) {
-        fs.writeFileSync(metadataFile, JSON.stringify(Object.fromEntries(stagedFiles)), {
-          encoding: 'utf8',
-          mode: 0o600,
-        });
+      let metadataFile = '';
+      if (data !== undefined) {
+        const { payload, stagedFiles } = await materializeExecutePayload(data, stageDirectory);
+        const serialized = typeof payload === 'string' ? payload : JSON.stringify(payload);
+        if (sharedRunOutputDir) {
+          const tmpFile = path.join(stageDirectory(), RUN_STAGED_ARGUMENTS_FILE);
+          fs.writeFileSync(tmpFile, serialized, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+          args.push('--data', `@${tmpFile}`);
+        } else {
+          args.push('--data', serialized);
+        }
+        if (stagingDirectory !== undefined) {
+          metadataFile = path.join(stagingDirectory, 'files.json');
+          fs.writeFileSync(metadataFile, JSON.stringify(Object.fromEntries(stagedFiles)), {
+            encoding: 'utf8',
+            mode: 0o600,
+          });
+        }
       }
+      // Always set, so a value this process inherited never reaches the child.
       const result = await runCliJson(args, {
         COMPOSIO_RUN_STAGED_FILES_FILE: metadataFile,
       });
@@ -734,7 +737,7 @@ const createSearchAndExecuteHelpers = (params: {
       return result;
     };
     return runWithStagedFiles().finally(() => {
-      if (metadataDirectory) fs.rmSync(metadataDirectory, { recursive: true, force: true });
+      if (stagingDirectory) fs.rmSync(stagingDirectory, { recursive: true, force: true });
     });
   };
 
@@ -768,10 +771,11 @@ const createProxyHelper = (params: {
 
   const fetchComposioJson = async (pathname: string, body: Record<string, unknown>) => {
     const auth = requireConsumerProxyContext();
-    const response = await fetch(`${composioBaseURL}${pathname}`, {
+    const response = await fetchWithAgentSessionRedirects(`${composioBaseURL}${pathname}`, {
       method: 'POST',
       headers: {
         ...cliRequestHeaders(),
+        ...helperContext.agentSessionHeaders,
         'content-type': 'application/json',
         'x-user-api-key': auth.apiKey,
         'x-org-id': auth.orgId,
@@ -898,11 +902,7 @@ export const installRunHelpers = async ({
   });
   const { helperDebugLog } = loggers;
 
-  const materializeExecutePayload = createExecutePayloadMaterializer({
-    path,
-    tmpdir: nodeOs.tmpdir,
-    sharedRunOutputDir,
-  });
+  const materializeExecutePayload = createExecutePayloadMaterializer(path);
   const runCliJson = createCliRunner({
     cliPrefix,
     helperContext,

@@ -1,0 +1,47 @@
+---
+title: Sessions overview
+description: Understand sessions and find the guide for creating, configuring, and using them
+keywords: [session, tools, toolkits, configuration]
+---
+
+An agent that works across apps needs to find the right tools, connect your user's accounts, and keep track of its work across turns. A **session** brings those pieces together for one task. For example, an agent can find an email in Gmail and post a summary to Slack using the same user's connections.
+
+A session scopes the agent's tools, authentication, connected accounts, and execution state to one user. Create a session for a task, then reuse it across turns.
+
+## How a session works
+
+By default, your agent gets **meta tools**: tools that discover app tools, manage connections, and execute actions. This lets the agent find tools as the task develops without loading the full catalog of tool definitions into the model's context.
+
+```mermaid
+sequenceDiagram
+    accTitle: Discover, connect, and execute within one session
+    accDescr: The agent searches for app tools through a session scoped to one user. If an account is missing, the session returns a Connect Link for that user. After the user connects, the agent executes the action through the same session and receives the result.
+    participant Agent
+    participant Session as Composio session
+    Agent->>Session: Search for tools for the task
+    Session-->>Agent: Relevant tools and schemas
+    opt Required account is not connected
+        Agent->>Session: Request a connection
+        Session-->>Agent: Connect Link for the user
+        Note over Agent,Session: User connects their account
+    end
+    Agent->>Session: Execute the selected app tool
+    Session-->>Agent: Tool result
+```
+
+The agent searches, connects when needed, and executes through the same session. By default, every toolkit in the catalog is discoverable. You can [restrict tool access](/docs/sessions/tool-access) to fit the task. If you already know which tools the agent needs, [load them directly](/docs/sessions/loading-tools#direct-tools-preset).
+
+Store the session ID and reuse it across conversation turns to keep the task's execution state. Connected accounts belong to the user and can be reused in future sessions. See [Create and reuse](/docs/sessions/create-and-reuse) for session creation and reuse, and [Select connections](/docs/sessions/connections) for account selection.
+
+<span id="next" className="block scroll-m-28" />
+
+## Choose a task
+
+- <span id="what-comes-in-a-session" className="block scroll-m-28" /><span id="users" className="block scroll-m-28" />[Create and reuse](/docs/sessions/create-and-reuse): Create a session, continue it across turns, and delete it when the task is finished.
+- <span id="tools-and-toolkits" className="block scroll-m-28" />[Restrict tool access](/docs/sessions/tool-access): Choose which toolkits and tools the agent can use.
+- [Saved session policies](/docs/sessions/saved-session-policies): Apply a named policy to new sessions.
+- <span id="meta-tools" className="block scroll-m-28" />[Load tools](/docs/sessions/loading-tools): Load meta tools, preload tools, or use the direct tools preset.
+- <span id="authentication" className="block scroll-m-28" />[Select connections](/docs/sessions/connections): Choose connected accounts and configure authentication.
+- <span id="sandbox" className="block scroll-m-28" />[Set sandbox options](/docs/sessions/sandbox-settings): Choose the sandbox compute tier or turn the sandbox off.
+- [Update a session](/docs/sessions/updating-sessions): Change a running session's configuration and inspect its history.
+- [Execute session tools](/docs/sessions/executing-tools): Run tools, read results, and handle requests for user input.

@@ -21,6 +21,10 @@ const EVIDENCED_REDIRECTS = [
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   ...EVIDENCED_REDIRECTS,
+  { from: '/docs/session-configs', to: '/docs/sessions/saved-session-policies' },
+  { from: '/docs/session-configs.md', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/docs/session-configs.mdx', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/llms.mdx/docs/session-configs', to: '/docs/sessions/saved-session-policies.md' },
   { from: "/", to: "/docs" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
@@ -58,7 +62,11 @@ const REDIRECTS = [
   { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
   { from: "/docs/manually-authenticating", to: "/docs/authentication/manually-authenticating" },
   { from: "/docs/security", to: "/docs/security/overview" },
-  { from: "/docs/self-hosting", to: "/docs/security/token-custody#deployment-options" },
+  { from: "/docs/self-hosting", to: "/docs/deployment" },
+  { from: "/docs/byoc", to: "/docs/deployment/byoc" },
+  { from: "/docs/security/byoc", to: "/docs/deployment/byoc" },
+  { from: "/docs/hosting/aws", to: "/docs/deployment/byoc-architecture" },
+  { from: "/docs/hosting/gcp", to: "/docs/deployment" },
   { from: "/docs/auth", to: "/docs/authentication" },
   { from: "/docs/auth-management/overview", to: "/docs/authentication" },
   { from: "/docs/managed-auth", to: "/docs/authentication/custom-app-vs-managed-app" },

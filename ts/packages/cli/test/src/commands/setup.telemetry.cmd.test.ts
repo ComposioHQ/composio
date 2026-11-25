@@ -83,7 +83,9 @@ const makeFakeHosts = (
       }
       const parts = [rawCommand.command, ...rawCommand.args];
       const host = parts[0] as AgentHost;
-      const command = parts.join(' ');
+      const command = parts
+        .map(part => (typeof part === 'string' ? part : JSON.stringify(part)))
+        .join(' ');
       const respond = (result: { exitCode?: number; stdout?: string; stderr?: string }) =>
         Effect.succeed({
           exitCode: result.exitCode ?? 0,
