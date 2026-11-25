@@ -1,0 +1,12 @@
+---
+title: 'Server-to-Server OAuth for Google toolkits'
+description: 'Google toolkits now offer a Server-to-Server OAuth auth scheme that connects with a service account and acts as a Google Workspace user.'
+date: '2026-11-25'
+---
+
+Google toolkits now support a Server-to-Server OAuth auth scheme, available as of November 25, 2026. Instead of sending each user through a Google consent screen, you connect with a Google service account and act as a Google Workspace user.
+
+### What's new
+
+- **Server-to-Server OAuth auth method.** When you create an auth config for a Google toolkit in the dashboard, choose **Server-to-Server OAuth** under **Authentication Method** instead of **OAuth 2.0**.
+- **Service account connection.** To connect an account, enter the **Service Account Email**, the **Private Key (PEM)** (the `private_key` value from the service account's JSON key file), and the **Impersonated User Email** of the Google Workspace user whose account Composio acts as. Your Workspace admin must set up access for the service account before you connect.
