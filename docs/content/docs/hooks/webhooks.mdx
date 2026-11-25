@@ -5,7 +5,7 @@ description: Allow, block, or modify your agent's tool calls from an endpoint yo
 keywords: [webhook, session webhook, tool execution webhook, hooks, before_execute, after_execute, fallback_action, timeout_ms, signing secret]
 ---
 
-A webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
+A tool execution webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
 
 <Callout type="info">
 Webhooks are available only on the Enterprise plan.
@@ -27,7 +27,9 @@ The dashboard shows the secret only once, either when you first save the URL or 
 
 ## Add a webhook to a session
 
-Once you've configured the URL, you can add webhooks to your sessions. Add a [hook](/docs/hooks) and set its handler `type` to `webhook`:
+Once you've configured the URL, you can add webhooks to your sessions. You need `composio` 0.35.0 or later (Python), or `@composio/core` 0.32.0 or later (TypeScript).
+
+Add a [hook](/docs/hooks) and set its handler `type` to `webhook`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
