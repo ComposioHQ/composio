@@ -1,0 +1,24 @@
+---
+title: 'Public MCP search for Composio docs and website'
+description: 'Two public, read-only MCP endpoints let AI agents and chatbots search the Composio developer documentation and the website and articles, with no login.'
+date: '2026-11-25'
+---
+
+Composio now runs two public, read-only MCP endpoints that search its public content. Add either one to an MCP client so your agent or chatbot can look up Composio information without leaving the conversation.
+
+### What's new
+
+- **Developer documentation search.** Search the developer docs at `mcp.docs.composio.dev/mcp`. Use it for SDK and API implementation questions, then follow the returned sources for full details.
+- **Website and articles search.** Search the Composio website and articles at `mcp.composio.dev/mcp`.
+- **No login required.** Both endpoints are public and use Streamable HTTP.
+
+### Usage
+
+| Endpoint                     | Searches                  |
+| ---------------------------- | ------------------------- |
+| `mcp.docs.composio.dev/mcp`  | Developer documentation   |
+| `mcp.composio.dev/mcp`       | Website and articles      |
+
+Add either endpoint to an MCP client as a Streamable HTTP server. Refer to your client's documentation for how to add a remote MCP server.
+
+These endpoints only search public content. To take actions in connected apps, use [Composio Connect](/docs/composio-connect).
