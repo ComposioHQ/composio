@@ -1,13 +1,14 @@
 ---
 title: Custom prompt checks
+experimental: true
 description: Block tool calls and tool results that match a condition you write in natural language
 keywords: [custom prompt checks, condition_check, hooks, firewall, guardrails, before_execute, after_execute]
 ---
 
 A custom prompt check blocks a tool call, or its result, if it matches a condition you write in natural language. To add one, add a [hook](/docs/hooks) with the `condition_check` handler.
 
-<Callout type="warn">
-Custom prompt checks are in beta and available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
+<Callout type="info">
+Custom prompt checks are available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
 </Callout>
 
 Here's a `before_execute` hook that stops your agent from sharing internal pricing with customers:

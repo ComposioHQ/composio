@@ -180,7 +180,16 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/extending-sessions/custom-mcp' },
             ],
           },
-          { type: 'folder', path: 'hooks' },
+          {
+            type: 'group',
+            label: 'Hooks',
+            links: [
+              { url: '/docs/hooks' },
+              { url: '/docs/hooks/custom-prompt-checks' },
+              { url: '/docs/hooks/prompt-injection-detection' },
+              { url: '/docs/hooks/webhooks' },
+            ],
+          },
           {
             type: 'group',
             label: 'Governance',

@@ -1,13 +1,14 @@
 ---
 title: Prompt injection detection
+experimental: true
 description: Block prompt injection in tool results before it reaches your agent
 keywords: [prompt injection, prompt_injection_check, hooks, firewall, guardrails, after_execute]
 ---
 
 Prompt injection detection screens each tool result, and blocks it if it contains a prompt injection.
 
-<Callout type="warn">
-Prompt injection detection is in beta and available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
+<Callout type="info">
+Prompt injection detection is available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
 </Callout>
 
 To turn it on, add a [hook](/docs/hooks) with the `prompt_injection_check` handler:

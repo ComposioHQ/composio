@@ -1,6 +1,5 @@
 ---
 title: Firewall
-experimental: true
 description: Block tool calls and tool results you don't want your agent to act on
 keywords: [firewall, hooks, guardrails, condition_check, prompt_injection_check, prompt injection, before_execute, after_execute]
 ---
@@ -13,10 +12,6 @@ Firewall lets you block actions you don't want your agent to take, or tool resul
 - receiving Salesforce or HubSpot records that contain customers' personal details
 
 Your agent can still use the same tools for everything else.
-
-<Callout type="info">
-Custom prompt checks and prompt injection detection are available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform). Webhooks are available on the Enterprise plan.
-</Callout>
 
 Firewall is built on [hooks](/docs/hooks), which run before or after each tool call your agent makes. There are three kinds of checks you can add.
 
@@ -38,11 +33,6 @@ With a webhook, each tool call is sent to an endpoint you host, and you respond 
 
 See [Webhooks](/docs/hooks/webhooks) for how to set one up.
 
-## Next
-
-<Card
-  icon={<Zap />}
-  title="Hooks"
-  href="/docs/hooks"
-  description="See which tool calls hooks run on, what a blocked tool call returns, and how to update a session's hooks."
-/>
+<Callout type="info">
+Custom prompt checks and prompt injection detection are available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform). Webhooks are available on the Enterprise plan.
+</Callout>

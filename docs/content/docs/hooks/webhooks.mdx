@@ -1,13 +1,14 @@
 ---
 title: Webhooks
+experimental: true
 description: Allow, block, or modify your agent's tool calls from an endpoint you host
 keywords: [webhook, session webhook, tool execution webhook, hooks, before_execute, after_execute, fallback_action, timeout_ms, signing secret]
 ---
 
 A webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
 
-<Callout type="warn">
-Webhooks are in beta and available only on the Enterprise plan.
+<Callout type="info">
+Webhooks are available only on the Enterprise plan.
 </Callout>
 
 Here are a few examples of what you can do with webhooks:
@@ -15,10 +16,6 @@ Here are a few examples of what you can do with webhooks:
 - **Screen for sensitive data:** Scan tool calls for PII with your own detection service, and block the ones that contain it.
 - **Enforce access policies:** Check each tool call against your own permission or approval system.
 - **Redact tool results:** Strip secrets from a tool's result before your agent reads it.
-
-<Callout type="info">
-[Before](/docs/tools-direct/modify-tool-behavior/before-execution-modifiers) and [after](/docs/tools-direct/modify-tool-behavior/after-execution-modifiers) execution modifiers are an alternative to webhooks. They can offer a simpler way to wrap tool calls with custom logic. Webhooks are a better fit when you have the workbench enabled, since modifiers don't run for tool calls made from the workbench.
-</Callout>
 
 ## Set up a webhook URL
 
