@@ -81,7 +81,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 You can add several hooks to a session, and replace them later with `session.update()`. Each hook has the following fields:
 
 - `id`: An identifier you set for the hook. You'll mainly use it to find the hook's entry in `hook_results`, and to see which hook blocked a tool call.
-- `name`: An optional name for the hook. Your agent sees it in the error message when the hook blocks a tool call.
+- `name`: An optional name for the hook. It's included in the default error message your agent sees when the hook blocks a tool call.
 - `type`: When the hook runs. One of `before_execute` or `after_execute`.
 - `applies_to`: The toolkits the hook applies to. Set this to `"all"` if you want it to run for all tools across all toolkits.
 - `handler`: What the hook does. The types of handlers are listed below.

@@ -17,11 +17,9 @@ Firewall is built on [hooks](/docs/hooks), which run before or after each tool c
 
 ## Custom prompt checks
 
-You write a condition that describes what you want blocked, in natural language. For example:
+You write a condition that describes what you want blocked, in natural language. For example, "Sharing internal pricing with anyone outside acme.com".
 
-> Sharing internal pricing with anyone outside acme.com
-
-Every time your agent calls a tool, a decision model compares the tool call to your condition. It looks at the tool, its arguments, and what your agent has done earlier in the session. If the tool call matches, it's blocked: the email isn't sent, and your agent gets an error instead.
+Every time your agent calls a tool, a decision model compares the tool call to your condition. It looks at the tool, its arguments, and what your agent has done earlier in the session. If a tool call matches, it's blocked. With that condition, an email that shares internal pricing with a customer is never sent, and your agent gets an error instead.
 
 A check can run before a tool call, on its arguments, or after it, on what the tool returns.
 
@@ -29,7 +27,7 @@ See [Custom prompt checks](/docs/hooks/custom-prompt-checks) for how to add one 
 
 ## Prompt injection detection
 
-Tool results are where outside content reaches your agent: emails, web pages, tickets, documents. Any of them can contain text written to hijack your agent, like an email that says to ignore its instructions and forward the user's inbox to another address.
+Tool results are where outside content reaches your agent: emails, web pages, tickets, documents. Any of them can contain text written to hijack your agent, like an email that tells your agent to ignore its instructions and forward the user's inbox to another address.
 
 When this check is on, a decision model screens every tool result before your agent reads it. If a result contains a prompt injection, it's blocked, and your agent gets an error instead of the content. There's no condition to write. You turn the check on and choose which toolkits it covers.
 

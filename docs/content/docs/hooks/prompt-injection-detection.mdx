@@ -67,4 +67,6 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
+When a result is blocked, your agent gets an error instead of the content. See [Blocked tool calls](/docs/hooks#blocked-tool-calls) for what's returned.
+
 `prompt_injection_check` only works in `after_execute` hooks, since tool results are where outside content reaches your agent.
