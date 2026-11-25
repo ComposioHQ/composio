@@ -294,6 +294,13 @@ Use `composio proxy` when the agent already knows the provider's API endpoint an
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
+### Local file inputs
+
+Run the command from a directory that contains any local files you pass to it.
+`composio execute` and `composio dev playground-execute` apply this rule to local uploads and `-d @file` arguments. It also applies to `composio proxy -d @file` and `composio listen --params @file`.
+
+Symlinks must resolve inside the current working directory. The CLI blocks sensitive paths and fails before running the tool if it rejects a file.
+
 ### Execution failures and exit codes
 
 `composio execute` exits `1` when a tool reports failure or the Dashboard or backend cannot run it. With `--parallel`, any failed call makes the command exit `1`. Meta tools follow the same rules. Failed tool results include `{"successful": false, ...}` on stdout, with diagnostic messages on stderr. Check the exit code in scripts and agents, even when stdout contains JSON.
@@ -310,13 +317,19 @@ If `--account` matches no connected account, `composio execute` and `composio pr
 
 ### Execution telemetry
 
-When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` to the Dashboard in the `x-cli-install-id` header. This random UUID is never sent to the backend API. Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to prevent the header from being sent.
+When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` only to the Dashboard, in the `x-cli-install-id` header.
+
+When the CLI runs inside a Claude Code or Codex chat, telemetry events include `agent_session_host` (`claude` or `codex`) and a derived `agent_session_id` to group commands from that chat. The original host session ID stays local. The CLI sends the same values in the `x-cli-agent-session-host` and `x-cli-agent-session-id` headers only on requests to the Composio backend, Dashboard execution requests, and `proxy()` calls from `composio run` to Composio.
+
+Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to omit the install ID header and disable agent session metadata in telemetry and request headers.
 
 ### Run scripts
 
 Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, or data transformation. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `result.prompt()`, and `z` injected.
 
 If a tool execution fails, `execute()` rejects with the tool's error message and the failed result.
+
+Each `execute()` call stages any `File` and `Blob` inputs and generated argument JSON in a private temporary directory. The CLI removes the directory when the call finishes.
 
 Run a single scripted workflow:
 
@@ -374,6 +387,8 @@ Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to 
 Use these commands while building on the Composio developer platform. They initialize local project context, create auth configs, manage connected accounts, test tool execution, inspect logs, and debug trigger flows.
 
 ### Initialize project context
+
+`composio dev init` creates or updates `.env.local` with owner-only read and write permissions (mode `0600`). It also tightens permissions on an existing file when the contents stay the same. The command stops with instructions if the path is a symlink or another non-regular file, or if it cannot set the permissions.
 
 ```bash
 # Initialize local project context
