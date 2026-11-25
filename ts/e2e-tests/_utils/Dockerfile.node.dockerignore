@@ -1,0 +1,18 @@
+# Scoped to Dockerfile.node only (BuildKit <Dockerfile>.dockerignore).
+# Dockerfile.node copies ts/e2e-tests/ before running `pnpm install --frozen-lockfile`
+# inside the container, so pnpm creates native Linux node_modules links for all
+# workspace packages and runtime fixtures; host node_modules must never enter the
+# build context.
+**/node_modules
+.git
+.turbo
+**/.next
+**/coverage
+docs
+python
+ts/examples
+ts/vendor
+ts/e2e-tests/cli
+ts/e2e-tests/runtimes/cloudflare
+# Live eval batches: local, and they change on every run
+**/agent-journeys/results
