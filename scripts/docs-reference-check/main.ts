@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { parseArgs } from 'node:util';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Cause, Console, Data, Effect, FileSystem, Path, Stdio } from 'effect';
@@ -18,7 +19,8 @@ import { formatText, type CheckResult, type OptOut } from './report';
 export type { CheckResult } from './report';
 
 export interface CheckOptions {
-  readonly builtPackage?: string;
+  readonly packageDir?: string;
+  readonly comparePackaged?: boolean;
   readonly compilerOptions?: ts.CompilerOptions;
 }
 
@@ -83,14 +85,13 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       .filter(name => name.endsWith('.mdx'))
       .sort();
 
-    const built =
-      options.builtPackage === undefined ? undefined : path.resolve(options.builtPackage);
+    const packageDir = options.packageDir === undefined ? undefined : path.resolve(options.packageDir);
     const violations =
-      built === undefined
+      packageDir === undefined || !options.comparePackaged
         ? []
         : yield* packagedViolations(
             root,
-            path.join(built, 'dist/docs/reference/sdk-reference/typescript'),
+            path.join(packageDir, 'dist/docs/reference/sdk-reference/typescript'),
             names
           );
     const optedOut: OptOut[] = [];
@@ -180,13 +181,13 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
       });
     }
 
-    const coreRoot = built ?? path.resolve(REPO_ROOT, 'ts/packages/core');
+    const coreRoot = packageDir ?? path.resolve(REPO_ROOT, 'ts/packages/core');
     violations.push(
       ...(yield* checkSnippets(
         snippets,
         coreRoot,
         options.compilerOptions,
-        built === undefined ? 'workspace' : 'built'
+        packageDir === undefined ? 'workspace' : 'built'
       ))
     );
     return {
@@ -198,25 +199,41 @@ export const checkReferencePages = (directory: string, options: CheckOptions = {
   });
 
 const USAGE =
-  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--built-package <package-directory>] [directory]';
+  'Usage: bun scripts/docs-reference-check/main.ts [--json] [--package <dir> [--compare-packaged]] [directory]\n' +
+  'Deprecated alias for --package: --installed-package <dir>';
 
 const main = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args;
-  const json = args.includes('--json');
-  const rest = args.filter(arg => arg !== '--json');
-  const builtFlag = rest.indexOf('--built-package');
-  const builtPackage = builtFlag < 0 ? undefined : rest[builtFlag + 1];
-  if (builtFlag >= 0) {
-    if (!builtPackage || builtPackage.startsWith('-'))
-      return yield* new UsageError({ message: USAGE });
-    rest.splice(builtFlag, 2);
-  }
-  if (rest.length > 1 || rest.some(arg => arg.startsWith('-'))) {
+  const { values, positionals } = yield* Effect.try({
+    try: () => parseArgs({
+      args: [...args],
+      allowPositionals: true,
+      options: {
+        json: { type: 'boolean' },
+        package: { type: 'string' },
+        // Remove this alias once #5530 lands.
+        'installed-package': { type: 'string' },
+        'compare-packaged': { type: 'boolean' },
+      },
+    }),
+    catch: cause => new UsageError({ message: `${String(cause)}\n${USAGE}` }),
+  });
+  const installedPackage = values['installed-package'];
+  const packageDir = values.package ?? installedPackage;
+  const comparePackaged = values['compare-packaged'] ?? false;
+  if (
+    positionals.length > 1 ||
+    (installedPackage !== undefined && values.package !== undefined) ||
+    (comparePackaged && packageDir === undefined)
+  ) {
     return yield* new UsageError({ message: USAGE });
   }
+  if (installedPackage !== undefined) yield* Console.error('--installed-package is deprecated. Use --package instead.');
   const path = yield* Path.Path;
-  const result = yield* checkReferencePages(rest[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
-    builtPackage,
+  const json = values.json ?? false;
+  const result = yield* checkReferencePages(positionals[0] ?? path.resolve(REPO_ROOT, DEFAULT_DIRECTORY), {
+    packageDir,
+    comparePackaged,
   });
   yield* Console.log(json ? JSON.stringify(result, null, 2) : formatText(result));
   if (result.violations.length > 0) {

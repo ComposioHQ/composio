@@ -170,7 +170,7 @@ jobs:
         run: bun scripts/sdk-release/candidate-registry.ts sdk-candidate/typescript
       - name: Check the packaged TypeScript reference against the installed candidate
         if: needs.select-candidates.outputs.core == 'true'
-        run: pnpm run check:docs-reference --built-package docs/node_modules/@composio/core
+        run: pnpm run check:docs-reference --package docs/node_modules/@composio/core --compare-packaged
 
   # this run's runtime token, so it has no upload step and no credentials.
   docs:

@@ -1,5 +1,11 @@
 # @composio/json-schema-to-zod
 
+## 0.4.2
+
+### Patch Changes
+
+- 1b88005: Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.
+
 ## 0.4.1
 
 ### Patch Changes

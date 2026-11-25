@@ -11,6 +11,7 @@ on:
       - 'ts/scripts/validate-changesets.*'
       - 'ts/scripts/check-provider-compatibility.ts'
       - 'scripts/sdk-release/**'
+      - 'scripts/lib/**'
       - 'test/sdk-release-*'
       - 'tsconfig.sdk-release.json'
       - 'docs/scripts/generate-sdk-release-notes.ts'

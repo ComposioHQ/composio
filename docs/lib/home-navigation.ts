@@ -128,6 +128,7 @@ export const DOCS_PRODUCTS = {
       '/docs/production-readiness',
       '/docs/providers',
       '/docs/sessions',
+      '/docs/hooks',
       '/docs/how-composio-works',
       '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
@@ -177,6 +178,16 @@ export const DOCS_PRODUCTS = {
               { url: '/docs/instant-tools' },
               { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Hooks',
+            links: [
+              { url: '/docs/hooks' },
+              { url: '/docs/hooks/custom-prompt-checks' },
+              { url: '/docs/hooks/prompt-injection-detection' },
+              { url: '/docs/hooks/webhooks' },
             ],
           },
           {

@@ -80,6 +80,7 @@ describe('collectPythonSnippets', () => {
 });
 
 describe('pythonSnippetViolations', () => {
+  const snippets = [snippet('s0', 'pass'), snippet('s1', 'pass', 200)];
   const result: PythonHelperResult = {
     syntax: [{ id: 's0', line: 2, message: 'invalid syntax' }],
     api: [{ id: 's1', line: 3, message: 'SDK diagnostic [call-overload]' }],
@@ -89,11 +90,22 @@ describe('pythonSnippetViolations', () => {
   };
 
   test('maps syntax, SDK, and suppression errors to source locations, keeping third-party errors separate', () => {
-    expect(pythonSnippetViolations([snippet('s0', 'pass'), snippet('s1', 'pass', 200)], result)).toEqual([
+    expect(pythonSnippetViolations(snippets, result)).toEqual([
       { path: 'content/docs/page.mdx', line: 102, rule: 'python-syntax', message: 'invalid syntax' },
       { path: 'content/docs/page.mdx', line: 203, rule: 'python-api', message: 'SDK diagnostic [call-overload]' },
       { path: 'content/docs/page.mdx', line: 205, rule: 'python-directive', message: 'Unused "type: ignore" comment [unused-ignore]' },
     ]);
+  });
+
+  test('reports third-party diagnostics at their mapped source locations in strict mode', () => {
+    const diagnostic = {
+      path: 'content/docs/page.mdx',
+      line: 204,
+      rule: 'python-reference',
+      message: 'Third-party diagnostic [arg-type]',
+    };
+    expect(pythonSnippetViolations(snippets, result, true)).toContainEqual(diagnostic);
+    expect(pythonSnippetViolations(snippets, result)).not.toContainEqual(diagnostic);
   });
 
   test('fails rather than silently dropping helper diagnostics for an unknown module', () => {

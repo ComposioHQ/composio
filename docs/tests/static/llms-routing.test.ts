@@ -31,9 +31,11 @@ test('Firewall availability and coverage survive agent Markdown rendering', asyn
     ...page,
     data: { ...page.data, getText: () => page.data.getText('raw') },
   }, { includeGuardrails: false });
-  expect(text).toContain('Firewall is experimental and available on paid plans');
+  expect(text).toContain('Custom prompt checks and prompt injection detection are experimental');
+  expect(text).toContain('available on paid plans');
   expect(text).toContain('They do not redact or mask PII');
   expect(text).toContain('natural-language classification is not deterministic DLP');
   expect(text).toContain('It does not screen LLM input or output');
-  expect(text).toContain("hooks don't currently run on Composio meta tools themselves");
+  expect(text).toContain('](/docs/hooks#which-tool-calls-hooks-run-on)');
+  expect(text).toContain('](/docs/hooks/prompt-injection-detection#combine-pii-blocking-and-injection-detection)');
 });

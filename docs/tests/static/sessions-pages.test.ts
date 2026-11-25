@@ -122,9 +122,9 @@ function anchors(text: string): string[] {
 }
 
 describe('Sessions task pages', () => {
-  test('the brief overview retains section bookmarks leading to their task pages', () => {
+  test('the overview retains its task directory and section bookmarks', () => {
     const overview = readPage('/docs/sessions');
-    expect(overview.match(/^## .+$/gm)).toEqual(['## Choose a task']);
+    expect(overview.match(/^## .+$/gm)).toContain('## Choose a task');
     for (const [hash, destination] of Object.entries({
       'what-comes-in-a-session': '/docs/sessions/create-and-reuse#what-comes-in-a-session',
       users: '/docs/sessions/create-and-reuse#users',

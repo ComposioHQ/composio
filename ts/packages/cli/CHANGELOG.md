@@ -2,8 +2,43 @@
 
 ## Unreleased
 
-- `composio init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.
+## 0.6.4
+
+- `composio dev init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.
+
 - `composio execute` and `composio dev playground-execute` accept local uploads and `-d @file` arguments under the current working directory. The same scope applies to `composio proxy -d @file` and `composio listen --params @file`. Symlinks must resolve within that directory and sensitive paths remain blocked. Copy files into the working directory or run the command from a directory that contains them. `composio run` stages script-provided Files, Blobs, and argument files in a private temporary directory for each execute call and removes it when the call finishes.
+
+- CLI telemetry events now carry `agent_session_host` (`claude` or `codex`)
+  and `agent_session_id` when the CLI can identify the Claude Code or Codex
+  chat it runs in, so the commands one chat ran can be grouped. The ID is a
+  UUID v5 the CLI derives from the host name and the host's session ID. The
+  host's own session ID is never sent. When the CLI cannot identify the chat,
+  neither property is sent, and `COMPOSIO_CLI_TELEMETRY_DISABLED`,
+  `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED` and `CI` turn both off
+  with the rest of telemetry.
+
+- Requests the CLI sends to Composio from inside a Claude Code or Codex chat
+  now carry the same agent session as two headers, `x-cli-agent-session-host`
+  and `x-cli-agent-session-id`. Three kinds of request carry them: requests
+  made through the Composio API client, consumer `composio execute` calls sent
+  to the Composio Dashboard, and `proxy()` calls made by a `composio run`
+  script. The API client and proxy helper keep the session headers on the
+  configured backend origin, including when a request redirects. Builds
+  without a PostHog project key also send these headers. The telemetry
+  switches above remove both headers.
+
+- The CLI now reports how many times the Claude Code or Codex chat it runs in
+  was compacted: as `agent_compaction_count` on telemetry events, and as the
+  `x-cli-agent-compaction-count` header on the three kinds of request that
+  carry the agent session. The count is the number of lines in a file the
+  Composio agent plugin's hook keeps for the chat,
+  `~/.composio/agent-compactions/<host>/<host session ID>`, which the CLI only
+  reads. The README describes the file under "Agent compaction state". No
+  plugin writes it yet, so the count stays absent until one does. A missing,
+  unreadable, or oversized file changes nothing about a command, and the
+  telemetry switches above turn off both the read and the value.
+
+[Compare with 0.6.3](https://github.com/ComposioHQ/composio/compare/%40composio%2Fcli%400.6.3...%40composio%2Fcli%400.6.4)
 
 ## 0.6.3
 
@@ -212,36 +247,6 @@
   none is aliased `default`, and no `--account` is passed. Scripts that relied
   on the implicit newest-account pick now fail. To migrate, pass
   `--account <id|alias>`, or alias one account `default`.
-
-- CLI telemetry events now carry `agent_session_host` (`claude` or `codex`)
-  and `agent_session_id` when the CLI can identify the Claude Code or Codex
-  chat it runs in, so the commands one chat ran can be grouped. The ID is a
-  UUID v5 the CLI derives from the host name and the host's session ID. The
-  host's own session ID is never sent. When the CLI cannot identify the chat,
-  neither property is sent, and `COMPOSIO_CLI_TELEMETRY_DISABLED`,
-  `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED` and `CI` turn both off
-  with the rest of telemetry.
-
-- Requests the CLI sends to Composio from inside a Claude Code or Codex chat
-  now carry the same agent session as two headers, `x-cli-agent-session-host`
-  and `x-cli-agent-session-id`. Three kinds of request carry them: requests
-  made through the Composio API client, consumer `composio execute` calls sent
-  to the Composio Dashboard, and `proxy()` calls made by a `composio run`
-  script. The API client and proxy helper keep the session headers on the
-  configured backend origin, including when a request redirects. Builds
-  without a PostHog project key also send these headers. The telemetry
-  switches above remove both headers.
-
-- The CLI now reports how many times the Claude Code or Codex chat it runs in
-  was compacted: as `agent_compaction_count` on telemetry events, and as the
-  `x-cli-agent-compaction-count` header on the three kinds of request that
-  carry the agent session. The count is the number of lines in a file the
-  Composio agent plugin's hook keeps for the chat,
-  `~/.composio/agent-compactions/<host>/<host session ID>`, which the CLI only
-  reads. The README describes the file under "Agent compaction state". No
-  plugin writes it yet, so the count stays absent until one does. A missing,
-  unreadable, or oversized file changes nothing about a command, and the
-  telemetry switches above turn off both the read and the value.
 
 ### Patch Changes
 

@@ -76,4 +76,4 @@ The runner owns signals. Commands cooperate through `ShutdownSignal`. A stopped 
 
 ## Verification
 
-`bun run validate:cli-skills` checks linked excerpts against source, compiles standalone snippets and the CLI tests, runs the documented command example and existing invocation contracts, then checks Effect diagnostics. Its linked examples and behavior tests are described in the `cli-command` skill's command-example reference. These checks certify the examples and selected contracts, not an agent's ability to solve an unseen task.
+`bun run validate:cli-skills` checks linked excerpts against source, compiles standalone snippets and the CLI tests, and runs the documented command example and existing invocation contracts. Effect diagnostics run in `ts.typecheck.yml` via `pnpm --filter @composio/cli run lint:effect`. Its linked examples and behavior tests are described in the `cli-command` skill's command-example reference. These checks certify the examples and selected contracts, not an agent's ability to solve an unseen task.

@@ -157,6 +157,7 @@ const BUNDLE = bundledIndex as {
   pages: BundlePage[];
   toolkits: BundleToolkit[];
   search?: BundleSearchIndex;
+  stableReference?: boolean;
 };
 
 /**
@@ -368,22 +369,19 @@ function loadToolkits(): DocPage[] {
 
 let indexCache: DocPage[] | undefined;
 
+function bundledPage(page: BundlePage): DocPage {
+  return makePage({
+    collection: page.collection,
+    title: page.title,
+    description: page.description,
+    url: page.url,
+    legacy: page.legacy || isLegacyUrl(page.url),
+    body: page.markdown,
+  });
+}
+
 export function buildBundledIndex(): DocPage[] {
-  const pages: DocPage[] = [];
-  for (const p of BUNDLE.pages) {
-    pages.push(
-      makePage({
-        collection: p.collection,
-        title: p.title,
-        description: p.description,
-        url: p.url,
-        legacy: p.legacy || isLegacyUrl(p.url),
-        body: p.markdown,
-      })
-    );
-  }
-  pages.push(...loadBundledToolkits());
-  return pages;
+  return [...BUNDLE.pages.map(bundledPage), ...loadBundledToolkits()];
 }
 
 export function buildIndex(): DocPage[] {
@@ -391,6 +389,10 @@ export function buildIndex(): DocPage[] {
   const pages: DocPage[] = [];
   if (CONTENT_AVAILABLE) {
     for (const collection of COLLECTIONS) {
+      if (collection === 'reference' && BUNDLE.stableReference) {
+        pages.push(...BUNDLE.pages.filter(page => page.collection === collection).map(bundledPage));
+        continue;
+      }
       const dir = join(CONTENT_ROOT, collection);
       let entries: string[];
       try {
@@ -467,7 +469,7 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
     }
   }
 
-  if (CONTENT_AVAILABLE) {
+  if (CONTENT_AVAILABLE && (collection !== 'reference' || !BUNDLE.stableReference)) {
     const base = join(CONTENT_ROOT, collection, ...parts);
     const candidates = [
       `${base}.mdx`,
