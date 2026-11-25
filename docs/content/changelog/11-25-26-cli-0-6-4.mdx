@@ -1,0 +1,35 @@
+---
+title: 'CLI 0.6.4 keeps local uploads in the working directory and protects `.env.local`'
+description: 'Local file inputs must sit under the working directory, `composio init` writes `.env.local` with owner-only permissions, and requests from Claude Code or Codex carry an agent session.'
+date: '2026-11-25'
+---
+
+CLI 0.6.4 is a security patch. Local files you pass to `composio execute`, `composio proxy`, and `composio listen` must now sit under the working directory, and `composio init` writes credentials to `.env.local` with owner-only permissions. It also groups the commands one Claude Code or Codex chat runs, in telemetry and on requests to Composio.
+
+### Release versions
+
+| SDK            | Version |
+| -------------- | ------- |
+| CLI `composio` | `0.6.4` |
+
+### Migration notes
+
+<Callout type="warn">
+  Local files outside the working directory are now rejected. If a script uploads a file or reads
+  arguments from `@file` in another directory, copy the file into the working directory or run the
+  command from a directory that contains it.
+</Callout>
+
+### Bug fixes
+
+- **Local uploads stay in the working directory.** `composio execute` and `composio dev playground-execute` accept local file uploads and `-d @file` arguments only under the current working directory. The same rule applies to `composio proxy -d @file` and `composio listen --params @file`. Symlinks must resolve inside that directory, and sensitive paths stay blocked. A rejected file fails the command before the tool runs.
+- **`composio run` stages files privately.** For each `execute()` call, `composio run` writes the script's Files, Blobs, and generated argument JSON to a private temporary directory and removes it when the call finishes.
+- **`.env.local` is owner-only.** `composio init` creates and updates `.env.local` with mode `0600`, and tightens an existing file even when its contents stay the same. It stops with instructions if the path is a symbolic link or another non-regular entry, or if its permissions cannot be tightened.
+
+### Improvements
+
+- **Agent session in telemetry.** Inside a Claude Code or Codex chat, CLI telemetry events carry `agent_session_host` (`claude` or `codex`) and `agent_session_id`, so the commands one chat ran can be grouped. The ID is derived from the host's session ID, which is never sent.
+- **Agent session on requests.** The same chat is sent as the `x-cli-agent-session-host` and `x-cli-agent-session-id` headers on backend API requests, on `composio execute` calls to the Dashboard, and on `proxy()` calls from a `composio run` script. No request to any other service carries them.
+- **Compaction count.** When the Composio agent plugin records how often the chat was compacted, the CLI sends that count as `agent_compaction_count` on telemetry events and `x-cli-agent-compaction-count` on the same requests. No plugin records it yet, so the count is absent for now.
+
+Setting `COMPOSIO_CLI_TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED`, or `CI` turns off the agent session and compaction count, both in telemetry and on requests.
