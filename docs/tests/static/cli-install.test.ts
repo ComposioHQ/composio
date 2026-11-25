@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test';
-import { detectCliPlatform } from '../../components/cli-install-tabs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { CliInstallTabs, detectCliPlatform } from '../../components/cli-install-tabs';
 
 test('CLI platform selection favors the desktop OS and falls back to Linux on mobile or unknown clients', () => {
   const cases: [string, number, string][] = [
@@ -16,4 +18,11 @@ test('CLI platform selection favors the desktop OS and falls back to Linux on mo
   for (const [agent, touchPoints, expected] of cases) {
     expect(detectCliPlatform(agent, touchPoints)).toBe(expected);
   }
+});
+
+test('server rendering keeps Linux selected even though macOS is the first system tile', () => {
+  const html = renderToStaticMarkup(createElement(CliInstallTabs, null, 'Install command'));
+  const selected = html.match(/<button[^>]*aria-selected="true"[^>]*>[\s\S]*?<\/button>/)?.[0];
+  expect(selected).toContain('Linux');
+  expect(html.match(/role="tab"/g)).toHaveLength(3);
 });

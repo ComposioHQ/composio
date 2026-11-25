@@ -1,19 +1,21 @@
 ---
-title: Composio CLI
-description: Use the Composio CLI from Codex, Claude Code, or your terminal for agent workflows and development.
+title: Install Composio CLI
+description: Install the Composio CLI, log in, and run tools from your terminal or coding agent.
+full: true
 keywords: [cli, codex, claude code, command line, terminal, agent plugins, knowledge work, dev commands]
 ---
 
-Use the Composio CLI to connect apps and run tools from your terminal, Codex, or Claude Code. The CLI also powers the [Composio agent plugins](/docs/agent-plugins).
+<span id="install" className="scroll-m-28" />
 
-## Install
-
-Choose the system where you will run the CLI. Your browser selects a tab automatically; mobile devices and unknown systems start on Linux.
+<div className="not-prose mx-auto max-w-xl text-center">
+  <p className="mb-3 text-xs font-medium uppercase tracking-widest text-fd-muted-foreground">Latest stable release</p>
+  <p className="text-lg text-fd-muted-foreground">Connect your apps and run tools from your terminal, Codex, or Claude Code.</p>
+</div>
 
 <CliInstallTabs>
 <TabsContent value="linux">
 
-Requires `curl` and `unzip`. Supports Linux x64 and ARM64.
+<div className="mb-4 text-center text-sm text-fd-muted-foreground">Shell installer · Linux x64 and ARM64. Requires `curl` and `unzip`.</div>
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
@@ -22,7 +24,7 @@ curl -fsSL https://composio.dev/install | sh
 </TabsContent>
 <TabsContent value="macos">
 
-Requires `curl` and `unzip`. Supports Intel and Apple Silicon Macs.
+<div className="mb-4 text-center text-sm text-fd-muted-foreground">Shell installer · Intel and Apple Silicon. Requires `curl` and `unzip`.</div>
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
@@ -31,181 +33,200 @@ curl -fsSL https://composio.dev/install | sh
 </TabsContent>
 <TabsContent value="windows">
 
-**Experimental:** requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. Run in PowerShell:
+<Callout type="warn" title="Windows x64 is experimental">
+Requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported.
+</Callout>
+
+<div className="mb-3 mt-4 text-center text-sm text-fd-muted-foreground">Run in PowerShell</div>
 
 ```powershell
 irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
 ```
 
-For a fully supported setup, use the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install). See [Windows support and installer options](/docs/cli/installation#windows-x64-experimental).
+For a fully supported setup, use the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install). See [Windows support](/docs/cli/installation#windows-x64-experimental).
 
 </TabsContent>
 </CliInstallTabs>
 
+<div className="text-right text-sm">
+
+[Advanced installation options →](/docs/cli/installation)
+
+</div>
+
+<p className="not-prose mt-4 text-center text-xs text-fd-muted-foreground">Choose any system above. Mobile and unknown systems start on Linux.</p>
+
 The installer verifies the release and configures PATH for future terminals. On Linux and macOS, it also sets up plugins for detected, supported agent hosts. Login is a separate step.
 
-Need a pinned version, custom directory, or CI install? See [installation options](/docs/cli/installation).
+## Then, run your first command
 
-## Verify the installation
+<div className="grid gap-4 md:grid-cols-2">
+<div className="rounded-xl border bg-fd-card p-5">
 
-Open a new terminal and check the installed version:
+<span id="verify-the-installation" className="scroll-m-28" />
+<span id="log-in" className="scroll-m-28" />
+
+### 1. Verify and log in
+
+Open a new terminal, then run:
 
 ```bash
 composio --version
-```
-
-If your shell cannot find `composio`, run the absolute path printed by the installer. See [shell setup overrides](/docs/cli/installation#shell-setup-overrides) for PATH configuration.
-
-## Log in
-
-```bash
 composio login
 ```
 
+If your shell cannot find `composio`, use the absolute path printed by the installer. See [shell setup](/docs/cli/installation#shell-setup-overrides).
+
+</div>
+<div className="rounded-xl border bg-fd-card p-5">
+
+### 2. Find a tool
+
+Search for tools by the task you want to complete:
+
+```bash
+composio search "Find tools for Gmail"
+```
+
+Choose a tool from the results. Follow [search, connect, and execute](/docs/cli/workflows#search-connect-and-execute-tools) to inspect its schema, connect your account, and run it.
+
+</div>
+</div>
+
 For an unattended agent, use [`composio login --agent`](/docs/agent-setup/unattended-authentication). That guide covers constraints, application API key setup, and live-tool verification.
 
-### Set up your agent
+<span id="use-the-cli" className="scroll-m-28" />
 
-If you skipped plugin setup or installed an agent host later, run:
+## Keep going
 
-```bash
-composio setup --target auto
-```
+<Cards>
+  <Card title="Use your coding agent" href="/docs/agent-plugins">
+    Let Codex or Claude Code search and run tools through the native Composio plugin.
+  </Card>
+  <Card title="Run a workflow" href="/docs/cli/workflows">
+    Connect apps, execute tools, run scripts, and listen to events from your terminal.
+  </Card>
+  <Card title="Build on Composio" href="/docs/cli/development">
+    Manage projects, auth configs, connected accounts, logs, and triggers.
+  </Card>
+  <Card title="Configure the CLI" href="/docs/cli/configuration">
+    Look up backend routing, exit codes, timeouts, and telemetry.
+  </Card>
+</Cards>
 
-`auto` detects supported agents. Use `--target codex` or `--target claude` to choose one. Setup asks before changing local files. Add `--yes` in an agent, script, or CI job.
+If you skipped plugin setup during installation, follow [Set up your agent](/docs/cli/installation#set-up-your-agent).
 
-`composio login` installs the standalone CLI skill for Claude Code by default. For Codex, prefer the native plugin through `composio setup --target codex`. See [Agent plugins](/docs/agent-plugins) for host-specific details.
+<span id="moved-sections" className="scroll-m-28" />
 
-If you need the standalone skill without the native plugin, install it for your host:
+## Reference and maintenance
 
-```bash
-composio setup skill claude
-composio setup skill codex
-```
+<details className="rounded-xl border p-4">
+<summary className="cursor-pointer font-medium">Installation, updates, and command help</summary>
 
-## Update
+<span id="installation-options" className="scroll-m-28" />
 
-```bash
-composio upgrade
-```
+### Installation and maintenance
 
-This replaces the bundle in place. Pass a version, such as `composio upgrade 0.3.1`, to pin a release, or `--beta` for the latest prerelease.
-
-If your installed CLI is too old to upgrade, the command stops before changing anything and prints an install command. Rerun the [installer](#install).
-
-## Use the CLI
-
-Choose the guide for your next task:
-
-- [Agent and terminal workflows](/docs/cli/workflows): search, connect, execute, script, and listen to events.
-- [Platform development](/docs/cli/development): manage projects, auth configs, connected accounts, logs, and triggers.
-- [Configuration and execution behavior](/docs/cli/configuration): backend routing, exit codes, timeouts, and telemetry.
-- [Installation options](/docs/cli/installation): pin releases, configure shells, install manually, or uninstall.
-
-## Help
-
-Use `--help` on the root command or any subcommand:
-
-```bash
-composio --help
-composio help
-composio execute --help
-composio run --help
-composio dev projects switch --help
-```
-
-## Moved sections
-
-These links keep bookmarks to the original CLI page usable.
-
-### Installation options
-
-<span id="windows-x64-experimental" />
+<span id="windows-x64-experimental" className="scroll-m-28" />
 
 - [Windows x64 (experimental)](/docs/cli/installation#windows-x64-experimental)
 
-<span id="install-with-options" />
+<span id="install-with-options" className="scroll-m-28" />
 
 - [Install with options](/docs/cli/installation#install-with-options)
 
-<span id="shell-setup-overrides" />
+<span id="shell-setup-overrides" className="scroll-m-28" />
 
 - [Shell setup overrides](/docs/cli/installation#shell-setup-overrides)
 
-<span id="install-manually-from-github-releases" />
+<span id="install-manually-from-github-releases" className="scroll-m-28" />
 
 - [Install manually from GitHub Releases](/docs/cli/installation#install-manually-from-github-releases)
 
-<span id="uninstall" />
+<span id="uninstall" className="scroll-m-28" />
 
 - [Uninstall](/docs/cli/installation#uninstall)
 
 ### Tools and scripts
 
-<span id="agent-and-terminal-workflows" />
+<span id="agent-and-terminal-workflows" className="scroll-m-28" />
 
 - [Agent and terminal workflows](/docs/cli/workflows)
 
-<span id="search-connect-and-execute-tools" />
+<span id="search-connect-and-execute-tools" className="scroll-m-28" />
 
 - [Search, connect, and execute tools](/docs/cli/workflows#search-connect-and-execute-tools)
 
-<span id="run-scripts" />
+<span id="run-scripts" className="scroll-m-28" />
 
 - [Run scripts](/docs/cli/workflows#run-scripts)
 
-<span id="listen-to-trigger-events" />
+<span id="listen-to-trigger-events" className="scroll-m-28" />
 
 - [Listen to trigger events](/docs/cli/workflows#listen-to-trigger-events)
 
 ### Platform development
 
-<span id="build-on-the-composio-platform" />
+<span id="build-on-the-composio-platform" className="scroll-m-28" />
 
 - [Build on the Composio platform](/docs/cli/development)
 
-<span id="initialize-project-context" />
+<span id="initialize-project-context" className="scroll-m-28" />
 
 - [Initialize project context](/docs/cli/development#initialize-project-context)
 
-<span id="inspect-toolkits-and-versions" />
+<span id="inspect-toolkits-and-versions" className="scroll-m-28" />
 
 - [Inspect toolkits and versions](/docs/cli/development#inspect-toolkits-and-versions)
 
-<span id="create-and-inspect-auth-configs" />
+<span id="create-and-inspect-auth-configs" className="scroll-m-28" />
 
 - [Create and inspect auth configs](/docs/cli/development#create-and-inspect-auth-configs)
 
-<span id="manage-connected-accounts" />
+<span id="manage-connected-accounts" className="scroll-m-28" />
 
 - [Manage connected accounts](/docs/cli/development#manage-connected-accounts)
 
-<span id="execute-and-inspect-logs" />
+<span id="execute-and-inspect-logs" className="scroll-m-28" />
 
 - [Execute and inspect logs](/docs/cli/development#execute-and-inspect-logs)
 
-<span id="work-with-triggers" />
+<span id="work-with-triggers" className="scroll-m-28" />
 
 - [Work with triggers](/docs/cli/development#work-with-triggers)
 
-<span id="generate-type-definitions" />
+<span id="generate-type-definitions" className="scroll-m-28" />
 
 - [Generate type definitions](/docs/cli/development#generate-type-definitions)
 
-<span id="building-on-top-of-the-cli" />
+<span id="building-on-top-of-the-cli" className="scroll-m-28" />
 
 - [Building on top of the CLI](/docs/cli/development#building-on-top-of-the-cli)
 
 ### Execution reference
 
-<span id="backend-and-dashboard-configuration" />
+<span id="backend-and-dashboard-configuration" className="scroll-m-28" />
 
 - [Backend and Dashboard configuration](/docs/cli/configuration#backend-and-dashboard-configuration)
 
-<span id="execution-failures-and-exit-codes" />
+<span id="execution-failures-and-exit-codes" className="scroll-m-28" />
 
 - [Execution failures and exit codes](/docs/cli/configuration#execution-failures-and-exit-codes)
 
-<span id="execution-telemetry" />
+<span id="execution-telemetry" className="scroll-m-28" />
 
 - [Execution telemetry](/docs/cli/configuration#execution-telemetry)
+
+<span id="update" className="scroll-m-28" />
+
+- [Update the CLI](/docs/cli/installation#update)
+
+<span id="set-up-your-agent" className="scroll-m-28" />
+
+- [Set up your agent](/docs/cli/installation#set-up-your-agent)
+
+<span id="help" className="scroll-m-28" />
+
+- [Command help](/docs/cli/workflows#help)
+
+</details>

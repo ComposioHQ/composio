@@ -117,6 +117,35 @@ composio --version
 which composio
 ```
 
+## Set up your agent
+
+If you skipped plugin setup or installed an agent host later, run:
+
+```bash
+composio setup --target auto
+```
+
+`auto` detects supported agents. Use `--target codex` or `--target claude` to choose one. Setup asks before changing local files. Add `--yes` in an agent, script, or CI job.
+
+`composio login` installs the standalone CLI skill for Claude Code by default. For Codex, prefer the native plugin through `composio setup --target codex`. See [Agent plugins](/docs/agent-plugins) for host-specific details.
+
+If you need the standalone skill without the native plugin, install it for your host:
+
+```bash
+composio setup skill claude
+composio setup skill codex
+```
+
+## Update
+
+```bash
+composio upgrade
+```
+
+This replaces the bundle in place. Pass a version, such as `composio upgrade 0.3.1`, to pin a release, or `--beta` for the latest prerelease.
+
+If your installed CLI is too old to upgrade, the command stops before changing anything and prints an install command. Rerun the [installer](/docs/cli#install).
+
 ## Install manually from GitHub Releases
 
 Download the archive for your platform from [GitHub Releases](https://github.com/ComposioHQ/composio/releases), then install the complete bundle. Keep the support files beside the executable.
