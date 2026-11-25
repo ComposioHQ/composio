@@ -124,8 +124,10 @@ jobs:
           fi
 
       - name: Certify CLI skill examples and invocation contracts
+        env:
+          FULL_CLI_CHECKS: ${{ steps.cli-skills-scope.outputs.full }}
         run: |
-          if [[ "${{ steps.cli-skills-scope.outputs.full }}" == "true" ]]; then
+          if [[ "$FULL_CLI_CHECKS" == "true" ]]; then
             bun run validate:cli-skills
           else
             bun test test/cli-skills.test.ts && bun ts/scripts/check-cli-skills.ts --excerpts-only
