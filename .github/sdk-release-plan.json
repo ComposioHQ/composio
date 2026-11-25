@@ -1,106 +1,188 @@
 {
-  "id": "44799501018",
-  "inputBase": "e610d01ca32e2b27363128bfdc657e1f3e7ef622",
+  "id": "45520260753",
+  "inputBase": "7f1622a10ac84ce6cb258205a0af2c3356837dcb",
   "requestedBy": "jkomyno",
-  "issue": 5496,
-  "date": "2026-11-20",
+  "issue": 5557,
+  "date": "2026-11-25",
   "plan": {
     "schemaVersion": 1,
-    "inputFingerprint": "1cb3cfef5be492d42bede9b2a309a13ec5379d66d7695e613fb599b87abb2033",
+    "inputFingerprint": "c6b658a923730ad8bf318baa33f3856847c428ed84a6b0646e41fc486d8a1bbc",
     "choices": {
       "typescript": "auto",
       "python": "auto",
       "channel": "stable",
-      "run": "44799501018"
+      "run": "45520260753"
     },
     "recommended": [
       {
+        "name": "@composio/anthropic",
+        "type": "patch",
+        "oldVersion": "0.11.8",
+        "newVersion": "0.11.9",
+        "changesets": [
+          "type-aware-sdk-package-cleanups"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/claude-agent-sdk",
+        "type": "patch",
+        "oldVersion": "0.13.1",
+        "newVersion": "0.13.2",
+        "changesets": [],
+        "language": "typescript"
+      },
+      {
         "name": "@composio/core",
         "type": "minor",
-        "oldVersion": "0.30.0",
-        "newVersion": "0.31.0",
+        "oldVersion": "0.31.0",
+        "newVersion": "0.32.0",
         "changesets": [
-          "composio-client-update",
-          "managed-app-id"
+          "bound-trigger-webhook-bodies",
+          "checked-reference-examples",
+          "session-webhook-handler",
+          "session-webhooks-parse",
+          "type-aware-sdk-diagnostics"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/experimental",
+        "type": "patch",
+        "oldVersion": "0.2.9",
+        "newVersion": "0.2.10",
+        "changesets": [
+          "trusted-connect-links",
+          "type-aware-sdk-package-cleanups"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/json-schema-to-zod",
+        "type": "patch",
+        "oldVersion": "0.4.1",
+        "newVersion": "0.4.2",
+        "changesets": [
+          "type-aware-sdk-package-cleanups"
         ],
         "language": "typescript"
       },
       {
         "name": "@composio/python-sdk",
         "type": "minor",
-        "oldVersion": "0.33.0",
-        "newVersion": "0.34.0",
+        "oldVersion": "0.34.0",
+        "newVersion": "0.35.0",
         "changesets": [
-          "composio-client-update",
-          "crewai-optional-chromadb",
-          "managed-app-id"
+          "checked-python-reference-examples",
+          "session-webhook-handler",
+          "session-webhooks-parse"
         ],
         "language": "python"
       },
       {
         "name": "@composio/slim",
         "type": "minor",
-        "oldVersion": "0.30.0",
-        "newVersion": "0.31.0",
+        "oldVersion": "0.31.0",
+        "newVersion": "0.32.0",
         "changesets": [
-          "managed-app-id"
+          "session-webhook-handler",
+          "session-webhooks-parse"
         ],
         "language": "typescript"
       }
     ],
     "releases": [
       {
+        "name": "@composio/anthropic",
+        "type": "patch",
+        "oldVersion": "0.11.8",
+        "newVersion": "0.11.9",
+        "changesets": [
+          "type-aware-sdk-package-cleanups"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/claude-agent-sdk",
+        "type": "patch",
+        "oldVersion": "0.13.1",
+        "newVersion": "0.13.2",
+        "changesets": [],
+        "language": "typescript"
+      },
+      {
         "name": "@composio/core",
         "type": "minor",
-        "oldVersion": "0.30.0",
-        "newVersion": "0.31.0",
+        "oldVersion": "0.31.0",
+        "newVersion": "0.32.0",
         "changesets": [
-          "composio-client-update",
-          "managed-app-id"
+          "bound-trigger-webhook-bodies",
+          "checked-reference-examples",
+          "session-webhook-handler",
+          "session-webhooks-parse",
+          "type-aware-sdk-diagnostics"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/experimental",
+        "type": "patch",
+        "oldVersion": "0.2.9",
+        "newVersion": "0.2.10",
+        "changesets": [
+          "trusted-connect-links",
+          "type-aware-sdk-package-cleanups"
+        ],
+        "language": "typescript"
+      },
+      {
+        "name": "@composio/json-schema-to-zod",
+        "type": "patch",
+        "oldVersion": "0.4.1",
+        "newVersion": "0.4.2",
+        "changesets": [
+          "type-aware-sdk-package-cleanups"
         ],
         "language": "typescript"
       },
       {
         "name": "@composio/python-sdk",
         "type": "minor",
-        "oldVersion": "0.33.0",
-        "newVersion": "0.34.0",
+        "oldVersion": "0.34.0",
+        "newVersion": "0.35.0",
         "changesets": [
-          "composio-client-update",
-          "crewai-optional-chromadb",
-          "managed-app-id"
+          "checked-python-reference-examples",
+          "session-webhook-handler",
+          "session-webhooks-parse"
         ],
         "language": "python"
       },
       {
         "name": "@composio/slim",
         "type": "minor",
-        "oldVersion": "0.30.0",
-        "newVersion": "0.31.0",
+        "oldVersion": "0.31.0",
+        "newVersion": "0.32.0",
         "changesets": [
-          "managed-app-id"
+          "session-webhook-handler",
+          "session-webhooks-parse"
         ],
         "language": "typescript"
       }
     ],
     "changesets": [
       {
-        "id": "composio-client-update",
-        "summary": "Update the API client dependencies to 2.1.36 to include the latest API changes.",
+        "id": "bound-trigger-webhook-bodies",
+        "summary": "Limit trigger webhook request bodies to 10 MiB by default in `triggers.parse()`. Set `maxBodyBytes` to customize the limit or to check an already-buffered payload in `triggers.verifyWebhook()`.",
         "releases": [
           {
             "name": "@composio/core",
             "type": "patch"
-          },
-          {
-            "name": "@composio/python-sdk",
-            "type": "patch"
           }
         ]
       },
       {
-        "id": "crewai-optional-chromadb",
-        "summary": "Require CrewAI 1.15.42 or later so installing the CrewAI provider does not install the vulnerable ChromaDB dependency by default.",
+        "id": "checked-python-reference-examples",
+        "summary": "Fix Python SDK reference examples for MCP server management and schema modifiers. Pin a tool version in the Quick Start so direct execution reaches the API.",
         "releases": [
           {
             "name": "@composio/python-sdk",
@@ -109,8 +191,18 @@
         ]
       },
       {
-        "id": "managed-app-id",
-        "summary": "Choose which Composio-managed app an auth config uses. `composio.toolkits.get(slug)` returns `composioManagedAuth` in TypeScript, one entry per managed app with `managedAppId` and `isDefault`. Pass that id as `managedAppId` (TypeScript) or `managed_app_id` (Python) to `composio.authConfigs.create` / `composio.auth_configs.create`; omit it for the toolkit's default app. Auth config create, get and list responses return `managedAppId` in TypeScript (`null` when the auth config isn't on a managed app).",
+        "id": "checked-reference-examples",
+        "summary": "Correct the code examples in the TypeScript SDK reference, which also ships in the package under `dist/docs`. Each class's Usage block now shows its real accessor, such as `composio.webhooks.endpoints` instead of the nonexistent `composio.webhookEndpoints`, and runnable examples are checked against the SDK. Examples now import what they use, declare their own inputs, call methods that exist with their current parameters (for example `composio.mcp` instead of `composio.experimental.mcp`, `AuthScheme.APIKey`, and the `id` and `timestamp` fields of `triggers.verifyWebhook`), and split alternatives into separate examples.\n\nThe Quick Start passes a toolkit version when it executes a tool.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "session-webhook-handler",
+        "summary": "Session hooks accept a `webhook` handler. `composio.sessions.create()` and `session.update()` take `handler: { type: 'webhook', fallbackAction, timeoutMs }` (TypeScript) or `{\"type\": \"webhook\", \"fallback_action\": ..., \"timeout_ms\": ...}` (Python) on a `before_execute` or `after_execute` hook. Composio sends each call the hook applies to, before or after it runs, to the project's session webhook URL and waits for your endpoint to let it run, block it, or change it; read the request there with `composio.sessions.webhooks.parse()`. `fallbackAction` is what happens when the endpoint can't answer. A hook result with `status: 'unavailable'` now carries `detail`, the reason the hook could not be evaluated. The event `composio.sessions.webhooks.parse()` returns types the optional `metadata.tool_call_id`, which pairs a call's `before_execute` event with its `after_execute`.",
         "releases": [
           {
             "name": "@composio/core",
@@ -123,6 +215,62 @@
           {
             "name": "@composio/python-sdk",
             "type": "minor"
+          }
+        ]
+      },
+      {
+        "id": "session-webhooks-parse",
+        "summary": "Read session webhook events with `composio.sessions.webhooks.parse()`. A session hook with a `webhook` handler sends each tool or proxy call it applies to, before or after it runs, to the project's session webhook URL and waits for the endpoint's answer. `parse({ body, headers, verifySecret })` (TypeScript) / `parse(body=..., headers=..., verify_secret=...)` (Python) verifies the signature with the project's session webhook secret, which is required, and returns the typed event with the field names of the webhook reference. `SessionWebhookBeforeExecuteResponse` and `SessionWebhookAfterExecuteResponse` type the answer.\n\nProxy webhook events and request overrides support file uploads through `binary_body`.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "minor"
+          },
+          {
+            "name": "@composio/slim",
+            "type": "minor"
+          },
+          {
+            "name": "@composio/python-sdk",
+            "type": "minor"
+          }
+        ]
+      },
+      {
+        "id": "trusted-connect-links",
+        "summary": "Validate the HTTPS host when extracting Composio auth links in Pi and Eve.",
+        "releases": [
+          {
+            "name": "@composio/experimental",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "type-aware-sdk-diagnostics",
+        "summary": "Format structured error details in SDK diagnostics and fall back when a trigger payload contains a malformed identifier.",
+        "releases": [
+          {
+            "name": "@composio/core",
+            "type": "patch"
+          }
+        ]
+      },
+      {
+        "id": "type-aware-sdk-package-cleanups",
+        "summary": "Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.",
+        "releases": [
+          {
+            "name": "@composio/anthropic",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/experimental",
+            "type": "patch"
+          },
+          {
+            "name": "@composio/json-schema-to-zod",
+            "type": "patch"
           }
         ]
       }

@@ -1,5 +1,12 @@
 # @composio/claude-code-agents
 
+## 0.13.2
+
+### Patch Changes
+
+- Updated dependencies [1b88005]
+  - @composio/json-schema-to-zod@0.4.2
+
 ## 0.13.1
 
 ### Patch Changes
