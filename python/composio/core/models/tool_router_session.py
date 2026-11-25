@@ -199,8 +199,25 @@ class ToolRouterHookPromptInjectionCheckHandler(te.TypedDict):
     action: t.Literal["block"]
 
 
+class ToolRouterHookWebhookHandler(te.TypedDict):
+    """Sends the call to the project's session webhook URL and waits for your
+    endpoint's answer: let it run, block it, or change it.
+
+    ``fallback_action`` is what happens to the call when your endpoint times
+    out, can't be reached, or sends an answer that can't be read.
+    ``timeout_ms`` is how long to wait for the answer; it defaults to 3000.
+    Read the request in your endpoint with
+    ``composio.sessions.webhooks.parse()``.
+    """
+
+    type: t.Literal["webhook"]
+    fallback_action: t.Literal["block", "continue"]
+    timeout_ms: te.NotRequired[int]
+
+
 class ToolRouterBeforeExecuteHook(te.TypedDict):
-    """A hook that can block a tool call before it runs.
+    """A hook that can block a tool call before it runs. With a ``webhook``
+    handler it can also change the call.
 
     ``id`` is unique within the session and shows up in results and logs.
     ``name`` is optional; the agent sees it when this hook blocks a call.
@@ -210,11 +227,12 @@ class ToolRouterBeforeExecuteHook(te.TypedDict):
     id: str
     name: te.NotRequired[str]
     applies_to: ToolRouterHookAppliesTo
-    handler: ToolRouterHookConditionCheckHandler
+    handler: t.Union[ToolRouterHookConditionCheckHandler, ToolRouterHookWebhookHandler]
 
 
 class ToolRouterAfterExecuteHook(te.TypedDict):
     """A hook that can block a tool call's result before the agent sees it.
+    With a ``webhook`` handler it can also change the result.
 
     ``id`` is unique within the session and shows up in results and logs.
     ``name`` is optional; the agent sees it when this hook blocks a call.
@@ -225,7 +243,9 @@ class ToolRouterAfterExecuteHook(te.TypedDict):
     name: te.NotRequired[str]
     applies_to: ToolRouterHookAppliesTo
     handler: t.Union[
-        ToolRouterHookConditionCheckHandler, ToolRouterHookPromptInjectionCheckHandler
+        ToolRouterHookConditionCheckHandler,
+        ToolRouterHookPromptInjectionCheckHandler,
+        ToolRouterHookWebhookHandler,
     ]
 
 

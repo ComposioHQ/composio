@@ -197,12 +197,12 @@ uv run --script python/examples/tool_router/langchain_agent.py
 
 The agent prints `pg`'s current karma, a short bio when the profile contains one, and the Hacker News profile URL. Values and wording vary between runs. Check that the response cites `https://news.ycombinator.com/user?id=pg` and uses the tool's result.
 
-The [direct tools preset](/docs/configuring-sessions#direct-tools-preset) exposes `HACKERNEWS_GET_USER` directly. The agent doesn't need to search for tools or start an authentication flow. To research another Hacker News user, change `pg` in the prompt and source URL.
+The [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset) exposes `HACKERNEWS_GET_USER` directly. The agent doesn't need to search for tools or start an authentication flow. To research another Hacker News user, change `pg` in the prompt and source URL.
 
 If the MCP connection returns an authentication error, check `COMPOSIO_API_KEY` and pass both `session.mcp.url` and `session.mcp.headers`. Re-run the script to create a fresh session; the previous run's session was deleted.
 
 ## Use the same pattern in your application
 
-Keep the [session](/docs/how-composio-works) for as long as the conversation needs it, then delete it. To use a toolkit that needs an account, [authorize that toolkit](/docs/authentication/manually-authenticating) before running the agent.
+Keep the [session](/docs/sessions) for as long as the conversation needs it, then delete it. To use a toolkit that needs an account, [authorize that toolkit](/docs/authentication/manually-authenticating) before running the agent.
 
 For SDK modifiers or custom tools that run in your process, use the [CrewAI provider](/docs/providers/crewai) or [LangChain provider](/docs/providers/langchain). Those features don't run through a hosted [MCP session](/docs/sessions-via-mcp#trade-offs).

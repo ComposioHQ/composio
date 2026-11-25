@@ -459,19 +459,31 @@ export class Composio<
    *
    * @example
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // Initialize with default configuration
    * const composio = new Composio();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
    *
    * // Initialize with custom API key and base URL
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
    *   baseURL: 'https://api.composio.dev'
    * });
+   * ```
    *
-   * // Initialize with custom provider
+   * @example
+   * ```typescript
+   * import { Composio, OpenAIProvider } from '@composio/core';
+   *
+   * // Initialize with an explicit provider
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
-   *   provider: new CustomProvider()
+   *   provider: new OpenAIProvider()
    * });
    * ```
    */
@@ -677,6 +689,8 @@ export class Composio<
    *
    * @example
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // Create a base Composio instance
    * const composio = new Composio({
    *   apiKey: 'your-api-key'
@@ -692,7 +706,7 @@ export class Composio<
    * });
    *
    * // Use the session for making API calls with the custom headers
-   * await composioWithCustomHeaders.tools.list();
+   * await composioWithCustomHeaders.tools.getRawComposioTools({ toolkits: ['github'] });
    * ```
    */
   createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
@@ -716,14 +730,20 @@ export class Composio<
    * @returns {Promise<void>} A promise that resolves when all pending telemetry has been sent.
    *
    * @example
-   * ```typescript
+   * ```typescript nocheck="Cloudflare Worker handler; the checker has no Workers Env or ExecutionContext types"
+   * import { Composio } from '@composio/core';
+   *
    * // In a Cloudflare Worker, use ctx.waitUntil to ensure telemetry is flushed
    * export default {
    *   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
    *     const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
    *
    *     // Do your work...
-   *     const result = await composio.tools.execute(...);
+   *     const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+   *       userId: 'user_123',
+   *       version: '20250909_00',
+   *       arguments: { owner: 'composio' },
+   *     });
    *
    *     // Ensure telemetry flushes before worker terminates
    *     ctx.waitUntil(composio.flush());

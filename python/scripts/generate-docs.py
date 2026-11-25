@@ -262,7 +262,7 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
     description_lines = []
     params: dict[str, str] = {}
     returns = None
-    examples: list[str] = []
+    examples: list[dict[str, str]] = []
     raises: list[dict[str, str]] = []
     deprecated_lines: list[str] = []
 
@@ -354,17 +354,42 @@ def parse_docstring(docstring: str | None) -> dict[str, Any]:
     }
 
 
-def normalize_example(example: str) -> str:
-    """Normalize a docstring example before wrapping it in an MDX code fence."""
-    normalized = textwrap.dedent(example).strip()
-    lines = normalized.splitlines()
+def normalize_example(example: str) -> dict[str, str]:
+    """Read a bare example or one authored Python fence."""
+    code = textwrap.dedent(example).strip()
+    if not code:
+        raise ValueError("Empty Python reference example")
 
-    if len(lines) >= 2 and lines[0].strip().startswith("```"):
-        closing_index = len(lines) - 1
-        if lines[closing_index].strip() == "```":
-            normalized = "\n".join(lines[1:closing_index]).strip()
-
-    return normalized
+    lines = code.splitlines()
+    markers = [
+        i for i, line in enumerate(lines) if re.match(r"\s*(?:`{3,}|~{3,})", line)
+    ]
+    meta = ""
+    if markers:
+        opening = re.fullmatch(r"(`{3,}|~{3,})(?:python|py)(?:\s+(.*))?", lines[0])
+        if opening is None or markers != [0, len(lines) - 1]:
+            raise ValueError(
+                "Use a single closed Python fence in each reference example"
+            )
+        marker = opening[1]
+        closing = lines[-1].strip()
+        if len(closing) < len(marker) or set(closing) != {marker[0]}:
+            raise ValueError("Unclosed Python reference example fence")
+        meta = (opening[2] or "").strip()
+        if meta == "signature":
+            raise ValueError(
+                "The signature option is reserved for generated signatures"
+            )
+        if meta:
+            opt_out = re.fullmatch(r'nocheck="([^"]*)"', meta)
+            if opt_out is None or not opt_out[1].strip():
+                raise ValueError(
+                    'Python reference examples require nocheck="<reason>" to opt out'
+                )
+        code = "\n".join(lines[1:-1]).strip()
+        if not code:
+            raise ValueError("Empty Python reference example")
+    return {"code": code, "meta": meta}
 
 
 def extract_class_info(
@@ -574,7 +599,7 @@ def generate_class_mdx(
             if ret_type:
                 sig += f" -> {ret_type}"
 
-            lines.append("```python")
+            lines.append("```python signature")
             lines.append(sig)
             lines.append("```")
             lines.append("")
@@ -631,8 +656,9 @@ def generate_class_mdx(
                 lines.append("**Example**")
                 lines.append("")
                 for ex in method["examples"]:
-                    lines.append("```python")
-                    lines.append(ex)
+                    meta = f" {ex['meta']}" if ex["meta"] else ""
+                    lines.append(f"```python{meta}")
+                    lines.append(ex["code"])
                     lines.append("```")
                 lines.append("")
 
@@ -679,7 +705,7 @@ def generate_index_mdx(classes: list[dict], decorators: list[dict]) -> str:
                 f"{p['name']}: {p['type']}" + (" = ..." if p["optional"] else "")
                 for p in d["parameters"]
             )
-            dec_lines.append("```python")
+            dec_lines.append("```python signature")
             dec_lines.append(f"@{d['name']}({params})")
             dec_lines.append("def my_modifier(...):")
             dec_lines.append("    ...")
@@ -718,9 +744,10 @@ tools = composio.tools.get("user-123", toolkits=["github"])
 
 # Execute a tool
 result = composio.tools.execute(
-    "GITHUB_GET_REPOS",
-    arguments={{"owner": "composio"}},
-    user_id="user-123"
+    "GITHUB_LIST_STARGAZERS",
+    arguments={{"owner": "ComposioHQ", "repo": "composio"}},
+    user_id="user-123",
+    version="20250909_00",
 )
 ```
 

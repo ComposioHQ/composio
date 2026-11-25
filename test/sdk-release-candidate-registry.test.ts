@@ -326,6 +326,9 @@ describe('docs workflows', () => {
     Bun.YAML.parse(await readText(`.github/workflows/${name}`)) as {
       jobs: Record<string, Record<string, unknown>>;
     };
+  /** A channel's required checks, widened so a job's name can be looked up in them. */
+  const extraChecks = (channel: keyof typeof CHANNELS): ReadonlyArray<string> =>
+    CHANNELS[channel].extraChecks;
   /** Reads the only condition shape these jobs use: a negated head-branch prefix. */
   const headCondition = (condition: unknown) => {
     const match = /^\$\{\{ !startsWith\(github\.head_ref, '([^']+)'\) \}\}$/.exec(
@@ -350,7 +353,9 @@ describe('docs workflows', () => {
     const docs = jobs.docs;
     expect(docs.name).toBe('SDK candidate docs');
     // The stable gate requires the check this job reports, under the same name.
-    expect(CHANNELS.stable.extraChecks.join()).toBe(String(docs.name));
+    expect(extraChecks('stable')).toContain(String(docs.name));
+    expect(extraChecks('beta')).not.toContain(String(docs.name));
+    expect(JSON.stringify(docs)).not.toContain('check:docs-reference');
     expect(docs.needs).toEqual(['select-candidates', 'candidate']);
     expect(docs.if).toBe(
       "${{ !cancelled() && needs.select-candidates.outputs.channel == 'stable' }}"
@@ -358,5 +363,29 @@ describe('docs workflows', () => {
     expect(docs.permissions).toEqual({ contents: 'read' });
     expect(docs['timeout-minutes']).toBeGreaterThan(0);
     expect(JSON.stringify(docs)).not.toContain('secrets.');
+  });
+
+  test('the candidate reference job checks the packed core on every channel and always reports', async () => {
+    const { jobs } = await workflow('sdk.release.candidates.yml');
+    const reference = jobs.reference;
+    expect(reference.name).toBe('SDK candidate reference');
+    // Both gates require it: stable and beta both publish the reference under dist/docs.
+    expect(extraChecks('stable')).toContain(String(reference.name));
+    expect(extraChecks('beta')).toContain(String(reference.name));
+    expect(reference.needs).toEqual(['select-candidates', 'candidate']);
+    // Runs on every release channel (skipped on non-release PRs where select-candidates is skipped
+    // or failed); a release that has no core candidate still reports success via the pass step.
+    expect(reference.if).toBe("${{ !cancelled() && needs.select-candidates.result == 'success' }}");
+    expect(reference.permissions).toEqual({ contents: 'read' });
+    expect(reference['timeout-minutes']).toBeGreaterThan(0);
+    expect(JSON.stringify(reference)).not.toContain('secrets.');
+    const steps = reference.steps as { if?: string; run?: string }[];
+    const check = steps.find(step => step.run?.includes('check:docs-reference'));
+    expect(check?.run).toContain('--package docs/node_modules/@composio/core --compare-packaged');
+    expect(check?.if).toBe("needs.select-candidates.outputs.core == 'true'");
+    // Every step that needs the candidate is skipped together when there is no core candidate.
+    for (const step of steps.slice(1))
+      expect(step.if).toBe("needs.select-candidates.outputs.core == 'true'");
+    expect(steps[0].if).toBe("needs.select-candidates.outputs.core != 'true'");
   });
 });

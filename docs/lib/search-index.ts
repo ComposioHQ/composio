@@ -1,5 +1,6 @@
 // Use direct imports from collections to avoid top-level await in lib/source.ts.
 import { resolveToolkitCount } from './toolkit-count';
+import { languages, pageNames, resolveStableReference, shouldRenderStableReference, snapshotDirectory } from './sdk-reference-snapshot';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -198,15 +199,18 @@ function contentHash(value: string): string {
 // Sections intentionally kept out of search entirely (not just deprioritized).
 // Direct tool execution is the legacy pre-sessions flow — we don't want it
 // surfacing in results at all. Matches the prefix and anything beneath it.
-const SEARCH_EXCLUDED_PREFIXES = ['/docs/tools-direct'];
+const SEARCH_EXCLUDED_PREFIXES = [
+  '/docs/tools-direct',
+  '/docs/configuring-sessions',
+  '/docs/how-composio-works',
+];
 
 function isExcludedFromSearch(url: string): boolean {
   const path = url.replace(/\/$/, '');
   return SEARCH_EXCLUDED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-function urlFromContentPath(path: string): { url: string; type: string } | undefined {
-  const rel = relative(join(process.cwd(), 'content'), path).replace(/\\/g, '/');
+function urlFromRelativeContentPath(rel: string): { url: string; type: string } | undefined {
   const withoutExt = rel.replace(/\.mdx?$/, '');
   const parts = withoutExt.split('/');
   const collection = parts.shift();
@@ -328,10 +332,10 @@ function pageRank(url: string, sourceType: KnowledgeSourceType): number {
     const path = url.replace(/\/$/, '');
     if (path === '/docs') return 2_400;
     if (path === '/docs/quickstart') return 2_300;
-    if (path === '/docs/how-composio-works') return 2_250;
+    if (path === '/docs/sessions') return 2_250;
     if (path === '/docs/authentication') return 2_220;
     if (path.startsWith('/docs/tools-direct/')) return 2_180;
-    if (path === '/docs/configuring-sessions') return 2_120;
+    if (path.startsWith('/docs/sessions/')) return 2_120;
     if (path.startsWith('/docs/auth-configuration/')) return 2_080;
     if (path === '/docs/triggers' || path.startsWith('/docs/setting-up-triggers/')) return 2_060;
     return 2_000;
@@ -535,14 +539,69 @@ function getToolkitSearchFields(slug: string): Pick<Parameters<typeof recordsFro
   };
 }
 
+interface SearchContentEntry {
+  relPath: string;
+  source: string;
+}
+
+function listSearchContentEntries(): SearchContentEntry[] {
+  const docsRoot = process.cwd();
+  const contentDir = join(docsRoot, 'content');
+  const reference = resolveStableReference(docsRoot);
+  const useProductionSnapshots = shouldRenderStableReference(reference);
+
+  const entries: SearchContentEntry[] = [];
+  const addFile = (file: string, relPath: string) => {
+    const route = urlFromRelativeContentPath(relPath);
+    if (route && !isExcludedFromSearch(route.url)) {
+      entries.push({ relPath, source: readFileSync(file, 'utf8') });
+    }
+  };
+  for (const file of listContentFiles(contentDir)) {
+    const relPath = relative(contentDir, file).replace(/\\/g, '/');
+    if (reference.kind === 'assembled' && relPath.startsWith('reference/')) continue;
+    if (
+      useProductionSnapshots &&
+      languages.some((language) => relPath.startsWith(`reference/sdk-reference/${language}/`))
+    ) {
+      continue;
+    }
+    addFile(file, relPath);
+  }
+
+  if (reference.kind === 'assembled') {
+    for (const file of listContentFiles(reference.dir)) {
+      const relPath = `reference/${relative(reference.dir, file).replace(/\\/g, '/')}`;
+      addFile(file, relPath);
+    }
+  } else if (useProductionSnapshots) {
+    for (const language of languages) {
+      const pages = join(snapshotDirectory(docsRoot, language), 'pages');
+      if (!existsSync(pages)) {
+        // The workspace copy was already skipped above, so a missing snapshot
+        // would silently drop the SDK reference from search. Fail instead.
+        throw new Error(`Missing stable SDK reference for search: ${pages}`);
+      }
+      for (const name of pageNames(pages)) {
+        if (!name.endsWith('.mdx')) continue;
+        entries.push({
+          relPath: `reference/sdk-reference/${language}/${name}`,
+          source: readFileSync(join(pages, name), 'utf8'),
+        });
+      }
+    }
+  }
+
+  return entries;
+}
+
 function getFilesystemRecords(): AlgoliaDocsRecord[] {
-  const contentDir = join(process.cwd(), 'content');
-  return listContentFiles(contentDir).flatMap((file) => {
-    const route = urlFromContentPath(file);
+  return listSearchContentEntries().flatMap(({ relPath, source: raw }) => {
+    const route = urlFromRelativeContentPath(relPath);
     if (!route) return [];
     if (isExcludedFromSearch(route.url)) return [];
 
-    const source = resolveToolkitCount(readFileSync(file, 'utf8'));
+    const source = resolveToolkitCount(raw);
     const frontmatter = getFrontmatter(source);
     const title = getFrontmatterValue(frontmatter, 'title');
     if (!title) return [];

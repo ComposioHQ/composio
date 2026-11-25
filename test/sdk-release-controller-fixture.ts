@@ -86,6 +86,8 @@ export interface ControllerOptions {
   readonly openRelease?: string;
   /** The `SDK candidate docs` check on the head. */
   readonly docs?: 'success' | 'failure' | 'pending' | 'missing';
+  /** The `SDK candidate reference` check on the head. */
+  readonly reference?: 'success' | 'failure' | 'pending' | 'missing';
   /** Who authored the release PR head; the release App by default. */
   readonly headAuthor?: string;
   /** Who last moved the release branch; the release App by default. */
@@ -171,6 +173,14 @@ export function fakeController(options: ControllerOptions = {}) {
                 check(
                   'SDK candidate docs',
                   options.docs === 'pending' ? null : (options.docs ?? 'success')
+                ),
+              ]),
+          ...(options.reference === 'missing'
+            ? []
+            : [
+                check(
+                  'SDK candidate reference',
+                  options.reference === 'pending' ? null : (options.reference ?? 'success')
                 ),
               ]),
           ...(options.rerunFailed ? [check(options.rerunFailed, 'failure', 2)] : []),

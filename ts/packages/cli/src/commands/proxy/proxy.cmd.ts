@@ -33,7 +33,9 @@ const headers = Flag.String('header').pipe(
 
 const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
-  Flag.withDescription('Request body as raw text, JSON, @file, or - for stdin'),
+  Flag.withDescription(
+    'Request body as raw text, JSON, @file under the current directory, or - for stdin'
+  ),
   Flag.optional
 );
 

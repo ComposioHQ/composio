@@ -55,7 +55,7 @@ A skill isn't limited to one app. A task may span Slack and Gmail, and a skill c
 
 ## How a skill reaches your agent
 
-Skills arrive through the search step a [session](/docs/how-composio-works) already performs:
+Skills arrive through the search step a [session](/docs/sessions) already performs:
 
 1. You create a session and give your agent its meta tools.
 2. Your agent has something to do, so it calls `COMPOSIO_SEARCH_TOOLS` with the task in plain language, one `use_case` per query.
@@ -73,6 +73,6 @@ There is no API for listing or reading skills, so unlike most of Composio there 
 
 ## Related
 
-- [How Composio works](/docs/how-composio-works): sessions, meta tools, and where search fits.
+- [How Composio works](/docs/sessions): sessions, meta tools, and where search fits.
 - [`COMPOSIO_SEARCH_TOOLS`](/toolkits/meta-tools/search_tools): the search meta tool and its response fields.
-- [Configuring sessions](/docs/configuring-sessions): how you give an agent access to tools.
+- [Restrict tool access](/docs/sessions/tool-access): how you give an agent access to tools.

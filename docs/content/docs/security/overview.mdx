@@ -21,6 +21,7 @@ Gather the evidence and data-handling terms you need for a vendor security revie
 | Downstream providers | [Subprocessor register](https://trust.composio.dev/subprocessors) |
 | Data-processing agreements | [Data Processing Addendum](https://composio.dev/legal/dpa) and [Business Associate Agreement](https://composio.dev/legal/baa) |
 | Logs, files, model processing, and retention | [Data retention and handling](/docs/security/data-retention) |
+| Composio in your own cloud account | [BYOC security and access](/docs/deployment/byoc#security-and-access) |
 | Vendor-review requirements | [Compliance and vendor-review guidance](/docs/security/vendor-security-review) |
 
 ## I'm building with Composio
@@ -31,7 +32,8 @@ Review the controls for your application's credentials, permissions, and retaine
 
 | Review area | Where to go |
 | --- | --- |
-| Credential custody and deployment options | [Token custody architecture](/docs/security/token-custody) |
+| Credential custody and user isolation | [Token custody and credential isolation](/docs/security/token-custody) |
+| Where Composio runs | [Deployment options](/docs/deployment) |
 | Permissions for your application | [API-key permissions](/reference/authenticating-to-composio/project-api-key-permissions) and [provider scopes](/docs/authentication/controlling-scopes) |
 | Payload storage, coverage, and exclusions | [Zero Data Retention](/docs/security/zero-data-retention) |
 | Administrative changes | [Audit logs](/docs/security/audit-logs) |
@@ -39,7 +41,7 @@ Review the controls for your application's credentials, permissions, and retaine
 
 ### Credential protection
 
-Provider credentials are encrypted at rest using AES-256-GCM, and traffic uses TLS. Composio uses credentials during execution. ZDR controls storage of covered payloads, not processing during execution.
+Provider credentials are encrypted at rest using AES-256-GCM. Composio API keys and session keys are stored as hashes. Traffic uses TLS. Composio uses credentials during execution. ZDR controls storage of covered payloads, not processing during execution.
 
 ### Your responsibilities
 

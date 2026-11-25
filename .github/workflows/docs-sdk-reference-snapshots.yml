@@ -1,0 +1,119 @@
+name: Docs - Stable SDK reference
+
+on:
+  pull_request:
+    branches: [next]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Stable SDK reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Keep the check visible on every PR so next can require it: the job reports on
+      # every pull request and skips the work for unrelated changes, the same shape as
+      # docs-sdk-reference-drift.yml. Indeterminate cases fail open, so a bad base or a
+      # failed fetch runs the checks instead of turning the gate into a silent no-op.
+      - name: Scope the stable reference checks
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          inputs=(
+            'docs/sdk-reference-snapshots/**'
+            'docs/content/reference/sdk-reference/**'
+            'docs/lib/sdk-reference-snapshot.ts'
+            'docs/lib/sdk-reference-content.ts'
+            'docs/lib/search-index.ts'
+            'docs/lib/code-examples.ts'
+            'docs/lib/example-document.ts'
+            'docs/lib/llm-guardrails/**'
+            'docs/scripts/sdk-reference-snapshot.ts'
+            'docs/scripts/vercel-build.sh'
+            'docs/scripts/check-python-snippets.ts'
+            'docs/scripts/python-snippets/**'
+            'docs/scripts/build-agent-index.ts'
+            'docs/scripts/build-content-freshness.ts'
+            'docs/source.config.ts'
+            'docs/next.config.mjs'
+            'docs/vercel.json'
+            'docs/package.json'
+            'docs/bun.lock'
+            'docs/agent/lib/docs.ts'
+            'docs/tests/static/sdk-reference-*.test.ts'
+            'scripts/docs-reference-check/**'
+            'scripts/sdk-release/reference-snapshot.ts'
+            'package.json'
+            'pnpm-lock.yaml'
+            'uv.lock'
+            'mise.toml'
+            'mise.lock'
+            '.gitattributes'
+            '.github/actions/setup-node-pnpm-bun/**'
+            '.github/actions/setup-python-uv/**'
+            '.github/workflows/docs-sdk-reference-snapshots.yml'
+            '.github/workflows/docs-search-sync.yml'
+            '.github/workflows/sdk.release.yml'
+          )
+          if [ -z "${BASE_SHA:-}" ]; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git fetch --no-tags --depth=1 origin "$BASE_SHA"; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --quiet "$BASE_SHA" HEAD -- "${inputs[@]/#/:(glob)}"; then
+            echo "No stable reference input changed; nothing to check."
+            echo "affected=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          enable-caching: 'false'
+
+      - if: steps.scope.outputs.affected == 'true'
+        uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+
+      - if: steps.scope.outputs.affected == 'true'
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - if: steps.scope.outputs.affected == 'true'
+        working-directory: docs
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - if: steps.scope.outputs.affected == 'true'
+        working-directory: docs
+        run: bun test tests/static/sdk-reference-snapshot.test.ts
+
+      # Compare against live next, not the PR's recorded base: next can move
+      # forward (for example through a release promotion) after the PR opened,
+      # and a snapshot must never regress below what next already publishes.
+      - name: Check versions and examples against installed packages
+        if: steps.scope.outputs.affected == 'true'
+        run: |
+          git fetch --no-tags --depth=1 origin next
+          bun docs/scripts/sdk-reference-snapshot.ts check "$(git rev-parse FETCH_HEAD)"
+
+      - name: Exercise the production reference selection
+        if: steps.scope.outputs.affected == 'true'
+        working-directory: docs
+        env:
+          VERCEL_ENV: production
+        run: sh scripts/vercel-build.sh

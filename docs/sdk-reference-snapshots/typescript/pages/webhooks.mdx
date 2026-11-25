@@ -1,0 +1,24 @@
+---
+title: "Webhooks"
+description: "`composio.webhooks` namespace.  - `subscriptions`: the project's outbound webhook subscription (where  Composio delivers trigger and lifecycle events). - `endpoints`: inbound ingress URLs for third-party providers, one per  toolkit + OAuth app pair."
+---
+
+> SDK version `0.31.0`. Install with `npm install @composio/core@0.31.0`.
+
+## Usage
+
+Access this class through the `composio.webhooks` property:
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({ apiKey: 'your-api-key' });
+const webhooks = composio.webhooks;
+```
+
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `endpoints` | `WebhookEndpoints` | Manage inbound webhook endpoints per toolkit + OAuth app. |
+| `subscriptions` | `WebhookSubscriptions` | Manage the project's outbound webhook subscription. |

@@ -8,8 +8,10 @@ description: "ConnectedAccounts class  This class is used to manage connected ac
 Access this class through the `composio.connectedAccounts` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.connectedAccounts.list();
+const connectedAccounts = composio.connectedAccounts;
 ```
 
 ## Methods
@@ -29,7 +31,7 @@ exchange, and the connection becomes `ACTIVE`.
 The session URI is single-use: redeeming it twice, or after it expires,
 fails with a 404 from the API.
 
-```typescript
+```typescript signature
 async completeAuth(params: ConnectedAccountCompleteAuthParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountCompleteAuthResponse>
 ```
 
@@ -47,11 +49,16 @@ async completeAuth(params: ConnectedAccountCompleteAuthParams, requestOptions?: 
 **Example**
 
 ```typescript
-// In your verifier route, after authenticating the user:
-const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
-  userId: 'user_123',
-  sessionUri, // the session URI from the verifier redirect
-});
+// Your verifier route, after authenticating the user
+export async function GET(request: Request) {
+  // The session URI arrives as the `session_uri` query parameter of the verifier redirect
+  const sessionUri = new URL(request.url).searchParams.get('session_uri') ?? '';
+  const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
+    userId: 'user_123',
+    sessionUri,
+  });
+  return new Response(`Connected ${toolkitSlug}: ${connectedAccountId}`);
+}
 ```
 
 ---
@@ -63,7 +70,7 @@ Deletes a connected account.
 This method permanently removes a connected account from the Composio platform.
 This action cannot be undone and will revoke any access tokens associated with the account.
 
-```typescript
+```typescript signature
 async delete(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountDeleteResponse>
 ```
 
@@ -91,7 +98,7 @@ await composio.connectedAccounts.delete('conn_abc123');
 
 Disable a connected account
 
-```typescript
+```typescript signature
 async disable(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
 ```
 
@@ -111,13 +118,7 @@ async disable(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<
 ```typescript
 // Disable a connected account
 const disabledAccount = await composio.connectedAccounts.disable('conn_abc123');
-console.log(disabledAccount.isDisabled); // true
-
-// You can also use updateStatus with a reason
-// const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
-//   enabled: false,
-//   reason: 'No longer needed'
-// });
+console.log(disabledAccount.success); // true
 ```
 
 ---
@@ -126,7 +127,7 @@ console.log(disabledAccount.isDisabled); // true
 
 Enable a connected account
 
-```typescript
+```typescript signature
 async enable(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
 ```
 
@@ -146,7 +147,7 @@ async enable(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<C
 ```typescript
 // Enable a previously disabled connected account
 const enabledAccount = await composio.connectedAccounts.enable('conn_abc123');
-console.log(enabledAccount.isDisabled); // false
+console.log(enabledAccount.success); // true
 ```
 
 ---
@@ -158,7 +159,7 @@ Retrieves a specific connected account by its ID.
 This method fetches detailed information about a single connected account
 and transforms the response to the SDK's standardized format.
 
-```typescript
+```typescript signature
 async get(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRetrieveResponse>
 ```
 
@@ -206,7 +207,7 @@ Custom auth configs (your own OAuth app) and non-OAuth schemes (API key,
 bearer token, basic auth) are unaffected and continue to work on
 `initiate()`. See https://docs.composio.dev/docs/changelog/2026/04/24
 
-```typescript
+```typescript signature
 async initiate(userId: string, authConfigId: string, options?: CreateConnectedAccountOptions, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
@@ -226,6 +227,8 @@ async initiate(userId: string, authConfigId: string, options?: CreateConnectedAc
 **Example**
 
 ```typescript
+import { AuthScheme } from '@composio/core';
+
 // For OAuth2 authentication
 const connectionRequest = await composio.connectedAccounts.initiate(
   'user_123',
@@ -238,17 +241,25 @@ const connectionRequest = await composio.connectedAccounts.initiate(
     })
   }
 );
+```
+
+```typescript
+import { AuthScheme } from '@composio/core';
 
 // For API Key authentication
 const connectionRequest = await composio.connectedAccounts.initiate(
   'user_123',
   'auth_config_123',
   {
-    config: AuthScheme.ApiKey({
+    config: AuthScheme.APIKey({
       api_key: 'your_api_key'
     })
   }
 );
+```
+
+```typescript
+import { AuthScheme } from '@composio/core';
 
 // For Basic authentication
 const connectionRequest = await composio.connectedAccounts.initiate(
@@ -267,7 +278,7 @@ const connectionRequest = await composio.connectedAccounts.initiate(
 
 ### link()
 
-```typescript
+```typescript signature
 async link(userId: string, authConfigId: string, options?: CreateConnectedAccountLinkOptions, requestOptions?: ComposioRequestOptions): Promise<ConnectionRequest>
 ```
 
@@ -316,7 +327,7 @@ Lists all connected accounts based on provided filter criteria.
 
 This method retrieves connected accounts from the Composio API with optional filtering.
 
-```typescript
+```typescript signature
 async list(query?: ConnectedAccountListParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountListResponse>
 ```
 
@@ -364,7 +375,7 @@ Refreshes a connected account's authentication credentials.
 This method attempts to refresh OAuth tokens or other credentials associated with
 the connected account. This is useful when a token has expired or is about to expire.
 
-```typescript
+```typescript signature
 async refresh(nanoid: string, options?: ConnectedAccountRefreshOptions, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRefreshResponse>
 ```
 
@@ -398,7 +409,7 @@ success the connection status becomes `REVOKED`. Revoking an already
 revoked connection returns an empty `revokedTokens` list without an
 upstream call.
 
-```typescript
+```typescript signature
 async revoke(nanoid: string, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountRevokeResponse>
 ```
 
@@ -429,7 +440,7 @@ Enable or disable a connected account. Accepts `{ enabled: boolean }`.
 
 Use `updateAcl()` for ACL writes on SHARED connections.
 
-```typescript
+```typescript signature
 async update(nanoid: string, params: UpdateConnectedAccountParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
 ```
 
@@ -467,7 +478,7 @@ PATCH semantics: omit a field to leave it unchanged; pass an empty
 array to clear an allow/deny list. At least one field must be
 provided.
 
-```typescript
+```typescript signature
 async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
 ```
 
@@ -503,7 +514,7 @@ await composio.connectedAccounts.updateAcl('ca_abc123', { allowedUserIds: [] });
 
 Update the status of a connected account
 
-```typescript
+```typescript signature
 async updateStatus(nanoid: string, params: ConnectedAccountUpdateStatusParams, requestOptions?: ComposioRequestOptions): Promise<ConnectedAccountUpdateStatusResponse>
 ```
 
@@ -527,10 +538,9 @@ const updatedAccount = await composio.connectedAccounts.updateStatus('conn_abc12
   enabled: true
 });
 
-// Disable a connected account with a reason
+// Disable a connected account
 const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
-  enabled: false,
-  reason: 'Token expired'
+  enabled: false
 });
 ```
 
@@ -543,7 +553,7 @@ Waits for a connection request to complete and become active.
 This method polls the Composio API, backing off from 1 second to 5 seconds between polls,
 to check the status of a connection until it either becomes active, enters a terminal error state, or times out.
 
-```typescript
+```typescript signature
 async waitForConnection(connectedAccountId: string, timeout?: number): Promise<ConnectedAccountRetrieveResponse>
 ```
 
@@ -563,7 +573,9 @@ async waitForConnection(connectedAccountId: string, timeout?: number): Promise<C
 ```typescript
 // Wait for a connection to complete with default timeout
 const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_123abc');
+```
 
+```typescript
 // Wait with a custom timeout of 2 minutes
 const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_123abc', 120000);
 ```

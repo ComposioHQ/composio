@@ -6,7 +6,8 @@
       "project_id": "pr_123",
       "session_id": "trs_123",
       "user_id": "user_123",
-      "hook_id": "check_outgoing_email"
+      "hook_id": "check_outgoing_email",
+      "tool_call_id": "tc_8f3b2c1d9e4a"
     }
   },
   "events": {

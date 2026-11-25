@@ -20,12 +20,14 @@ const parallel = Flag.Boolean('parallel').pipe(
 
 const data = Flag.String('data').pipe(
   Flag.withAlias('d'),
-  Flag.withDescription('JSON arguments, @file, or - for stdin'),
+  Flag.withDescription('JSON arguments, @file under the current directory, or - for stdin'),
   Flag.atLeast(0),
   Flag.map(Array.head)
 );
 const file = Flag.String('file').pipe(
-  Flag.withDescription('Inject a local file path into the single file_uploadable input'),
+  Flag.withDescription(
+    'Inject a local file path, under the current directory, into the single file_uploadable input'
+  ),
   Flag.optional
 );
 const accountOption = Flag.String('account').pipe(

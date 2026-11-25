@@ -1,4 +1,5 @@
 import { Effect } from 'effect';
+import { fetchWithAgentSessionRedirects } from './agent-session-fetch';
 
 /**
  * Request and byte totals for every Composio API call a client made.
@@ -66,7 +67,7 @@ export const makeClientMetricsCollector = (): ClientMetricsCollector => {
   const fetch: typeof globalThis.fetch = Object.assign(
     (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       requests += 1;
-      return globalThis.fetch(input, init).then(countResponse);
+      return fetchWithAgentSessionRedirects(input, init).then(countResponse);
     },
     // Bun's `fetch` carries a `preconnect` helper; forward it so the wrapper
     // satisfies the same type.

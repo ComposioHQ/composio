@@ -22,7 +22,7 @@ import {
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['quickstart'], source },
   { slug: ['authentication'], source },
-  { slug: ['configuring-sessions'], source },
+  { slug: ['sessions', 'tool-access'], source },
   { slug: ['authentication', 'white-labeling-authentication'], source },
   { slug: ['glossary'], source: referenceSource },
   { slug: ['troubleshooting'], source },

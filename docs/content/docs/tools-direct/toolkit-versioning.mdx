@@ -7,7 +7,7 @@ legacy: true
 ---
 
 <Callout type="info">
-If you're building an agent, we recommend using [sessions](/docs/configuring-sessions) instead. Sessions handle toolkit versions automatically so you don't have to manage them yourself.
+If you're building an agent, we recommend using [sessions](/docs/sessions/tool-access) instead. Sessions handle toolkit versions automatically so you don't have to manage them yourself.
 </Callout>
 
 Toolkit versioning ensures your tools behave consistently across deployments. You can pin specific versions in production, test new releases in development, and roll back when needed.
@@ -229,7 +229,7 @@ The right choice depends on how your application consumes tool outputs:
 As a rule of thumb: if an LLM reads the output, use `latest`. If your code parses the output, pin the version.
 </Callout>
 
-Most agentic applications — including all [session-based](/docs/configuring-sessions) workflows — use `latest` by default and benefit from always having the most up-to-date tools. If you're building structured data pipelines or integrations with fixed response parsing, pin to a tested version and upgrade on your own schedule.
+Most agentic applications — including all [session-based](/docs/sessions/tool-access) workflows — use `latest` by default and benefit from always having the most up-to-date tools. If you're building structured data pipelines or integrations with fixed response parsing, pin to a tested version and upgrade on your own schedule.
 
 ## Version resolution order
 

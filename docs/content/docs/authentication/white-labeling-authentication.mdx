@@ -62,7 +62,7 @@ Set `COMPOSIO_API_KEY` in your server environment; the API option also requires 
 Use [your own OAuth app](#using-your-own-oauth-apps) to change the provider consent-screen identity in either mode. Use an application `callbackUrl` to return to your product after authentication. If you don't want the hosted connection page, follow [Build an app-owned connection UI](#build-an-app-owned-connection-ui).
 
 <Callout type="warn" title="Branding is not domain replacement">
-Connect Link branding doesn't change its `connect.composio.dev` host. A custom OAuth app doesn't remove provider domains or Composio's callback domain. The setup below doesn't provide a CNAME or a self-hosted Connect Link.
+In Composio Cloud, Connect Link branding doesn't change its `connect.composio.dev` host. A custom OAuth app doesn't remove provider domains or Composio's callback domain. The setup below doesn't provide a CNAME or a self-hosted Connect Link. In a BYOC deployment, you use your own OAuth apps, and the redirect URI uses your deployment's hostname. See [Use your own OAuth apps](/docs/deployment/byoc#use-your-own-oauth-apps).
 </Callout>
 
 ## Customizing the Connect Link

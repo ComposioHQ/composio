@@ -1,0 +1,18 @@
+---
+title: Augmentation
+---
+
+```typescript
+declare global { const composio: any }
+```
+
+```typescript
+import '@composio/core';
+declare module '@composio/core' {
+  interface Composio { injectedMember(): void }
+}
+```
+
+```typescript
+composio.injectedMember();
+```

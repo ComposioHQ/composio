@@ -1,6 +1,7 @@
 /**
- * Compile every rendered Python fence (including exempted/legacy examples) and
- * type-check current SDK examples against the local Python SDK and providers.
+ * Compile maintained Python fences and type-check current SDK examples against
+ * local SDK and provider source. Reference mode checks generated examples and
+ * skips display signatures and explicit opt-outs.
  *
  * The Python helper attributes diagnostics using mypy's resolved AST symbols
  * and fully qualified types, not error-message class names. SDK call,
@@ -14,11 +15,13 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import {
   listCodeExampleFiles,
+  listPythonReferenceFiles,
   parseCodeExamples,
   walkCodeExamples,
   type CodeExampleFile,
@@ -35,23 +38,41 @@ export type PythonSnippet = {
   typeCheck: boolean;
 };
 
-export type PythonSnippetRule = 'python-syntax' | 'python-api' | 'python-directive';
+export type PythonSnippetRule = 'python-syntax' | 'python-api' | 'python-directive' | 'python-reference';
 
 export type PythonSnippetViolation = { path: string; line: number; rule: PythonSnippetRule; message: string };
 
 
 const PYTHON_LANGS: Record<string, true> = { python: true, py: true };
+type ReferenceOptOut = { path: string; line: number; reason: string };
+
 const LEGACY_RE = /\(previous\)/i;
 
 /** Every Python fence in `files`, in file and document order. */
-export function collectPythonSnippets(files: CodeExampleFile[]): PythonSnippet[] {
+export function collectPythonSnippets(
+  files: CodeExampleFile[],
+  reference?: { optOuts: ReferenceOptOut[] },
+): PythonSnippet[] {
   const snippets: PythonSnippet[] = [];
   for (const file of files) {
     walkCodeExamples(parseCodeExamples(file.source, file.path).units, (unit, ancestors) => {
       if (unit.type !== 'fence' || PYTHON_LANGS[unit.lang] !== true) return;
+      if (reference) {
+        const meta = unit.info.slice(unit.lang.length).trim();
+        if (meta === 'signature') return;
+        if (meta) {
+          const reason = /^nocheck="([^"]*)"$/u.exec(meta)?.[1]?.trim();
+          if (!reason) {
+            throw new Error(`${file.path}:${unit.line} Invalid Python reference fence options: ${meta}`);
+          }
+          reference.optOuts.push({ path: file.path, line: unit.line, reason });
+          return;
+        }
+      }
       const legacy =
-        LEGACY_RE.test(unit.info) ||
-        ancestors.some((ancestor) => ancestor.type === 'tab' && LEGACY_RE.test(ancestor.value ?? ''));
+        !reference &&
+        (LEGACY_RE.test(unit.info) ||
+          ancestors.some((ancestor) => ancestor.type === 'tab' && LEGACY_RE.test(ancestor.value ?? '')));
       snippets.push({
         id: `snippet_${String(snippets.length).padStart(4, '0')}`,
         path: file.path,
@@ -61,6 +82,7 @@ export function collectPythonSnippets(files: CodeExampleFile[]): PythonSnippet[]
       });
     });
   }
+  if (reference && snippets.length === 0) throw new Error('No checkable Python reference fences');
   return snippets;
 }
 
@@ -81,12 +103,14 @@ export type PythonHelperResult = z.infer<typeof HelperResult>;
 export function pythonSnippetViolations(
   snippets: PythonSnippet[],
   result: PythonHelperResult,
+  strict = false,
 ): PythonSnippetViolation[] {
   const byId = new Map(snippets.map((snippet) => [snippet.id, snippet]));
   return [
     ...result.syntax.map((diagnostic) => ({ ...diagnostic, rule: 'python-syntax' as const })),
     ...result.api.map((diagnostic) => ({ ...diagnostic, rule: 'python-api' as const })),
     ...result.directives.map((diagnostic) => ({ ...diagnostic, rule: 'python-directive' as const })),
+    ...(strict ? result.other.map((diagnostic) => ({ ...diagnostic, rule: 'python-reference' as const })) : []),
   ].map(({ id, line, message, rule }) => {
     const snippet = byId.get(id);
     if (!snippet) throw new Error(`Python helper returned unknown snippet ${id}`);
@@ -103,7 +127,12 @@ const SDK_PYTHON = join(SDK_ENV, process.platform === 'win32' ? 'Scripts/python.
 const HELPER = join(DOCS_ROOT, 'scripts/python-snippets/check_snippets.py');
 
 /** Runs the Python helper in the SDK env; exits 2 when `uv` is unavailable or the helper fails. */
-export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): PythonHelperResult {
+export function runPythonHelper(
+  snippets: PythonSnippet[],
+  syntaxOnly = false,
+  installedPython?: string,
+  reference = false,
+): PythonHelperResult {
   const workDir = mkdtempSync(join(tmpdir(), 'python-snippets-'));
   try {
     const requestPath = join(workDir, 'request.json');
@@ -111,7 +140,9 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
       requestPath,
       JSON.stringify({
         workDir,
-        sdkPython: SDK_PYTHON,
+        sdkPython: installedPython ?? SDK_PYTHON,
+        installed: installedPython !== undefined,
+        reference,
         syntaxOnly,
         snippets: snippets.map(({ id, code, typeCheck }) => ({ id, code, typeCheck })),
       }),
@@ -120,13 +151,18 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
       'uv',
       [
         'run', '--quiet', '--frozen', '--project', PYTHON_ROOT, '--python', '3.12',
-        '--no-default-groups', '--group', 'docs-snippets', 'python', HELPER, requestPath,
+        '--no-default-groups',
+        installedPython === undefined ? '--group' : '--only-group', 'docs-snippets',
+        'python', HELPER, requestPath,
       ],
       {
         encoding: 'utf8',
         maxBuffer: 256 * 1024 * 1024,
         stdio: ['ignore', 'pipe', 'inherit'],
-        env: { ...process.env, UV_PROJECT_ENVIRONMENT: SDK_ENV },
+        env: {
+          ...process.env,
+          UV_PROJECT_ENVIRONMENT: installedPython === undefined ? SDK_ENV : join(workDir, 'checker-env'),
+        },
       },
     );
     if (result.error && 'code' in result.error && result.error.code === 'ENOENT') {
@@ -144,24 +180,41 @@ export function runPythonHelper(snippets: PythonSnippet[], syntaxOnly = false): 
 }
 
 function main(): void {
-  const USAGE = 'Usage: bun scripts/check-python-snippets.ts [--json] [--syntax-only]';
-  const args = process.argv.slice(2);
-  const unknown = args.filter((arg) => arg !== '--json' && arg !== '--syntax-only');
-  if (unknown.length) {
-    console.error(`Unknown argument(s): ${unknown.join(' ')}\n${USAGE}`);
-    process.exit(2);
+  const { values } = parseArgs({
+    options: {
+      json: { type: 'boolean' },
+      'syntax-only': { type: 'boolean' },
+      reference: { type: 'boolean' },
+      directory: { type: 'string' },
+      'installed-python': { type: 'string' },
+    },
+  });
+  const installed = values['installed-python'];
+  const directory = values.directory === undefined ? undefined : resolve(values.directory);
+  if ((!values.reference && (directory !== undefined || installed !== undefined)) ||
+      (installed !== undefined && values['syntax-only'])) {
+    throw new Error('Use --reference with --directory or --installed-python. Installed checks require type checking.');
   }
-
-  const snippets = collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
-  const helper = runPythonHelper(snippets, args.includes('--syntax-only'));
-  const violations = pythonSnippetViolations(snippets, helper);
+  const reference: { optOuts: ReferenceOptOut[] } | undefined = values.reference
+    ? { optOuts: [] }
+    : undefined;
+  const snippets = reference
+    ? collectPythonSnippets(listPythonReferenceFiles(DOCS_ROOT, directory), reference)
+    : collectPythonSnippets(listCodeExampleFiles(DOCS_ROOT));
+  const helper = runPythonHelper(
+    snippets,
+    values['syntax-only'],
+    installed === undefined ? undefined : resolve(installed),
+    Boolean(reference),
+  );
+  const violations = pythonSnippetViolations(snippets, helper, Boolean(reference));
   violations.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
 
   const counts: Record<string, number> = {};
   for (const violation of violations) counts[violation.rule] = (counts[violation.rule] ?? 0) + 1;
 
-  if (args.includes('--json')) {
-    console.log(JSON.stringify({ snippets: snippets.length, violations, counts }, null, 2));
+  if (values.json) {
+    console.log(JSON.stringify({ snippets: snippets.length, violations, counts, ...reference }, null, 2));
   } else if (violations.length) {
     for (const { path, line, rule, message } of violations) console.log(`${path}:${line} ${rule} ${message}`);
     const fileCount = new Set(violations.map((violation) => violation.path)).size;
@@ -171,6 +224,9 @@ function main(): void {
     for (const rule of Object.keys(counts).sort()) console.log(`  ${rule}: ${counts[rule]}`);
   } else {
     console.log(`No Python snippet violations in ${snippets.length} snippet(s).`);
+  }
+  if (reference && !values.json) {
+    for (const { path, line, reason } of reference.optOuts) console.log(`${path}:${line} opted out: ${reason}`);
   }
   process.exit(violations.length ? 1 : 0);
 }

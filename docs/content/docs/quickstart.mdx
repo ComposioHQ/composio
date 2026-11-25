@@ -9,7 +9,7 @@ Build an agent that chooses Composio tools at runtime. Type a task, connect an a
 <div className="not-prose my-6 grid grid-cols-1 items-start gap-4 md:grid-cols-2">
   <div>
     <div className="mb-6">
-      Pick your framework below. A Composio [session](/docs/how-composio-works) gives your agent tool discovery, account connections, and execution across [%TOOLKIT_COUNT% apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
+      Pick your framework below. A Composio [session](/docs/sessions) gives your agent tool discovery, account connections, and execution across [%TOOLKIT_COUNT% apps](/toolkits). It exposes only a small set of meta tools, so app schemas are loaded when the agent needs them.
     </div>
     <AgentSetupActions />
   </div>
@@ -476,15 +476,15 @@ Ask for any task that needs an app tool: `Summarize my unread emails from today`
 ## What just happened?
 
 - The provider you picked formats Composio tools for your framework and wires in execution.
-- `composio.sessions.create()` creates a [Composio session](/docs/how-composio-works) for `user_123`. The session scopes connections and tool calls to that ID.
-- Composio sessions persist. In an application, store the session ID (`session.session_id` in Python, `session.sessionId` in TypeScript) and restore it with `composio.use(session_id)` instead of creating a new session for every turn. See [Reusing a session](/docs/how-composio-works#how-sessions-behave).
+- `composio.sessions.create()` creates a [Composio session](/docs/sessions) for `user_123`. The session scopes connections and tool calls to that ID.
+- Composio sessions persist. In an application, store the session ID (`session.session_id` in Python, `session.sessionId` in TypeScript) and restore it with `composio.use(session_id)` instead of creating a new session for every turn. See [Reusing a session](/docs/sessions/create-and-reuse#how-sessions-behave).
 - `session.tools()` gives the agent a small set of meta tools for finding, connecting, and running app tools. It does not load thousands of tool schemas into the model context.
 
 ## Adapt the example
 
 <Cards>
   <Card title="Use another framework" href="/docs/providers" description="Choose OpenAI, Anthropic, Vercel AI SDK, LangChain, CrewAI, or another supported provider." />
-  <Card title="Configure the session" href="/docs/configuring-sessions" description="Restrict toolkits, preload tools, or select connected accounts." />
+  <Card title="Restrict tool access" href="/docs/sessions/tool-access" description="Choose allowed toolkits, filter tools and tags, and require approval" />
   <Card title="Design authentication" href="/docs/authentication" description="Add Connect Links and per-user connections to your application." />
   <Card title="Expose an MCP endpoint" href="/docs/sessions-via-mcp" description="Use the same Composio session from an MCP-compatible application." />
   <Card title="Browse SDK examples" href="/examples/sdk-examples" description="Find TypeScript and Python source code, deploy a Worker, or try TypeSafe and Python MCP integrations." />

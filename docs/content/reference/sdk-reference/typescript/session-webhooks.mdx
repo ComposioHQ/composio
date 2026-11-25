@@ -5,11 +5,13 @@ description: "`composio.sessions.webhooks` — for the endpoint at a project's s
 
 ## Usage
 
-Access this class through the `composio.sessionWebhooks` property:
+Access this class through the `composio.sessions.webhooks` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.sessionWebhooks.list();
+const webhooks = composio.sessions.webhooks;
 ```
 
 ## Methods
@@ -26,7 +28,7 @@ the webhook reference.
 
 Pass the raw, unparsed request body: the signature covers its exact bytes.
 
-```typescript
+```typescript signature
 async parse(params: ParseSessionWebhookParams): Promise<SessionWebhookEvent>
 ```
 
