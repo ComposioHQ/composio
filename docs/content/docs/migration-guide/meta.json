@@ -1,6 +1,7 @@
 {
   "title": "Migration guides",
   "pages": [
+    "python-async",
     "no-auth-to-instant",
     "managed-to-own-app",
     "slack-legacy-to-standard",

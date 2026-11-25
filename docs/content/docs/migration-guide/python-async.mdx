@@ -1,0 +1,55 @@
+---
+title: Python async migration plan
+description: Prepare for native async Python support and the planned removal of sync in SDK v1.
+---
+
+Async is the recommended direction for new Python applications. We plan to make async the default in SDK v1 and remove the synchronous client in that release. Sync remains supported today and is not deprecated yet. There is no SDK v1 release date.
+
+<Callout type="info" title="Native async support is upcoming">
+The published `composio==0.35.0` package provides the synchronous `Composio` client. It does not export `AsyncComposio`. Native async support is being prepared in [SDK PR #5529](https://github.com/ComposioHQ/composio/pull/5529).
+
+Until a stable release includes `AsyncComposio`, use the supported client shown in the [Quickstart](/docs/quickstart). The migration plan below describes the upcoming API.
+</Callout>
+
+Here, **SDK v1** means the planned 1.0 release of the current `composio` package. It is separate from the legacy `composio-core` package, which older documentation also calls the v1 SDK.
+
+## Choose a client as async becomes available
+
+| Stage | What to use | Sync support |
+| --- | --- | --- |
+| Published `composio==0.35.0` | `Composio` | Supported. Native `AsyncComposio` is not included. |
+| Stable release with native async support | Prefer `AsyncComposio` for new applications. Existing applications can continue using `Composio` during migration. | Both clients are intended to be supported during the transition. Adding async support does not itself deprecate sync. |
+| Planned SDK v1 | Async is the intended default. | Sync is planned for removal. |
+
+We plan to deprecate sync before removing it in SDK v1. You can continue maintaining existing synchronous applications while native async support is prepared.
+
+## Plan the migration
+
+The upcoming client uses the same `composio` distribution and follows the same API key, scope, and toolkit-version configuration rules. Most API calls keep their names and arguments, with `await` for network operations.
+
+The following mapping reflects the API proposed in SDK PR #5529. Apply it after a stable release exports `AsyncComposio`:
+
+| Operation | Current sync call | Planned async call |
+| --- | --- | --- |
+| Open a client | `Composio(...)` | `async with AsyncComposio(...) as composio:` |
+| Create a session | `composio.create(user_id="user_123")` | `await composio.create(user_id="user_123")` |
+| Attach to a session | `composio.use(session_id)` | `await composio.use(session_id)` |
+| Get framework tools | `session.tools()` | `await session.tools()` |
+| Authorize a toolkit | `session.authorize("gmail")` | `await session.authorize("gmail")` |
+| Wait for authorization | `connection_request.wait_for_connection()` | `await connection_request.wait_for_connection()` |
+| Execute a tool | `session.execute(tool_slug=..., arguments=...)` | `await session.execute(tool_slug=..., arguments=...)` |
+
+Client construction stays synchronous. Use `async with` to close the client when its work finishes, or call `await composio.aclose()` during application shutdown. Use one async client per application event loop.
+
+Reading local properties such as `session.session_id` does not need `await`. Local registration and inspection also stay synchronous. Check each method's contract instead of adding `await` to every call.
+
+When you migrate a framework integration, use the framework's async execution path as well as the async Composio client. An async model runner alone does not make synchronous Composio calls asynchronous.
+
+## Prepare an existing application
+
+1. Identify where your application creates the Composio client and owns its lifecycle.
+2. Identify SDK calls that create sessions, fetch tools, authorize accounts, poll connections, or execute tools.
+3. Once native async support is released, migrate those calls inside your application's async flow and add client shutdown.
+4. Verify provider callbacks, authorization, tool results, and error handling before switching the rest of your application.
+
+Follow the [SDK changelog](/reference/changelog) for release availability. Continue using the [Quickstart](/docs/quickstart) and [framework guides](/docs/providers) for the currently documented setup.
