@@ -96,72 +96,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-When your agent tries to email internal pricing to someone outside your company, the email isn't sent, and the following is returned when the tool is executed:
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-result = session.execute(
-    "GMAIL_SEND_EMAIL",
-    arguments={
-        "recipient_email": "jane@customer.com",
-        "subject": "Pricing",
-        "body": "Our internal floor price is $40 per seat.",
-    },
-)
-
-print(result.result_type)   # 'blocked'
-print(result.error)         # 'Blocked by session policy'
-print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
-print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create('user_123');
-// ---cut---
-const result = await session.execute('GMAIL_SEND_EMAIL', {
-  recipient_email: 'jane@customer.com',
-  subject: 'Pricing',
-  body: 'Our internal floor price is $40 per seat.',
-});
-
-console.log(result);
-// {
-//   resultType: 'blocked',
-//   data: {},
-//   error: 'Blocked by session policy',
-//   blockReason: { type: 'request_blocked', hookId: 'no_pricing_to_customers' },
-//   hookResults: [
-//     { id: 'no_pricing_to_customers', status: 'evaluated', outcome: 'block' },
-//   ],
-// }
-```
-</Tab>
-<Tab value="API">
-```bash
-# SESSION_ID is the session_id returned when you created the session
-curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tool_slug": "GMAIL_SEND_EMAIL",
-    "arguments": {
-      "recipient_email": "jane@customer.com",
-      "subject": "Pricing",
-      "body": "Our internal floor price is $40 per seat."
-    }
-  }'
-```
-</Tab>
-</Tabs>
-
-If you use the SDK with an agent framework, your agent sees the message in `error`.
-
-If more than one hook applies to a call, `hookResults` has an entry for each one, and the call is blocked if any of them blocks it.
+When your agent tries to email internal pricing to someone outside your company, the email isn't sent, and your agent sees the tool call fail with an error. See [Blocked tool calls](/docs/sessions/hooks#blocked-tool-calls) for what's returned when a hook blocks a tool call.
 
 Here's an `after_execute` hook that keeps emails with passwords or API keys away from your agent:
 
@@ -324,52 +259,4 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 ## Other details
 
-### Hook IDs and names
-
-You're required to assign a unique `id` to each hook in a session. You can also set an optional `name`. When the hook blocks a call, the name is included in the `error` message your agent sees.
-
-### Which tool calls are checked
-
-A hook runs on calls to the toolkits listed in its `appliesTo`, or on calls to every toolkit if `appliesTo` is `'all'`. That includes proxy calls to a toolkit's API, and tool calls your agent makes from a Workbench script or with multi-execute.
-
-Keep in mind that hooks don't currently run on Composio meta tools themselves, so a condition like "Running a Workbench script" won't block anything.
-
-### Updating checks
-
-To change a session's checks, pass a new `hooks` list to `session.update()`. The new list replaces the old one, so include every hook you want to keep. To remove them all, pass `null` (`None` in Python).
-
-<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
-<Tab value="Python">
-```python
-session.update(hooks=[...])  # every hook you want to keep
-```
-</Tab>
-<Tab value="TypeScript">
-```typescript
-// @noErrors
-import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
-const session = await composio.create('user_123');
-// ---cut---
-await session.update({ hooks: [/* every hook you want to keep */] });
-```
-</Tab>
-<Tab value="API">
-```bash
-# Every hook you want to keep; send "hooks": null to remove them all
-curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
-  -H "x-api-key: $COMPOSIO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "hooks": [
-      {
-        "id": "block_injection",
-        "type": "after_execute",
-        "applies_to": "all",
-        "handler": {"type": "prompt_injection_check", "action": "block"}
-      }
-    ]
-  }'
-```
-</Tab>
-</Tabs>
+Firewall's checks are hooks. For which tool calls a hook runs on, what's returned when it blocks one, and how to update a session's hooks, see [Tool execution hooks](/docs/sessions/hooks).

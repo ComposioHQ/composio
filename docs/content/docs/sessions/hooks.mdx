@@ -90,6 +90,130 @@ There are currently three types of handlers:
 - **Prompt injection check:** This can be used to scan tool results for prompt injection before they reach your agent. Details: [Firewall > Prompt injection check](/docs/firewall#prompt-injection-detection).
 - **Webhook:** This sends an HTTP request to an endpoint you configure, and uses the response to allow, block, or transform the tool call. It gives you a powerful way to observe and control tool calls with your own code. Details: [Webhooks](#webhooks).
 
+## Which tool calls hooks run on
+
+A hook runs on tool calls to the toolkits in its `applies_to`. This includes [proxy calls](/docs/extending-sessions/proxy-execute) to a toolkit's API, and tool calls your agent makes from a workbench script or with multi-execute.
+
+Hooks don't currently run on Composio's meta tools themselves. For example, a hook can't stop your agent from running a workbench script, but it does run on the tool calls that script makes.
+
+## Blocked tool calls
+
+When a hook blocks a tool call, the tool call fails, and your agent sees an error message.
+
+If you execute the tool yourself with `session.execute()`, the result shows which hook blocked it. For example, this is what you get when the `no_pricing_to_customers` hook from the top of this page blocks an email:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+result = session.execute(
+    "GMAIL_SEND_EMAIL",
+    arguments={
+        "recipient_email": "jane@customer.com",
+        "subject": "Pricing",
+        "body": "Our internal floor price is $40 per seat.",
+    },
+)
+
+print(result.result_type)   # 'blocked'
+print(result.error)         # 'Blocked by session policy'
+print(getattr(result, "block_reason", None))  # {'type': 'request_blocked', 'hook_id': 'no_pricing_to_customers'}
+print(getattr(result, "hook_results", None))  # [{'id': 'no_pricing_to_customers', 'status': 'evaluated', 'outcome': 'block'}]
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+const result = await session.execute('GMAIL_SEND_EMAIL', {
+  recipient_email: 'jane@customer.com',
+  subject: 'Pricing',
+  body: 'Our internal floor price is $40 per seat.',
+});
+
+console.log(result);
+// {
+//   resultType: 'blocked',
+//   data: {},
+//   error: 'Blocked by session policy',
+//   blockReason: { type: 'request_blocked', hookId: 'no_pricing_to_customers' },
+//   hookResults: [
+//     { id: 'no_pricing_to_customers', status: 'evaluated', outcome: 'block' },
+//   ],
+// }
+```
+</Tab>
+<Tab value="API">
+```bash
+# SESSION_ID is the session_id returned when you created the session
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool_slug": "GMAIL_SEND_EMAIL",
+    "arguments": {
+      "recipient_email": "jane@customer.com",
+      "subject": "Pricing",
+      "body": "Our internal floor price is $40 per seat."
+    }
+  }'
+```
+</Tab>
+</Tabs>
+
+In this result:
+
+- `error` is the message your agent sees.
+- `block_reason.hook_id` is the `id` of the hook that blocked the tool call.
+- `block_reason.type` is `request_blocked` if the hook ran before the tool call, and `response_blocked` if it ran after.
+- `hook_results` has one entry for each hook that ran on the tool call.
+
+If more than one hook runs on a tool call, the tool call is blocked if any of them blocks it.
+
+An `after_execute` hook can also block a tool call. By then the tool has already run, and the hook can't undo that, but the tool's result is withheld from your agent.
+
+## Updating hooks
+
+To change a session's hooks, pass a new `hooks` list to `session.update()`. The new list replaces the old one, so include every hook you want to keep. To remove them all, pass `null` (`None` in Python).
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session.update(hooks=[...])  # every hook you want to keep
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+const session = await composio.create('user_123');
+// ---cut---
+await session.update({ hooks: [/* every hook you want to keep */] });
+```
+</Tab>
+<Tab value="API">
+```bash
+# Every hook you want to keep; send "hooks": null to remove them all
+curl -X PATCH https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hooks": [
+      {
+        "id": "block_injection",
+        "type": "after_execute",
+        "applies_to": "all",
+        "handler": {"type": "prompt_injection_check", "action": "block"}
+      }
+    ]
+  }'
+```
+</Tab>
+</Tabs>
+
 ## Webhooks
 
 Use a webhook when you want your own code to decide what happens to a tool call.
@@ -285,11 +409,7 @@ Respond with HTTP `200` and a JSON body. There are three ways to respond:
 | `{ "action": "block", "message": "..." }` | The tool call is blocked. |
 | `{ "action": "continue", "override": { ... } }` | The tool call goes ahead with your changes. |
 
-When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why the call was blocked.
-
-If you execute the tool yourself with `session.execute()`, the result has `result_type` set to `blocked` and your `message` in `error`, the same as when [any other hook blocks a call](/docs/firewall#custom-prompt-checks).
-
-You can block a call from `after_execute` in the same way. By then the tool has already run, but its result is withheld from your agent. Your agent sees an error with your message instead.
+When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why the call was blocked. This works the same way from `before_execute` and `after_execute`. See [Blocked tool calls](#blocked-tool-calls) for what's returned.
 
 What goes in `override` also depends on the kind of call and on when the webhook runs:
 
