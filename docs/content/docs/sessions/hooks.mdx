@@ -234,7 +234,7 @@ Here are a few examples of what you can do with webhooks:
 
 ### Set up a webhook URL
 
-You can configure the webhook URL from the dashboard, under [Project Settings → General](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=session-hooks). In the Configuration section, find **Tool execution hooks** and click **Configure**. This is a project-level setting, so every session in the project that has a webhook uses the same URL. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
+You can configure the webhook URL from the dashboard, under [Project Settings → General](https://dashboard.composio.dev/~/project/settings/general?utm_source=docs&utm_medium=content&utm_campaign=session-hooks). In the Configuration section, find **Tool execution webhook** and click **Configure**. This is a project-level setting, so every session in the project that has a webhook uses the same URL. Only organization admins can set or change the URL. Users with the "Developer" or "Viewer" role can only view it.
 
 When you save the URL, the dashboard displays a signing secret. Every request is signed with this secret, so you can verify that a request came from Composio before acting on it. If the secret is ever exposed, rotate it from the same page. The previous secret stops working immediately.
 
