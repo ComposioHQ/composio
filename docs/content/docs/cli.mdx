@@ -28,6 +28,8 @@ Open a new terminal, then log in:
 composio login
 ```
 
+For browserless human login, use `composio login --no-wait` to get an authorization URL. Use `composio login --poll --timeout <seconds>` to bound the wait. If authorization is still pending when the timeout expires, the CLI prints the URL and the command to resume polling. See [Log in with a human](/docs/agent-setup/unattended-authentication#log-in-with-a-human).
+
 If you skipped plugin setup or installed an agent host later, run:
 
 ```bash
@@ -65,7 +67,7 @@ $env:COMPOSIO_INSTALL_VERSION = "X.Y.Z"; irm https://raw.githubusercontent.com/C
 
 Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_SHELL` to `none` to leave PATH unchanged. Keep the complete bundle together when moving it.
 
-Windows support is experimental. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
+Windows support is experimental. A failed Windows check can leave a release without a Windows archive. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
 
 Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. For a fully supported setup, run the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install).
 
@@ -164,6 +166,8 @@ composio upgrade
 ```
 
 This replaces the bundle in `~/.composio` in place and leaves the `~/.local/bin/composio` entry point pointing at it. Pass a version to pin a specific release (`composio upgrade 0.3.1`), or `--beta` for the latest prerelease.
+
+The CLI uses the archive's `release-manifest.json` to determine which support files to install. On Windows, the CLI retries renaming a busy executable for up to two seconds.
 
 Some releases can only be installed over a recent enough CLI. If yours is too old, `composio upgrade` stops before changing anything and prints the install command to run instead. Rerun the [installer](#install) to get the new release.
 
@@ -294,19 +298,25 @@ Use `composio proxy` when the agent already knows the provider's API endpoint an
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
+### Pass arguments or request bodies through stdin
+
+Pass `-d -` to read from stdin and wait for input. For `composio proxy`, `-d @-` also reads the request body from stdin. When you omit `-d`, proxy sends the request without a body. For a non-`GET` request with piped stdin, proxy also warns on stderr.
+
+With piped stdin and no `-d`, `composio execute` waits up to one second for JSON input to start arriving. If no input arrives, it exits `1` before running the tool. Pass arguments directly with `-d '{...}'` to avoid waiting on an idle pipe.
+
 ### Execution failures and exit codes
 
-`composio execute` exits `1` when a tool reports failure or the Dashboard or backend cannot run it. With `--parallel`, any failed call makes the command exit `1`. Meta tools follow the same rules. Failed tool results include `{"successful": false, ...}` on stdout, with diagnostic messages on stderr. Check the exit code in scripts and agents, even when stdout contains JSON.
+Check the exit code in scripts and agents, even when stdout contains JSON. A failed tool result includes `{"successful": false, ...}` on stdout. With `--parallel`, a failed call makes the command exit nonzero.
 
-Execution requests are sent once, without retries or redirects. After 15 minutes, the CLI stops waiting.
+The CLI exits `75` (`EX_TEMPFAIL`) when you can safely rerun the same command. This applies to HTTP `429` and to timeouts, connection failures, HTTP `408`, and HTTP `5xx` on idempotent requests. Other execution failures exit `1`. The CLI sends execution requests once, follows no redirects, and stops waiting after 15 minutes.
 
-<Callout type="warn">
-A timed-out tool may still have run. Check the result in the connected app before sending the request again.
-</Callout>
+A failed `composio execute` result may include a `retry` field. The value `"safe"` means you can repeat the request. The value `"check-first"` means the tool may already have run. Check the outcome in the connected app before repeating the request. A missing `retry` field gives you no retry guidance.
+
+Interrupted commands exit `130` for `SIGINT`, `143` for `SIGTERM`, and `129` for `SIGHUP`. Subscribed listeners stop cleanly and exit `0` on `SIGINT` or `SIGTERM`. On interruption, `composio run` forwards the signal to its child process group.
 
 Missing required IDs or names for `composio dev auth-configs info`, `composio tools info`, and `composio dev triggers create` or `enable` cause exit `1`. The `--custom-credentials` option for auth config creation and `--trigger-config` option for trigger creation must contain JSON objects. Invalid input prints a message on stderr, leaves stdout empty, and sends no request.
 
-If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
+When a toolkit has several connected accounts, pass `--account <id|alias>` or assign one account the `default` alias. If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
 
 ### Execution telemetry
 
@@ -367,7 +377,9 @@ composio dev listen --toolkits github --forward https://example.com/webhook
 composio dev listen --toolkits slack --out ./events.jsonl
 ```
 
-Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source.
+Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source. Press Ctrl+C or send `SIGTERM` to stop a subscribed listener.
+
+The CLI escapes control characters from streamed events, execution and proxy responses, and API errors in terminal output. Parsing JSON output recovers the original values.
 
 ## Build on the Composio platform
 
@@ -415,7 +427,7 @@ composio dev auth-configs create "GitHub OAuth" \
 
 ### Manage connected accounts
 
-Top-level `composio link` is the fastest path for personal knowledge work. Use the developer connected-account commands when you're building against project users, auth configs, and playground flows.
+Top-level `composio link` links accounts in your consumer project. Use `composio dev connected-accounts link` to link an account for an acting user in the selected developer project. Initialize the working directory with `composio dev init` or select the project explicitly if the CLI cannot resolve it. Developer commands reject shared flags they cannot apply.
 
 ```bash
 composio dev connected-accounts list
