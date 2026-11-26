@@ -115,11 +115,6 @@ A hook sees how a file is referenced, but not what's in it:
 
 Session file mounts don't run hooks at all, so uploading or downloading a mount file isn't checked.
 
-Until hooks check files, you can check them yourself:
-
-- **Files a tool returns:** In an `after_execute` [webhook](/docs/hooks/webhooks), download the file from its `s3url`, check it, and block the result if needed.
-- **Files your agent uploads:** Check them in your app before you upload them. A webhook can't download a file from its `s3key`.
-
 ## Blocked tool calls
 
 When a hook blocks a tool call, the tool call fails, and your agent sees an error message.
