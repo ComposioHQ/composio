@@ -312,7 +312,7 @@ The CLI exits `75` (`EX_TEMPFAIL`) when you can safely rerun the same command. T
 
 A failed `composio execute` result may include a `retry` field. The value `"safe"` means you can repeat the request. The value `"check-first"` means the tool may already have run. Check the outcome in the connected app before repeating the request. A missing `retry` field gives you no retry guidance.
 
-Interrupted commands exit `130` for `SIGINT`, `143` for `SIGTERM`, and `129` for `SIGHUP`. On interruption, `composio run` forwards the signal to its child process group.
+Interrupted commands exit `130` for `SIGINT`, `143` for `SIGTERM`, and `129` for `SIGHUP`. Subscribed listeners stop cleanly and exit `0` on `SIGINT` or `SIGTERM`. On interruption, `composio run` forwards the signal to its child process group.
 
 Missing required IDs or names for `composio dev auth-configs info`, `composio tools info`, and `composio dev triggers create` or `enable` cause exit `1`. The `--custom-credentials` option for auth config creation and `--trigger-config` option for trigger creation must contain JSON objects. Invalid input prints a message on stderr, leaves stdout empty, and sends no request.
 
