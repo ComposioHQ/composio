@@ -106,7 +106,7 @@ describe('runAgentWhoami', () => {
 
       expect(exitCodeOf(exit)).toBe(1);
       expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
-        'The agent identity service returned HTTP 503 for /api/whoami. Agent signup is unavailable right now.',
+        'The agent identity service is unavailable right now (HTTP 503 for /api/whoami).',
         'Ask a human to run `composio login` for regular CLI access.',
       ]);
     }).pipe(Effect.provide(layer));

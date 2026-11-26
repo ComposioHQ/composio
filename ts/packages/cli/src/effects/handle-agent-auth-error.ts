@@ -13,10 +13,9 @@ export const handleAgentAuthError = <E, R>(
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
           if (error instanceof AgentRequestError) {
-            const unavailable = 'Agent signup is unavailable right now.';
             const message = error.pathname.startsWith('/api/signup')
-              ? unavailable
-              : `The agent identity service returned HTTP ${error.status} for ${error.pathname}. ${unavailable}`;
+              ? 'Agent signup is unavailable right now.'
+              : `The agent identity service is unavailable right now (HTTP ${error.status} for ${error.pathname}).`;
             return yield* reportFailure(
               ui,
               message,
