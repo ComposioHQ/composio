@@ -16,6 +16,7 @@ const expectedSkills = [
   'cli-command',
   'cli-e2e',
   'cli-release',
+  'cli-binary-size',
   'cross-sdk-parity',
   'docs-decisions',
   'docs-page-rewrite',
