@@ -1,5 +1,5 @@
 import * as PlatformError from 'effect/PlatformError';
-import { Data, Effect, Option, Predicate, Schema } from 'effect';
+import { Data, Effect, Option, Predicate, Schema, Stream } from 'effect';
 import { ChildProcess as Command } from 'effect/process';
 import semver from 'semver';
 import { trackCliEventEffect } from 'src/analytics/dispatch';
@@ -283,14 +283,18 @@ const hostCommand = (adapter: SetupTargetAdapter, args: ReadonlyArray<string>) =
     const os = yield* NodeOs;
     const resolved =
       os.platform === 'win32' ? yield* resolveWindowsExecutable(adapter.executable) : Option.none();
+    const options = { stdin: Stream.empty };
     return Option.match(resolved, {
       // Not found, or not Windows: spawning by name reports a missing executable as usual.
-      onNone: () => Command.make(adapter.executable, args),
+      onNone: () => Command.make(adapter.executable, args, options),
       onSome: executable =>
         executable.needsShell
           ? // A shell takes one command line, not an argument list.
-            Command.make([`"${executable.path}"`, ...args].join(' '), [], { shell: true })
-          : Command.make(executable.path, args),
+            Command.make([`"${executable.path}"`, ...args].join(' '), [], {
+              ...options,
+              shell: true,
+            })
+          : Command.make(executable.path, args, options),
     });
   });
 
