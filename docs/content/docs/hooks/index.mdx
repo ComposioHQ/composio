@@ -109,16 +109,16 @@ Hooks don't check the contents of files yet, whether your agent uploads them or 
 
 A hook sees how a file is referenced, but not what's in it:
 
-- **A file passed to a tool:** The hook sees the argument your agent passed, like a file path, URL, or storage key.
-- **A file a tool returns:** The hook sees the result, which links to the file.
+- **A file passed to a tool:** The hook sees the file's `name`, `mimetype`, and `s3key`. Composio downloads the file only when the tool runs, after `before_execute` hooks.
+- **A file a tool returns:** The hook sees the file's `name`, `mimetype`, and a download URL in `s3url`.
 - **A proxy call that uploads or downloads a file:** A webhook gets the file's URL, or the base64 content your agent sent. Custom prompt checks and prompt injection detection don't read the file itself.
 
 Session file mounts don't run hooks at all, so uploading or downloading a mount file isn't checked.
 
 Until hooks check files, you can check them yourself:
 
-- In a [webhook](/docs/hooks/webhooks), download the file from the link in the tool call or result, check it, and block the call if needed.
-- In your app, check files before you upload them for your agent to use.
+- **Files a tool returns:** In an `after_execute` [webhook](/docs/hooks/webhooks), download the file from its `s3url`, check it, and block the result if needed.
+- **Files your agent uploads:** Check them in your app before you upload them. A webhook can't download a file from its `s3key`.
 
 ## Blocked tool calls
 
