@@ -802,7 +802,7 @@ main() {
     done
 
     if [ "$install_agent" = 1 ]; then
-        error 'Agent signup is unavailable right now. Install without `--agent`, then ask a human to run `composio login`.'
+        error "Agent signup is unavailable right now. Install without \`--agent\`, then ask a human to run \`composio login\`."
     fi
 
     # Resolve the setup mode right after argument parsing: auto (the default)
