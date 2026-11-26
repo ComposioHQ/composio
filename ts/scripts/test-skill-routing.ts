@@ -54,6 +54,11 @@ const probes = [
     terms: ['effect/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
   },
   {
+    task: 'find out why the composio executable is so large and shrink its download',
+    expect: 'cli-binary-size',
+    terms: ['runtime floor', 'release downloads weigh', '--trim and --aot', 'runtime swap'],
+  },
+  {
     task: 'write a Docker-based end-to-end test for the composio CLI binary',
     expect: 'cli-e2e',
     terms: ['Docker-based', 'end-to-end tests', 'binary invocation', 'fixture isolation'],
