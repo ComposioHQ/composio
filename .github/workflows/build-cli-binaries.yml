@@ -173,6 +173,17 @@ jobs:
           ARTIFACT: ${{ matrix.artifact }}
         run: bash "${{ github.workspace }}/.github/scripts/cli-release/verify-archive-companions.sh"
 
+      # Released clients check an upgrade archive before replacing themselves, so a
+      # change to what the archive contains can break `composio upgrade` for them.
+      # linux-arm64 is cross-compiled on an x64 runner and cannot run here.
+      - name: Upgrade the latest stable release to this archive
+        if: matrix.target != 'bun-linux-arm64'
+        working-directory: ts/packages/cli
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: bun scripts/upgrade-from-release.ts --archive dist/binaries/${{ matrix.artifact }}.zip
+
       - name: Upload artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
