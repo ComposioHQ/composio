@@ -361,25 +361,35 @@ export const buildCompanionModules = (outputDir: string) =>
   });
 
 /**
- * Cross-compile the CLI for one release target. Returns the path of the compiled binary.
+ * The `bun build` arguments of every CLI executable: the host build, the
+ * release cross-compiles and the e2e Docker images. Build the executable only
+ * through `compileExecutable` (or `bun scripts/build-binary.ts`), so a flag
+ * added here reaches every build that tests or ships the CLI.
  */
-export const compileBinary = ({ bunTarget, artifact }: ReleaseTarget) =>
+export const executableBuildArgs = (
+  outfile: string,
+  bunTarget?: ReleaseTarget['bunTarget']
+): ReadonlyArray<string> => [
+  'build',
+  './src/bin.ts',
+  // Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
+  '--env',
+  'DEBUG_OVERRIDE_*',
+  ...posthogBakeArgs(),
+  ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
+  '--compile',
+  '--production',
+  ...(bunTarget === undefined ? [] : ['--target', bunTarget]),
+  '--outfile',
+  outfile,
+];
+
+/**
+ * Compile the CLI executable to `outfile`, for `bunTarget` or the host. Returns `outfile`.
+ */
+export const compileExecutable = (outfile: string, bunTarget?: ReleaseTarget['bunTarget']) =>
   Effect.gen(function* () {
-    const outfile = `./dist/binaries/${compiledBinaryFileName(artifact)}`;
-    const args = [
-      'build',
-      './src/bin.ts',
-      '--env',
-      'DEBUG_OVERRIDE_*',
-      ...posthogBakeArgs(),
-      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
-      '--compile',
-      '--production',
-      '--target',
-      bunTarget,
-      '--outfile',
-      outfile,
-    ];
+    const args = executableBuildArgs(outfile, bunTarget);
     yield* Effect.logDebug(`Running bun ${args.join(' ')}`);
 
     const child = yield* Command.make('bun', args);
@@ -399,13 +409,20 @@ export const compileBinary = ({ bunTarget, artifact }: ReleaseTarget) =>
     );
 
     if (exitCode !== 0) {
+      const target = bunTarget ?? 'the host';
       // `teardown` exits with this code.
       process.exitCode = exitCode;
       return yield* new BinaryBuildError({
-        message: `Failed to build binary for ${bunTarget}`,
+        message: `Failed to build binary for ${target}`,
         target: bunTarget,
         exitCode,
       });
     }
     return outfile;
   });
+
+/**
+ * Cross-compile the CLI for one release target. Returns the path of the compiled binary.
+ */
+export const compileBinary = ({ bunTarget, artifact }: ReleaseTarget) =>
+  compileExecutable(`./dist/binaries/${compiledBinaryFileName(artifact)}`, bunTarget);
