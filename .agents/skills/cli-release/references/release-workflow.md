@@ -16,6 +16,7 @@
 - `.github/workflows/build-cli-binaries.yml` owns beta and stable GitHub Releases.
 - `.github/scripts/cli-release/resolve-release-target.sh` decides the tag and source commit.
 - `.github/scripts/cli-release/verify-assets.sh` defines the required asset set.
+- `ts/packages/cli/scripts/upgrade-from-release.ts` checks, on every native build leg, that the latest stable release can `composio upgrade` to the new archive. Run it locally (`pnpm --filter @composio/cli test:upgrade-from-release --archive <zip> --to <tag>`) after changing what an archive contains or how `upgrade` validates it.
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
 - `.github/workflows/cli.changelog.yml` opens a changelog PR as the SDK release App after a successful promotion.
 - `.changeset/config.json` ignores `@composio/cli`.

@@ -143,8 +143,12 @@
       }
     },
     {
-      // Shared script helpers run on Bun with Effect platform services.
-      "files": ["scripts/lib/**/*.ts"],
+      // Scripts that run on Bun with Effect platform services only.
+      "files": [
+        "scripts/lib/**/*.ts",
+        "ts/packages/cli/scripts/_github-releases.ts",
+        "ts/packages/cli/scripts/upgrade-from-release.ts"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
