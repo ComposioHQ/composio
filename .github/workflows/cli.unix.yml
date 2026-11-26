@@ -1,0 +1,120 @@
+name: CLI macOS and Linux
+
+# Builds, packages, and smoke-tests the four macOS and Linux CLI archives, each on a
+# machine of its own platform, so the archive that ships is the one that ran. The
+# release workflow calls this; pull requests that touch the CLI run it too.
+on:
+  pull_request:
+    paths:
+      - 'ts/packages/cli/**'
+      - 'ts/packages/cli-keyring/**'
+      - 'ts/packages/core/**'
+      - 'ts/packages/ts-builders/**'
+      - 'ts/packages/json-schema-to-effect-schema/**'
+      - '.github/actions/setup-node-pnpm-bun/action.yml'
+      - '.github/scripts/cli-release/**'
+      - '.github/workflows/cli.unix.yml'
+      - '.github/workflows/build-cli-binaries.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'mise.toml'
+      - 'mise.lock'
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Exact CLI release tag to embed and verify'
+        type: string
+        required: false
+        default: '@composio/cli@0.0.0-beta.0'
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || '@composio/cli@0.0.0-beta.0' }}
+  TURBO_TELEMETRY_DEBUG: 1
+
+jobs:
+  build:
+    name: Build ${{ matrix.artifact }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      # Never publish a partial platform set: with fail-fast disabled, this workflow
+      # succeeds only when every leg passes, and the release job needs it to. It also
+      # surfaces all platform failures at once instead of cancelling siblings.
+      fail-fast: false
+      matrix:
+        include:
+          - target: bun-linux-x64
+            artifact: composio-linux-x64
+            runner: ubuntu-latest
+          - target: bun-linux-arm64
+            artifact: composio-linux-aarch64
+            runner: depot-ubuntu-24.04-arm
+          - target: bun-darwin-x64
+            artifact: composio-darwin-x64
+            runner: macos-15-intel
+          - target: bun-darwin-arm64
+            artifact: composio-darwin-aarch64
+            runner: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: ${{ github.event_name != 'pull_request' && 'true' || 'false' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+
+      - name: Compile CLI binary
+        working-directory: ts/packages/cli
+        env:
+          COMPOSIO_POSTHOG_PROJECT_API_KEY: ${{ vars.COMPOSIO_POSTHOG_PROJECT_API_KEY }}
+        run: pnpm build:binary:cross --target ${{ matrix.target }}
+
+      - name: Verify binary
+        working-directory: ts/packages/cli
+        run: |
+          ls -la dist/binaries/${{ matrix.artifact }}
+          file dist/binaries/${{ matrix.artifact }}
+
+      - name: Create archive
+        working-directory: ts/packages/cli
+        run: pnpm build:binary:package
+
+      - name: Verify release metadata in archive
+        working-directory: ts/packages/cli
+        run: unzip -p dist/binaries/${{ matrix.artifact }}.zip ${{ matrix.artifact }}/release-tag.txt | grep -Fx "$RELEASE_TAG"
+
+      - name: Verify companion layout in archive
+        working-directory: ts/packages/cli
+        env:
+          ARCHIVE: dist/binaries/${{ matrix.artifact }}.zip
+          ARTIFACT: ${{ matrix.artifact }}
+        run: bash "${{ github.workspace }}/.github/scripts/cli-release/verify-archive-companions.sh"
+
+      - name: Smoke-test archive
+        working-directory: ts/packages/cli
+        env:
+          ARCHIVE: dist/binaries/${{ matrix.artifact }}.zip
+          ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          EXPECTED_VERSION="${RELEASE_TAG#@composio/cli@}" \
+            bash "${{ github.workspace }}/.github/scripts/cli-release/smoke-unix.sh"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.artifact }}
+          path: ts/packages/cli/dist/binaries/${{ matrix.artifact }}.zip
+          retention-days: 7

@@ -14,6 +14,7 @@
 ## Sources Of Truth
 
 - `.github/workflows/build-cli-binaries.yml` owns beta and stable GitHub Releases.
+- `.github/workflows/cli.unix.yml` builds the macOS and Linux archives with profile-guided bytecode and smoke-tests each on its own platform (`smoke-unix.sh`); `.github/workflows/cli.windows.yml` does the same for Windows (`test-windows.ps1`).
 - `.github/scripts/cli-release/resolve-release-target.sh` decides the tag and source commit.
 - `.github/scripts/cli-release/verify-assets.sh` defines the required asset set.
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.

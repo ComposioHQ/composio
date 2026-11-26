@@ -101,6 +101,8 @@ RUN bun build ./src/bin.ts \
     --env DEBUG_OVERRIDE_* \
     --compile \
     --production \
+    --bytecode \
+    --format=esm \
     --outfile /usr/local/bin/composio
 
 WORKDIR /app

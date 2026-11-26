@@ -288,6 +288,8 @@ Use the repo-local `cli-release` skill before building or publishing first-party
 ### Key Workflow Files
 
 - `.github/workflows/build-cli-binaries.yml` — binary build + release
+- `.github/workflows/cli.unix.yml` — macOS and Linux archives, built and smoke-tested natively (`.github/scripts/cli-release/smoke-unix.sh`); called by the release and run on CLI pull requests
+- `.github/workflows/cli.windows.yml` — Windows archive, cross-compiled and tested natively (`test-windows.ps1`)
 - `.github/workflows/cli.test-installation.yml` — post-release install smoke tests
 - `.github/scripts/cli-release/resolve-release-target.sh` — beta/stable target resolution
 - `.changeset/config.json`
