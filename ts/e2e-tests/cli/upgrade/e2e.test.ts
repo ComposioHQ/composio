@@ -9,13 +9,13 @@ import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { beforeAll, describe, expect, it } from 'bun:test';
 
 // The "downloaded" bundle is laid out like a release archive from before release
-// manifests: the live companions with their real contents, plus the legacy paths
+// manifests: the companion files at their original paths, plus the legacy paths
 // as empty placeholders.
 
 // RUN_COMPANION_MODULE_FILENAMES
-const liveCompanionFileNames = ['run-helpers-runtime.mjs', 'generation-runtime.mjs'] as const;
+const companionFileNames = ['run-helpers-runtime.mjs', 'generation-runtime.mjs'] as const;
 
-const runOutputMarker = 'composio-upgrade-run-companions-loaded';
+const runOutputMarker = 'composio-upgrade-run-ok';
 
 // RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS
 const legacyPlaceholderRelativePaths = [
@@ -33,7 +33,7 @@ const legacyPlaceholderRelativePaths = [
 
 const legacyBundleSetup = [
   'mkdir -p "$source_dir/services"',
-  ...liveCompanionFileNames.flatMap(fileName => [
+  ...companionFileNames.flatMap(fileName => [
     `cp "/usr/local/bin/${fileName}" "$source_dir/${fileName}"`,
     `cp "/usr/local/bin/services/${fileName}" "$source_dir/services/${fileName}"`,
   ]),

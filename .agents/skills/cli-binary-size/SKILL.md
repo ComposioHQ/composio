@@ -30,7 +30,7 @@ Bun's `--explain=trim` (with `--aot --trim`) names only the first site its analy
 ## Shipping changes
 
 - Changing what a release archive contains affects `composio upgrade` on released clients: keep placeholders for paths they check, as `ts/packages/cli/AGENTS.md` describes, and prove it with `pnpm run test:upgrade-from-release --archive <zip> --to <tag>`, which upgrades the latest stable release to the archive. Use `cli-release` for the release itself.
-- A build mode without the Bun command line (`--trim`, `--aot`) breaks anything that re-executes the CLI as Bun (`BUN_BE_BUN`).
+- A build mode without the Bun command line (`--trim`, `--aot`) breaks anything that re-executes the CLI as Bun (`BUN_BE_BUN`), as `composio run` did up to CLI 0.6.4.
 - Startup time is part of the trade: `--bytecode` adds about 10.5 MiB and cuts `--version` from 119 ms to 47 ms.
 
 ## Options beyond the executable
@@ -40,6 +40,6 @@ When the floor dominates, compare these before trimming code:
 - archive format (`.tar.xz` is about a third smaller than zip)
 - a newer Bun with `--trim` (and `--trim-locales` on Linux)
 - downloading a pinned runtime once and shipping only the bundle per release, or using a Node.js or Bun the user already has
-- engine replacements (Perry, Node single-executable apps, Deno compile, small engines), checked on the compiled binary: `composio run`, a logged-in command such as `search`, and `upgrade`
+- engine replacements (Perry, Node single-executable apps, Deno compile, small engines), checked on the compiled binary: `COMPOSIO_RUN_CONTRACT_CLI=<binary>` runs the `composio run` contract suite (`test/src/commands/run/run.contract.cmd.test.ts`) against it; also try a logged-in command such as `search`, and `upgrade`
 
 Append every new measurement to `references/experiments.md`: date, Bun or compiler version, target, build mode, numbers, and what broke.

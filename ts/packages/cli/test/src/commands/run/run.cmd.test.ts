@@ -8,49 +8,39 @@ import { assertDefined } from '@effect/vitest/utils';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as Path from 'effect/Path';
 import * as FileSystem from 'effect/FileSystem';
-import {
-  Cause,
-  ConfigProvider,
-  Deferred,
-  Effect,
-  Exit,
-  Fiber,
-  Layer,
-  Option,
-  PlatformError,
-  Redacted,
-  Runtime,
-  Sink,
-  Stream,
-} from 'effect';
-import { TestClock } from 'effect/testing';
-import { ChildProcess, ChildProcessSpawner } from 'effect/process';
-import { afterEach, beforeEach, it, vi } from 'vitest';
-import { buildRunHelpersSource, inferCliInvocationPrefix } from 'src/commands/run/run.handler';
+import { ConfigProvider, Deferred, Effect, Fiber, Layer, Runtime } from 'effect';
+import { afterEach, it, vi } from 'vitest';
+import { inferCliInvocationPrefix } from 'src/commands/run/run.handler';
 import {
   extractInlineExecuteToolSlugs,
-  wrapInlineCodeForRun,
+  prepareRunProgram,
 } from 'src/commands/run-source-transforms';
 import {
-  RUN_COMPANION_MODULE_FILENAMES,
-  listMissingInstalledRunCompanionModules,
   readInstalledReleaseTag,
-  resolveRunCompanionModulePath,
   writeInstalledReleaseTag,
 } from 'src/services/run-companion-modules';
 import { NodeOs } from 'src/services/node-os';
 import { telemetryDebugModeLayer } from 'src/services/runtime-flags';
+import type { RunScriptWithHelpersParams } from 'src/services/run-helpers-runtime';
 import { cli, MockConsole, recordedInvocationCalls, TestLive } from 'test/__utils__';
 import { exitCodeOf } from 'test/__utils__/exit-code';
-import { CommandRunner } from 'src/services/command-runner';
-import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
-import { ExitAction, exitActionFor } from 'src/run-main';
-import {
-  makeShutdownController,
-  ShutdownSignal,
-  type ShutdownController,
-  type TerminationSignal,
-} from 'src/services/shutdown-signal';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
+
+/**
+ * The confined runtime the handler loads from the executable. Each test sees
+ * what the handler hands it, and decides how the script ends; the runtime itself is covered by
+ * `run-script-engine.test.ts` and, end to end, by `run.contract.cmd.test.ts`.
+ */
+const scriptRuns = vi.hoisted(() =>
+  vi.fn((_params: RunScriptWithHelpersParams): Promise<{ readonly exitCode: number }> =>
+    Promise.resolve({ exitCode: 0 })
+  )
+);
+
+vi.mock('src/services/run-helpers-runtime', async importOriginal => ({
+  ...(await importOriginal<typeof import('src/services/run-helpers-runtime')>()),
+  runScriptWithHelpers: scriptRuns,
+}));
 
 const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_RUN_ACP_ONLY: '1',
@@ -58,9 +48,20 @@ const enabledRuntimeFlagsConfigProvider = ConfigProvider.fromEnvRecord({
   COMPOSIO_TOOL_DEBUG: '1',
 });
 
-/** The run command is `[bun, '--preload', preloadPath, ...]`. */
-const readRunPreloadSource = (command: ReadonlyArray<string>): string =>
-  fs.readFileSync(String(command[2]), 'utf8');
+/** What the handler handed the runtime for its only (or last) script. */
+const lastRun = (): RunScriptWithHelpersParams => {
+  const params = scriptRuns.mock.calls.at(-1)?.[0];
+  assertDefined(params);
+  return params;
+};
+
+/** The helper context and CLI prefix the script's helpers were built with, as JSON. */
+const helperSource = (params: RunScriptWithHelpersParams = lastRun()): string =>
+  JSON.stringify({ cliPrefix: params.cliPrefix, helperContext: params.helperContext });
+
+/** The script's own arguments: `process.argv` without the runtime (and the file, for --file). */
+const scriptArgs = (params: RunScriptWithHelpersParams = lastRun()) =>
+  params.argv.slice(params.displayName === '[eval]' ? 1 : 2);
 
 /** A script file in a temporary directory that is removed when the test's scope closes. */
 const tempScript = Effect.acquireRelease(
@@ -76,348 +77,90 @@ const tempScript = Effect.acquireRelease(
 const SCRIPT = 'console.log("hi")';
 const SCRIPT_FLAGS = ['--perf-debug', '--tool-debug', '--telemetry-debug', '--help', '--version'];
 
-const commandRuns = vi.fn(
-  (
-    _: ChildProcess.Command
-  ): Effect.Effect<ChildProcessSpawner.ExitCode, PlatformError.PlatformError> =>
-    Effect.succeed(ChildProcessSpawner.ExitCode(0))
-);
-/** Whether the stub child is still running, which the escalation after a signal checks. */
-const childRunning = vi.fn(() => false);
+const RunTestLive = (input: Parameters<typeof TestLive>[0] = {}) => TestLive(input);
 
-// `composio run` starts the child through the platform `ChildProcessSpawner` so it owns the
-// pid it forwards signals to, so the stub has to replace the spawner rather than
-// `CommandRunner`. `exitCode` stays suspended: the command only awaits it after the signal
-// handlers are registered, which is what makes the forwarding observable below.
-const STUB_CHILD_PID = 987_654;
-
-const stubHandle = (command: ChildProcess.Command): ChildProcessSpawner.ChildProcessHandle =>
-  ChildProcessSpawner.makeHandle({
-    pid: ChildProcessSpawner.ProcessId(STUB_CHILD_PID),
-    exitCode: Effect.suspend(() => commandRuns(command)),
-    isRunning: Effect.sync(() => childRunning()),
-    kill: () => Effect.void,
-    stdin: Sink.drain,
-    stdout: Stream.empty,
-    stderr: Stream.empty,
-    all: Stream.empty,
-    getInputFd: () => Sink.drain,
-    getOutputFd: () => Stream.empty,
-    unref: Effect.succeed(Effect.void),
-  });
-
-const StubChildProcessSpawner = Layer.succeed(
-  ChildProcessSpawner.ChildProcessSpawner,
-  ChildProcessSpawner.make(command => Effect.succeed(stubHandle(command)))
-);
-
-const RunTestLive = (input: Parameters<typeof TestLive>[0] = {}) =>
-  Layer.merge(
-    TestLive({
-      ...input,
-      commandRunner: CommandRunner.of({
-        run: command => commandRuns(command),
-        capture: () => Effect.succeed({ exitCode: 0, stdout: '', stderr: '' }),
-      }),
-    }),
-    StubChildProcessSpawner
+/** The run log the run advertised on stderr; removed, since it outlives the run by design. */
+const takeRunLog = (lines: ReadonlyArray<string>) => {
+  const runLogPath = String(lines.find(line => line.startsWith('RUN_LOG_FILE='))).slice(
+    'RUN_LOG_FILE='.length
   );
-
-const inspectRunCommand = (command: ChildProcess.Command) => {
-  if (!ChildProcess.isStandardCommand(command)) {
-    throw new Error('Expected the run command to be a standard (non-piped) command.');
-  }
-  return {
-    cmd: [
-      command.command,
-      ...command.args.map(arg => (Redacted.isRedacted(arg) ? Redacted.value(arg) : arg)),
-    ],
-    env: Object.fromEntries(
-      Object.entries(command.options.env ?? {}).map(([key, value]) => [
-        key,
-        Redacted.isRedacted(value) ? Redacted.value(value) : value,
-      ])
-    ),
-    extendEnv: command.options.extendEnv,
-    stdio: [command.options.stdin, command.options.stdout, command.options.stderr],
-  };
+  const exists = fs.existsSync(runLogPath);
+  fs.rmSync(path.dirname(runLogPath), { recursive: true, force: true });
+  return { runLogPath, exists };
 };
 
 describe('CLI: composio run', () => {
   afterEach(() => {
-    commandRuns
-      .mockReset()
-      .mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(0)));
-    childRunning.mockReset().mockImplementation(() => false);
+    scriptRuns.mockReset().mockImplementation(() => Promise.resolve({ exitCode: 0 }));
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   layer(RunTestLive())(it => {
-    it.effect(
-      '[Given] a root run [Then] the child receives the run id its telemetry recorded',
-      () =>
-        Effect.gen(function* () {
-          let childRunId: string | undefined;
-          commandRuns.mockImplementation(command => {
-            childRunId = inspectRunCommand(command).env.COMPOSIO_CLI_PARENT_RUN_ID;
-            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-          });
+    it.effect('[Given] a root run [Then] the script sees the run id its telemetry recorded', () =>
+      Effect.gen(function* () {
+        yield* cli(['--telemetry-debug', 'run', 'console.log("hi")']);
 
-          // The invocation mints the run id for its telemetry and hands it to the command, instead
-          // of publishing it through process-wide state.
-          yield* cli(['--telemetry-debug', 'run', 'console.log("hi")']);
-
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const invoked = (yield* recordedInvocationCalls).find(
-            call => call.service === 'CommandLifecycleTelemetry' && call.event === 'invoked'
-          );
-          const runId =
-            invoked?.service === 'CommandLifecycleTelemetry' && invoked.event === 'invoked'
-              ? invoked.context.runId
-              : undefined;
-          assertDefined(runId);
-          expect(childRunId).toBe(runId);
-        })
+        expect(scriptRuns).toHaveBeenCalledTimes(1);
+        const invoked = (yield* recordedInvocationCalls).find(
+          call => call.service === 'CommandLifecycleTelemetry' && call.event === 'invoked'
+        );
+        const runId =
+          invoked?.service === 'CommandLifecycleTelemetry' && invoked.event === 'invoked'
+            ? invoked.context.runId
+            : undefined;
+        assertDefined(runId);
+        expect(lastRun().envOverrides.COMPOSIO_CLI_PARENT_RUN_ID).toBe(runId);
+        expect(lastRun().helperContext?.runId).toBe(runId);
+      })
     );
-  });
-
-  describe('signals', () => {
-    // The runner's controller for this run: the test delivers the CLI's signals through it.
-    let controller: ShutdownController = makeShutdownController();
-    const signalled: Array<readonly [number, string]> = [];
-    // Completes once `process.kill` received each signal, so a test can wait for delivery.
-    let delivered = new Map<string, Deferred.Deferred<void>>();
-    const deliveryOf = (signal: string) => {
-      const deferred = delivered.get(signal) ?? Deferred.makeUnsafe<void>();
-      delivered.set(signal, deferred);
-      return deferred;
-    };
-
-    beforeEach(() => {
-      controller = makeShutdownController();
-      signalled.length = 0;
-      delivered = new Map();
-      vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
-        signalled.push([Number(pid), String(signal)]);
-        Deferred.doneUnsafe(deliveryOf(String(signal)), Effect.void);
-        return true;
-      });
-    });
-
-    /** `composio run` with the CLI receiving `signal` while the child runs. */
-    const runWithSignals = Effect.suspend(() =>
-      Effect.exit(
-        cli(['run', 'console.log("hi")']).pipe(
-          Effect.provideService(ShutdownSignal, controller.service)
-        )
-      )
-    );
-
-    /** A child that, once the CLI took `signal`, waits for it and then ends with `ends`. */
-    const childEndingAfter = (
-      signal: 'SIGINT' | 'SIGTERM' | 'SIGHUP',
-      ends: Effect.Effect<ChildProcessSpawner.ExitCode, PlatformError.PlatformError>
-    ) =>
-      commandRuns.mockImplementation(() =>
-        Effect.sync(() => expect(controller.offer(signal)).toBe(true)).pipe(
-          Effect.andThen(Deferred.await(deliveryOf(signal))),
-          Effect.andThen(ends)
-        )
-      );
-
-    /** The spawner's failure for a child a signal ended. */
-    const killedBy = (signal: TerminationSignal) =>
-      Effect.fail(
-        PlatformError.systemError({
-          _tag: 'Unknown',
-          module: 'ChildProcess',
-          method: 'exitCode',
-          cause: new Error(`Process interrupted due to receipt of signal: '${signal}'`),
-        })
-      );
-
-    layer(RunTestLive())(it => {
-      it.effect.each(['SIGINT', 'SIGTERM', 'SIGHUP'] as const)(
-        '[Given] the CLI receives %s [Then] it forwards it to the child process group',
-        signal =>
-          Effect.gen(function* () {
-            childEndingAfter(signal, Effect.succeed(ChildProcessSpawner.ExitCode(0)));
-
-            const exit = yield* runWithSignals;
-
-            // Negative pid: the detached child leads its own process group.
-            expect(signalled).toEqual([[-STUB_CHILD_PID, signal]]);
-            // A script that handles the signal and exits 0 makes the run succeed.
-            expect(exitCodeOf(exit)).toBe(0);
-          })
-      );
-
-      it.effect(
-        '[Given] the child exits non-zero after the signal [Then] the run mirrors its code',
-        () =>
-          Effect.gen(function* () {
-            childEndingAfter('SIGINT', Effect.succeed(ChildProcessSpawner.ExitCode(7)));
-
-            const exit = yield* runWithSignals;
-
-            expect(exitCodeOf(exit)).toBe(7);
-          })
-      );
-
-      it.effect('[Given] the signal ends the child [Then] the runner re-raises that signal', () =>
-        Effect.gen(function* () {
-          childEndingAfter('SIGTERM', killedBy('SIGTERM'));
-
-          const exit = yield* runWithSignals;
-          const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
-
-          expect(failure).toBeInstanceOf(ChildProcessSignaled);
-          expect(Runtime.getErrorReported(failure)).toBe(false);
-          expect(exitActionFor(exit, Option.some('SIGTERM'))).toEqual(
-            ExitAction.Reraise({ signal: 'SIGTERM' })
-          );
-        })
-      );
-
-      it.effect(
-        '[Given] a child that ignores the signal [Then] it gets SIGTERM, then SIGKILL, and the run ends by the first signal',
-        () =>
-          Effect.gen(function* () {
-            childRunning.mockImplementation(() => true);
-            const killed = deliveryOf('SIGKILL');
-            childEndingAfter(
-              'SIGINT',
-              Deferred.await(killed).pipe(Effect.andThen(killedBy('SIGKILL')))
-            );
-
-            const fiber = yield* Effect.forkChild(runWithSignals);
-            yield* Deferred.await(deliveryOf('SIGINT'));
-            yield* TestClock.adjust('2 seconds');
-            yield* Deferred.await(deliveryOf('SIGTERM'));
-            yield* TestClock.adjust('2 seconds');
-            const exit = yield* Fiber.join(fiber);
-
-            expect(signalled).toEqual([
-              [-STUB_CHILD_PID, 'SIGINT'],
-              [-STUB_CHILD_PID, 'SIGTERM'],
-              [-STUB_CHILD_PID, 'SIGKILL'],
-            ]);
-            // The CLI's own SIGKILL ended the script; the user cancelled with SIGINT.
-            expect(exitActionFor(exit, Option.some('SIGINT'))).toEqual(
-              ExitAction.Reraise({ signal: 'SIGINT' })
-            );
-          })
-      );
-
-      it.effect(
-        '[Given] a child that crashes by another signal during the escalation [Then] the run ends by that signal',
-        () =>
-          Effect.gen(function* () {
-            childRunning.mockImplementation(() => true);
-            // The script ignores SIGINT, then aborts while cleaning up after the CLI's SIGTERM.
-            childEndingAfter(
-              'SIGINT',
-              Deferred.await(deliveryOf('SIGTERM')).pipe(Effect.andThen(killedBy('SIGABRT')))
-            );
-
-            const fiber = yield* Effect.forkChild(runWithSignals);
-            yield* Deferred.await(deliveryOf('SIGINT'));
-            yield* TestClock.adjust('2 seconds');
-            const exit = yield* Fiber.join(fiber);
-            const failure = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined;
-
-            expect(signalled).toEqual([
-              [-STUB_CHILD_PID, 'SIGINT'],
-              [-STUB_CHILD_PID, 'SIGTERM'],
-            ]);
-            // The crash is the script's own, not the user's cancellation.
-            expect(failure).toBeInstanceOf(ChildProcessSignaled);
-            expect(exitActionFor(exit, Option.some('SIGINT'))).toEqual(
-              ExitAction.Reraise({ signal: 'SIGABRT' })
-            );
-          })
-      );
-
-      it.effect(
-        '[Given] a second signal [Then] forcing the exit kills the child group and re-raises',
-        () =>
-          Effect.gen(function* () {
-            const forced = yield* Deferred.make<{ readonly reraise: boolean }>();
-            commandRuns.mockImplementation(() =>
-              Effect.sync(() => {
-                controller.offer('SIGINT');
-                // What the runner does on the second signal, while the child still runs.
-                Deferred.doneUnsafe(forced, Effect.succeed(controller.force()));
-                return ChildProcessSpawner.ExitCode(0);
-              })
-            );
-
-            yield* runWithSignals;
-
-            expect(yield* Deferred.await(forced)).toEqual({ reraise: true });
-            expect(signalled).toContainEqual([-STUB_CHILD_PID, 'SIGKILL']);
-          })
-      );
-    });
   });
 
   layer(RunTestLive())(it => {
     it.effect(
-      '[Given] inline code and args [Then] it forwards them to the embedded Bun runtime',
+      '[Given] inline code and args [Then] it runs the code in this process with the args as process.argv',
       () =>
         Effect.gen(function* () {
-          commandRuns.mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(7)));
+          scriptRuns.mockImplementation(() => Promise.resolve({ exitCode: 7 }));
 
           const exit = yield* Effect.exit(cli(['run', 'console.log("hi")', '--flag', 'value']));
           const output = yield* MockConsole.getLines();
 
-          // The process exits with the child's code.
+          // The process exits with the script's code.
           expect(exitCodeOf(exit)).toBe(7);
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(spawnConfig.cmd[0]).toBe(process.execPath);
-          expect(spawnConfig.cmd[1]).toBe('--preload');
-          expect(spawnConfig.cmd[2]).toMatch(/globals\.mjs$/);
-          expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(spawnConfig.cmd[4]).toContain('(async () => {');
-          expect(spawnConfig.cmd[4]).toContain('return (console.log("hi"));');
-          expect(spawnConfig.cmd[4]).toContain('if (__composioResult !== undefined) {');
-          expect(spawnConfig.cmd.slice(5)).toEqual(['--', '--flag', 'value']);
-          expect(spawnConfig.env).toEqual(expect.objectContaining({ BUN_BE_BUN: '1' }));
-          expect(spawnConfig.extendEnv).toBe(true);
-          expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
+          expect(scriptRuns).toHaveBeenCalledTimes(1);
+          const params = lastRun();
+          expect(params.program.body).toBe('return (console.log("hi"));');
+          expect(params.source).toBe('console.log("hi")');
+          expect(params.displayName).toBe('[eval]');
+          expect(params.argv).toEqual([process.execPath, '--flag', 'value']);
+          expect(params.signal).toBeInstanceOf(AbortSignal);
           expect(output).toContainEqual(expect.stringMatching(/^RUN_LOG_FILE=.*run\.log$/));
-          // The preload file lives in a scoped directory and is removed with it, ...
-          expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
-          // ... but the run log is advertised to the caller on stderr, so it has to outlive
-          // the run that printed it.
-          const runLogPath = String(output.find(line => line.startsWith('RUN_LOG_FILE='))).slice(
-            'RUN_LOG_FILE='.length
-          );
-          expect(fs.existsSync(runLogPath)).toBe(true);
-          fs.rmSync(path.dirname(runLogPath), { recursive: true, force: true });
+          // The run log is advertised to the caller on stderr, so it has to outlive the run.
+          const runLog = takeRunLog(output);
+          expect(runLog.exists).toBe(true);
+          expect(params.helperContext?.runLogFilePath).toBe(runLog.runLogPath);
         })
     );
   });
 
   layer(RunTestLive())(it => {
     it.effect(
-      '[Given] a child that exits non-zero [Then] it fails with ChildProcessExited, which the runtime does not log',
+      '[Given] a script that exits non-zero [Then] it fails with ChildProcessExited, which the runtime does not log',
       () =>
         Effect.gen(function* () {
-          commandRuns.mockImplementation(() => Effect.succeed(ChildProcessSpawner.ExitCode(3)));
+          scriptRuns.mockImplementation(() => Promise.resolve({ exitCode: 3 }));
 
           const failure = yield* cli(['run', 'console.log("hi")']).pipe(Effect.flip);
 
           expect(failure).toBeInstanceOf(ChildProcessExited);
           expect(failure).toMatchObject({ code: 3 });
-          // The child already wrote its own output; `BunRuntime.runMain` must not add a log.
+          // The script already reported its own failure; the runner must not add a log.
           expect(Runtime.getErrorReported(failure)).toBe(false);
         })
     );
 
-    it.effect('[Given] a child that exits 0 [Then] the run succeeds', () =>
+    it.effect('[Given] a script that exits 0 [Then] the run succeeds', () =>
       Effect.gen(function* () {
         const exit = yield* Effect.exit(cli(['run', 'console.log("hi")']));
 
@@ -425,59 +168,63 @@ describe('CLI: composio run', () => {
       })
     );
 
-    // Ctrl-C interrupts the run while the child is still running: the process exits 130, not 0,
-    // so wrappers and `set -e` scripts do not read a cancelled run as a passing one.
-    it.effect('[Given] the run is interrupted [Then] the process exits 130', () =>
+    // Ctrl-C interrupts the run while the script is still running: the process exits 130, not 0,
+    // so wrappers and `set -e` scripts do not read a cancelled run as a passing one, and the
+    // script is told to stop.
+    it.effect(
+      '[Given] the run is interrupted [Then] the script is aborted and the process exits 130',
+      () =>
+        Effect.gen(function* () {
+          const started = yield* Deferred.make<AbortSignal>();
+          scriptRuns.mockImplementation(
+            params =>
+              new Promise(() => {
+                Deferred.doneUnsafe(started, Effect.succeed(params.signal!));
+              })
+          );
+
+          const fiber = yield* Effect.forkChild(cli(['run', 'console.log("hi")']));
+          const signal = yield* Deferred.await(started);
+          expect(signal.aborted).toBe(false);
+          yield* Fiber.interrupt(fiber);
+
+          expect(signal.aborted).toBe(true);
+          expect(exitCodeOf(yield* Fiber.await(fiber))).toBe(130);
+        })
+    );
+
+    it.effect('[Given] the runtime rejects [Then] the run fails as a defect', () =>
       Effect.gen(function* () {
-        const started = yield* Deferred.make<void>();
-        commandRuns.mockImplementation(() =>
-          Deferred.succeed(started, undefined).pipe(Effect.andThen(Effect.never))
-        );
+        scriptRuns.mockImplementation(() => Promise.reject(new Error('engine bug')));
 
-        const fiber = yield* Effect.forkChild(cli(['run', 'console.log("hi")']));
-        yield* Deferred.await(started);
-        yield* Fiber.interrupt(fiber);
+        const exit = yield* Effect.exit(cli(['run', 'console.log("hi")']));
 
-        expect(exitCodeOf(yield* Fiber.await(fiber))).toBe(130);
+        expect(exitCodeOf(exit)).toBe(1);
       })
     );
   });
 
   layer(RunTestLive())(it => {
-    it.effect('[Given] a run [Then] the preload context carries no sub-agent inputs', () =>
+    it.effect('[Given] a run [Then] the helper context carries no sub-agent inputs', () =>
       Effect.gen(function* () {
-        let preloadSource = '';
-        commandRuns.mockImplementation(command => {
-          preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-        });
-
         yield* cli(['run', 'console.log("hi")']);
 
-        expect(preloadSource).toContain('"runLogFilePath":');
-        expect(preloadSource).not.toContain('"master":');
-        expect(preloadSource).not.toContain('"readAccessRoots":');
-        expect(preloadSource).not.toContain('"cliConfigPath":');
+        const source = helperSource();
+        expect(source).toContain('"runLogFilePath":');
+        expect(source).not.toContain('"master":');
+        expect(source).not.toContain('"readAccessRoots":');
+        expect(source).not.toContain('"cliConfigPath":');
       })
     );
 
-    it.effect('[Given] a run from source [Then] the preload imports the helper runtime', () =>
-      Effect.gen(function* () {
-        let preloadSource = '';
-        commandRuns.mockImplementation(command => {
-          preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-        });
+    it.effect(
+      '[Given] a run from source [Then] the helpers spawn the CLI with the same runtime and entrypoint',
+      () =>
+        Effect.gen(function* () {
+          yield* cli(['run', 'console.log("hi")']);
 
-        yield* cli(['run', 'console.log("hi")']);
-
-        const helpersRuntimeUrl = pathToFileURL(
-          path.resolve(import.meta.dirname, '../../../../src/services/run-helpers-runtime.ts')
-        ).href;
-        expect(preloadSource).toContain(
-          `import { installRunHelpers } from ${JSON.stringify(helpersRuntimeUrl)};`
-        );
-      })
+          expect(lastRun().cliPrefix[0]).toBe(process.execPath);
+        })
     );
   });
 
@@ -486,48 +233,35 @@ describe('CLI: composio run', () => {
       '[Given] COMPOSIO_RUN_ACP_ONLY=1 [Then] only the remaining debug flags reach the script',
       () =>
         Effect.gen(function* () {
-          let preloadSource = '';
-          commandRuns.mockImplementation(command => {
-            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-          });
-
           yield* cli(['run', 'console.log("hi")']);
 
-          const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(command.env).toEqual({
-            BUN_BE_BUN: '1',
+          expect(lastRun().envOverrides).toEqual({
             COMPOSIO_CLI_PARENT_RUN_ID: expect.any(String),
             COMPOSIO_PERF_DEBUG: '1',
             COMPOSIO_TOOL_DEBUG: '1',
             COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
           });
-          expect(preloadSource).toContain('"perfDebug":true');
-          expect(preloadSource).toContain('"toolDebug":true');
-          expect(preloadSource).toContain('"telemetryDebug":false');
-          expect(preloadSource).not.toContain('acpOnly');
-          expect(preloadSource).not.toContain('COMPOSIO_RUN_ACP_ONLY');
+          const source = helperSource();
+          expect(source).toContain('"perfDebug":true');
+          expect(source).toContain('"toolDebug":true');
+          expect(source).toContain('"telemetryDebug":false');
+          expect(source).not.toContain('acpOnly');
+          expect(source).not.toContain('COMPOSIO_RUN_ACP_ONLY');
         })
     );
 
     it.effect('[Given] explicit false flags [Then] inherited true values are cleared', () =>
       Effect.gen(function* () {
-        let preloadSource = '';
-        commandRuns.mockImplementation(command => {
-          preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-        });
-
         yield* cli(['run', '--perf-debug=false', '--tool-debug=false', 'console.log("hi")']);
 
-        const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-        expect(command.env).toMatchObject({
+        expect(lastRun().envOverrides).toMatchObject({
           COMPOSIO_PERF_DEBUG: '0',
           COMPOSIO_TOOL_DEBUG: '0',
           COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
         });
-        expect(preloadSource).toContain('"perfDebug":false');
-        expect(preloadSource).toContain('"toolDebug":false');
+        const source = helperSource();
+        expect(source).toContain('"perfDebug":false');
+        expect(source).toContain('"toolDebug":false');
       })
     );
   });
@@ -565,16 +299,11 @@ describe('CLI: composio run', () => {
         `[Given] ${testCase.name} [Then] the web URL is ${testCase.forwarded ? '' : 'not '}forwarded to helpers`,
         () =>
           Effect.gen(function* () {
-            let preloadSource = '';
-            commandRuns.mockImplementation(command => {
-              preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-              return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-            });
-
             yield* cli(['run', 'console.log("hi")']);
 
-            expect(preloadSource).toContain('"baseURL":');
-            expect(preloadSource.includes('"webURL":')).toBe(testCase.forwarded);
+            const source = helperSource();
+            expect(source).toContain('"baseURL":');
+            expect(source.includes('"webURL":')).toBe(testCase.forwarded);
           })
       );
     });
@@ -632,13 +361,8 @@ describe('CLI: composio run', () => {
         () =>
           Effect.gen(function* () {
             stubAgentSessionEnvironment(testCase.env);
-            let preloadSource = '';
-            commandRuns.mockImplementation(command => {
-              preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-              return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-            });
-
             yield* cli(['run', 'console.log("hi")']);
+            const preloadSource = helperSource();
 
             expect(preloadSource).toContain('"baseURL":');
             expect(preloadSource.includes(FORWARDED_AGENT_SESSION)).toBe(testCase.forwarded);
@@ -664,13 +388,8 @@ describe('CLI: composio run', () => {
           );
           fs.mkdirSync(hostDir, { recursive: true });
           fs.writeFileSync(path.join(hostDir, CLAUDE_SESSION), 'auto\nmanual\n');
-          let preloadSource = '';
-          commandRuns.mockImplementation(command => {
-            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-          });
-
           yield* cli(['run', 'console.log("hi")']);
+          const preloadSource = helperSource();
 
           expect(preloadSource).toContain('"x-cli-agent-compaction-count":"2"');
           expect(preloadSource).not.toContain(CLAUDE_SESSION);
@@ -680,20 +399,13 @@ describe('CLI: composio run', () => {
 
   layer(Layer.merge(RunTestLive(), telemetryDebugModeLayer(true)))(it => {
     it.effect(
-      '[Given] --telemetry-debug [Then] the spawned script and its children observe it',
+      '[Given] --telemetry-debug [Then] the script and its helper children observe it',
       () =>
         Effect.gen(function* () {
-          let preloadSource = '';
-          commandRuns.mockImplementation(command => {
-            preloadSource = readRunPreloadSource(inspectRunCommand(command).cmd);
-            return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-          });
-
           yield* cli(['run', 'console.log("hi")']);
 
-          const command = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(command.env.COMPOSIO_CLI_TELEMETRY_DEBUG).toBe('1');
-          expect(preloadSource).toContain('"telemetryDebug":true');
+          expect(lastRun().envOverrides.COMPOSIO_CLI_TELEMETRY_DEBUG).toBe('1');
+          expect(helperSource()).toContain('"telemetryDebug":true');
         })
     );
   });
@@ -713,7 +425,7 @@ describe('CLI: composio run', () => {
         const failure = yield* cli(['run', flag, 'console.log(1)']).pipe(Effect.flip);
 
         expect(failure).toMatchObject({ _tag: 'ShowHelp' });
-        expect(commandRuns).not.toHaveBeenCalled();
+        expect(scriptRuns).not.toHaveBeenCalled();
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
         expect(output).toContain(`Unrecognized flag: ${name} in command composio run`);
       })
@@ -721,18 +433,12 @@ describe('CLI: composio run', () => {
 
     it.effect('[Given] repeated invocations [Then] hidden flags do not leak', () =>
       Effect.gen(function* () {
-        const preloadSources: string[] = [];
-        commandRuns.mockImplementation(command => {
-          preloadSources.push(readRunPreloadSource(inspectRunCommand(command).cmd));
-          return Effect.succeed(ChildProcessSpawner.ExitCode(0));
-        });
-
         yield* cli(['run', '--perf-debug', 'console.log("first")']);
         yield* cli(['run', 'console.log("second")']);
 
-        expect(preloadSources).toHaveLength(2);
-        expect(preloadSources[0]).toContain('"perfDebug":true');
-        expect(preloadSources[1]).toContain('"perfDebug":false');
+        expect(scriptRuns).toHaveBeenCalledTimes(2);
+        expect(helperSource(scriptRuns.mock.calls[0]![0])).toContain('"perfDebug":true');
+        expect(helperSource(scriptRuns.mock.calls[1]![0])).toContain('"perfDebug":false');
       })
     );
   });
@@ -758,40 +464,52 @@ describe('CLI: composio run', () => {
           `;
           yield* cli(['run', script]);
 
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(spawnConfig.cmd[3]).toBe('--eval');
-          expect(spawnConfig.cmd[4]).toContain('const issue = await execute(');
-          expect(spawnConfig.cmd[4]).toContain('"Do not run terminal commands."');
-          expect(spawnConfig.cmd[4]).toContain('].join("\\n"),');
-          expect(spawnConfig.cmd[4]).toContain('owner: "acme"');
-          expect(spawnConfig.cmd[4]).toContain('console.log(JSON.stringify(issue));');
-          expect(spawnConfig.cmd[4]).toContain('return (console.log(JSON.stringify(issue.data)));');
-          expect(spawnConfig.cmd[4]).not.toContain('"Do not run terminal\n');
+          expect(scriptRuns).toHaveBeenCalledTimes(1);
+          const { body } = lastRun().program;
+          expect(body).toContain('const issue = await execute(');
+          expect(body).toContain('"Do not run terminal commands."');
+          expect(body).toContain('].join("\\n"),');
+          expect(body).toContain('owner: "acme"');
+          expect(body).toContain('console.log(JSON.stringify(issue));');
+          expect(body).toContain('return (console.log(JSON.stringify(issue.data)));');
+          expect(body).not.toContain('"Do not run terminal\n');
+          // Lines are kept, so an error points at the line the user wrote.
+          expect(body.split('\n')).toHaveLength(script.split('\n').length);
         })
     );
   });
 
   layer(RunTestLive())(it => {
-    it.effect('[Given] --file [Then] it forwards file execution to the embedded Bun runtime', () =>
+    it.effect('[Given] --file [Then] it runs the file with its path and args as process.argv', () =>
       Effect.gen(function* () {
-        const { scriptPath } = yield* tempScript;
+        const { scriptPath, tempDir } = yield* tempScript;
         yield* cli(['run', '--file', scriptPath, '--', 'hello']);
 
-        expect(commandRuns).toHaveBeenCalledTimes(1);
-        const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-        expect(spawnConfig.cmd[0]).toBe(process.execPath);
-        expect(spawnConfig.cmd[1]).toBe('--preload');
-        expect(spawnConfig.cmd[2]).toMatch(/globals\.mjs$/);
-        expect(spawnConfig.cmd[3]).toMatch(/\.composio-run-.*\.ts$/);
-        expect(spawnConfig.cmd[4]).toBe('--');
-        expect(spawnConfig.cmd[5]).toBe('hello');
-        expect(spawnConfig.env).toEqual(expect.objectContaining({ BUN_BE_BUN: '1' }));
-        expect(spawnConfig.extendEnv).toBe(true);
-        expect(spawnConfig.stdio).toEqual(['inherit', 'inherit', 'inherit']);
-        expect(fs.existsSync(spawnConfig.cmd[2]!)).toBe(false);
-        expect(fs.existsSync(spawnConfig.cmd[3]!)).toBe(false);
+        expect(scriptRuns).toHaveBeenCalledTimes(1);
+        const params = lastRun();
+        expect(params.argv).toEqual([process.execPath, scriptPath, 'hello']);
+        expect(params.displayName).toBe(scriptPath);
+        expect(params.source).toBe('const value = 1 + 1;\nvalue * 2;\n');
+        expect(params.program.body).toContain('return (value * 2);');
+        // Nothing is written next to the user's script.
+        expect(fs.readdirSync(tempDir)).toEqual(['script.ts']);
       })
+    );
+
+    it.effect(
+      '[Given] --file names a missing file [Then] it fails with a usage error naming it',
+      () =>
+        Effect.gen(function* () {
+          const missing = path.join(os.tmpdir(), 'composio-run-missing-script.ts');
+
+          const failure = yield* cli(['run', '--file', missing]).pipe(Effect.flip);
+
+          expect(failure).toBeInstanceOf(CommandInputError);
+          expect(failure).toMatchObject({
+            message: expect.stringContaining(`Cannot read the script file ${missing}`),
+          });
+          expect(scriptRuns).not.toHaveBeenCalled();
+        })
     );
   });
 
@@ -808,8 +526,11 @@ describe('CLI: composio run', () => {
               'Provide inline code or use --file to run a script file.'
             ),
           });
-          // Nothing was set up before the check, so no child process was started.
-          expect(commandRuns).not.toHaveBeenCalled();
+          // Nothing was set up before the check, so no script was started.
+          expect(scriptRuns).not.toHaveBeenCalled();
+          expect(yield* MockConsole.getLines()).not.toContainEqual(
+            expect.stringMatching(/^RUN_LOG_FILE=/)
+          );
         })
     );
   });
@@ -822,13 +543,12 @@ describe('CLI: composio run', () => {
           const { scriptPath } = yield* tempScript;
           yield* cli(['run', `--file=${scriptPath}`, '--dry-run']);
 
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          // `--file=...` must be recognized as a run flag: file mode compiles a
-          // wrapper script (not `--eval` inline code), and `--dry-run` must not
-          // leak into the forwarded script arguments.
-          expect(spawnConfig.cmd[3]).toMatch(/\.composio-run-.*\.ts$/);
-          expect(spawnConfig.cmd).not.toContain('--dry-run');
+          expect(scriptRuns).toHaveBeenCalledTimes(1);
+          // `--file=...` must be recognized as a run flag, and `--dry-run` must not leak into
+          // the script's arguments.
+          expect(lastRun().displayName).toBe(scriptPath);
+          expect(lastRun().argv).not.toContain('--dry-run');
+          expect(lastRun().helperContext?.dryRun).toBe(true);
         })
     );
   });
@@ -842,10 +562,9 @@ describe('CLI: composio run', () => {
       Effect.gen(function* () {
         yield* cli(['--perf-debug=false', 'run', ...args]);
 
-        expect(commandRuns).toHaveBeenCalledTimes(1);
-        const spawned = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-        expect(spawned.cmd.slice(5)).toEqual(['--', ...SCRIPT_FLAGS]);
-        expect(spawned.env).toMatchObject({
+        expect(scriptRuns).toHaveBeenCalledTimes(1);
+        expect(scriptArgs()).toEqual(SCRIPT_FLAGS);
+        expect(lastRun().envOverrides).toMatchObject({
           COMPOSIO_PERF_DEBUG: '0',
           COMPOSIO_TOOL_DEBUG: '0',
           COMPOSIO_CLI_TELEMETRY_DEBUG: '0',
@@ -861,11 +580,9 @@ describe('CLI: composio run', () => {
         Effect.gen(function* () {
           yield* cli(['run', 'console.log("hi")', '--', 'alpha', '--', 'beta']);
 
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          // First `--` is the run/script boundary; the second is a script
-          // argument and must reach the script verbatim (v3 behavior).
-          expect(spawnConfig.cmd.slice(5)).toEqual(['--', 'alpha', '--', 'beta']);
+          // The first `--` is the run/script boundary; the second is a script argument and
+          // must reach the script verbatim.
+          expect(scriptArgs()).toEqual(['alpha', '--', 'beta']);
         })
     );
   });
@@ -877,9 +594,7 @@ describe('CLI: composio run', () => {
         Effect.gen(function* () {
           yield* cli(['run', 'console.log("hi")', '@@composio-run-raw@@literal']);
 
-          expect(commandRuns).toHaveBeenCalledTimes(1);
-          const spawnConfig = inspectRunCommand(commandRuns.mock.calls[0]![0]);
-          expect(spawnConfig.cmd.slice(5)).toEqual(['--', '@@composio-run-raw@@literal']);
+          expect(scriptArgs()).toEqual(['@@composio-run-raw@@literal']);
         })
     );
   });
@@ -914,33 +629,6 @@ describe('CLI: composio run', () => {
   });
 });
 
-describe('buildRunHelpersSource', () => {
-  it('[Given] consumer context [Then] it embeds auth and consumer metadata in the helper source', () => {
-    const source = buildRunHelpersSource(
-      ['/tmp/composio'],
-      {
-        apiKey: 'test_api_key',
-        baseURL: 'https://api.example.test',
-        webURL: 'https://app.example.test',
-        orgId: 'org_test',
-        consumerUserId: 'consumer_user_test',
-        dryRun: true,
-        runLogFilePath: '/tmp/composio-run/run.log',
-      },
-      {
-        helpersRuntimeModuleUrl: pathToFileURL('/tmp/composio-run/run-helpers-runtime.mjs').href,
-      }
-    );
-
-    expect(source).toContain('import { installRunHelpers } from "file://');
-    expect(source).toContain('await installRunHelpers(');
-    expect(source).toContain('"cliPrefix":["/tmp/composio"]');
-    expect(source).toContain('"runLogFilePath":"/tmp/composio-run/run.log"');
-    expect(source).toContain('"consumerUserId":"consumer_user_test"');
-    expect(source).not.toContain('globalThis.execute = async (slug, data = {}) => {');
-  });
-});
-
 describe('inferCliInvocationPrefix', () => {
   layer(BunServices.layer)(it => {
     it.effect.each([
@@ -963,51 +651,6 @@ describe('inferCliInvocationPrefix', () => {
   });
 });
 
-describe('resolveRunCompanionModulePath', () => {
-  layer(BunServices.layer)(it => {
-    it.effect(
-      '[Given] a bundled dist chunk [Then] it resolves sibling companion modules in dist',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-dist-'));
-          const callerPath = path.join(tempDir, 'commands-abc.mjs');
-          const servicesDir = path.join(tempDir, 'services');
-          const companionPath = path.join(servicesDir, 'run-helpers-runtime.mjs');
-          fs.writeFileSync(callerPath, '', 'utf8');
-          fs.mkdirSync(servicesDir);
-          fs.writeFileSync(companionPath, '', 'utf8');
-
-          expect(
-            yield* resolveRunCompanionModulePath({
-              callerImportMetaUrl: pathToFileURL(callerPath).href,
-              execPath: '/tmp/composio',
-              relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
-            })
-          ).toBe(companionPath);
-        })
-    );
-
-    it.effect(
-      '[Given] a compiled bunfs caller [Then] it falls back to modules next to the binary',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-companion-bin-'));
-          const execPath = path.join(tempDir, 'composio');
-          const companionPath = path.join(tempDir, 'run-helpers-runtime.mjs');
-          fs.writeFileSync(companionPath, '', 'utf8');
-
-          expect(
-            yield* resolveRunCompanionModulePath({
-              callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
-              execPath,
-              relativeNoExtensionFromCaller: '../services/run-helpers-runtime',
-            })
-          ).toBe(companionPath);
-        })
-    );
-  });
-});
-
 describe('run companion install metadata', () => {
   layer(BunServices.layer)(it => {
     it.effect(
@@ -1020,94 +663,6 @@ describe('run companion install metadata', () => {
           yield* writeInstalledReleaseTag(tempDir, '@composio/cli@0.2.12');
 
           expect(yield* readInstalledReleaseTag(execPath)).toBe('@composio/cli@0.2.12');
-        })
-    );
-
-    it.effect(
-      '[Given] a partial companion install [Then] it reports only the missing companion files',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-'));
-          const execPath = path.join(tempDir, 'composio');
-          fs.writeFileSync(path.join(tempDir, RUN_COMPANION_MODULE_FILENAMES[0]!), '', 'utf8');
-
-          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual(
-            RUN_COMPANION_MODULE_FILENAMES.slice(1).slice().sort()
-          );
-        })
-    );
-
-    it.effect(
-      '[Given] a nested companion dependency is missing [Then] it reports the missing helper asset',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-nested-'));
-          const execPath = path.join(tempDir, 'composio');
-          const servicesDir = path.join(tempDir, 'services');
-          fs.mkdirSync(servicesDir, { recursive: true });
-
-          fs.writeFileSync(
-            path.join(tempDir, 'run-helpers-runtime.mjs'),
-            'export * from "./services/run-helpers-runtime.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'generation-runtime.mjs'),
-            'export * from "./services/generation-runtime.mjs";\n',
-            'utf8'
-          );
-
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-helpers-runtime.mjs'),
-            'export const runtimeValue = 1;\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(servicesDir, 'generation-runtime.mjs'),
-            'export * from "../run-companion-modules-abc123.mjs";\n',
-            'utf8'
-          );
-
-          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([
-            'run-companion-modules-abc123.mjs',
-          ]);
-        })
-    );
-
-    it.effect(
-      '[Given] a named re-export dependency is missing [Then] it reports the missing helper asset',
-      () =>
-        Effect.gen(function* () {
-          const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-missing-reexport-'));
-          const execPath = path.join(tempDir, 'composio');
-          const servicesDir = path.join(tempDir, 'services');
-          fs.mkdirSync(servicesDir, { recursive: true });
-
-          fs.writeFileSync(
-            path.join(tempDir, 'run-helpers-runtime.mjs'),
-            'export * from "./services/run-helpers-runtime.mjs";\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(tempDir, 'generation-runtime.mjs'),
-            'export * from "./services/generation-runtime.mjs";\n',
-            'utf8'
-          );
-
-          fs.writeFileSync(
-            path.join(servicesDir, 'run-helpers-runtime.mjs'),
-            'export const runtimeValue = 1;\n',
-            'utf8'
-          );
-          fs.writeFileSync(
-            path.join(servicesDir, 'generation-runtime.mjs'),
-            'export { helperValue } from "../run-companion-modules-def456.mjs";\n',
-            'utf8'
-          );
-
-          expect(yield* listMissingInstalledRunCompanionModules(execPath)).toEqual([
-            'run-companion-modules-def456.mjs',
-          ]);
         })
     );
   });
@@ -1126,13 +681,107 @@ describe('extractInlineExecuteToolSlugs', () => {
   });
 });
 
-describe('wrapInlineCodeForRun', () => {
-  it('[Given] inline code ending in an expression [Then] it rewrites the last expression to a return', () => {
+describe('extractInlineExecuteToolSlugs', () => {
+  it('[Given] inline run source [Then] it finds static execute slugs from the AST', () => {
     expect(
-      wrapInlineCodeForRun(`
-        const value = 1 + 1;
-        value * 2;
+      extractInlineExecuteToolSlugs(`
+        const first = await execute("GMAIL_SEND_EMAIL", { to: "a@b.com" });
+        const dynamic = await execute(slug, payload);
+        execute('GITHUB_CREATE_ISSUE', { owner: 'acme' });
+        execute("GMAIL_SEND_EMAIL", { to: "b@c.com" });
       `)
-    ).toContain('return (value * 2);');
+    ).toEqual(['GMAIL_SEND_EMAIL', 'GITHUB_CREATE_ISSUE']);
+  });
+});
+
+describe('prepareRunProgram', () => {
+  it('[Given] JavaScript ending in an expression [Then] it returns it and keeps the source otherwise', () => {
+    expect(prepareRunProgram('const value = 1 + 1;\nvalue * 2;\n')).toEqual({
+      imports: '',
+      body: 'const value = 1 + 1;\nreturn (value * 2);\n',
+      columnShifts: [{ line: 2, column: 0, delta: 'return ('.length }],
+    });
+  });
+
+  it('[Given] a script ending in a declaration [Then] nothing is returned', () => {
+    expect(prepareRunProgram('const value = 1;').body).toBe('const value = 1;');
+  });
+
+  it('[Given] TypeScript [Then] it compiles it and maps it back with a source map', () => {
+    const prepared = prepareRunProgram(
+      'interface User {\n  login: string;\n}\nconst user: User = { login: "octocat" };\nuser.login'
+    );
+    expect(prepared.body).not.toContain('interface');
+    expect(prepared.body).not.toContain(': User');
+    expect(prepared.body).toContain('return (user.login);');
+    expect(prepared.sourceMap).toBeDefined();
+  });
+
+  it('[Given] a call with type arguments [Then] it stays a call', () => {
+    expect(prepareRunProgram('await Promise.resolve<number>(42)').body).toBe(
+      'return (await Promise.resolve(42));'
+    );
+  });
+
+  it('[Given] a .js file [Then] it is read as JavaScript', () => {
+    expect(prepareRunProgram('a < b > (c)', 'script.js').body).toBe('return (a < b > (c));');
+  });
+
+  it('[Given] type-only imports [Then] they disappear with the types', () => {
+    const prepared = prepareRunProgram(
+      'import type { User } from "./types";\nconst user: User = {};\nuser'
+    );
+    expect(prepared.imports).toBe('');
+    expect(prepared.body).not.toContain('./types');
+  });
+
+  it('[Given] imports of zod and process [Then] they bind to the runtime globals on the same lines', () => {
+    const prepared = prepareRunProgram(
+      [
+        'import { z } from "zod";',
+        'import { z as schema } from "zod/v4";',
+        'import * as zodNamespace from "zod";',
+        'import { argv, env as environment } from "node:process";',
+        'import process from "process";',
+        'console.log(z, schema, zodNamespace, argv, environment, process);',
+      ].join('\n')
+    );
+    expect(prepared.imports).toBe('');
+    expect(prepared.body.split('\n')).toEqual([
+      '',
+      'const schema = z;',
+      'const zodNamespace = z;',
+      'const argv = process.argv; const environment = process.env;',
+      '',
+      'return (console.log(z, schema, zodNamespace, argv, environment, process));',
+    ]);
+  });
+
+  it('[Given] imports of other modules [Then] they are hoisted for the runtime to resolve, keeping lines', () => {
+    const prepared = prepareRunProgram(
+      'import fs from "node:fs";\nimport {\n  join\n} from "node:path";\nfs.readFileSync(join("a"));'
+    );
+    expect(prepared.imports).toBe('import fs from "node:fs"; import { join } from "node:path";');
+    expect(prepared.body.split('\n')).toHaveLength(5);
+  });
+
+  it('[Given] exports [Then] the export keyword is dropped and the shift recorded', () => {
+    const prepared = prepareRunProgram(
+      'export const a = 1;\nexport { a as b };\nexport function f() {}'
+    );
+    expect(prepared.body).toBe('const a = 1;\n\nfunction f() {}');
+    expect(prepared.columnShifts).toContainEqual({ line: 1, column: 0, delta: -'export '.length });
+  });
+
+  it('[Given] a re-export from a module [Then] the module is kept as an import, unless it is virtual', () => {
+    const prepared = prepareRunProgram('export * from "./setup.js";\nexport { z } from "zod";\n1');
+    expect(prepared.imports).toBe('import "./setup.js";');
+    expect(prepared.body).toBe('\n\nreturn (1);');
+  });
+
+  it('[Given] a hashbang [Then] it becomes a comment', () => {
+    expect(prepareRunProgram('#!/usr/bin/env bun\nconsole.log(1)').body).toBe(
+      '///usr/bin/env bun\nreturn (console.log(1));'
+    );
   });
 });

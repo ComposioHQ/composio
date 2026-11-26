@@ -7,9 +7,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $ArchivePath = (Resolve-Path -LiteralPath $ArchivePath).Path
+$bun = (Get-Command bun.exe -CommandType Application).Source
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) "composio windows $([Guid]::NewGuid())"
 $envNames = @(
-    'BUN_BE_BUN', 'COMPOSIO_CACHE_DIR', 'COMPOSIO_DISABLE_TELEMETRY', 'COMPOSIO_GITHUB_API_BASE_URL', 'COMPOSIO_INSTALL_DIR',
+    'COMPOSIO_CACHE_DIR', 'COMPOSIO_DISABLE_TELEMETRY', 'COMPOSIO_GITHUB_API_BASE_URL', 'COMPOSIO_INSTALL_DIR',
     'COMPOSIO_INSTALL_SHELL', 'COMPOSIO_INSTALL_VERSION', 'COMPOSIO_USER_API_KEY', 'COMPOSIO_WINDOWS_SMOKE_ARCHIVE',
     'COMPOSIO_WINDOWS_SMOKE_INSTALLER', 'COMPOSIO_WINDOWS_SMOKE_PORT', 'COMPOSIO_WINDOWS_SMOKE_SKILL', 'COMPOSIO_WINDOWS_SMOKE_TAG',
     'USERPROFILE'
@@ -40,13 +41,10 @@ function Get-Sha256([string]$Path) {
 
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 try {
-    # The compiled CLI doubles as a Bun runtime (BUN_BE_BUN), so it can serve its own release.
     # The first path segment of the API base URL selects a scenario:
     #   /stable   lists a stable release behind a newer beta, for the default (latest) install
     #   /corrupt  publishes a checksum that does not match the archive
     #   /skill    adds the CLI skill bundle to the release
-    $source = Join-Path $testRoot 'source'
-    Expand-Archive -LiteralPath $ArchivePath -DestinationPath $source
     $serverFile = Join-Path $testRoot 'release-server.mjs'
     $portFile = Join-Path $testRoot 'port.txt'
     @'
@@ -92,9 +90,7 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
     $env:COMPOSIO_WINDOWS_SMOKE_SKILL = Join-Path $testRoot 'composio-skill.zip'
     Compress-Archive -Path $skillSource -DestinationPath $env:COMPOSIO_WINDOWS_SMOKE_SKILL
     $env:COMPOSIO_WINDOWS_SMOKE_TAG = "@composio/cli@$ExpectedVersion"
-    $env:BUN_BE_BUN = '1'
-    $server = Start-Process -FilePath (Join-Path $source 'composio-windows-x64/composio.exe') -ArgumentList @('"' + $serverFile + '"') -PassThru -RedirectStandardError (Join-Path $testRoot 'server.err')
-    Remove-Item Env:BUN_BE_BUN
+    $server = Start-Process -FilePath $bun -ArgumentList @('"' + $serverFile + '"') -PassThru -RedirectStandardError (Join-Path $testRoot 'server.err')
     for ($attempt = 0; $attempt -lt 100 -and -not (Test-Path -LiteralPath $portFile); $attempt++) {
         if ($server.HasExited) { throw "Release fixture server failed: $(Get-Content -LiteralPath (Join-Path $testRoot 'server.err') -Raw)" }
         Start-Sleep -Milliseconds 100
@@ -117,10 +113,10 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
     Assert ($LASTEXITCODE -eq 0) 'Windows PowerShell installation failed.'
     Assert ((Invoke-Cli @('--version')) -eq $ExpectedVersion) 'Unexpected baked CLI version.'
     Invoke-Cli @('--help') | Out-Host
-    Assert ((Invoke-Cli @('run', 'console.log("windows-inline-ok")')) -eq 'windows-inline-ok') 'Inline companion execution failed.'
+    Assert ((Invoke-Cli @('run', 'console.log("windows-inline-ok")')) -eq 'windows-inline-ok') 'Inline script execution failed.'
     $scriptFile = Join-Path $testRoot 'script with spaces.ts'
     Set-Content -LiteralPath $scriptFile -Value 'console.log("windows-file-ok");'
-    Assert ((Invoke-Cli @('run', '--file', $scriptFile)) -eq 'windows-file-ok') 'File companion execution failed.'
+    Assert ((Invoke-Cli @('run', '--file', $scriptFile)) -eq 'windows-file-ok') 'Script file execution failed.'
     $expectedBinaryHash = Get-Sha256 $binary
 
     # Reinstalling keeps user data. 32-bit PowerShell on x64 Windows is a supported host.
@@ -212,10 +208,12 @@ await Bun.write(process.env.COMPOSIO_WINDOWS_SMOKE_PORT, String(server.port));
         [IO.File]::WriteAllText($tagPath, $originalTag)
     }
 
-    # A missing companion module is downloaded again on demand.
+    # Scripts run with the compatibility file missing. An explicit upgrade restores it.
     $companion = Join-Path $installDir 'services/generation-runtime.mjs'
     Remove-Item -LiteralPath $companion
-    Assert ((Invoke-Cli @('run', 'console.log("windows-repair-ok")')) -eq 'windows-repair-ok') 'Companion repair failed.'
+    Assert ((Invoke-Cli @('run', 'console.log("windows-bundled-run-ok")')) -eq 'windows-bundled-run-ok') 'Script execution with a missing companion failed.'
+    Assert (-not (Test-Path -LiteralPath $companion)) 'Run unexpectedly restored the companion.'
+    Invoke-Cli @('upgrade', $ExpectedVersion) | Out-Host
     Assert (Test-Path -LiteralPath $companion) 'Companion was not restored.'
 
     # The CLI skill is linked into the agent's directory with a junction, which needs no
@@ -246,10 +244,8 @@ echo []
     Assert ($output -notlike '*not available on PATH*') "Setup did not find the claude.cmd shim: $output"
     Assert ($output -like '*--yes*') "Setup did not reach the approval step: $output"
 
-    # Credentials can be kept in Windows Credential Manager. The compiled CLI doubles as the
-    # Bun runtime for the store's roundtrip check.
-    $env:BUN_BE_BUN = '1'
-    try { & $binary (Join-Path $PSScriptRoot '../../../ts/packages/cli-keyring/test/windows-credential.smoke.ts') | Out-Host } finally { Remove-Item Env:BUN_BE_BUN }
+    # Run the store's Windows Credential Manager roundtrip with Bun.
+    & $bun (Join-Path $PSScriptRoot '../../../ts/packages/cli-keyring/test/windows-credential.smoke.ts') | Out-Host
     Assert ($LASTEXITCODE -eq 0) 'The Windows Credential Manager roundtrip failed.'
 
     # Shell setup has nothing to do on Windows and says so.

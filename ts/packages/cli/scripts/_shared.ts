@@ -12,9 +12,12 @@ import { compiledBinaryFileName, type ReleaseTarget } from './_release-artifacts
 
 export { teardown } from './_teardown';
 
-const RUN_COMPANION_SERVICE_ENTRY_MAP = Object.fromEntries(
-  RUN_COMPANION_MODULE_BASENAMES.map(name => [`services/${name}`, `src/services/${name}.ts`])
-) satisfies Record<string, string>;
+// What every retired companion path holds: the executable carries the code, and
+// released clients only check that the path exists in an upgrade archive.
+const RETIRED_COMPANION_SOURCE =
+  '// Retired: the composio executable carries this code and never loads this file. It stays\n' +
+  '// in release archives because released clients check upgrade archives for this path.\n' +
+  'export {};\n';
 
 const allowedRuntimeSpecifiers = new Set(
   builtinModules.flatMap(specifier =>
@@ -222,52 +225,27 @@ const buildCompanionServiceBundles = async (outputDir: string): Promise<void> =>
   await rm(servicesOutputDir, { force: true, recursive: true });
   await mkdir(servicesOutputDir, { recursive: true });
 
-  for (const [entryName, entryPath] of Object.entries(RUN_COMPANION_SERVICE_ENTRY_MAP)) {
-    const relativeOutputPath = `${entryName}.mjs`;
-    const outputDirectory = path.join(outputDir, path.dirname(relativeOutputPath));
-    const outputFileName = path.basename(relativeOutputPath);
-    await mkdir(outputDirectory, { recursive: true });
-
-    const result = await Bun.build({
-      entrypoints: [path.resolve(entryPath)],
-      outdir: outputDirectory,
-      naming: outputFileName,
-      target: 'bun',
-      format: 'esm',
-      packages: 'bundle',
-      sourcemap: 'none',
-    });
-
-    if (!result.success) {
-      const details = result.logs
-        .map(log => log.message)
-        .filter(message => message.length > 0)
-        .join('\n');
-      throw new Error(
-        details.length > 0
-          ? `Failed to bundle ${entryName}:\n${details}`
-          : `Failed to bundle ${entryName}.`
-      );
-    }
+  for (const name of RUN_COMPANION_MODULE_BASENAMES) {
+    await writeFile(path.join(servicesOutputDir, `${name}.mjs`), RETIRED_COMPANION_SOURCE, 'utf8');
   }
 };
 
-// Module paths that must only ever be reached through a companion module. The
-// executable's bundle is checked after every build because the guard against
-// regressions is otherwise invisible: a stray static import of any of these
-// would silently put the TypeScript compiler back into the executable, and
-// `--version` would quietly get ~70ms slower.
+// Modules that must never reach the executable. The bundle is checked after
+// every build because the regression is otherwise invisible: a stray import of
+// the TypeScript compiler (still a dev dependency, for tests) would add ~10 MB
+// and ~70 ms to every start.
 const EXECUTABLE_EXCLUDED_MODULE_PATTERNS: ReadonlyArray<{
   readonly pattern: RegExp;
   readonly reason: string;
 }> = [
-  { pattern: /\/node_modules\/typescript\//, reason: 'the TypeScript compiler' },
-  { pattern: /\/node_modules\/openapi-typescript\//, reason: 'openapi-typescript (tests only)' },
   {
-    pattern: /(?:^|\/)src\/commands\/run-source-transforms\.ts$/,
-    reason: 'the run source rewrites',
+    pattern: /\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?typescript\//,
+    reason: 'the TypeScript compiler',
   },
-  { pattern: /(?:^|\/)src\/services\/generation-runtime\.ts$/, reason: 'the generation companion' },
+  {
+    pattern: /\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?openapi-typescript\//,
+    reason: 'openapi-typescript, which needs the TypeScript compiler',
+  },
 ];
 
 // `--define` pairs as `Bun.build` takes them.
@@ -282,19 +260,17 @@ const defineRecordFromArgs = (args: ReadonlyArray<string>): Record<string, strin
 
 // Bun's unminified output starts each module with a `// <path>` line, which is
 // the only bundle-level record of what made it into the graph. A dynamic
-// `import()` of a *literal* specifier is still bundled (lazily evaluated, but
-// parsed on every start), so this catches those too — only the runtime-computed
-// specifier in `loadInstalledCompanionModule` keeps a module out.
-const assertExecutableExcludesCompanionModules = async (): Promise<void> => {
+// `import()` of a literal specifier is bundled too, so this catches those.
+const assertExecutableExcludesCompiler = async (): Promise<void> => {
   const result = await Bun.build({
     entrypoints: [path.resolve('./src/bin.ts')],
     target: 'bun',
     format: 'esm',
     packages: 'bundle',
     sourcemap: 'none',
-    // The same environment inlining and defines as `build-binary.ts` and
-    // `build-binary-cross.ts`, plus the NODE_ENV that `--production` sets, so a
-    // branch the release build folds away is folded away here too.
+    // The same environment inlining and defines as `executableBuildArgs`, plus
+    // the NODE_ENV that `--production` sets, so a branch the release build
+    // folds away is folded away here too.
     env: 'DEBUG_OVERRIDE_*',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
@@ -336,8 +312,7 @@ const assertExecutableExcludesCompanionModules = async (): Promise<void> => {
   if (violations.length > 0) {
     throw new Error(
       [
-        'The executable bundle reaches modules that must only be loaded through a companion module',
-        '(see RUN_COMPANION_MODULE_BASENAMES). Import them via `loadInstalledCompanionModule` instead:',
+        'The executable bundle reaches modules that must stay out of it:',
         ...violations.map(violation => `  - ${violation}`),
       ].join('\n')
     );
@@ -357,7 +332,7 @@ export const buildCompanionModules = (outputDir: string) =>
     }
 
     yield* Effect.tryPromise(() => assertBundledRuntimeFiles(outputDir));
-    yield* Effect.tryPromise(() => assertExecutableExcludesCompanionModules());
+    yield* Effect.tryPromise(() => assertExecutableExcludesCompiler());
   });
 
 /**

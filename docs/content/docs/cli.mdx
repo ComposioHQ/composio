@@ -337,6 +337,8 @@ Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_T
 
 Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, or data transformation. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `result.prompt()`, and `z` injected.
 
+Scripts run in a confined JavaScript runtime. `fetch()` and the injected helpers are their only I/O: they cannot import packages or Node.js modules, read files, spawn processes, read stdin, or handle signals, and `Symbol()`, private class members, `Intl`, `eval`, and `new` on plain functions are not available. A script that uses one of these fails with an error that names it.
+
 If a tool execution fails, `execute()` rejects with the tool's error message and the failed result.
 
 `execute()` writes `File` and `Blob` inputs to a private temporary directory and removes it when the call finishes. When `composio run` has a session directory, `execute()` also writes the argument JSON to a private file. Otherwise, it passes the JSON on the child process's command line, where sensitive values may appear in process listings.

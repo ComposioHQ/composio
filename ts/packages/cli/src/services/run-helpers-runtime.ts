@@ -1,24 +1,27 @@
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { cliRequestHeaders } from './client-provenance';
 import { fetchWithAgentSessionRedirects } from './agent-session-fetch';
-// This module is preloaded into the user's spawned child process, where no Effect
-// runtime or @effect/platform layers are provided, so it uses sync Node builtins.
-// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime
+// The CLI loads this module to run a script outside its Effect runtime.
+// eslint-disable-next-line no-restricted-imports -- sync fs for run-log appends and run-file writes outside the Effect runtime
 import * as fs from 'node:fs';
+import process from 'node:process';
 import { ssrfSafeFetch } from '@composio/core/utils/ssrf-guard';
 import { ChildProcess as Command } from 'effect/process';
 import * as Path from 'effect/Path';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import { Effect, Formatter, Result, ManagedRuntime, Predicate, Schema } from 'effect';
 import { z } from 'zod';
-import { TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
+import { scriptOutputStreams, TerminalUI, TerminalUILive } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
 import { collectText } from 'src/services/command-runner';
 import { debugFlagsToChildEnv } from 'src/services/runtime-flags';
 import { toolInputRequiredError } from 'src/utils/tool-input-required';
 import { RUN_STAGED_ARGUMENTS_FILE, RUN_STAGED_FILES_PREFIX } from 'src/constants';
+import { runScriptProgram, type RunScriptOutcome, type RunScriptParams } from './run-script/engine';
 
-// One Bun platform runtime shared by every CLI child process this module spawns. ManagedRuntime
+export type { PreparedRunProgram, RunScriptOutcome } from './run-script/engine';
+
+// One platform runtime shared by every CLI child process this module spawns. ManagedRuntime
 // builds the layer lazily on first use, so importers that never spawn a child pay nothing, and a
 // run script that spawns many does not rebuild the platform services per call.
 const bunCommandRuntime = ManagedRuntime.make(BunServices.layer);
@@ -350,7 +353,7 @@ const toProxyResponse = async (result: ProxyExecuteCompletedResponse) => {
 };
 
 // ---------------------------------------------------------------------------
-// Helper factories — capture the per-run context passed by installRunHelpers
+// Helper factories — capture the per-run context passed by createRunHelpers
 // ---------------------------------------------------------------------------
 
 type RunHelperLoggers = {
@@ -485,7 +488,8 @@ const isReportedFailure = (result: RunCliResult): boolean =>
 
 type RunCliJson = (
   args: ReadonlyArray<string>,
-  extraEnv?: Readonly<Record<string, string>>
+  extraEnv?: Readonly<Record<string, string>>,
+  signal?: AbortSignal
 ) => Promise<RunCliResult>;
 
 const createCliRunner = (params: {
@@ -549,10 +553,6 @@ const createCliRunner = (params: {
   // Invariant for the life of the run session, so built once rather than per
   // spawned CLI call.
   const env: Record<string, string> = {
-    // The platform command inherits the ambient environment by default. An
-    // empty BUN_BE_BUN masks the parent run process's Bun compatibility flag
-    // without copying or enumerating unrelated values.
-    BUN_BE_BUN: '',
     ...(helperContext.apiKey ? { COMPOSIO_USER_API_KEY: helperContext.apiKey } : {}),
     ...(helperContext.baseURL ? { COMPOSIO_BASE_URL: helperContext.baseURL } : {}),
     ...(helperContext.webURL ? { COMPOSIO_WEB_URL: helperContext.webURL } : {}),
@@ -568,7 +568,8 @@ const createCliRunner = (params: {
 
   const runCliJson = async (
     args: ReadonlyArray<string>,
-    extraEnv: Readonly<Record<string, string>> = {}
+    extraEnv: Readonly<Record<string, string>> = {},
+    signal?: AbortSignal
   ): Promise<RunCliResult> => {
     const requestId = `${args[0] ?? 'cli'}#${++perfDebugSeq}`;
     helperDebugLog('cli.start', { requestId, args });
@@ -598,7 +599,9 @@ const createCliRunner = (params: {
             stderr: childStderr,
           };
         })
-      )
+      ),
+      // Aborting interrupts the effect, and closing its scope kills the spawned CLI.
+      signal ? { signal } : undefined
     );
     const result = maybeLoadStoredCliResult(parseJson(stdout));
     // A failed execution exits 1 with its `successful: false` result on stdout. That result is
@@ -665,7 +668,8 @@ const createSearchAndExecuteHelpers = (params: {
 
   const search = async (
     query: string,
-    options: Record<string, unknown> = {}
+    options: Record<string, unknown> = {},
+    signal?: AbortSignal
   ): Promise<RunCliResult> => {
     helperDebugLog('search.prepare', { query, options });
     const args = ['search', query];
@@ -677,13 +681,14 @@ const createSearchAndExecuteHelpers = (params: {
     if (typeof options.limit === 'number') {
       args.push('--limit', String(options.limit));
     }
-    return runCliJson(args);
+    return runCliJson(args, {}, signal);
   };
 
   const execute = async (
     slug: string,
     data: unknown = {},
-    options: { account?: string } = {}
+    options: { account?: string } = {},
+    signal?: AbortSignal
   ): Promise<RunCliResult> => {
     helperDebugLog('execute.prepare', {
       slug,
@@ -722,9 +727,11 @@ const createSearchAndExecuteHelpers = (params: {
         }
       }
       // Always set, so a value this process inherited never reaches the child.
-      const result = await runCliJson(args, {
-        COMPOSIO_RUN_STAGED_FILES_FILE: metadataFile,
-      });
+      const result = await runCliJson(
+        args,
+        { COMPOSIO_RUN_STAGED_FILES_FILE: metadataFile },
+        signal
+      );
       if (Predicate.isObject(result) && result.successful === false) {
         const message =
           typeof result.error === 'string' && result.error.trim().length > 0
@@ -769,9 +776,14 @@ const createProxyHelper = (params: {
     };
   };
 
-  const fetchComposioJson = async (pathname: string, body: Record<string, unknown>) => {
+  const fetchComposioJson = async (
+    pathname: string,
+    body: Record<string, unknown>,
+    signal?: AbortSignal | null
+  ) => {
     const auth = requireConsumerProxyContext();
     const response = await fetchWithAgentSessionRedirects(`${composioBaseURL}${pathname}`, {
+      ...(signal ? { signal } : {}),
       method: 'POST',
       headers: {
         ...cliRequestHeaders(),
@@ -796,29 +808,33 @@ const createProxyHelper = (params: {
     return parsed;
   };
 
-  const getProxySessionId = async (toolkit: string) => {
+  const getProxySessionId = async (toolkit: string, signal?: AbortSignal) => {
     const cached = proxySessionCache.get(toolkit);
     if (cached) return cached;
     const auth = requireConsumerProxyContext();
     const created = await Schema.decodeUnknownPromise(ProxySessionResponse)(
-      await fetchComposioJson('/api/v3/tool_router/session', {
-        user_id: auth.userId,
-        manage_connections: { enable: false },
-        toolkits: { enable: [toolkit] },
-      })
+      await fetchComposioJson(
+        '/api/v3/tool_router/session',
+        {
+          user_id: auth.userId,
+          manage_connections: { enable: false },
+          toolkits: { enable: [toolkit] },
+        },
+        signal
+      )
     );
     const sessionId = created.session_id;
     proxySessionCache.set(toolkit, sessionId);
     return sessionId;
   };
 
-  const proxy = async (toolkit: string) => {
+  const proxy = async (toolkit: string, signal?: AbortSignal) => {
     const normalizedToolkit = normalizeProxyToolkit(toolkit);
     helperDebugLog('proxy.session', {
       toolkit: normalizedToolkit,
       cached: proxySessionCache.has(normalizedToolkit),
     });
-    const sessionId = await getProxySessionId(normalizedToolkit);
+    const sessionId = await getProxySessionId(normalizedToolkit, signal);
     const proxyFetch = async (input: string | URL, init: RequestInit = {}) => {
       const request = await normalizeFetchInput(input, init);
       helperDebugLog('proxy.request', {
@@ -827,21 +843,25 @@ const createProxyHelper = (params: {
         endpoint: request.endpoint,
       });
       const result = await Schema.decodeUnknownPromise(ProxyExecuteResponse)(
-        await fetchComposioJson(`/api/v3/tool_router/session/${sessionId}/proxy_execute`, {
-          toolkit_slug: normalizedToolkit,
-          endpoint: request.endpoint,
-          method: request.method,
-          ...(request.body !== undefined ? { body: request.body } : {}),
-          ...(request.parameters.length > 0
-            ? {
-                parameters: request.parameters.map(parameter => ({
-                  name: parameter.name,
-                  type: parameter.type,
-                  value: String(parameter.value),
-                })),
-              }
-            : {}),
-        })
+        await fetchComposioJson(
+          `/api/v3/tool_router/session/${sessionId}/proxy_execute`,
+          {
+            toolkit_slug: normalizedToolkit,
+            endpoint: request.endpoint,
+            method: request.method,
+            ...(request.body !== undefined ? { body: request.body } : {}),
+            ...(request.parameters.length > 0
+              ? {
+                  parameters: request.parameters.map(parameter => ({
+                    name: parameter.name,
+                    type: parameter.type,
+                    value: String(parameter.value),
+                  })),
+                }
+              : {}),
+          },
+          init.signal
+        )
       );
       // An approval request is not a response from the proxied API: converting
       // it would hand the script an empty 200 for a call that never ran.
@@ -863,19 +883,16 @@ const createProxyHelper = (params: {
   return proxy;
 };
 
-export const installRunHelpers = async ({
-  cliPrefix,
-  helperContext = {},
-}: RunHelpersInstallParams): Promise<void> => {
-  // This preload runs in the user's child process, outside the CLI runtime.
-  // Resolve the live services once at that boundary and keep all writes centralized.
+/** The globals a `composio run` script gets, built for one run's context. */
+export type RunHelpers = ReturnType<typeof createRunHelpers>;
+
+export const createRunHelpers = ({ cliPrefix, helperContext = {} }: RunHelpersInstallParams) => {
+  // The helpers run outside the CLI's Effect runtime: resolve the live services once at that
+  // boundary and keep all writes centralized.
   const terminal = Effect.runSync(TerminalUI.pipe(Effect.provide(TerminalUILive)));
   const path = Effect.runSync(Path.Path.pipe(Effect.provide(BunPath.layer)));
   const nodeOs = Effect.runSync(NodeOs.pipe(Effect.provide(NodeOs.Default)));
   const writeError = (line: string) => Effect.runSync(terminal.error(line));
-
-  Reflect.set(globalThis, 'z', z);
-  Reflect.set(globalThis, 'zod', z);
 
   const perfDebugEnabled = helperContext.perfDebug === true;
   const toolDebugEnabled = helperContext.toolDebug === true;
@@ -921,25 +938,71 @@ export const installRunHelpers = async ({
     helperDebugLog,
   });
 
-  Reflect.set(globalThis, 'experimental_subAgent', removedSubAgent);
-  Reflect.set(globalThis, 'invokeAgent', removedSubAgent);
-
   const proxy = createProxyHelper({ helperContext, composioBaseURL, helperDebugLog });
 
-  Reflect.set(globalThis, 'search', search);
-  Reflect.set(globalThis, 'execute', execute);
-  Reflect.set(globalThis, 'proxy', proxy);
-
-  Object.defineProperty(globalThis, '__composioRunContext', {
-    value: Object.freeze({
+  return {
+    z,
+    zod: z,
+    search,
+    execute,
+    proxy,
+    experimental_subAgent: removedSubAgent,
+    invokeAgent: removedSubAgent,
+    __composioRunContext: Object.freeze({
       outputDir: sharedRunOutputDir,
       logFilePath: sharedRunLogFilePath,
     }),
-    configurable: true,
-  });
+    __composioConsumerContext: helperContext,
+  };
+};
 
-  Object.defineProperty(globalThis, '__composioConsumerContext', {
-    value: helperContext,
-    configurable: true,
+/** Copies this process's defined environment variables for the script. */
+const scriptEnvironment = (): Record<string, string> =>
+  Object.fromEntries(
+    // eslint-disable-next-line eslint-js/no-restricted-syntax -- whole-environment enumeration for the script's process.env, which effect/Config cannot express
+    Object.entries(process.env).flatMap(([name, value]) =>
+      value === undefined ? [] : [[name, value]]
+    )
+  );
+
+export type RunScriptWithHelpersParams = Omit<RunScriptParams, 'helpers' | 'env' | 'io'> &
+  RunHelpersInstallParams & {
+    /** Variables the script sees on top of this process's environment. */
+    readonly envOverrides: Readonly<Record<string, string>>;
+  };
+
+/**
+ * Runs a `composio run` script in the confined runtime with this run's helpers. The CLI loads it
+ * from its bundled runtime and awaits it in its own process.
+ */
+export const runScriptWithHelpers = ({
+  cliPrefix,
+  helperContext,
+  envOverrides,
+  ...params
+}: RunScriptWithHelpersParams): Promise<RunScriptOutcome> => {
+  const helpers = createRunHelpers({ cliPrefix, helperContext });
+  return runScriptProgram({
+    ...params,
+    env: { ...scriptEnvironment(), ...envOverrides },
+    io: scriptOutputStreams(),
+    helpers: {
+      execute: (slug, data, options, signal) =>
+        helpers.execute(slug, data, Predicate.isObject(options) ? options : {}, signal),
+      search: (query, options, signal) =>
+        helpers.search(query, Predicate.isObject(options) ? options : {}, signal),
+      proxy: async (toolkit, signal) => {
+        const proxyFetch = await helpers.proxy(toolkit, signal);
+        return (input, init, signal) =>
+          proxyFetch(input instanceof URL ? input : String(input), {
+            ...(Predicate.isObject(init) ? (init as RequestInit) : {}),
+            signal,
+          });
+      },
+      proxySchema: proxySchema,
+      removedSubAgentMessage: REMOVED_SUB_AGENT_MESSAGE,
+      runContext: helpers.__composioRunContext,
+      consumerContext: helpers.__composioConsumerContext,
+    },
   });
 };

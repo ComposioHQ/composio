@@ -36,8 +36,13 @@
   ],
   "src/services/run-helpers-runtime.ts": [
     {
+      "rule": "eslint-js/no-restricted-syntax",
+      "reason": "whole-environment enumeration for the script's process.env, which effect/Config cannot express",
+      "target": "Object.entries(process.env).flatMap(([name, value]) =>"
+    },
+    {
       "rule": "no-restricted-imports",
-      "reason": "sync fs for run-log appends and run-file writes in the child process, outside the Effect runtime",
+      "reason": "sync fs for run-log appends and run-file writes outside the Effect runtime",
       "target": "import * as fs from 'node:fs';"
     }
   ],

@@ -20,4 +20,4 @@ export {
   type AgentSessionEnvironment,
   type CallerAgentSignals,
 } from './host';
-export { GITHUB_CONFIG, GITHUB_REPAIR_CONFIG, type GitHubConfig } from './github';
+export { GITHUB_CONFIG, type GitHubConfig } from './github';

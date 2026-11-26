@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Modules that must never be evaluated by merely building the command tree.
- * The TypeScript compiler ships as a companion module that `composio run`
- * loads on demand; the generation pipeline is a dynamic import that only
- * `composio generate` evaluates (the binary build puts it in a chunk of its
- * own). A static import anywhere on the startup path silently puts that cost
- * back on every invocation, so this test loads the command tree in a fresh Bun
- * process and inspects what it pulled in.
+ * `composio run` and `composio generate` import them dynamically: the binary
+ * build puts each in its own chunk (`--splitting`), parsed only when imported.
+ * A static import anywhere on the startup path silently puts that cost back on
+ * every invocation, so this test loads the command tree in a fresh Bun process
+ * and inspects what it pulled in. The TypeScript compiler must never load at
+ * all; the binary build guard in `scripts/_shared.ts` keeps it out of the bundle.
  */
 const FORBIDDEN_AT_STARTUP: ReadonlyArray<string> = [
   '/node_modules/typescript/',
@@ -16,10 +16,14 @@ const FORBIDDEN_AT_STARTUP: ReadonlyArray<string> = [
   '/packages/ts-builders/',
   '/src/generation/',
   '/src/commands/run-source-transforms',
-  '/src/services/generation-runtime',
+  '/src/services/run-helpers-runtime',
+  '/src/services/run-script/',
+  '/psychoscript/',
+  '/sucrase/',
+  '/acorn/',
 ];
 
-/** The generation error classes are tiny and shared with command error handling. */
+/** Error classes the generate handlers name in their types; no pipeline code. */
 const ALLOWED_AT_STARTUP: ReadonlyArray<string> = ['/src/generation/errors.ts'];
 
 /**
@@ -43,7 +47,7 @@ const PROBE = [
 ].join('\n');
 
 describe('CLI startup imports', () => {
-  it('builds the command tree without evaluating the compiler or generation pipeline', () => {
+  it('builds the command tree without evaluating the run runtime or generation pipeline', () => {
     const result = spawnSync('bun', ['-e', PROBE], {
       cwd: process.cwd(),
       encoding: 'utf8',

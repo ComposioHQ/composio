@@ -7,7 +7,11 @@ import { isBlockedSensitiveFileUploadPath } from '@composio/core';
 import { afterEach, assert, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { agentSessionHeaders } from 'src/services/agent-session';
 import { cliRequestHeaders } from 'src/services/client-provenance';
-import { installRunHelpers, parseJson } from 'src/services/run-helpers-runtime';
+import {
+  createRunHelpers,
+  parseJson,
+  runScriptWithHelpers,
+} from 'src/services/run-helpers-runtime';
 import { ToolInputRequiredError } from 'src/utils/tool-input-required';
 
 const installedGlobalNames = [
@@ -24,6 +28,16 @@ const installedGlobalNames = [
 const originalGlobalDescriptors = new Map(
   installedGlobalNames.map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)])
 );
+
+/**
+ * Installs the helpers a script gets as globals of this process, so each test calls them the way a
+ * script does.
+ */
+const installRunHelpers = async (params: Parameters<typeof createRunHelpers>[0]): Promise<void> => {
+  Object.entries(createRunHelpers(params)).forEach(([name, value]) => {
+    Reflect.set(globalThis, name, value);
+  });
+};
 
 const readInstalledFunction = (name: string): ((...args: ReadonlyArray<unknown>) => unknown) => {
   const value: unknown = Reflect.get(globalThis, name);
@@ -680,6 +694,9 @@ describe('run-helpers-runtime', () => {
   });
 
   it('[Given] normalized false flags [Then] nested CLI children receive false explicitly', async () => {
+    onTestFinished(() => {
+      vi.unstubAllEnvs();
+    });
     vi.stubEnv('COMPOSIO_RUN_ENV_SENTINEL', 'forwarded');
     vi.stubEnv('COMPOSIO_PERF_DEBUG', '1');
     vi.stubEnv('COMPOSIO_TOOL_DEBUG', '1');
@@ -715,8 +732,29 @@ describe('run-helpers-runtime', () => {
         sentinel: 'forwarded',
         perfDebug: '0',
         toolDebug: '0',
-        bunBeBun: '',
+        bunBeBun: '1',
       },
     });
+  });
+
+  it('[Given] an ambient BUN_BE_BUN value [Then] the script sees it unchanged', async () => {
+    onTestFinished(() => {
+      vi.unstubAllEnvs();
+    });
+    vi.stubEnv('BUN_BE_BUN', '1');
+    const source = 'process.exit(process.env.BUN_BE_BUN === "1" ? 0 : 1);';
+
+    await expect(
+      runScriptWithHelpers({
+        program: { imports: '', body: source, columnShifts: [] },
+        source,
+        displayName: '[eval]',
+        argv: [],
+        cwd: process.cwd(),
+        cliPrefix: ['composio'],
+        envOverrides: {},
+        signal: new AbortController().signal,
+      })
+    ).resolves.toEqual({ exitCode: 0 });
   });
 });

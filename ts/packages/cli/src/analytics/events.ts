@@ -7,7 +7,7 @@ import { APP_VERSION } from 'src/constants';
 import { inferSkillReleaseChannel } from 'src/effects/install-skill';
 import type { AgentHost } from 'src/services/agent-host';
 import type { CliInvocationContext } from 'src/services/runtime-cli-context';
-import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
 import { SetupCommandError } from 'src/services/setup-command-error';
 import { ToolInputValidationError } from 'src/services/tool-input-validation';
 import { guessToolkitFromToolSlug } from 'src/utils/toolkit-from-tool-slug';
@@ -207,7 +207,7 @@ const failureReasonProperties = (error: unknown) => {
     return { failure_reason_code: 'parse_error' };
   }
   if (error instanceof SetupCommandError) return { failure_reason_code: error.reasonCode };
-  if (error instanceof ChildProcessExited || error instanceof ChildProcessSignaled) {
+  if (error instanceof ChildProcessExited) {
     return { failure_reason_code: 'child_exit' };
   }
   return {};

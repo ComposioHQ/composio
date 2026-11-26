@@ -1,15 +1,13 @@
 # CLI `composio run` Test
 
-Verifies that `composio run` forwards the child script's exit status to the caller and that
+Verifies that `composio run` forwards the script's exit status to the caller and that
 the run log it advertises survives the process.
 
 ## Why This Exists
 
-`composio run` never exits by itself: the handler sets `process.exitCode` and returns a
-successful Effect, and the CLI teardown hands that code to `runMain`, which force-exits only
-when the code is non-zero. Unit tests run in-process and can only observe `process.exitCode`,
-so they cannot tell whether the code ever reached the OS. An Effect upgrade or a teardown
-change could turn every failing script into exit 0 without failing a single unit test.
+The CLI runs the script in its own process. The handler returns a typed failure when the script
+exits nonzero, and the runner passes that status to the OS. This suite checks the actual exit
+status of the compiled executable.
 
 The `RUN_LOG_FILE=` path printed on stderr has the same problem: it is only useful if the file
 outlives the process that printed it, which regressed once when the log lived inside a scoped

@@ -489,6 +489,41 @@ export const makeTerminalUI = (streams: TerminalUIStreams): TerminalUI => {
 // TerminalUILive — production layer using @clack/prompts
 // ---------------------------------------------------------------------------
 
+/** A script's own output streams; see `scriptOutputStreams`. */
+export type ScriptOutputStreams = {
+  readonly stdout: (chunk: string) => void;
+  readonly stderr: (chunk: string) => void;
+  readonly stdoutIsTTY: boolean;
+  readonly stderrIsTTY: boolean;
+};
+
+/**
+ * The process's stdout and stderr for a `composio run` script, which writes its own bytes (no
+ * added newline, no TTY gating). A reader that closed stdout early (EPIPE) chose to stop reading: later stdout
+ * writes are dropped and the script goes on, as `TerminalUI.output` does.
+ */
+export const scriptOutputStreams = (): ScriptOutputStreams => {
+  let stdoutClosed = false;
+  const stdout = process.stdout;
+  stdout.on('error', error => {
+    if (isBrokenPipe(error)) stdoutClosed = true;
+  });
+  return {
+    stdout: chunk => {
+      if (!stdoutClosed) {
+        stdout.write(chunk, error => {
+          if (error !== null && error !== undefined && isBrokenPipe(error)) stdoutClosed = true;
+        });
+      }
+    },
+    stderr: chunk => {
+      process.stderr.write(chunk);
+    },
+    stdoutIsTTY: stdout.isTTY === true,
+    stderrIsTTY: process.stderr.isTTY === true,
+  };
+};
+
 export const TerminalUILive = Layer.succeed(
   TerminalUI,
   makeTerminalUI({
