@@ -368,10 +368,11 @@ export const buildCompanionModules = (outputDir: string) =>
  */
 export const executableBuildArgs = (
   outfile: string,
-  bunTarget?: ReleaseTarget['bunTarget']
+  bunTarget?: ReleaseTarget['bunTarget'],
+  entrypoint = './src/bin.ts'
 ): ReadonlyArray<string> => [
   'build',
-  './src/bin.ts',
+  entrypoint,
   // Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
   '--env',
   'DEBUG_OVERRIDE_*',
@@ -386,10 +387,16 @@ export const executableBuildArgs = (
 
 /**
  * Compile the CLI executable to `outfile`, for `bunTarget` or the host. Returns `outfile`.
+ * `entrypoint` replaces `src/bin.ts` only to measure what the same build of
+ * another program weighs (`scripts/size-report.ts`).
  */
-export const compileExecutable = (outfile: string, bunTarget?: ReleaseTarget['bunTarget']) =>
+export const compileExecutable = (
+  outfile: string,
+  bunTarget?: ReleaseTarget['bunTarget'],
+  entrypoint?: string
+) =>
   Effect.gen(function* () {
-    const args = executableBuildArgs(outfile, bunTarget);
+    const args = executableBuildArgs(outfile, bunTarget, entrypoint);
     yield* Effect.logDebug(`Running bun ${args.join(' ')}`);
 
     const child = yield* Command.make('bun', args);
@@ -401,7 +408,8 @@ export const compileExecutable = (outfile: string, bunTarget?: ReleaseTarget['bu
           Stream.decodeText(child.stderr, { encoding: 'utf-8' }),
           { haltStrategy: 'left' }
         ).pipe(
-          Stream.tap(chunk => Console.log(chunk)),
+          // Build output is progress, not data: keep stdout for what the caller prints.
+          Stream.tap(chunk => Console.error(chunk)),
           Stream.runDrain
         ),
       },
