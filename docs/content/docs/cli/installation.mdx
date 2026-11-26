@@ -35,7 +35,7 @@ $env:COMPOSIO_INSTALL_VERSION = "X.Y.Z"; irm https://raw.githubusercontent.com/C
 
 Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_SHELL` to `none` to leave PATH unchanged. Keep the complete bundle together when moving it.
 
-Windows support is experimental. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
+Windows support is experimental. A failed Windows check can leave a release without a Windows archive. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
 
 ## Install with options
 
@@ -143,6 +143,8 @@ composio upgrade
 ```
 
 This replaces the bundle in place. Pass a version, such as `composio upgrade 0.3.1`, to pin a release, or `--beta` for the latest prerelease.
+
+The CLI uses the archive's `release-manifest.json` to determine which support files to install. On Windows, the CLI retries renaming a busy executable for up to two seconds.
 
 If your installed CLI is too old to upgrade, the command stops before changing anything and prints an install command. Rerun the [installer](/docs/cli#install).
 

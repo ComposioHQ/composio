@@ -44,6 +44,12 @@ Use `composio proxy` when the agent already knows the provider's API endpoint an
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
+## Pass arguments or request bodies through stdin
+
+Pass `-d -` to read from stdin and wait for input. For `composio proxy`, `-d @-` also reads the request body from stdin. When you omit `-d`, proxy sends the request without a body. For a non-`GET` request with piped stdin, proxy also warns on stderr.
+
+With piped stdin and no `-d`, `composio execute` waits up to one second for JSON input to start arriving. If no input arrives, it exits `1` before running the tool. Pass arguments directly with `-d '{...}'` to avoid waiting on an idle pipe.
+
 ## Run scripts
 
 Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, or data transformation. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `result.prompt()`, and `z` injected.
@@ -99,7 +105,9 @@ composio dev listen --toolkits github --forward https://example.com/webhook
 composio dev listen --toolkits slack --out ./events.jsonl
 ```
 
-Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source.
+Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source. Press Ctrl+C or send `SIGTERM` to stop a subscribed listener.
+
+The CLI escapes control characters from streamed events, execution and proxy responses, and API errors in terminal output. Parsing JSON output recovers the original values.
 
 See [configuration and execution behavior](/docs/cli/configuration) for exit codes, timeouts, and telemetry.
 

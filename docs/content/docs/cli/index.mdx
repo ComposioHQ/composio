@@ -93,6 +93,8 @@ Choose a tool from the results. Follow [search, connect, and execute](/docs/cli/
 </div>
 </div>
 
+For browserless human login, use `composio login --no-wait` to get an authorization URL. Use `composio login --poll --timeout <seconds>` to bound the wait. If authorization is still pending when the timeout expires, the CLI prints the URL and the command to resume polling. See [Log in with a human](/docs/agent-setup/unattended-authentication#log-in-with-a-human).
+
 For an unattended agent, use [`composio login --agent`](/docs/agent-setup/unattended-authentication). That guide covers constraints, application API key setup, and live-tool verification.
 
 <span id="use-the-cli" className="scroll-m-28" />
@@ -156,6 +158,10 @@ If you skipped plugin setup during installation, follow [Set up your agent](/doc
 <span id="search-connect-and-execute-tools" className="scroll-m-28" />
 
 - [Search, connect, and execute tools](/docs/cli/workflows#search-connect-and-execute-tools)
+
+<span id="pass-arguments-or-request-bodies-through-stdin" className="scroll-m-28" />
+
+- [Pass arguments or request bodies through stdin](/docs/cli/workflows#pass-arguments-or-request-bodies-through-stdin)
 
 <span id="run-scripts" className="scroll-m-28" />
 

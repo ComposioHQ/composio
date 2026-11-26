@@ -15,17 +15,17 @@ For a custom deployment, setting `COMPOSIO_BASE_URL` without `COMPOSIO_WEB_URL` 
 
 ## Execution failures and exit codes
 
-`composio execute` exits `1` when a tool reports failure or the Dashboard or backend cannot run it. With `--parallel`, any failed call makes the command exit `1`. Meta tools follow the same rules. Failed tool results include `{"successful": false, ...}` on stdout, with diagnostic messages on stderr. Check the exit code in scripts and agents, even when stdout contains JSON.
+Check the exit code in scripts and agents, even when stdout contains JSON. A failed tool result includes `{"successful": false, ...}` on stdout. With `--parallel`, a failed call makes the command exit nonzero.
 
-Execution requests are sent once, without retries or redirects. After 15 minutes, the CLI stops waiting.
+The CLI exits `75` (`EX_TEMPFAIL`) when you can safely rerun the same command. This applies to HTTP `429` and to timeouts, connection failures, HTTP `408`, and HTTP `5xx` on idempotent requests. Other execution failures exit `1`. The CLI sends execution requests once, follows no redirects, and stops waiting after 15 minutes.
 
-<Callout type="warn">
-A timed-out tool may still have run. Check the result in the connected app before sending the request again.
-</Callout>
+A failed `composio execute` result may include a `retry` field. The value `"safe"` means you can repeat the request. The value `"check-first"` means the tool may already have run. Check the outcome in the connected app before repeating the request. A missing `retry` field gives you no retry guidance.
+
+Interrupted commands exit `130` for `SIGINT`, `143` for `SIGTERM`, and `129` for `SIGHUP`. Subscribed listeners stop cleanly and exit `0` on `SIGINT` or `SIGTERM`. On interruption, `composio run` forwards the signal to its child process group.
 
 Missing required IDs or names for `composio dev auth-configs info`, `composio tools info`, and `composio dev triggers create` or `enable` cause exit `1`. The `--custom-credentials` option for auth config creation and `--trigger-config` option for trigger creation must contain JSON objects. Invalid input prints a message on stderr, leaves stdout empty, and sends no request.
 
-If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
+When a toolkit has several connected accounts, pass `--account <id|alias>` or assign one account the `default` alias. If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
 
 ## Execution telemetry
 
