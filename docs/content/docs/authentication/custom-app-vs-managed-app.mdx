@@ -42,13 +42,7 @@ If you expect high volume, we suggest setting up your own app early. Managed con
 
 Some toolkits have no managed app at all. See [Toolkits without managed auth](#toolkits-without-managed-auth).
 
-Ready to move? Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app). Existing connections keep working while you switch.
-
-## Switch from managed auth to your own OAuth app
-
-Existing managed-auth connections cannot be transferred to a customer-owned OAuth app. OAuth consent is bound to the user and OAuth client pair. Every user must reauthorize and grant fresh consent to the customer's OAuth client.
-
-Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app) to create new connected accounts and route each user's sessions to them. Changing a session's auth config does not transfer an existing connection or its consent to the new OAuth client.
+Ready to move? Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app). Existing connections keep working while you switch. Users must [reconnect to your app, and their triggers must be recreated](/docs/migration-guide/managed-to-own-app#what-doesnt-carry-over).
 
 ## Create a custom auth config
 
