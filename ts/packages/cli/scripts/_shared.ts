@@ -262,7 +262,7 @@ const EXECUTABLE_EXCLUDED_MODULE_PATTERNS: ReadonlyArray<{
   readonly reason: string;
 }> = [
   { pattern: /\/node_modules\/typescript\//, reason: 'the TypeScript compiler' },
-  { pattern: /(?:^|\/)src\/generation\/(?!errors\.ts$)/, reason: 'the generation pipeline' },
+  { pattern: /\/node_modules\/openapi-typescript\//, reason: 'openapi-typescript (tests only)' },
   {
     pattern: /(?:^|\/)src\/commands\/run-source-transforms\.ts$/,
     reason: 'the run source rewrites',
@@ -380,6 +380,9 @@ export const executableBuildArgs = (
   ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
   '--compile',
   '--production',
+  // Code behind a dynamic import (the generation pipeline) becomes its own chunk
+  // inside the executable, parsed only when a command imports it.
+  '--splitting',
   ...(bunTarget === undefined ? [] : ['--target', bunTarget]),
   '--outfile',
   outfile,

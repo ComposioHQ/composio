@@ -631,19 +631,6 @@ describe('loadInstalledCompanionModule', () => {
         })
     );
 
-    it.effect('[Given] the generation companion [Then] its API is promise-shaped', () =>
-      Effect.gen(function* () {
-        const generation = yield* loadInstalledCompanionModule<
-          typeof import('src/services/generation-runtime')
-        >('generation-runtime', ['wrapInlineCodeForRun', 'generatePythonSourceFiles']);
-
-        expect(generation.wrapInlineCodeForRun('1 + 1')).toBe('return (1 + 1);');
-        const outcome = yield* Effect.promise(() =>
-          generation.generatePythonSourceFiles({ banner: 'b', outputDir: '/tmp/out' }, {})
-        );
-        expect(outcome).toEqual({ _tag: 'Success', value: [] });
-      })
-    );
   });
 });
 

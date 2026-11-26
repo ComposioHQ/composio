@@ -7,7 +7,7 @@ import {
   buildVirtualFileMap,
   formatDiagnostic,
   patchCompilerHostWithVirtualFiles,
-} from 'src/generation/typescript/virtual-compiler-host';
+} from 'test/__utils__/virtual-compiler-host';
 
 // The ts.CompilerHost callbacks are synchronous, so the sync Path service
 // instance is resolved once up front and passed in as a plain parameter.

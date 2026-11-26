@@ -16,7 +16,7 @@ import { ComposioToolkitsRepository } from 'src/services/composio-clients';
 import { logMetrics } from 'src/effects/log-metrics';
 import { NodeProcess } from 'src/services/node-process';
 import { pyFindComposioCoreGenerated } from 'src/effects/find-composio-core-generated';
-import { generationOutcome, loadGenerationRuntime } from 'src/effects/generation-runtime';
+import { loadGeneration } from 'src/effects/load-generation';
 import {
   getToolkitVersionOverrides,
   type ToolkitVersionOverrides,
@@ -141,9 +141,7 @@ export const runGeneratePy = (params: GeneratePyParams) =>
         const typeableTools = { withTypes: false as const, tools };
 
         yield* spinner.message('Generating Python type stubs...');
-        // The generation pipeline lives in the `generation-runtime` companion
-        // module, loaded from disk here so no other command pays for it at startup.
-        const generation = yield* loadGenerationRuntime;
+        const generation = yield* loadGeneration;
         const index = generation.createToolkitIndex({
           toolkits,
           typeableTools,
@@ -152,9 +150,10 @@ export const runGeneratePy = (params: GeneratePyParams) =>
         });
 
         // Generate Python sources
-        const sources = yield* generationOutcome(() =>
-          generation.generatePythonSourceFiles({ banner: generation.BANNER, outputDir }, index)
-        );
+        const sources = yield* generation.generatePythonSources({
+          banner: generation.BANNER,
+          outputDir,
+        })(index);
 
         yield* spinner.message('Writing files to disk...');
 
