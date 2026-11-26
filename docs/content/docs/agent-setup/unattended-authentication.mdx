@@ -5,51 +5,32 @@ keywords: [unattended, autonomous coding agent, agent login, API key, headless, 
 llmGuardrails: none
 ---
 
-Use `composio login --agent` to create a Composio agent account and sign in without a browser or a separate email signup.
+Use a credential already available to your workspace to authenticate without a browser. For an SDK integration or a REST API request, use a project API key.
 
-<Callout type="warn" title="Only when no human is available">
-Use this flow for an unattended agent. When a human is available, use their existing Composio account and the [human login flow](#log-in-with-a-human) instead. Agent signup creates a separate account; it does not grant access to a human's projects or connected apps.
+<Callout type="warn" title="Agent signup is unavailable">
+If you have no credential, pause live verification and [ask a human to set one up](#hand-credential-setup-to-a-human).
 </Callout>
 
 ## Install and log in
 
-Install the [Composio CLI](/docs/cli#install), then make it available in the current shell:
+Install the [Composio CLI](/docs/cli/installation), then make it available in the current shell:
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
 export PATH="$HOME/.local/bin:$PATH"
-composio login --agent
-composio agent whoami
 ```
 
-The CLI reuses a saved agent identity when it is ready, or provisions one if needed. Successful login reports `account_type: "agent"`, `status: "READY"`, and `logged_in: true`. `composio agent whoami` refreshes the saved identity and reports its status, organization, and project without printing keys.
+For CLI commands, reuse a saved login or have your secret manager supply an existing user API key as `COMPOSIO_USER_API_KEY`. Run `composio whoami` to check which account the CLI uses.
 
-If provisioning is pending, run `composio agent whoami` again later. Retry `composio login --agent` once the status is `READY`. Treat a failed login or missing credential as a blocker to live verification.
-
-Keep these constraints in mind:
-
-- The CLI refuses agent signup while signed in as a regular human user. Preserve that session and use the existing account.
-- `--agent` cannot be combined with `--no-browser`, `--no-wait`, `--poll`, `--key`, or `--user-api-key`. `--no-browser` alone still requires a human to open a login URL.
-- Network access to the installer, `agents.composio.dev`, and `backend.composio.dev` is required. Respect service errors and rate limits. Do not create repeated accounts to work around a failure.
-- Use the supported CLI flow. Do not reverse-engineer browser signup, create disposable inboxes, or bypass browser challenges to obtain a Composio key.
+If you have a saved READY agent identity, running `composio login` in a non-interactive terminal can reuse it.
 
 ## Configure the application API key
 
-The CLI saves the agent identity in `~/.composio/agent.json`, or under `COMPOSIO_CACHE_DIR` if you set it. The project's API key is the `composio.api_key` field. With `jq` installed, load it into your shell without displaying it:
+Supply an existing [project API key](/reference/authenticating-to-composio#project-api-key) as `COMPOSIO_API_KEY` through your workspace or deployment secret manager. For local development, you can also use the ignored `.env` or `.env.local` file that your application loads.
 
-```bash
-set +x
-COMPOSIO_API_KEY="$(jq -er '.composio.api_key | strings | select(length > 0)' \
-  "${COMPOSIO_CACHE_DIR:-$HOME/.composio}/agent.json")"
-export COMPOSIO_API_KEY
-: "${COMPOSIO_API_KEY:?No project API key found. Check composio agent whoami.}"
-```
+If a previous agent signup saved a project key, it is the `composio.api_key` field in `~/.composio/agent.json` or in `agent.json` under `COMPOSIO_CACHE_DIR`.
 
-If extraction fails, stop before making API requests. Check that provisioning reached `READY` and that you are reading the same cache directory used during login.
-
-Start your application from this shell so it inherits `COMPOSIO_API_KEY`, or store the value in your application's ignored `.env` or `.env.local` file or deployment secret configuration. Check which file your environment loader reads. CLI login alone does not set the application's environment.
-
-Use `composio.api_key` for SDK calls and the REST `x-api-key` header. Do not substitute `agent_key`, `composio_agent_key`, or `composio.user_api_key`; those serve agent identity and CLI login. Keep environment files and `agent.json` out of version control, browser bundles, and logs.
+Start your application with `COMPOSIO_API_KEY` set. The SDK reads it from the environment. For REST calls, send it in the `x-api-key` header. Keep the key out of chat, version control, browser bundles, and logs.
 
 ## Verify a live tool call
 
@@ -93,19 +74,13 @@ curl -X POST --fail-with-body --silent --show-error \
 
 Check both the HTTP result and the response body. Require `successful: true`, no tool error, and profile data for the requested username. An HTTP 401, a tool schema lookup, or a successful build does not prove tool execution. A local mock verifies only the local code path.
 
-Then run the integration's own script or API route with the same project key and the intended application user ID. If the requested action needs an app account, complete its [connection flow](/docs/authentication) first. A Composio agent credential does not authorize GitHub, Slack, or another service on someone's behalf. OAuth consent, app permissions, and provider credentials still apply.
+Then run the integration's own script or API route with the same project key and the intended application user ID. If the requested action needs an app account, complete its [connection flow](/docs/authentication) first. OAuth consent, app permissions, and provider credentials still apply.
 
 For an authorized write action, verify the resulting object or state through a follow-up read or the provider's UI. Record the tool slug, sanitized result, and returned log ID if present. If only the Hacker News check succeeds, report that check separately from the requested integration action. If app authorization is unavailable, report the remaining connection step and leave the action unverified.
 
-## Hand the account to a human
+## Hand credential setup to a human
 
-To let a person manage the agent's organization later, invite them as an admin from the machine that holds the agent identity:
-
-```bash
-composio agent claim person@example.com
-```
-
-The command uses the saved agent key and fails if the CLI is signed in as a human user. `composio agent whoami` reports the claiming admin in `claimed_by`, or `null` until the claim completes. Claiming is optional; the agent account works without it.
+For SDK or API access, ask someone with access to the intended project to supply a [project API key](/reference/authenticating-to-composio#project-api-key) through your workspace's secret configuration. For CLI access, ask a human to run `composio login` in the workspace or complete the browser login below.
 
 ## Log in with a human
 
