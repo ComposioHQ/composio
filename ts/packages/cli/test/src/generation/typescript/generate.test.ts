@@ -2,7 +2,7 @@ import { describe, expect, it } from '@effect/vitest';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { createToolkitIndex } from 'src/generation/create-toolkit-index';
 import { generateTypeScriptSources } from 'src/generation/typescript/generate';
-import { patchCompilerHostWithVirtualFiles } from 'src/generation/typescript/virtual-compiler-host';
+import { patchCompilerHostWithVirtualFiles } from 'test/__utils__/virtual-compiler-host';
 import { makeTestToolkits } from 'test/__utils__/models/toolkits';
 import path from 'path';
 import { assertTypeScriptIsValid } from 'test/__utils__/typescript-compiler';

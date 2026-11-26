@@ -35,7 +35,39 @@ export type GenerateTypeScriptIndexMapSourceParams = {
   importExtension: 'ts' | 'js';
 };
 
+/** The index module, as the three files it can be written as. */
+export type IndexModule = {
+  readonly typescript: string;
+  readonly javascript: string;
+  readonly declarations: string;
+};
+
 export function generateIndexSource(params: GenerateTypeScriptIndexMapSourceParams) {
+  return (index: ToolkitIndex) => generateIndexModule(params)(index).typescript;
+}
+
+export function generateIndexModule(params: GenerateTypeScriptIndexMapSourceParams) {
+  return (index: ToolkitIndex): IndexModule => {
+    const withBanner = (source: string) =>
+      params.emitSingleFile
+        ? source
+        : `${ts.stringify(ts.docComment(params.banner))}
+${source}`;
+    const types = `${ts.stringify(ts.docComment('Type declarations'))}
+${generateToolkitUnionType(index)}
+${generateToolsByToolkitType()}
+`;
+    return {
+      typescript: generateIndexSourceTypeScript(params)(index),
+      javascript: `${withBanner(generateTypeScriptIndexMapSource(params)(index))}
+`,
+      declarations: `${withBanner(generateIndexMapDeclaration(params)(index))}
+${types}`,
+    };
+  };
+}
+
+function generateIndexSourceTypeScript(params: GenerateTypeScriptIndexMapSourceParams) {
   return (index: ToolkitIndex) => {
     const indexMap = generateTypeScriptIndexMapSource(params)(index);
     const toolkitUnionType = generateToolkitUnionType(index);
@@ -95,6 +127,34 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
     const indexMapFileSource = ts.stringify(indexMapFile);
 
     return indexMapFileSource;
+  };
+}
+
+/**
+ * The declaration of the index map: `Toolkits` holds each toolkit's map, so its
+ * type names each one with `typeof`.
+ */
+function generateIndexMapDeclaration(params: GenerateTypeScriptIndexMapSourceParams) {
+  return (index: ToolkitIndex): string => {
+    const file = ts.file();
+    if (!params.emitSingleFile) {
+      for (const [toolkitName, value] of Record.toEntries(index)) {
+        file.addImport(
+          ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName)
+        );
+      }
+    }
+    const entries = Record.keys(index).map(key =>
+      ts.property(key, ts.typeOfType(ts.namedType(key)))
+    );
+    file.add(
+      ts
+        .moduleExport(
+          ts.constDeclaration(BARREL_OBJECT_NAME, ts.objectType().addMultiple(entries)).declare()
+        )
+        .setDocComment(ts.docComment('Map of Composio toolkits to actions.'))
+    );
+    return ts.stringify(file);
   };
 }
 

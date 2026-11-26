@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Modules that must never be evaluated by merely building the command tree.
- * The TypeScript compiler and the generation pipeline ship as a companion
- * module that `composio run` and `composio generate` load on demand, the same
- * list the binary build guard in `scripts/_shared.ts` checks. A static import anywhere on the
- * startup path silently puts that cost back on every invocation, so this test
- * loads the command tree in a fresh Bun process and inspects what it pulled in.
+ * The TypeScript compiler ships as a companion module that `composio run`
+ * loads on demand; the generation pipeline is a dynamic import that only
+ * `composio generate` evaluates (the binary build puts it in a chunk of its
+ * own). A static import anywhere on the startup path silently puts that cost
+ * back on every invocation, so this test loads the command tree in a fresh Bun
+ * process and inspects what it pulled in.
  */
 const FORBIDDEN_AT_STARTUP: ReadonlyArray<string> = [
   '/node_modules/typescript/',
@@ -18,11 +19,7 @@ const FORBIDDEN_AT_STARTUP: ReadonlyArray<string> = [
   '/src/services/generation-runtime',
 ];
 
-/**
- * The CLI rebuilds the generation companion's failures as its own error
- * classes, so this compiler-free module stays on the startup path. The binary
- * build guard in `scripts/_shared.ts` makes the same exception.
- */
+/** The generation error classes are tiny and shared with command error handling. */
 const ALLOWED_AT_STARTUP: ReadonlyArray<string> = ['/src/generation/errors.ts'];
 
 /**

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `composio generate ts --type-tools` no longer fails with "Can't resolve $ref" on toolkits such as GitHub and Gmail: a schema reference it cannot resolve is typed as `unknown`.
+
+- `composio generate ts --transpiled` writes a `.js` and a `.d.ts` file next to each generated `.ts` file. CLI 0.6.4 logged "Failed to compile TypeScript files" and wrote only the TypeScript sources.
+
 ## 0.6.4
 
 - `composio dev init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.

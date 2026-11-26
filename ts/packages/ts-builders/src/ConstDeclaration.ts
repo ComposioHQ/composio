@@ -7,6 +7,7 @@ import { Writer } from './Writer';
 export class ConstDeclaration implements BasicBuilder {
   private docComment?: DocComment;
   private value?: ValueBuilder;
+  private isDeclared = false;
 
   constructor(
     readonly name: string,
@@ -18,6 +19,12 @@ export class ConstDeclaration implements BasicBuilder {
     return this;
   }
 
+  /** Writes `declare const name: type`, the form a declaration file uses. */
+  declare(): this {
+    this.isDeclared = true;
+    return this;
+  }
+
   setValue(value: ValueBuilder): this {
     this.value = value;
     return this;
@@ -26,6 +33,9 @@ export class ConstDeclaration implements BasicBuilder {
   write(writer: Writer): void {
     if (this.docComment) {
       writer.write(this.docComment);
+    }
+    if (this.isDeclared) {
+      writer.write('declare ');
     }
     writer.write('const ').write(this.name);
     if (this.type) {

@@ -8,13 +8,13 @@
   {
     "ruleId": "py-empty-except",
     "file": "python/composio/utils/schema_converter.py",
-    "source": "    except Exception:\n        pass",
+    "source": "    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses\n        pass",
     "count": 1
   },
   {
     "ruleId": "py-empty-except",
     "file": "python/composio/utils/schema_converter.py",
-    "source": "    except Exception:  # noqa: BLE001 - pydantic raises SchemaError subclasses\n        pass",
+    "source": "    except Exception:\n        pass",
     "count": 1
   },
   {
@@ -211,12 +211,6 @@
   },
   {
     "ruleId": "ts-double-assertion",
-    "file": "ts/packages/cli/src/generation/typescript/generate-type-from-json-schema.ts",
-    "source": "  const openApi3Definition = {\n    openapi: '3.1.0',\n    components: {\n      schemas: {\n        [name]: {\n          type: 'object',\n          properties: processedProperties,\n        },\n      },\n    },\n  } as unknown as OpenAPI3;",
-    "count": 1
-  },
-  {
-    "ruleId": "ts-double-assertion",
     "file": "ts/packages/core/src/models/Triggers.ts",
     "source": "      originalPayload: payload as unknown as Record<string, unknown>,",
     "count": 1
@@ -386,13 +380,13 @@
   {
     "ruleId": "ts-empty-catch",
     "file": "ts/packages/core/src/utils/uploadDirAllowlist.node.ts",
-    "source": "  } catch {\n    // ignore\n  }",
+    "source": "  } catch {\n    // ignore and fall through\n  }",
     "count": 1
   },
   {
     "ruleId": "ts-empty-catch",
     "file": "ts/packages/core/src/utils/uploadDirAllowlist.node.ts",
-    "source": "  } catch {\n    // ignore and fall through\n  }",
+    "source": "  } catch {\n    // ignore\n  }",
     "count": 1
   },
   {
