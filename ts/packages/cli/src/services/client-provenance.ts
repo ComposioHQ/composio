@@ -20,7 +20,7 @@ export const cliClientIdentity = (): ClientIdentity => ({
 
 /**
  * Product attribution for first-party HTTP requests that do not go through an
- * API client (analytics dispatch, the agents service, the companion runtime).
+ * API client (analytics dispatch, the agents service, the run helpers).
  * API clients get the same attribution from {@link cliClientIdentity}.
  */
 export const cliRequestHeaders = (): Record<string, string> => ({

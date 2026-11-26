@@ -5,7 +5,7 @@
  *
  *     bun test/windows-credential.smoke.ts
  *
- * The native Windows CI job runs it with the compiled CLI as the Bun runtime.
+ * The native Windows CI job runs it with the Bun release pinned in mise.lock.
  */
 
 import assert from 'node:assert/strict';

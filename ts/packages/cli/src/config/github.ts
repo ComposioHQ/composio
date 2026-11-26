@@ -25,17 +25,8 @@ const githubConfig = (
 
 const prefixed = (name: string) => optionalString(`COMPOSIO_GITHUB_${name}`);
 
-// The binary build workflow and CI speak the unprefixed `GITHUB_*` contract, which wins.
-const unprefixedFirst = (name: string) =>
-  Config.all({ ci: optionalString(`GITHUB_${name}`), prefixed: prefixed(name) }).pipe(
-    Config.map(({ ci, prefixed }) => ci ?? prefixed)
-  );
-
 /**
  * Where `composio upgrade`, `composio setup skill`, and the update check fetch releases from.
  * The `COMPOSIO_GITHUB_*` overrides are documented in the README.
  */
 export const GITHUB_CONFIG = githubConfig(prefixed);
-
-/** The same settings for self-repair of a packaged install, honoring the workflow's `GITHUB_*`. */
-export const GITHUB_REPAIR_CONFIG = githubConfig(unprefixedFirst);

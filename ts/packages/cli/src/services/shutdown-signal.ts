@@ -1,63 +1,19 @@
-import { Context, Deferred, Effect, Layer, Schema, type Scope } from 'effect';
-
-/**
- * Signals whose numbers agree on Linux and macOS, so `128 + n` is the code a shell reports for
- * a process they end. Others (`SIGUSR1`, `SIGBUS`, …) differ between platforms.
- */
-const SIGNAL_NUMBERS = {
-  SIGHUP: 1,
-  SIGINT: 2,
-  SIGQUIT: 3,
-  SIGILL: 4,
-  SIGTRAP: 5,
-  SIGABRT: 6,
-  SIGFPE: 8,
-  SIGKILL: 9,
-  SIGSEGV: 11,
-  SIGPIPE: 13,
-  SIGALRM: 14,
-  SIGTERM: 15,
-} as const;
-
-/** A signal that can end a process, with the same number on every platform the CLI ships for. */
-export type TerminationSignal = keyof typeof SIGNAL_NUMBERS;
-
-export const isTerminationSignal = Schema.is(
-  Schema.Literals([
-    'SIGHUP',
-    'SIGINT',
-    'SIGQUIT',
-    'SIGILL',
-    'SIGTRAP',
-    'SIGABRT',
-    'SIGFPE',
-    'SIGKILL',
-    'SIGSEGV',
-    'SIGPIPE',
-    'SIGALRM',
-    'SIGTERM',
-  ] satisfies ReadonlyArray<TerminationSignal>)
-);
-
-/** The code a shell reports for a process `signal` ended: 130 for SIGINT, 143 for SIGTERM. */
-export const signalExitCode = (signal: TerminationSignal): number => 128 + SIGNAL_NUMBERS[signal];
+import { Context, Deferred, Effect, Layer, type Scope } from 'effect';
 
 /** The signals the CLI's runner handles: Ctrl-C, a polite stop, and a closed terminal. */
 export const STOP_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 
 export type StopSignal = (typeof STOP_SIGNALS)[number];
 
+const SIGNAL_NUMBERS = { SIGHUP: 1, SIGINT: 2, SIGTERM: 15 } as const;
+
+/** The code a shell reports for a process `signal` ended: 130 for SIGINT, 143 for SIGTERM. */
+export const signalExitCode = (signal: StopSignal): number => 128 + SIGNAL_NUMBERS[signal];
+
 /** How a command stops by itself when the CLI receives a signal, instead of being interrupted. */
 export interface CooperativeStop {
   /** The signals the command handles. Any other signal interrupts it. */
   readonly signals: ReadonlyArray<StopSignal>;
-  /**
-   * Runs synchronously when a second signal, or the shutdown deadline, forces the CLI to exit
-   * before the command finished stopping: the last chance to kill what the command started.
-   */
-  readonly onForce?: () => void;
-  /** Ends a forced exit by re-raising the signal (`composio run`) rather than exiting 128 + n. */
-  readonly reraiseOnForce?: boolean;
 }
 
 export interface ShutdownSignalShape {
@@ -98,8 +54,6 @@ export interface ShutdownController {
   readonly service: ShutdownSignalShape;
   /** Gives `signal` to a command that cooperates on it; `false` when the runner must interrupt. */
   readonly offer: (signal: StopSignal) => boolean;
-  /** Runs every cooperating command's `onForce`; says whether the forced exit re-raises. */
-  readonly force: () => { readonly reraise: boolean };
 }
 
 export const makeShutdownController = (): ShutdownController => {
@@ -122,10 +76,5 @@ export const makeShutdownController = (): ShutdownController => {
     offer: signal =>
       [...active].some(stop => stop.signals.includes(signal)) &&
       Deferred.doneUnsafe(requested, Effect.succeed(signal)),
-    force: () => {
-      const stops = [...active];
-      stops.forEach(stop => stop.onForce?.());
-      return { reraise: stops.some(stop => stop.reraiseOnForce === true) };
-    },
   };
 };

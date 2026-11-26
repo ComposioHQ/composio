@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `composio run` runs scripts in a confined JavaScript interpreter inside the CLI instead of starting the CLI again as Bun, and the TypeScript compiler and the two support files beside the binary are no longer needed (an install takes about 10 MiB less). Scripts can no longer import packages or Node.js modules or call Bun APIs, and `Symbol()`, private class members, `Intl`, `eval` and `new` on plain functions are not available. Interrupting a run also stops the helper calls and `fetch` requests it has in flight.
+
 - `composio generate ts --type-tools` no longer fails with "Can't resolve $ref" on toolkits such as GitHub and Gmail: a schema reference it cannot resolve is typed as `unknown`.
 
 - `composio generate ts --transpiled` writes a `.js` and a `.d.ts` file next to each generated `.ts` file. CLI 0.6.4 logged "Failed to compile TypeScript files" and wrote only the TypeScript sources.

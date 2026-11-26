@@ -3,7 +3,7 @@ import { baseConfig } from '../../../tsdown.config.base.ts';
 
 export default defineConfig({
   ...baseConfig,
-  entry: ['src/bin.ts', 'src/services/generation-runtime.ts'],
+  entry: ['src/bin.ts'],
   format: ['esm'],
   shims: true,
   tsconfig: './tsconfig.src.json',

@@ -64,11 +64,9 @@ COPY ts/packages/ ./ts/packages/
 # because it causes native binding issues across builds
 RUN pnpm install --frozen-lockfile
 
-# Build the composio CLI binary and its `composio run` companion modules into
-# /out, through the same script and flags as the release build
-# (`executableBuildArgs` in ts/packages/cli/scripts/_shared.ts). Without the
-# companion wrappers every `composio run` treats the install as broken and
-# enters the GitHub self-repair path.
+# Build the composio CLI binary and the companion stubs a release archive
+# carries into /out, with the release build flags (`executableBuildArgs` in
+# ts/packages/cli/scripts/_shared.ts).
 WORKDIR /app/ts/packages/cli
 RUN bun scripts/build-binary.ts --outdir /out
 
@@ -87,8 +85,7 @@ ENV HOME="/tmp"
 
 WORKDIR /app
 
-# CLI binary plus the `composio run` companion modules, which must stay siblings
-# of the executable (they are resolved from dirname(process.execPath)).
+# CLI binary plus the retired companion stubs a release install carries.
 COPY --from=builder /out/ /usr/local/bin/
 
 # CLI e2e tests

@@ -2,21 +2,10 @@ import { CommandInputError } from 'src/commands/errors';
 import process from 'node:process';
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
-import { ChildProcess, ChildProcessSpawner } from 'effect/process';
-import { Duration, Effect, Option, Ref, Result } from 'effect';
-import { APP_VERSION } from 'src/constants';
-import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
-import { childExitStatus, type ChildExitStatus } from 'src/effects/child-exit-status';
-import {
-  STOP_SIGNALS,
-  ShutdownSignal,
-  type ShutdownSignalShape,
-  type StopSignal,
-  type TerminationSignal,
-} from 'src/services/shutdown-signal';
-import { loadGenerationRuntime } from 'src/effects/generation-runtime';
+import { Effect, Option } from 'effect';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
 import { actingUser } from 'src/commands/surface';
-import { type RunHelperContext } from 'src/services/run-helpers-runtime';
+import type { RunHelperContext } from 'src/services/run-helpers-runtime';
 import { agentSessionHeaders, resolveAgentSession } from 'src/services/agent-session';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
@@ -29,31 +18,23 @@ import {
 } from 'src/services/runtime-flags';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
 import { invocationRunId } from 'src/invocation/command-identity';
-import {
-  repairMissingInstalledRunCompanionModules,
-  resolveRunCompanionModulePath,
-  isBunVirtualPath,
-} from 'src/services/run-companion-modules';
+import { isBunVirtualPath } from 'src/services/run-companion-modules';
 import {
   appendCliSessionHistory,
   resolveCliSessionArtifacts,
 } from 'src/services/cli-session-artifacts';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { NodeOs } from 'src/services/node-os';
-import { ChildSignalError } from './run.errors';
 
-const withArgDelimiter = (args: ReadonlyArray<string>) => (args.length > 0 ? ['--', ...args] : []);
+// The confined runtime (the interpreter, its helpers, `z`) and the source rewrites (acorn and
+// sucrase) are bundled into the executable but evaluated only when a script runs, so no other
+// command pays for them at startup.
 
-/**
- * The source rewrites need the TypeScript compiler, which ships in the
- * `generation-runtime` companion module next to the executable rather than in
- * the executable itself. Loading it here keeps it off every other command's
- * startup path. A missing companion goes through the same self-repair as the
- * `run-*` modules, and its error surfaces exactly as theirs does below.
- */
-const loadSourceTransforms = loadGenerationRuntime.pipe(
-  Effect.mapError(error => new Error(error.message))
-);
+/** The confined runtime that runs a script, with this run's helpers. */
+const loadRunHelpersRuntime = Effect.promise(() => import('../../services/run-helpers-runtime'));
+
+/** The source rewrites: TypeScript stripping, import hoisting, the trailing expression. */
+const loadSourceTransforms = Effect.promise(() => import('../run-source-transforms'));
 
 export const inferCliInvocationPrefix = (
   path: Path.Path,
@@ -65,9 +46,7 @@ export const inferCliInvocationPrefix = (
       return [process.execPath];
     }
 
-    // Compiled Bun binaries report an internal $bunfs entrypoint which cannot be
-    // re-executed as a real filesystem path. In that case the binary itself is
-    // the CLI entrypoint.
+    // Helpers invoke CLI commands through the compiled executable when argv names a $bunfs entrypoint.
     if (isBunVirtualPath(entrypoint)) {
       return [process.execPath];
     }
@@ -79,52 +58,14 @@ export const inferCliInvocationPrefix = (
       : [process.execPath];
   });
 
-type RunHelperModuleUrls = {
-  readonly helpersRuntimeModuleUrl: string;
-};
-
-const resolveRunHelperModuleUrls: Effect.Effect<
-  RunHelperModuleUrls,
-  never,
-  FileSystem.FileSystem | Path.Path
-> = Effect.gen(function* () {
-  const path = yield* Path.Path;
-  const modulePath = yield* resolveRunCompanionModulePath({
-    callerImportMetaUrl: import.meta.url,
-    execPath: process.execPath,
-    relativeNoExtensionFromCaller: '../../services/run-helpers-runtime',
-  });
-  const moduleUrl = yield* Effect.orDie(path.toFileUrl(modulePath));
-  return { helpersRuntimeModuleUrl: moduleUrl.href };
-});
-export const buildRunHelpersSource = (
-  cliPrefix: ReadonlyArray<string>,
-  context: RunHelperContext = {},
-  moduleUrls: RunHelperModuleUrls
-): string =>
-  [
-    `import { installRunHelpers } from ${JSON.stringify(moduleUrls.helpersRuntimeModuleUrl)};`,
-    '',
-    `await installRunHelpers(${JSON.stringify({ cliPrefix, helperContext: context })});`,
-  ].join('\n');
-
-const createRunHelpersPreloadFile = (
-  path: Path.Path,
-  cliPrefix: ReadonlyArray<string>,
-  context: RunHelperContext,
-  moduleUrls: RunHelperModuleUrls
-) =>
+/**
+ * Creates the run log, which is advertised to the caller on stderr (`RUN_LOG_FILE=`) and must
+ * outlive the run that printed it, as must any large tool output stored beside it.
+ */
+const createRunArtifacts = (path: Path.Path, context: RunHelperContext) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const os = yield* NodeOs;
-    const directory = yield* fs.makeTempDirectoryScoped({
-      directory: os.tmpdir,
-      prefix: 'composio-run-',
-    });
-    const preloadPath = path.join(directory, 'globals.mjs');
-    // The preload directory is scoped and removed when the run ends, but the run log and any
-    // large tool outputs are advertised to the caller on stderr (`RUN_LOG_FILE=`) and must
-    // outlive the process that printed them, so they get their own unscoped directory.
     const runOutputDir =
       typeof context.runOutputDir === 'string' && context.runOutputDir.length > 0
         ? context.runOutputDir
@@ -132,11 +73,7 @@ const createRunHelpersPreloadFile = (
     const runLogFilePath = path.join(runOutputDir, 'run.log');
     yield* fs.makeDirectory(runOutputDir, { recursive: true });
     yield* fs.writeFileString(runLogFilePath, '');
-    yield* fs.writeFileString(
-      preloadPath,
-      buildRunHelpersSource(cliPrefix, { ...context, runOutputDir, runLogFilePath }, moduleUrls)
-    );
-    return { directory, preloadPath, runOutputDir, runLogFilePath };
+    return { runOutputDir, runLogFilePath };
   });
 
 /**
@@ -154,61 +91,48 @@ const MISSING_RUN_SOURCE_MESSAGE = [
 const missingRunSource = () =>
   new CommandInputError({ command: 'run', message: MISSING_RUN_SOURCE_MESSAGE });
 
-export const buildRunCommand = ({
+/** The script a run executes: its source, how errors name it, and its `process.argv`. */
+export const readRunScript = ({
   path,
   file,
   args,
-  preloadPath,
-  preloadDirectory,
 }: {
   path: Path.Path;
   file: Option.Option<string>;
   args: ReadonlyArray<string>;
-  preloadPath: string;
-  preloadDirectory: string;
 }) =>
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem;
-    const { wrapFileSourceForRun, wrapInlineCodeForRun } = yield* loadSourceTransforms;
-    // Use process.execPath directly — the child is spawned with BUN_BE_BUN=1
-    // which makes compiled Bun binaries act as a plain Bun runtime.
-    // Avoid the `run` subcommand entirely since Bun intercepts it as its own
-    // built-in; `bun --preload <file> <script>` works without it.
-    const base = [process.execPath, '--preload', preloadPath];
     if (Option.isSome(file)) {
+      const fs = yield* FileSystem.FileSystem;
       const filePath = path.resolve(file.value);
-      const wrapperFilePath = path.join(
-        path.dirname(filePath),
-        `.composio-run-${path.basename(preloadDirectory)}${path.extname(filePath) || '.ts'}`
-      );
-      yield* fs.writeFileString(
-        wrapperFilePath,
-        wrapFileSourceForRun(yield* fs.readFileString(filePath, 'utf8'))
+      const source = yield* fs.readFileString(filePath, 'utf8').pipe(
+        Effect.mapError(
+          error =>
+            new CommandInputError({
+              command: 'run',
+              message: `Cannot read the script file ${filePath}: ${error.message}`,
+            })
+        )
       );
       return {
-        cmd: [...base, wrapperFilePath, ...withArgDelimiter(args)],
-        cleanupPaths: [wrapperFilePath],
+        source,
+        fileName: filePath,
+        displayName: filePath,
+        argv: [process.execPath, filePath, ...args],
       };
     }
 
     const [inlineCode, ...scriptArgs] = args;
-    if (inlineCode) {
-      const wrappedInlineCode = [
-        '(async () => {',
-        wrapInlineCodeForRun(inlineCode),
-        '})().then((__composioResult) => {',
-        '  if (__composioResult !== undefined) {',
-        '    console.log(__composioResult);',
-        '  }',
-        '});',
-      ].join('\n');
-      return {
-        cmd: [...base, '--eval', wrappedInlineCode, ...withArgDelimiter(scriptArgs)],
-        cleanupPaths: [],
-      };
+    if (!inlineCode) {
+      return yield* Effect.fail(missingRunSource());
     }
-
-    return yield* Effect.fail(missingRunSource());
+    return {
+      source: inlineCode,
+      fileName: 'composio-run.ts',
+      displayName: '[eval]',
+      // As `bun --eval` gave it: the runtime, then the script's own arguments.
+      argv: [process.execPath, ...scriptArgs],
+    };
   });
 
 const resolveRunHelperContext = () =>
@@ -261,109 +185,6 @@ const resolveRunHelperContext = () =>
     } satisfies RunHelperContext;
   });
 
-/**
- * How long the script gets to handle a forwarded signal before the CLI sends it SIGTERM, and
- * again before SIGKILL.
- */
-const CHILD_SIGNAL_GRACE_PERIOD = Duration.seconds(2);
-
-/** The first signal the CLI received, and the signals it then sent the script itself. */
-interface Escalation {
-  readonly first: StopSignal;
-  readonly sent: ReadonlyArray<TerminationSignal>;
-}
-
-/**
- * Sends `signal` to the child's process group.
- *
- * The `effect/process` spawner spawns with `detached: true` on POSIX, so the script leads its
- * own process group and a negative pid is what reaches it (and anything it spawned). Delivery
- * fails with ESRCH when the group is already gone, which is a normal race, not a run failure.
- */
-const signalChildProcessGroup = (pid: number, signal: TerminationSignal): void => {
-  Result.try({
-    try: () => process.kill(-pid, signal),
-    catch: cause => new ChildSignalError({ pid, signal, cause }),
-  });
-};
-
-/**
- * Hands the CLI's first signal to the script, then makes sure the script ends: SIGTERM after a
- * grace period, SIGKILL after another. The script decides how the run ends, as it would under a
- * shell: one that handles SIGINT and exits 0 makes the run succeed.
- *
- * `escalation` records the first signal and each signal the CLI sends of its own, so a script
- * that one of them killed is reported as cancelled by the first signal rather than by SIGTERM or
- * SIGKILL.
- */
-const relayStopToChild = (
-  child: ChildProcessSpawner.ChildProcessHandle,
-  pid: number,
-  shutdown: ShutdownSignalShape,
-  escalation: Ref.Ref<Option.Option<Escalation>>
-) =>
-  Effect.gen(function* () {
-    const signal = yield* shutdown.requested;
-    signalChildProcessGroup(pid, signal);
-    const followUps: ReadonlyArray<TerminationSignal> =
-      signal === 'SIGTERM' ? ['SIGKILL'] : ['SIGTERM', 'SIGKILL'];
-    yield* Effect.forEach(
-      followUps,
-      (next, index) =>
-        Effect.sleep(CHILD_SIGNAL_GRACE_PERIOD).pipe(
-          Effect.andThen(child.isRunning),
-          Effect.flatMap(running =>
-            running
-              ? Ref.set(
-                  escalation,
-                  Option.some({ first: signal, sent: followUps.slice(0, index + 1) })
-                ).pipe(Effect.andThen(Effect.sync(() => signalChildProcessGroup(pid, next))))
-              : Effect.void
-          )
-        ),
-      { discard: true }
-    );
-  });
-
-/**
- * Waits for the script and reports how it ended, relaying the CLI's signals to it meanwhile.
- *
- * A terminal Ctrl-C only reaches the CLI's process group, so without this the script never
- * observes SIGINT and its `process.on('SIGINT')` cleanup never runs. The run cooperates on every
- * signal the runner handles (`ShutdownSignal`): the CLI is not interrupted, it forwards the
- * signal and mirrors the script's exit. When the CLI's own SIGTERM or SIGKILL ended the script,
- * the run ends by the first signal instead; a script that dies by any other signal (a SIGABRT in
- * its cleanup, say) keeps that signal, so its crash stays visible. A second signal kills the
- * script's process group and re-raises that signal.
- */
-const superviseChild = (child: ChildProcessSpawner.ChildProcessHandle) =>
-  Effect.gen(function* () {
-    const os = yield* NodeOs;
-    // Windows has no process groups and the executor does not detach there: a signal interrupts
-    // the run, and the spawner's finalizer ends the script.
-    if (os.platform === 'win32') {
-      return yield* childExitStatus(child);
-    }
-
-    const shutdown = yield* ShutdownSignal;
-    const pid = Number(child.pid);
-    yield* shutdown.cooperate({
-      signals: STOP_SIGNALS,
-      onForce: () => signalChildProcessGroup(pid, 'SIGKILL'),
-      reraiseOnForce: true,
-    });
-    const escalation = yield* Ref.make(Option.none<Escalation>());
-    yield* Effect.forkScoped(relayStopToChild(child, pid, shutdown, escalation));
-    const status = yield* childExitStatus(child);
-    return Option.match(yield* Ref.get(escalation), {
-      onNone: (): ChildExitStatus => status,
-      onSome: ({ first, sent }): ChildExitStatus =>
-        status.signal !== null && sent.includes(status.signal)
-          ? { code: null, signal: first }
-          : status,
-    });
-  });
-
 /** The flags and arguments of `composio run`. */
 export type RunParams = {
   readonly file: Option.Option<string>;
@@ -376,7 +197,7 @@ export type RunParams = {
 };
 
 /**
- * Runs inline code or a script file in a child Bun process with the Composio helpers preloaded,
+ * Runs inline code or a script file in the confined runtime with the Composio helpers injected,
  * and ends the way the script did.
  */
 export const runScript = ({
@@ -395,7 +216,6 @@ export const runScript = ({
       return yield* Effect.fail(missingRunSource());
     }
 
-    const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const invocation = yield* cliInvocationContext;
     const runId = Option.getOrElse(
@@ -429,21 +249,8 @@ export const runScript = ({
       skipToolParamsCheck,
       skipChecks,
     };
-    const runHelperModuleUrls = yield* repairMissingInstalledRunCompanionModules({
-      callerImportMetaUrl: import.meta.url,
-      execPath: process.execPath,
-      appVersion: APP_VERSION,
-    }).pipe(
-      Effect.mapError(error => new Error(error.message)),
-      Effect.andThen(resolveRunHelperModuleUrls)
-    );
     const cliPrefix = yield* inferCliInvocationPrefix(path);
-    const preload = yield* createRunHelpersPreloadFile(
-      path,
-      cliPrefix,
-      helperContext,
-      runHelperModuleUrls
-    );
+    const artifacts = yield* createRunArtifacts(path, helperContext);
     const ui = yield* TerminalUI;
     yield* appendCliSessionHistory({
       orgId: helperContext.orgId,
@@ -456,52 +263,32 @@ export const runScript = ({
         debug,
       },
     }).pipe(Effect.catch(() => Effect.void));
-    yield* ui.error(`RUN_LOG_FILE=${preload.runLogFilePath}`);
-    const runCommand = yield* buildRunCommand({
-      path,
-      file,
-      args,
-      preloadPath: preload.preloadPath,
-      preloadDirectory: preload.directory,
-    });
-    const status = yield* Effect.gen(function* () {
-      const [executable, ...commandArgs] = runCommand.cmd;
-      // Spawning the command (instead of running it to completion) yields the handle whose
-      // pid the signal forwarding below needs. `extendEnv` keeps the caller's environment.
-      const child = yield* ChildProcess.make(executable!, commandArgs, {
-        env: {
-          BUN_BE_BUN: '1',
+    yield* ui.error(`RUN_LOG_FILE=${artifacts.runLogFilePath}`);
+
+    const script = yield* readRunScript({ path, file, args });
+    const { prepareRunProgram } = yield* loadSourceTransforms;
+    const program = prepareRunProgram(script.source, script.fileName);
+    const { runScriptWithHelpers } = yield* loadRunHelpersRuntime;
+    // The script runs in this process. Interrupting the run (a signal) aborts it and every helper
+    // call it has in flight, and the runner exits 128 + the signal's number.
+    const outcome = yield* Effect.promise(signal =>
+      runScriptWithHelpers({
+        program,
+        source: script.source,
+        displayName: script.displayName,
+        argv: script.argv,
+        envOverrides: {
           COMPOSIO_CLI_PARENT_RUN_ID: runId,
           ...debugFlagsToChildEnv({ perfDebug, toolDebug, telemetryDebug }),
         },
-        extendEnv: true,
-        stdin: 'inherit',
-        stdout: 'inherit',
-        stderr: 'inherit',
-      });
-      return yield* superviseChild(child);
-    }).pipe(
-      Effect.scoped,
-      Effect.ensuring(
-        Effect.forEach(
-          runCommand.cleanupPaths,
-          cleanupPath => fs.remove(cleanupPath, { force: true }),
-          { discard: true }
-        ).pipe(
-          // The wrapper file sits next to the user's script, so removal can fail on a
-          // read-only or locked directory. That must not turn an already-successful run
-          // into a failure, which is what the previous `Effect.orDie` did.
-          Effect.ignore
-        )
-      )
+        cwd: path.resolve('.'),
+        cliPrefix,
+        helperContext: { ...helperContext, ...artifacts },
+        signal,
+      })
     );
-    // The process ends the way the script did: with its code, or, when a signal ended it,
-    // by the same signal (the runner re-raises it), so wrappers and `set -e` scripts read a
-    // cancelled run as cancelled.
-    if (status.signal !== null) {
-      return yield* new ChildProcessSignaled({ signal: status.signal });
-    }
-    if (status.code !== 0) {
-      return yield* new ChildProcessExited({ code: status.code });
+    // The process ends the way the script did: with the code it exited with.
+    if (outcome.exitCode !== 0) {
+      return yield* new ChildProcessExited({ code: outcome.exitCode });
     }
   }).pipe(Effect.scoped);

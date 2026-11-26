@@ -1,48 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import { Cause, Deferred, Effect, Exit, Option } from 'effect';
-import { ChildProcessExited, ChildProcessSignaled } from 'src/effects/child-process-exited';
+import { ChildProcessExited } from 'src/effects/child-process-exited';
 import { ReportedFailure } from 'src/effects/report-failure';
-import { ExitAction, exitActionFor, makeCliRunMain, type RunnerPlatform } from 'src/run-main';
+import { exitCodeFor, makeCliRunMain, type RunnerPlatform } from 'src/run-main';
 import {
   makeShutdownController,
   type ShutdownController,
   type StopSignal,
 } from 'src/services/shutdown-signal';
 
-const exitWith = (code: number): ExitAction => ExitAction.ExitWith({ code });
-const reraiseKill: ExitAction = ExitAction.Reraise({ signal: 'SIGKILL' });
-
-// Each exit, then the action expected with no signal, SIGINT, SIGTERM and SIGHUP received.
+// Each exit, then the code expected with no signal, SIGINT, SIGTERM and SIGHUP received.
 const exits = [
   {
     kind: 'success',
     exit: Exit.succeed(undefined),
-    expected: [exitWith(0), exitWith(0), exitWith(0), exitWith(0)],
+    expected: [0, 0, 0, 0],
   },
   {
     kind: 'interrupted',
     exit: Exit.failCause(Cause.interrupt()),
-    expected: [exitWith(130), exitWith(130), exitWith(143), exitWith(129)],
+    expected: [130, 130, 143, 129],
   },
   {
-    kind: 'child exited 7',
+    kind: 'script exited 7',
     exit: Exit.fail(new ChildProcessExited({ code: 7 })),
-    expected: [exitWith(7), exitWith(7), exitWith(7), exitWith(7)],
-  },
-  {
-    kind: 'child killed',
-    exit: Exit.fail(new ChildProcessSignaled({ signal: 'SIGKILL' })),
-    expected: [reraiseKill, reraiseKill, reraiseKill, reraiseKill],
+    expected: [7, 7, 7, 7],
   },
   {
     kind: 'reported failure',
     exit: Exit.fail(new ReportedFailure({ message: 'printed' })),
-    expected: [exitWith(1), exitWith(1), exitWith(1), exitWith(1)],
+    expected: [1, 1, 1, 1],
   },
   {
     kind: 'defect',
     exit: Exit.die(new Error('boom')),
-    expected: [exitWith(1), exitWith(1), exitWith(1), exitWith(1)],
+    expected: [1, 1, 1, 1],
   },
 ] as const;
 
@@ -59,24 +51,21 @@ const cases = exits.flatMap(({ kind, exit, expected }) =>
     name,
     exit: exit as Exit.Exit<unknown, unknown>,
     signal: signal as Option.Option<StopSignal>,
-    action: expected[index],
+    code: expected[index],
   }))
 );
 
-describe('exitActionFor', () => {
-  it.each(cases)(
-    '[Given] $kind after $name [Then] ends as expected',
-    ({ exit, signal, action }) => {
-      expect(exitActionFor(exit, signal)).toEqual(action);
-    }
-  );
+describe('exitCodeFor', () => {
+  it.each(cases)('[Given] $kind after $name [Then] ends as expected', ({ exit, signal, code }) => {
+    expect(exitCodeFor(exit, signal)).toBe(code);
+  });
 });
 
 /** A process stand-in: signals are delivered by hand, timers fire by hand. */
 const fakePlatform = () => {
   const listeners = new Map<StopSignal, Set<() => void>>();
   const timers: Array<() => void> = [];
-  const ended: Array<ExitAction> = [];
+  const ended: Array<number> = [];
   let onEnd = () => {};
   const platform: RunnerPlatform = {
     on: (signal, listener) => {
@@ -86,11 +75,7 @@ const fakePlatform = () => {
       listeners.get(signal)?.delete(listener);
     },
     exit: code => {
-      ended.push(ExitAction.ExitWith({ code }));
-      onEnd();
-    },
-    raise: signal => {
-      ended.push(ExitAction.Reraise({ signal }));
+      ended.push(code);
       onEnd();
     },
     schedule: (_millis, f) => {
@@ -104,7 +89,7 @@ const fakePlatform = () => {
     timers,
     send: (signal: StopSignal) => [...(listeners.get(signal) ?? [])].forEach(f => f()),
     listenerCount: () => [...listeners.values()].reduce((sum, set) => sum + set.size, 0),
-    /** Resolves on the first exit or re-raise. */
+    /** Resolves when the runner calls exit. */
     end: new Promise<void>(resolve => {
       onEnd = resolve;
     }),
@@ -133,7 +118,7 @@ describe('makeCliRunMain', () => {
       fake.send(signal);
       await fake.end;
 
-      expect(fake.ended).toEqual([ExitAction.ExitWith({ code })]);
+      expect(fake.ended).toEqual([code]);
       expect(fake.listenerCount()).toBe(0);
     }
   );
@@ -153,7 +138,7 @@ describe('makeCliRunMain', () => {
     await fake.end;
 
     expect(Deferred.isDoneUnsafe(stopped)).toBe(true);
-    expect(fake.ended).toEqual([ExitAction.ExitWith({ code: 0 })]);
+    expect(fake.ended).toEqual([0]);
   });
 
   it('[Given] a cooperating command [When] a signal it does not take arrives [Then] it is interrupted', async () => {
@@ -167,44 +152,29 @@ describe('makeCliRunMain', () => {
     fake.send('SIGHUP');
     await fake.end;
 
-    expect(fake.ended).toEqual([ExitAction.ExitWith({ code: 129 })]);
+    expect(fake.ended).toEqual([129]);
   });
 
-  it.each([
-    { reraiseOnForce: false, ended: ExitAction.ExitWith({ code: 143 }) },
-    { reraiseOnForce: true, ended: ExitAction.Reraise({ signal: 'SIGTERM' }) },
-  ])(
-    '[Given] a stop in progress [When] a second signal arrives (reraise: $reraiseOnForce) [Then] it forces the exit',
-    async ({ reraiseOnForce, ended }) => {
-      const controller = makeShutdownController();
-      const release = Deferred.makeUnsafe<void>();
-      let forced = 0;
-      const program = Effect.gen(function* () {
-        yield* controller.service.cooperate({
-          signals: ['SIGINT', 'SIGTERM'],
-          onForce: () => {
-            forced += 1;
-          },
-          reraiseOnForce,
-        });
-        yield* controller.service.requested;
-        // A stop that never finishes on its own.
-        yield* Deferred.await(release);
-      }).pipe(Effect.scoped);
-      const fake = start(controller, program);
-      await settle();
+  it('[Given] a stop in progress [When] a second signal arrives [Then] it forces the exit', async () => {
+    const controller = makeShutdownController();
+    const release = Deferred.makeUnsafe<void>();
+    const program = Effect.gen(function* () {
+      yield* controller.service.cooperate({ signals: ['SIGINT', 'SIGTERM'] });
+      yield* controller.service.requested;
+      yield* Deferred.await(release);
+    }).pipe(Effect.scoped);
+    const fake = start(controller, program);
+    await settle();
 
-      fake.send('SIGINT');
-      await settle();
-      expect(fake.ended).toEqual([]);
-      fake.send('SIGTERM');
-      await fake.end;
+    fake.send('SIGINT');
+    await settle();
+    expect(fake.ended).toEqual([]);
+    fake.send('SIGTERM');
+    await fake.end;
 
-      expect(forced).toBe(1);
-      expect(fake.ended).toEqual([ended]);
-      Deferred.doneUnsafe(release, Effect.void);
-    }
-  );
+    expect(fake.ended).toEqual([143]);
+    Deferred.doneUnsafe(release, Effect.void);
+  });
 
   it('[Given] a stop that outlives the deadline [Then] the deadline forces the exit with the first signal', async () => {
     const controller = makeShutdownController();
@@ -224,7 +194,7 @@ describe('makeCliRunMain', () => {
     fake.timers[0]!();
     await fake.end;
 
-    expect(fake.ended).toEqual([ExitAction.ExitWith({ code: 130 })]);
+    expect(fake.ended).toEqual([130]);
     Deferred.doneUnsafe(release, Effect.void);
   });
 
@@ -242,23 +212,12 @@ describe('makeCliRunMain', () => {
     expect(fake.timers).toHaveLength(0);
   });
 
-  it('[Given] a child a signal ended [Then] the runner re-raises that signal', async () => {
-    const fake = start(
-      makeShutdownController(),
-      Effect.fail(new ChildProcessSignaled({ signal: 'SIGINT' }))
-    );
-
-    await fake.end;
-
-    expect(fake.ended).toEqual([ExitAction.Reraise({ signal: 'SIGINT' })]);
-  });
-
   it('[Given] a failure without a signal [Then] it exits with the failure code', async () => {
     const fake = start(makeShutdownController(), Effect.fail(new ChildProcessExited({ code: 3 })));
 
     await fake.end;
 
-    expect(fake.ended).toEqual([ExitAction.ExitWith({ code: 3 })]);
+    expect(fake.ended).toEqual([3]);
   });
 
   it('[Given] a success nobody signalled [Then] it leaves the exit to the event loop', async () => {

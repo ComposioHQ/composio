@@ -1,7 +1,7 @@
 import { describe, it } from '@effect/vitest';
 import { deepStrictEqual } from '@effect/vitest/utils';
 import { ConfigProvider, Effect } from 'effect';
-import { GITHUB_CONFIG, GITHUB_REPAIR_CONFIG } from 'src/config';
+import { GITHUB_CONFIG } from 'src/config';
 import * as constants from 'src/constants';
 
 const provider = (env: Record<string, string>) => ConfigProvider.fromEnvRecord(env);
@@ -15,10 +15,9 @@ const DEFAULTS = {
 };
 
 describe('GITHUB_CONFIG', () => {
-  it.effect('[Given] no overrides [Then] both configs point at the Composio repository', () =>
+  it.effect('[Given] no overrides [Then] it points at the Composio repository', () =>
     Effect.gen(function* () {
       deepStrictEqual(yield* GITHUB_CONFIG.parse(provider({})), DEFAULTS);
-      deepStrictEqual(yield* GITHUB_REPAIR_CONFIG.parse(provider({})), DEFAULTS);
     })
   );
 
@@ -31,31 +30,26 @@ describe('GITHUB_CONFIG', () => {
         COMPOSIO_GITHUB_TAG: '@composio/cli@1.2.3',
         COMPOSIO_GITHUB_ACCESS_TOKEN: 'ghp_test',
       };
-      const expected = {
+      deepStrictEqual(yield* GITHUB_CONFIG.parse(provider(env)), {
         apiBaseUrl: 'https://proxy.test',
         owner: 'fork-owner',
         repo: constants.GITHUB_REPO.REPO,
         tag: '@composio/cli@1.2.3',
         accessToken: 'ghp_test',
-      };
-      deepStrictEqual(yield* GITHUB_CONFIG.parse(provider(env)), expected);
-      deepStrictEqual(yield* GITHUB_REPAIR_CONFIG.parse(provider(env)), expected);
+      });
     })
   );
 
-  it.effect('[Given] unprefixed GITHUB_* [Then] only self-repair honors it, and first', () =>
+  it.effect('[Given] unprefixed GITHUB_* [Then] it is ignored', () =>
     Effect.gen(function* () {
       const env = {
         GITHUB_TAG: '@composio/cli@9.9.9',
         GITHUB_OWNER: 'ci-owner',
         COMPOSIO_GITHUB_OWNER: 'fork-owner',
       };
-      const upgrade = yield* GITHUB_CONFIG.parse(provider(env));
-      deepStrictEqual(upgrade.tag, undefined);
-      deepStrictEqual(upgrade.owner, 'fork-owner');
-      const repair = yield* GITHUB_REPAIR_CONFIG.parse(provider(env));
-      deepStrictEqual(repair.tag, '@composio/cli@9.9.9');
-      deepStrictEqual(repair.owner, 'ci-owner');
+      const config = yield* GITHUB_CONFIG.parse(provider(env));
+      deepStrictEqual(config.tag, undefined);
+      deepStrictEqual(config.owner, 'fork-owner');
     })
   );
 });

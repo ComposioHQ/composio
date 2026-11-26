@@ -90,6 +90,24 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
+      # The shared mise bootstrap supports Linux and macOS. Use the same locked Bun asset here.
+      - name: Set up locked Windows Bun for smoke tests
+        shell: pwsh
+        run: |
+          $lock = Get-Content -LiteralPath mise.lock -Raw
+          if ($lock -notmatch '(?m)^\[tools\.bun\."platforms\.windows-x64"\]\r?\nchecksum = "sha512:([0-9a-f]{128})"\r?\nurl = "([^"]+)"') {
+            throw 'Missing the Windows x64 Bun URL or checksum in mise.lock.'
+          }
+          $checksum, $url = $Matches[1], $Matches[2]
+          $bunDir = Join-Path $env:RUNNER_TEMP 'locked-bun'
+          New-Item -ItemType Directory -Path $bunDir | Out-Null
+          $archive = Join-Path $bunDir 'bun.tgz'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA512).Hash -ne $checksum) { throw 'Bun archive checksum mismatch.' }
+          tar.exe -xzf $archive -C $bunDir package/bin/bun.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract bun.exe.' }
+          Join-Path $bunDir 'package/bin' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
       - name: Download Windows archive
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

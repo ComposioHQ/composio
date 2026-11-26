@@ -9,6 +9,17 @@ Measurements of the standalone `composio` executable, newest first. All sizes ar
 - `Bun.build` takes the same modes as `compile: { outfile, target, trim, aot, aotExplain: 'trim' }`; the trim report arrives in `result.logs`.
 - Perry, an unsigned third-party compiler, so only in a disposable VM or container: `gh release download v0.5.1665 -R PerryTS/perry -p 'perry-macos-aarch64.tar.gz*'`. `shasum -a 256 -c` against the release's own checksum file catches a corrupt download, not a tampered release. Compile the fully minified release bundle (`perry compile <bundle.js> --platform bun`).
 
+## 2026-11-26 — `composio run` in-process, Bun 1.4.4 and canary 1.4.6
+
+With `composio run` executing scripts inside the CLI and no code loaded from disk:
+
+| Build              | Executable | Companions | Installed | Zip      | .tar.xz  |
+| ------------------ | ---------- | ---------- | --------- | -------- | -------- |
+| Bun 1.4.4 (pinned) | 88.5 MiB   | stubs      | 88.5 MiB  | 39.9 MiB | 25.4 MiB |
+| canary `--trim`    | 70.6 MiB   | stubs      | 70.6 MiB  | —        | —        |
+
+The `composio run` contract suite (`COMPOSIO_RUN_CONTRACT_CLI`) passed 40/40 against both builds, and 0.6.4 upgraded to the pinned-Bun archive.
+
 ## 2026-11-26 — size report on `next`, Bun 1.4.4
 
 | Floor (Bun alone) | Executable | CLI code | Companions | Installed | Zip      | .tar.xz  | 0.6.4 release zip |
@@ -31,7 +42,7 @@ Bun canary `@oven/bun-darwin-aarch64@1.4.5-canary.20261125.1` (`bun --revision`:
 | canary `--aot --trim`                        | 23 MiB      | 97 MiB  |
 
 - Plain `--trim` drops Bun's own tooling (installer, bundler, test runner), whatever the program does: Bun reported 67.4 MB trimmed for the CLI, and both programs lost about 65 MiB against the canary's untrimmed build. The untrimmed canary is larger than Bun 1.4.4, so against the pinned Bun the saving is 18 MiB.
-- A trimmed or AOT executable has no Bun command line, so re-executing the CLI as Bun (`BUN_BE_BUN=1`, which `composio run` on `next` relies on) fails.
+- A trimmed or AOT executable has no Bun command line, so re-executing the CLI as Bun (`BUN_BE_BUN=1`, which `composio run` relied on up to CLI 0.6.4) fails.
 - `--aot --trim` trims almost nothing for the CLI. `--explain=trim` names one site at a time where its analysis gives up. Patching the sites in the first six items below with a throwaway `Bun.build` plugin (`onLoad` string rewrites) saved only 1.3 MiB (98.4 → 97.1 MiB); the last item lists what the report still named:
   - `effect/dist/Redactable.js`: `globalThis[currentFiberTypeId]` (a constant declared below its use); also in `internal/effect.js` and `http/UrlParams.js`
   - `effect/dist/internal/effect.js`: `process.getBuiltinModule("node:async_hooks")`

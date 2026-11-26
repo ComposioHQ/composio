@@ -94,7 +94,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts && \
     rm -rf "$(pnpm store path --silent)" /home/node/.cache
 
 # Build and install the composio CLI binary into /usr/local/bin/composio, with
-# its companion modules next to it, through the release build script.
+# the companion stubs a release archive carries, through the release build script.
 USER root
 WORKDIR /app/ts/packages/cli
 RUN bun scripts/build-binary.ts --outdir /usr/local/bin

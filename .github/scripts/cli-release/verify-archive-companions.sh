@@ -11,9 +11,10 @@
 #     by existence only, and refuse one that lacks any of them.
 #   - A legacy path with content means sub-agent or adapter code is shipping again. The
 #     helper it served was removed; the path is only a placeholder.
-#   - An empty live bundle passes every existence check and still breaks `composio run`
-#     and `composio generate`. The root files of the same name are one-line re-export
-#     wrappers, so the bundles under services/ are what carries the code.
+#   - The companion paths (services/*.mjs and their root wrappers) hold stubs: the
+#     executable carries the code. They stay non-empty and listed in the manifest
+#     because released manifest-aware clients refuse a manifest with no companions and
+#     install what it lists.
 #   - Manifest-aware clients install what release-manifest.json lists and nothing else,
 #     and refuse a manifest they cannot decode. A manifest that omits a live bundle
 #     ships an install that cannot run; one that lists a placeholder or a missing entry
@@ -79,11 +80,11 @@ for relative_path in "${live_bundles[@]}"; do
   entry="${ARTIFACT}/${relative_path}"
 
   grep -Fxq "$entry" <<<"$entries" ||
-    fail "missing companion bundle '$entry'; the CLI cannot run without it"
+    fail "missing companion '$entry'; released clients refuse an upgrade archive without it"
 
   size="$(entry_size "$entry")"
   [ "$size" -gt 0 ] ||
-    fail "'$entry' is empty; the CLI cannot run without it"
+    fail "'$entry' is empty; it must hold the companion stub"
   echo "ok: $relative_path carries $size bytes"
 done
 

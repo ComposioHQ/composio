@@ -25,9 +25,8 @@ export function buildBinary(outdir = parseOutdir()) {
 
     yield* Effect.logDebug('', 'Binary built successfully');
 
-    // Build companion modules that `composio run` imports in the child process.
-    // These cannot live inside the compiled binary because they run in a separate
-    // Bun process via the --preload globals file.
+    // The retired companion paths, which release archives still carry (see
+    // `RUN_COMPANION_MODULE_BASENAMES`).
     yield* buildCompanionModules(outdir);
 
     yield* Effect.logDebug('', 'Companion modules built successfully');

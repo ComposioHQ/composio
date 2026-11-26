@@ -1,11 +1,9 @@
 /**
  * CLI run command e2e test
  *
- * `composio run` spawns the user's script as a child process and forwards its exit
- * status to the caller. The forwarding path is process-level: the command handler sets
- * `process.exitCode` and returns a *successful* Effect, and the CLI teardown hands that
- * code to `runMain`, which force-exits only for a non-zero code. Nothing in-process can
- * observe whether that hand-off actually reached the OS, so a `wait`/`$?` assertion
+ * `composio run` runs the user's script and exits with the script's status. The script's
+ * code becomes the CLI's exit code through the runner's teardown, and nothing in-process
+ * can observe whether that hand-off actually reached the OS, so a `wait`/`$?` assertion
  * against the real binary is the only guard against a failing script silently becoming
  * exit 0.
  *

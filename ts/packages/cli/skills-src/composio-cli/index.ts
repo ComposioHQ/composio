@@ -215,6 +215,7 @@ const commands: SkillCommand[] = [
       'For programmatic calls, loops, output plumbing, or anything beyond a single tool call, prefer `composio run`.',
     intro: [
       '`composio run` executes an inline ESM JavaScript/TypeScript snippet with authenticated `execute()`, `search()`, and `proxy()` pre-injected. No SDK setup required.',
+      'Scripts run in a confined runtime: `fetch()` and the injected helpers are the only I/O. Do not import packages or Node.js modules, read files, or use Bun APIs.',
     ],
     examples: [
       {
