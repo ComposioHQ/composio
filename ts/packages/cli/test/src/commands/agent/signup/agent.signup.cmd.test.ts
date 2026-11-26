@@ -90,7 +90,8 @@ describe('CLI: composio agent signup', () => {
         const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
 
         expect(output).toContain('currently signed in to Composio as a regular user');
-        expect(output).toContain('composio signup');
+        expect(output).toContain('composio agent login <composio_agent_key>');
+        expect(output).not.toContain('composio signup');
         expect(exitCodeOf(exit)).toBe(1);
       })
     );

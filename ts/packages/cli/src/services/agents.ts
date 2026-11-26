@@ -92,6 +92,14 @@ export class AgentRequestError extends Data.TaggedError('services/AgentRequestEr
   readonly cause?: unknown;
 }> {}
 
+const AgentGatewayStatus = Schema.Literals([502, 503, 504]);
+const isAgentGatewayStatus = Schema.is(AgentGatewayStatus);
+
+export const isAgentGatewayError = (
+  error: unknown
+): error is AgentRequestError & { readonly status: typeof AgentGatewayStatus.Type } =>
+  error instanceof AgentRequestError && isAgentGatewayStatus(error.status);
+
 export class AgentResponseDecodeError extends Data.TaggedError(
   'services/AgentResponseDecodeError'
 )<{
@@ -263,6 +271,16 @@ const fetchAgentJson = (pathname: string, init: AgentRequestInit = {}) =>
         }),
     });
 
+    const requestFailure = `agents.composio.dev request failed with HTTP ${response.status}`;
+    if (isAgentGatewayStatus(response.status)) {
+      yield* Effect.ignore(Effect.tryPromise(() => response.body?.cancel() ?? Promise.resolve()));
+      return yield* new AgentRequestError({
+        message: requestFailure,
+        pathname,
+        status: response.status,
+      });
+    }
+
     const text = yield* Effect.tryPromise({
       try: () => response.text(),
       catch: cause =>
@@ -290,7 +308,7 @@ const fetchAgentJson = (pathname: string, init: AgentRequestInit = {}) =>
       const message =
         Predicate.isObject(payload) && typeof payload.message === 'string'
           ? payload.message
-          : `agents.composio.dev request failed with HTTP ${response.status}`;
+          : requestFailure;
       return yield* new AgentRequestError({
         message,
         pathname,
@@ -348,7 +366,6 @@ const humanLoginError = () =>
     message: 'This CLI is currently signed in to Composio as a regular user, not an agent.',
     nextSteps: [
       'To switch to an existing agent: run `composio logout`, then `composio agent login <composio_agent_key>`.',
-      'To create a new agent: run `composio logout`, then `composio signup`.',
     ],
   });
 
@@ -394,7 +411,7 @@ export const resolveStoredAgentKey = Effect.gen(function* () {
     return yield* new AgentAuthError({
       message: 'No Composio agent identity is saved on this machine.',
       nextSteps: [
-        'To create a new agent: run `composio signup` or `composio agent signup`.',
+        'For CLI access, ask a human to run `composio login`.',
         'To restore an existing agent: run `composio agent login <composio_agent_key>`.',
       ],
     });
@@ -406,7 +423,7 @@ export const resolveStoredAgentKey = Effect.gen(function* () {
       message: 'The saved Composio agent identity is missing its composio_agent_key.',
       nextSteps: [
         'If you saved the key, run `composio agent login <composio_agent_key>`.',
-        'Otherwise create a new agent with `composio signup`.',
+        'For CLI access, ask a human to run `composio login`.',
       ],
     });
   }
@@ -455,10 +472,12 @@ export const getOrSignupReadyAgent = (params: { force?: boolean } = {}) =>
       if (Option.isSome(stored)) {
         const agentKey = getAgentKey(stored.value);
         if (agentKey) {
-          const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.option);
-          if (Option.isSome(remote)) {
-            const saved = yield* writeStoredAgentIdentity(remote.value);
+          const remote = yield* fetchAgentWhoami(agentKey).pipe(Effect.result);
+          if (Result.isSuccess(remote)) {
+            const saved = yield* writeStoredAgentIdentity(remote.success);
             if (normalizeAgentStatus(saved.status) === 'READY') return saved;
+          } else if (isAgentGatewayError(remote.failure)) {
+            return yield* remote.failure;
           }
         }
       }

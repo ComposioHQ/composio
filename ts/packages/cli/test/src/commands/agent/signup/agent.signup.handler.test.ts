@@ -212,24 +212,26 @@ describe('runAgentSignup', () => {
     }).pipe(Effect.provide(layer));
   });
 
-  it.effect('[Given] the agents API refuses the signup [Then] fails and stores nothing', () => {
-    const { layer, outputs, logins } = AgentHandlerTest();
-    return Effect.gen(function* () {
-      vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-        agentsJsonResponse({ message: 'Signup unavailable' }, 503)
-      );
+  it.effect(
+    '[Given] the agents API is unavailable [Then] gives a next step and stores nothing',
+    () => {
+      const { layer, outputs, logins } = AgentHandlerTest();
+      return Effect.gen(function* () {
+        vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+          agentsJsonResponse({ message: 'Signup unavailable' }, 503)
+        );
 
-      const error = yield* Effect.flip(runAgentSignup(params()));
+        const exit = yield* Effect.exit(runAgentSignup(params()));
 
-      expect(error).toMatchObject({
-        _tag: 'services/AgentRequestError',
-        message: 'Signup unavailable',
-        pathname: '/api/signup',
-        status: 503,
-      });
-      expect(Option.isNone(yield* readStoredAgentIdentity)).toBe(true);
-      expect(logins).toEqual([]);
-      expect(outputs).toEqual([]);
-    }).pipe(Effect.provide(layer));
-  });
+        expect(exitCodeOf(exit)).toBe(1);
+        expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
+          'Agent signup is unavailable right now.',
+          'Ask a human to run `composio login` for regular CLI access.',
+        ]);
+        expect(Option.isNone(yield* readStoredAgentIdentity)).toBe(true);
+        expect(logins).toEqual([]);
+        expect(outputs).toEqual([]);
+      }).pipe(Effect.provide(layer));
+    }
+  );
 });

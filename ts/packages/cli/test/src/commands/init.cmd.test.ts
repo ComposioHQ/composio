@@ -25,6 +25,19 @@ describe('CLI: composio dev init', () => {
   });
 
   describe('dev init without a usable login', () => {
+    layer(TestLive())(it => {
+      it.effect('[Given] no saved login [Then] prints the browser login path', () =>
+        Effect.gen(function* () {
+          const terminal = redirectedTerminalUI();
+          yield* cli(['dev', 'init', '--yes']).pipe(Effect.provide(terminal.layer), Effect.exit);
+
+          expect(terminal.stdout()).toContain('composio login --poll');
+          expect(terminal.stdout()).not.toContain('COMPOSIO_USER_API_KEY');
+          expect(terminal.stdout()).not.toContain('composio login --agent');
+        })
+      );
+    });
+
     layer(TestLive({ fixture: 'user-config-example' }))(it => {
       it.effect('[Given] an API key but no org [Then] fails with a usage error', () =>
         Effect.gen(function* () {
