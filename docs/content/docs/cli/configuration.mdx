@@ -29,4 +29,8 @@ When a toolkit has several connected accounts, pass `--account <id|alias>` or as
 
 ## Execution telemetry
 
-When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` to the Dashboard in the `x-cli-install-id` header. This random UUID is never sent to the backend API. Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to prevent the header from being sent.
+When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` only to the Dashboard, in the `x-cli-install-id` header.
+
+When the CLI runs inside a Claude Code or Codex chat, telemetry events include `agent_session_host` (`claude` or `codex`) and a derived `agent_session_id` to group commands from that chat. The original host session ID stays local. The CLI sends the same values in the `x-cli-agent-session-host` and `x-cli-agent-session-id` headers only on requests to the Composio backend, Dashboard execution requests, and `proxy()` calls from `composio run` to Composio.
+
+Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to omit the install ID header and disable agent session metadata in telemetry and request headers.

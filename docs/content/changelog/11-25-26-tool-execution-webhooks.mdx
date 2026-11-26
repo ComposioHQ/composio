@@ -1,0 +1,21 @@
+---
+title: 'Tool execution webhooks for sessions'
+description: 'Send each tool call in a session to an endpoint you host, before or after it runs, and allow, block, or modify it.'
+date: '2026-11-25'
+---
+
+Sessions now support tool execution webhooks. A webhook sends each tool call to an endpoint you host, either before the tool runs or after it returns. Your endpoint responds to let the tool call go ahead, block it, or override it.
+
+### What's new
+
+- **Before or after a tool runs.** Add a `before_execute` webhook to act on a tool call's arguments before it runs, or an `after_execute` webhook to act on the result before your agent reads it.
+- **Block a tool call.** Your agent sees the tool call fail, with your message as the error.
+- **Override a tool call.** Continue with changed arguments before the tool runs, or with a changed result after it returns.
+- **Signed requests.** Every request is signed with a secret from your project settings, so your endpoint can verify it came from Composio.
+- **Fallback behavior.** Set `fallback_action` to `block` or `continue` to choose what happens when your endpoint times out, can't be reached, or returns an invalid response.
+
+You add a webhook to a session as a hook with a handler `type` of `webhook`. See [Webhooks](/docs/hooks/webhooks) for setup, request and response payloads, and timeouts.
+
+### Availability
+
+Tool execution webhooks are available only to organizations on the Enterprise plan.

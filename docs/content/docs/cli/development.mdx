@@ -9,6 +9,8 @@ Use these commands while building on the Composio developer platform. They initi
 
 ## Initialize project context
 
+`composio dev init` creates or updates `.env.local` with owner-only read and write permissions (mode `0600`). It also tightens permissions on an existing file when the contents stay the same. The command stops with instructions if the path is a symlink or another non-regular file, or if it cannot set the permissions.
+
 ```bash
 # Initialize local project context
 composio dev init
