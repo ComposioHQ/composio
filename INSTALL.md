@@ -70,7 +70,6 @@ The positional argument takes precedence over `COMPOSIO_INSTALL_VERSION`.
 | `COMPOSIO_INSTALL_HELP` | Set to `0` to hide normal post-install guidance. Shell-setup failures still warn and print a recovery command to stderr. | `1` |
 | `COMPOSIO_INSTALL_PLUGINS` | Set to `0` to skip plugin setup for detected agent hosts. | `1` |
 | `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. | `auto` |
-| `--agent` | Log in as a Composio agent after installation. | Off |
 | `--no-plugins` | Skip plugin setup, even when `COMPOSIO_INSTALL_PLUGINS=1`. | Off |
 
 ## Manual Installation
