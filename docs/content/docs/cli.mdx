@@ -329,7 +329,7 @@ Reach for `composio run` when the agent needs a multi-step workflow: loops, para
 
 If a tool execution fails, `execute()` rejects with the tool's error message and the failed result.
 
-Each `execute()` call stages any `File` and `Blob` inputs and generated argument JSON in a private temporary directory. The CLI removes the directory when the call finishes.
+`execute()` writes `File` and `Blob` inputs to a private temporary directory and removes it when the call finishes. When `composio run` has a session directory, `execute()` also writes the argument JSON to a private file. Otherwise, it passes the JSON on the child process's command line, where sensitive values may appear in process listings.
 
 Run a single scripted workflow:
 
