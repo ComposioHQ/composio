@@ -10,6 +10,7 @@
     "sandbox-settings",
     "updating-sessions",
     "executing-tools",
+    "sessions-via-mcp",
     "hooks"
   ]
 }

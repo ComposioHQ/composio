@@ -16,7 +16,7 @@ Composio sits underneath your harness in four calls:
 
 1. **List toolkits.** [`composio.toolkits.get()`](/reference/sdk-reference/typescript/toolkits) returns the catalog independent of any user. That's your integrations directory.
 2. **Connect what the user picks.** [`session.authorize(slug)`](/docs/authentication) starts the OAuth flow for this user. Bring your own OAuth credentials via [auth configs](/docs/authentication/programmatic-auth-configs) for a white-label flow, or [import existing tokens](/docs/authentication/importing-existing-connections) to migrate from another store.
-3. **Fetch tools.** Load raw JSON Schema with [`composio.tools.getRawComposioTools({ toolkits })`](/docs/sessions/tool-access#browsing-the-catalog), or serve the same tools over [MCP](/docs/sessions-via-mcp) and let your harness call them through the protocol.
+3. **Fetch tools.** Load raw JSON Schema with [`composio.tools.getRawComposioTools({ toolkits })`](/docs/sessions/tool-access#browsing-the-catalog), or serve the same tools over [MCP](/docs/sessions/sessions-via-mcp) and let your harness call them through the protocol.
 4. **Execute by slug.** [`session.execute(slug, args)`](/docs/sessions/executing-tools#executing-session-tools) runs one tool as the connected user and hands back data.
 
 Nothing here asks a model to make a decision. Every call is one your code makes, at a moment you choose, because your planner decided.
@@ -478,7 +478,7 @@ curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-Wire the URL into any MCP client. Examples for OpenAI Agents, Claude Agent SDK, and Vercel AI SDK are in the [sessions via MCP guide](/docs/sessions-via-mcp).
+Wire the URL into any MCP client. Examples for OpenAI Agents, Claude Agent SDK, and Vercel AI SDK are in the [sessions via MCP guide](/docs/sessions/sessions-via-mcp).
 
 <Accordions>
   <Accordion title="Alternative: let the session decide which tools exist">

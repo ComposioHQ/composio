@@ -15,7 +15,7 @@ This is your always-on map of Composio's concepts and the canonical page for eac
 - **Connection selection**: set auth configs, pin connected accounts, authorize users, and inspect toolkit connection status. → [Select connections](/docs/sessions/connections)
 - **Sandbox options**: disable the sandbox or choose its compute tier. → [Set sandbox options](/docs/sessions/sandbox-settings)
 - **Executing session tools**: run \`session.execute()\` or meta tools, inspect execution results, and handle requests for user input. → [Execute session tools](/docs/sessions/executing-tools)
-- **Sessions via MCP** — create a session with \`{ mcp: true }\` to expose \`session.mcp.url\` / \`session.mcp.headers\` for any MCP client. → [Using sessions via MCP](/docs/sessions-via-mcp)
+- **Sessions via MCP** — create a session with \`{ mcp: true }\` to expose \`session.mcp.url\` / \`session.mcp.headers\` for any MCP client. → [Using sessions via MCP](/docs/sessions/sessions-via-mcp)
 - **Reusing sessions** — sessions persist on the server; store the session ID and reuse with \`composio.use(sessionId)\`. → [Create and reuse](/docs/sessions/create-and-reuse)
 - **Updating sessions**: change configuration in place with \`session.update(...)\`, handle replacement and null semantics, resolve concurrent updates, and inspect configuration history. → [Update a session](/docs/sessions/updating-sessions)
 

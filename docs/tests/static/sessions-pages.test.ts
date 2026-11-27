@@ -145,7 +145,7 @@ describe('Sessions task pages', () => {
     expect(config).not.toMatch(/source:\s*['"]\/docs\/sessions['"]/);
   });
 
-  test('both sidebars link the Sessions header to the overview with eight task children and a nested Hooks section', () => {
+  test('both sidebars link the Sessions header to the overview with eight task children, Sessions via MCP, and a nested Hooks section', () => {
     for (const tree of [source.pageTree, buildProductPageTree(source.pageTree, 'platform')]) {
       const folder = tree.children.find(node => node.type === 'folder' && node.name === 'Sessions');
       expect(folder?.type).toBe('folder');
@@ -154,7 +154,13 @@ describe('Sessions task pages', () => {
       expect(readPage('/docs/sessions').match(/^title: (.+)$/m)?.[1]).toBe('Sessions overview');
 
       const pageChildren = folder.children.filter(node => node.type === 'page');
-      expect(pageChildren.map(node => node.url)).toEqual(expectedPages.map(([, url]) => url));
+      // Sessions via MCP moved under Sessions as a ninth flat page, after the
+      // eight task pages; it isn't one of the overview's "Choose a task" links,
+      // so it's checked separately rather than folded into expectedPages.
+      expect(pageChildren.map(node => node.url)).toEqual([
+        ...expectedPages.map(([, url]) => url),
+        '/docs/sessions/sessions-via-mcp',
+      ]);
 
       // Hooks moved under Sessions as its own nested section. Its own
       // meta.json lists "index" explicitly among its pages (so each hook
@@ -179,7 +185,7 @@ describe('Sessions task pages', () => {
       expect(urls).not.toContain('/docs/configuring-sessions');
       expect(urls).not.toContain('/docs/how-composio-works');
       expect(urls).not.toContain('/docs/session-configs');
-      expect(urls).toContain('/docs/sessions-via-mcp');
+      expect(urls).toContain('/docs/sessions/sessions-via-mcp');
       expect(urls).toContain('/docs/extending-sessions/local-tools-and-toolkits');
       expect(urls).toContain('/docs/sessions/hooks/webhooks');
     }

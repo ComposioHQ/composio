@@ -72,11 +72,11 @@ describe('Docs product navigation', () => {
     expect(docsProductDestination('/docs/agent-plugins', 'platform')).toBe(
       '/docs/quickstart',
     );
-    expect(docsProductDestination('/docs/sessions-via-mcp', 'for-you')).toBe(
+    expect(docsProductDestination('/docs/sessions/sessions-via-mcp', 'for-you')).toBe(
       '/docs/composio-connect',
     );
     expect(docsProductDestination('/docs/composio-connect', 'platform')).toBe(
-      '/docs/sessions-via-mcp',
+      '/docs/sessions/sessions-via-mcp',
     );
     expect(docsProductDestination('/docs/authentication', 'for-you')).toBe(
       '/docs/agent-plugins',

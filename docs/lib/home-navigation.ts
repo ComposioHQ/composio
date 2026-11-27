@@ -142,7 +142,7 @@ export const DOCS_PRODUCTS = {
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
-      '/docs/sessions-via-mcp',
+      '/docs/sessions/sessions-via-mcp',
       '/docs/sandbox',
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
@@ -168,7 +168,6 @@ export const DOCS_PRODUCTS = {
         label: 'Build',
         items: [
           { type: 'folder', path: 'sessions' },
-          { type: 'page', url: '/docs/sessions-via-mcp' },
           {
             type: 'group',
             label: 'Toolkits & Tools',
@@ -319,7 +318,7 @@ export const DOCS_PRODUCTS = {
         {
           title: 'Sessions via MCP',
           description: 'Expose a Composio session through a hosted MCP endpoint.',
-          href: '/docs/sessions-via-mcp',
+          href: '/docs/sessions/sessions-via-mcp',
         },
       ],
     },
@@ -336,7 +335,7 @@ export const HOME_INTENTS: readonly HomeIntent[] = HOME_PRODUCT_ORDER.map(produc
 
 const PRODUCT_COUNTERPARTS = [
   { platform: '/docs/quickstart', 'for-you': '/docs/agent-plugins' },
-  { platform: '/docs/sessions-via-mcp', 'for-you': '/docs/composio-connect' },
+  { platform: '/docs/sessions/sessions-via-mcp', 'for-you': '/docs/composio-connect' },
 ] as const;
 
 function matchesRoute(pathname: string, prefix: string): boolean {

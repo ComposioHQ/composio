@@ -183,7 +183,7 @@ See [preloading tools](/docs/sessions/loading-tools#preloading-tools) for the co
 
 The local callback runs in your application process. It can query your database or call an internal service. Use the callback's `ctx.userId` in TypeScript or `ctx.user_id` in Python to enforce your application's access rules before returning records. An ID supplied by the model is not proof of authorization.
 
-Keep the SDK tool execution in your process for this pattern. The [hosted MCP endpoint](/docs/sessions-via-mcp#trade-offs) can't invoke these in-process callbacks. Tool results still become model context, so return only the fields the model needs.
+Keep the SDK tool execution in your process for this pattern. The [hosted MCP endpoint](/docs/sessions/sessions-via-mcp#trade-offs) can't invoke these in-process callbacks. Tool results still become model context, so return only the fields the model needs.
 
 <Callout>
 Local tools and toolkits are experimental. See [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) for extension tools, authenticated API calls, and callback context.

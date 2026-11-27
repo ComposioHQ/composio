@@ -242,7 +242,7 @@ const userScoped = new Composio({
 </Tabs>
 
 <Callout type="info">
-Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python). In Python only an omitted `api_key` falls back to `COMPOSIO_API_KEY`; an explicit `api_key=None` raises `ApiKeyNotProvidedError`, and combining `disable_api_key=True` with an explicit `api_key` raises an error. Sessions created by a user-only SDK instance export `x-user-api-key` in their MCP config; see [What the MCP headers carry](/docs/sessions-via-mcp#what-the-mcp-headers-carry). Raw HTTP callers send the same `x-user-api-key` header themselves.
+Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (Python). In Python only an omitted `api_key` falls back to `COMPOSIO_API_KEY`; an explicit `api_key=None` raises `ApiKeyNotProvidedError`, and combining `disable_api_key=True` with an explicit `api_key` raises an error. Sessions created by a user-only SDK instance export `x-user-api-key` in their MCP config; see [What the MCP headers carry](/docs/sessions/sessions-via-mcp#what-the-mcp-headers-carry). Raw HTTP callers send the same `x-user-api-key` header themselves.
 </Callout>
 
 ## Webhook secrets in responses

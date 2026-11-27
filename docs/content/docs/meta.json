@@ -26,7 +26,6 @@
     "consumer-agents",
     "b2b-agents",
     "production-readiness",
-    "sessions-via-mcp",
     "sandbox",
     "extending-sessions",
     "setting-up-triggers",

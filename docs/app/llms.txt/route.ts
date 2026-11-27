@@ -43,7 +43,7 @@ If unclear, distinguish application integration from connecting apps to the codi
 - [Proxy Execute](https://docs.composio.dev/docs/extending-sessions/proxy-execute.md): Call provider endpoints that tools don't cover without retrieving the token.
 - [Restrict tool access](https://docs.composio.dev/docs/sessions/tool-access.md): Select allowed toolkits, tools, tags, and approval rules.
 - [SDKs and frameworks](https://docs.composio.dev/docs/providers.md): Choose a framework provider.
-- [Sessions via MCP](https://docs.composio.dev/docs/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
+- [Sessions via MCP](https://docs.composio.dev/docs/sessions/sessions-via-mcp.md): Give an application-created session to an MCP-compatible framework.
 - [Single-toolkit MCP](https://docs.composio.dev/docs/single-toolkit-mcp.md): Build an MCP server scoped to one toolkit.
 - [Troubleshooting](https://docs.composio.dev/kb.md): Diagnose authentication, connection, and execution failures.
 - [Production rate limits](https://docs.composio.dev/reference/rate-limits.md): Plan for request limits before deployment.

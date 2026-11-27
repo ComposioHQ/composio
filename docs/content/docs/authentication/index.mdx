@@ -138,7 +138,7 @@ For example, this tool result produces a GitHub card with a connect button. The 
 }
 ```
 
-Route the structured tool result to the card before converting tool output to chat text. With SDK-executed session tools, `session.tools({ afterExecute })` lets your server inspect the result before the model sees it. Send it only to the authenticated user's chat through your app's existing transport. MCP clients need to handle rendering in the client because SDK modifiers don't run [over MCP](/docs/sessions-via-mcp#trade-offs).
+Route the structured tool result to the card before converting tool output to chat text. With SDK-executed session tools, `session.tools({ afterExecute })` lets your server inspect the result before the model sees it. Send it only to the authenticated user's chat through your app's existing transport. MCP clients need to handle rendering in the client because SDK modifiers don't run [over MCP](/docs/sessions/sessions-via-mcp#trade-offs).
 
 Opening the link does not mean the account is connected. After the user finishes authentication, call `COMPOSIO_MANAGE_CONNECTIONS` again for the same toolkit and session. Update the card from the new result and resume app tool calls only when the toolkit's status is `active`. You can use the [callback URL](#custom-callback-url) below to return the user to your app.
 

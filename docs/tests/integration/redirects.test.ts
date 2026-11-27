@@ -14,7 +14,7 @@ const EVIDENCED_REDIRECTS = [
   { from: "/authentication/authentication-overview", to: "/docs/authentication", markdown: false },
   { from: "/authentication/connected-accounts/overview", to: "/docs/authentication/manually-authenticating", markdown: false },
   { from: "/llms.mdx/authentication/connected-accounts/overview", to: "/docs/authentication/manually-authenticating.md", markdown: true },
-  { from: "/llms.mdx/sessions/sessions-via-mcp", to: "/docs/sessions-via-mcp.md", markdown: true },
+  { from: "/llms.mdx/sessions/sessions-via-mcp", to: "/docs/sessions/sessions-via-mcp.md", markdown: true },
   { from: "/docs/manually-authenticating.md", to: "/docs/authentication/manually-authenticating.md", markdown: true },
 ];
 
@@ -54,6 +54,8 @@ const REDIRECTS = [
   { from: "/docs/governance/tool-hints", to: "/docs/guardrails/tool-hints" },
   { from: "/docs/firewall", to: "/docs/guardrails" },
   { from: "/docs/hooks/webhooks", to: "/docs/sessions/hooks/webhooks" },
+  { from: "/docs/sessions-via-mcp", to: "/docs/sessions/sessions-via-mcp" },
+  { from: "/docs/native-tools-vs-mcp", to: "/docs/sessions/sessions-via-mcp" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox/remote" },

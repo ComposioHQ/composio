@@ -65,7 +65,7 @@ describe('unified knowledge metadata', () => {
     ['/docs/extending-sessions/proxy-execute', 'tools-actions-and-execution'],
     ['/docs/migration-guide/new-sdk', 'sdk-api-and-mcp'],
     ['/docs/sandbox/remote', 'tools-actions-and-execution'],
-    ['/docs/sessions-via-mcp', 'sdk-api-and-mcp'],
+    ['/docs/sessions/sessions-via-mcp', 'sdk-api-and-mcp'],
     ['/docs/sessions/create-and-reuse', 'tools-actions-and-execution'],
   ])('maps %s to %s', (canonicalUrl, expectedArea) => {
     const metadata = classifyKnowledgeRecord({ sourceType: 'docs', canonicalUrl });

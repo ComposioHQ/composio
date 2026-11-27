@@ -146,7 +146,7 @@ const config = {
       },
       {
         source: '/docs/native-tools-vs-mcp',
-        destination: '/docs/sessions-via-mcp',
+        destination: '/docs/sessions/sessions-via-mcp',
         permanent: true,
       },
       {
@@ -256,6 +256,17 @@ const config = {
       {
         source: '/docs/hooks/:page*',
         destination: '/docs/sessions/hooks/:page*',
+        permanent: true,
+      },
+      // Sessions via MCP moved under Sessions.
+      {
+        source: '/docs/sessions-via-mcp',
+        destination: '/docs/sessions/sessions-via-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/sessions-via-mcp.:format(md|mdx)',
+        destination: '/docs/sessions/sessions-via-mcp.md',
         permanent: true,
       },
       {
@@ -1234,7 +1245,7 @@ const config = {
       },
       {
         source: '/llms.mdx/sessions/sessions-via-mcp',
-        destination: '/docs/sessions-via-mcp.md',
+        destination: '/docs/sessions/sessions-via-mcp.md',
         permanent: true,
       },
       {

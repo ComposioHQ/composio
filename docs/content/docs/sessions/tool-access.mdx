@@ -32,7 +32,7 @@ You can combine an approval list with `enable` or `disable` in the same filter o
 
 When execution needs approval, catch `ComposioToolInputRequiredError` from `@composio/core` in TypeScript or `ToolInputRequiredError` from `composio.exceptions` in Python. Display `inputRequests` (`input_requests`) and wait for the person's answers. Repeat the same tool or meta-tool call with `inputResponses` and `requestState` (`input_responses` and `request_state`), preserving the state from the error. Forward decline and cancel answers unchanged. See [handling input requests](/docs/sessions/executing-tools#handling-requests-for-user-input) for the continuation flow.
 
-For MCP clients, configure the [approval fallback](/docs/sessions-via-mcp#approval-without-elicitation-support) if the client cannot ask for approval.
+For MCP clients, configure the [approval fallback](/docs/sessions/sessions-via-mcp#approval-without-elicitation-support) if the client cannot ask for approval.
 
 ## Enabling toolkits
 
