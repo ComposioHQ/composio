@@ -275,7 +275,7 @@ Outputs land in `recordings/{tapes,svgs,ascii}/<group>/<name>.{tape,svg,ascii}`.
 
 ## Release Workflow
 
-Use the repo-local `cli-release` skill before building or publishing first-party CLI binaries.
+Use the repo-local `cli-release` skill before building or publishing first-party CLI binaries, and `cli-binary-size` before measuring or changing what the executable or its downloads weigh (`pnpm run size:report` compiles the Bun runtime floor next to the CLI).
 
 - A push to `next` touching CLI paths publishes a rolling beta automatically.
 - The normal stable path promotes an existing tested beta through the `promote-stable` workflow action.

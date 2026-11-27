@@ -41,6 +41,7 @@ Use the smallest relevant skill:
 - `typescript-sdk`, `typescript-testing`, `typescript-providers`: TypeScript SDK/core/provider work.
 - `cli-command`, `cli-e2e`: CLI design/implementation or CLI end-to-end tests.
 - `cli-release`: first-party CLI beta builds, stable promotion, release verification, or recovery.
+- `cli-binary-size`: what the CLI executable and its downloads weigh, Bun build modes, archive formats, and runtime or compiler swaps.
 - `python-sdk`, `python-testing`, `python-providers`, `python-release`: Python SDK/provider/testing/release work.
 
 ## Repository Map
