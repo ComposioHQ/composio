@@ -342,10 +342,8 @@ install)
     if [ "${TEST_INSTALL_HINT:-0}" = 1 ]; then
       printf '%s\n' '│ Restart your shell so composio is on PATH │'
     fi
-    # Mirror the reconciling CLI: write the managed block to the same startup
-    # files the installer verifies. TEST_INSTALL_RECONCILE=0 models stable
-    # CLIs that exit 0 without reconciling (they skip marker-bearing files).
-    if [ "${TEST_INSTALL_EXIT:-0}" = 0 ] && [ "${TEST_INSTALL_RECONCILE:-1}" = 1 ]; then
+    # Mirror the CLI: write the managed block to the target startup files on exit 0.
+    if [ "${TEST_INSTALL_EXIT:-0}" = 0 ]; then
       write_block() {
         if [ -f "$1" ] && grep -Fq "$2" "$1"; then
           return 0
@@ -400,7 +398,7 @@ EOF
     unset CASE_UNSET_PLUGINS CASE_GITHUB_URL CASE_GITHUB_OWNER CASE_GITHUB_REPO CASE_API_BASE CASE_INSTALL_VERSION CASE_INSTALL_SHELL CASE_PLUGINS CASE_QUIET CASE_DEBUG CASE_HELP
     unset CASE_ALLOW_HTTP_HOST CASE_CHECKSUM_MODE CASE_API_ASSET_URL CASE_BASE_MODE CASE_REDIRECT_DOWNGRADE
     unset CASE_SHELL_CAPABILITY CASE_INSTALL_EXIT CASE_SETUP_EXIT CASE_VERSION_EXIT CASE_PATH_PREFIX CASE_UNSET_SHELL
-    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT CASE_INSTALL_RECONCILE
+    unset CASE_CURL_DELAY_URL CASE_CURL_DELAY_SECONDS CASE_SHELL_VALUE CASE_INSTALL_HINT
     rm -f "$case_root/curl-parent.pid"
     : >"$curl_log"
     : >"$composio_log"
@@ -458,7 +456,6 @@ EOF
       TEST_API_ASSET_URL="${CASE_API_ASSET_URL:-}" \
       TEST_REDIRECT_DOWNGRADE="${CASE_REDIRECT_DOWNGRADE:-0}" \
       TEST_INSTALL_HINT="${CASE_INSTALL_HINT:-0}" \
-      TEST_INSTALL_RECONCILE="${CASE_INSTALL_RECONCILE:-1}" \
       TEST_SETUP_EXIT="${CASE_SETUP_EXIT:-0}" \
       TEST_VERSION_EXIT="${CASE_VERSION_EXIT:-0}" \
       "${installer_command[@]}" "$@"
@@ -478,7 +475,6 @@ EOF
       "${common_env_args[@]}" \
       COMPOSIO_INSTALL_SCRIPT_URL="$script_url" \
       TEST_BASE_MODE="${CASE_BASE_MODE:-ok}" \
-      TEST_INSTALL_RECONCILE="${CASE_INSTALL_RECONCILE:-1}" \
       "$interpreter" "$repo_root/install/$shell_name.sh" "$@"
   }
 
@@ -1038,7 +1034,7 @@ EOF
   reset_case
   CASE_INSTALL_EXIT=23
   CASE_QUIET=1
-  CASE_INSTALL_HELP=0
+  CASE_HELP=0
   wf_delegated_home="$case_root/write-failure-delegated-home"
   wf_delegated_install="$case_root/write-failure-delegated-install"
   wf_delegated_output=$(run_installer "$wf_delegated_home" "$wf_delegated_install" "$case_root/write-failure-delegated-bin" "$stable_tag" 2>&1) ||
