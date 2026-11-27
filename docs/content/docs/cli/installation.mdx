@@ -1,0 +1,232 @@
+---
+title: CLI installation options
+description: Configure CLI installation, shell setup, and removal.
+---
+
+For the default install command, start with [Install the CLI](/docs/cli#install). This page covers custom installation and maintenance.
+
+## Installer behavior
+
+On Linux and macOS, the installer verifies the release bundle and stores it in `~/.composio`. It creates the `~/.local/bin/composio` entry point and configures PATH for future terminals.
+
+The installer recognizes `zsh`, `bash`, and `fish` login shells from `$SHELL`. It writes a managed `# Composio CLI` block to their startup files. For bash login shells, it also configures the first existing `~/.bash_profile` or `~/.bash_login`, or creates `~/.bash_profile`. This lets login shells, such as those started by macOS Terminal.app, find the CLI without reading `~/.bashrc`.
+
+If your shell is unrecognized or setup fails, the CLI still installs. The installer prints a runnable command for recovery. See [Shell setup overrides](#shell-setup-overrides) to choose a shell or skip configuration.
+
+The installer also sets up plugins for detected, supported Codex and Claude Code hosts. Set `COMPOSIO_INSTALL_PLUGINS=0` or pass `--no-plugins` to skip plugin setup. Login remains a separate step.
+
+## Windows x64 (experimental)
+
+Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. For a fully supported setup, run the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install).
+
+Run in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME\.composio`, and adds that directory to your User PATH. Then run `composio login`. You don't need administrator access.
+
+To install a specific stable or beta release, set `COMPOSIO_INSTALL_VERSION` first:
+
+```powershell
+$env:COMPOSIO_INSTALL_VERSION = "X.Y.Z"; irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_SHELL` to `none` to leave PATH unchanged. Keep the complete bundle together when moving it.
+
+Windows support is experimental. A failed Windows check can leave a release without a Windows archive. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
+
+## Install with options
+
+Pin a version and skip agent plugin setup:
+
+```bash
+curl -fsSL https://composio.dev/install \
+  | COMPOSIO_INSTALL_VERSION=0.3.1 COMPOSIO_INSTALL_PLUGINS=0 sh
+```
+
+You can also pass a stable or beta release tag as the positional argument. The positional value takes precedence over `COMPOSIO_INSTALL_VERSION`:
+
+```bash
+curl -fsSL https://composio.dev/install | sh -s -- @composio/cli@0.3.1
+```
+
+| Variable or argument | Description | Default |
+|---|---|---|
+| `COMPOSIO_INSTALL_DIR` | Directory that receives the complete CLI bundle and `release-tag.txt`. | `$HOME/.composio` |
+| `COMPOSIO_BIN_DIR` | Directory that receives the `composio` entry-point symlink. Set it to `COMPOSIO_INSTALL_DIR` to use the legacy single-directory layout. Treat this as trusted input: anyone who can write to this directory can replace commands that future terminals run. | `$HOME/.local/bin` |
+| `COMPOSIO_INSTALL_VERSION` | Stable or beta version to install, with or without the `@composio/cli@` prefix. | Latest stable release |
+| `version-tag` | Positional stable or beta version. This overrides `COMPOSIO_INSTALL_VERSION`. | None |
+| `COMPOSIO_QUIET` | Set to `1` or `true` to hide progress output. Warnings and errors still print. | Unset |
+| `COMPOSIO_DEBUG` | Set to `1` or `true` to print download URLs and temporary paths. | Unset |
+| `COMPOSIO_INSTALL_HELP` | Set to `0` to hide normal post-install guidance. Shell-setup failures still warn and print a recovery command to stderr. | `1` |
+| `COMPOSIO_INSTALL_PLUGINS` | Runs `composio setup --target auto --yes --if-present` after installation. Set to `0` to skip plugin setup. | `1` |
+| `COMPOSIO_INSTALL_SHELL` | Shell setup mode: `auto` infers your login shell from `$SHELL`, `zsh`, `bash`, or `fish` force a specific shell, and `none` skips shell configuration. See [Shell setup overrides](#shell-setup-overrides). | `auto` |
+| `COMPOSIO_GITHUB_OWNER` | GitHub owner used to resolve releases. | `ComposioHQ` |
+| `COMPOSIO_GITHUB_REPO` | GitHub repository used to resolve releases. | `composio` |
+| `COMPOSIO_GITHUB_URL` | GitHub web and release-download base URL. | `https://github.com` |
+| `COMPOSIO_GITHUB_API_BASE_URL` | GitHub API base URL. | Derived from `COMPOSIO_GITHUB_URL` |
+| `--agent` | Log in as a Composio agent after installation. | Off |
+| `--no-plugins` | Skip agent plugin setup, even when `COMPOSIO_INSTALL_PLUGINS=1`. | Off |
+
+## Shell setup overrides
+
+By default the installer infers your login shell from `$SHELL` and configures it. Set `COMPOSIO_INSTALL_SHELL` to force a specific shell instead:
+
+<Tabs groupId="shell" items={['zsh','bash','fish']} persist>
+<Tab value="zsh">
+```bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=zsh sh
+```
+
+This configures `~/.zshrc` and delegates setup to `composio install --shell zsh`.
+</Tab>
+<Tab value="bash">
+```bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=bash sh
+```
+
+This configures `~/.bashrc` and delegates setup to `composio install --shell bash`. It also configures a login-mode startup file so `bash -ilc` can find `composio`: the first active login file (`~/.bash_profile`, then `~/.bash_login`), or a new `~/.bash_profile` that sources your existing `~/.profile` when neither exists.
+</Tab>
+<Tab value="fish">
+```bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=fish sh
+```
+
+This configures `~/.config/fish/config.fish` and delegates setup to `composio install --shell fish`.
+</Tab>
+</Tabs>
+
+Set `COMPOSIO_INSTALL_SHELL=none` to leave shell files unchanged. For an install-only run in CI or Docker, also disable plugin setup:
+
+```bash
+curl -fsSL https://composio.dev/install | COMPOSIO_INSTALL_SHELL=none COMPOSIO_INSTALL_PLUGINS=0 sh
+```
+
+Shell-specific installer variants (`zsh.sh`, `bash.sh`, and `fish.sh` in the repository's [`install/` directory](https://github.com/ComposioHQ/composio/tree/next/install)) pin `COMPOSIO_INSTALL_SHELL` to their shell before delegating to the base installer.
+
+Shell setup is idempotent: repeated installs keep exactly one managed PATH block per startup file and reconcile it when the bin directory changes. Setup falls back to writing the same PATH block inline when the installed CLI predates `composio install --shell`, delegated setup fails, or delegated setup leaves a stale block. Startup-file changes only affect future terminals; in the current one, either open a new terminal or run the absolute path the installer prints.
+
+## Verify the installation
+
+On Linux or macOS, check the version and executable location:
+
+```bash
+composio --version
+which composio
+```
+
+## Set up your agent
+
+If you skipped plugin setup or installed an agent host later, run:
+
+```bash
+composio setup --target auto
+```
+
+`auto` detects supported agents. Use `--target codex` or `--target claude` to choose one. Setup asks before changing local files. Add `--yes` in an agent, script, or CI job.
+
+`composio login` installs the standalone CLI skill for Claude Code by default. For Codex, prefer the native plugin through `composio setup --target codex`. See [Agent plugins](/docs/agent-plugins) for host-specific details.
+
+If you need the standalone skill without the native plugin, install it for your host:
+
+```bash
+composio setup skill claude
+composio setup skill codex
+```
+
+## Update
+
+```bash
+composio upgrade
+```
+
+This replaces the bundle in place. Pass a version, such as `composio upgrade 0.3.1`, to pin a release, or `--beta` for the latest prerelease.
+
+The CLI uses the archive's `release-manifest.json` to determine which support files to install. On Windows, the CLI retries renaming a busy executable for up to two seconds.
+
+If your installed CLI is too old to upgrade, the command stops before changing anything and prints an install command. Rerun the [installer](/docs/cli#install).
+
+## Install manually from GitHub Releases
+
+Download the archive for your platform from [GitHub Releases](https://github.com/ComposioHQ/composio/releases), then install the complete bundle. Keep the support files beside the executable.
+
+```bash
+bundle=composio-linux-x64
+COMPOSIO_INSTALL_DIR=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
+COMPOSIO_BIN_DIR=${COMPOSIO_BIN_DIR:-"$HOME/.local/bin"}
+
+unzip "$bundle.zip"
+mkdir -p "$COMPOSIO_INSTALL_DIR"
+cp -Rp "$bundle"/. "$COMPOSIO_INSTALL_DIR/"
+chmod +x "$COMPOSIO_INSTALL_DIR/composio"
+mkdir -p "$COMPOSIO_BIN_DIR"
+if [ "$COMPOSIO_BIN_DIR" != "$COMPOSIO_INSTALL_DIR" ]; then
+  ln -sf "$COMPOSIO_INSTALL_DIR/composio" "$COMPOSIO_BIN_DIR/composio"
+fi
+export PATH="$COMPOSIO_BIN_DIR:$PATH"
+```
+
+## Uninstall
+
+Remove only installer-owned entry points and release artifacts. This keeps your credentials, configuration, and cache data in `~/.composio`. The file list below matches the current release layout; if you installed a different version, compare it against the contents of that release's archive.
+
+```bash
+install_dir=${COMPOSIO_INSTALL_DIR:-"$HOME/.composio"}
+bin_dir=${COMPOSIO_BIN_DIR:-"$HOME/.local/bin"}
+
+rm -f \
+  "$bin_dir/composio" \
+  "$install_dir/composio" \
+  "$install_dir/release-tag.txt" \
+  "$install_dir/release-manifest.json" \
+  "$install_dir/run-helpers-runtime.mjs" \
+  "$install_dir/run-subagent-shared.mjs" \
+  "$install_dir/run-subagent-acp.mjs" \
+  "$install_dir/run-subagent-legacy.mjs" \
+  "$install_dir/run-subagent-output-mcp.mjs" \
+  "$install_dir/generation-runtime.mjs" \
+  "$install_dir/execute-output-encoder-runtime.mjs"
+rm -rf \
+  "$install_dir/services" \
+  "$install_dir/acp-adapters" \
+  "$install_dir/local-tools-binaries"
+
+for file in \
+  "$HOME/.zshrc" \
+  "$HOME/.bashrc" \
+  "$HOME/.bash_profile" \
+  "$HOME/.bash_login" \
+  "$HOME/.config/fish/config.fish"; do
+  [ -f "$file" ] || continue
+  tmp=$(mktemp) || continue
+  if awk '
+    $0 == "# Composio CLI" { in_block = 1; next }
+    in_block && (/^export COMPOSIO_INSTALL_DIR=/ || /^set --export COMPOSIO_INSTALL_DIR /) { next }
+    in_block && (/^export PATH=/ || /^set --export PATH /) { in_block = 0; next }
+    { in_block = 0; print }
+  ' "$file" > "$tmp"; then
+    if [ "$file" = "$HOME/.bash_profile" ] && ! grep -q '[^[:space:]]' "$tmp"; then
+      rm -f "$file"
+    else
+      cat "$tmp" > "$file"
+    fi
+  fi
+  rm -f "$tmp"
+done
+```
+
+The loop stages every rewrite in a `mktemp` scratch file, created with an unpredictable name and `0600` permissions, so startup-file contents never pass through a world-readable path, and writes the result back only when `awk` succeeds. A failed or missing `awk` leaves the startup file untouched, and the scratch file is always removed. Writing back with `cat` keeps a symlinked startup file intact: the symlink, its target's inode, owner, and mode all survive. The filter removes the current managed block and the three-line block written by older installers (marker plus `export COMPOSIO_INSTALL_DIR=...` or `set --export COMPOSIO_INSTALL_DIR ...`).
+
+`~/.bash_profile` gets one extra step: when removing the block leaves only blank lines, the file is deleted. The installer creates `~/.bash_profile` on bash systems that had no login startup file, and bash prefers even an empty `~/.bash_profile` over `~/.profile`, so leaving the empty file behind would silently override bash's normal startup-file selection forever. Note the edge case: a `~/.bash_profile` you created yourself but left empty is also removed. If you had a `~/.profile` when you installed, the created `~/.bash_profile` instead keeps a passthrough that sources it, so the file is not blank and survives the loop with only the block removed. It begins with `# Created by the Composio CLI installer.`; delete it too if you want bash to read `~/.profile` directly again.
+
+<Callout type="warn">
+**Purge all CLI state**
+
+The command below also deletes saved credentials, configuration, and caches. Run it only when you want a complete reset.
+
+```bash
+rm -rf "${COMPOSIO_INSTALL_DIR:-$HOME/.composio}"
+```
+</Callout>

@@ -147,10 +147,25 @@ describe('getting-started routing policy', () => {
 
     // Same failure mode, pre-dating this folder: Get Started's pages sit after
     // the `providers` folder and used to read as SDKs-and-frameworks children.
-    for (const sibling of ['/docs/agent-plugins', '/docs/cli', '/docs/composio-connect']) {
+    for (const sibling of ['/docs/agent-plugins', '/docs/composio-connect']) {
       expect(sectionOf(sibling)).toEqual({
         section: '## Get Started',
         nearest: '## Get Started',
+      });
+    }
+
+    // CLI installation is now a folder index. Its maintenance and workflow
+    // pages must be filed under that folder in the agent-readable index too.
+    for (const cliPage of [
+      '/docs/cli',
+      '/docs/cli/workflows',
+      '/docs/cli/development',
+      '/docs/cli/configuration',
+      '/docs/cli/installation',
+    ]) {
+      expect(sectionOf(cliPage)).toEqual({
+        section: '## Get Started',
+        nearest: '### Composio CLI',
       });
     }
 

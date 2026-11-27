@@ -84,7 +84,7 @@ export const DOCS_PRODUCTS = {
         label: 'Get started',
         items: [
           { type: 'page', url: '/docs/agent-plugins' },
-          { type: 'page', url: '/docs/cli' },
+          { type: 'folder', path: 'cli' },
           { type: 'page', url: '/docs/composio-connect', label: 'Connect with MCP' },
         ],
       },
