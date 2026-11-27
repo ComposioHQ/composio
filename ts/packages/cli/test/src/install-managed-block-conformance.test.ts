@@ -10,11 +10,7 @@ import {
 /**
  * Managed PATH block contract conformance.
  *
- * The fixtures under test/managed-block-fixtures also drive install.sh's
- * write_path_block through the shell harness
- * (test/install-sh-release-resolution.test.sh), so an edit to either
- * implementation fails one of the two suites until the other side produces
- * byte-identical output again. Each fixture directory holds the rc file
+ * Each fixture directory under test/managed-block-fixtures holds the rc file
  * `before` the run, the raw `bin-dir` (with `__HOME__` standing in for the
  * home directory), the target `shell`, and the expected `after` bytes.
  */

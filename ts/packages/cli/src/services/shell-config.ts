@@ -3,9 +3,7 @@
  * running, which rc files it reads, the exact PATH and completion blocks to write, and how a
  * stale block is reconciled in place.
  *
- * install.sh carries an inline copy of the same contract for when the CLI cannot run. The
- * shared fixtures under test/managed-block-fixtures pin both implementations to byte-identical
- * output, so a behavioral edit here must land in install.sh too.
+ * The fixtures under test/managed-block-fixtures pin the block-reconciliation contract.
  */
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
@@ -34,7 +32,7 @@ export const COMPLETIONS_MARKER = '# Composio CLI completions';
  * The resolved dir is only ever emitted inside double quotes — `export
  * PATH="<dir>:$PATH"` for bash/zsh and `set --export PATH "<dir>" $PATH` for
  * fish — so the set is deliberately narrow and mirrors `is_unsafe_path` in
- * install.sh, keeping the inline fallback and this command on one contract:
+ * install.sh:
  *
  * - `` ` ``, `$`, `\`, `"`: the only characters bash and zsh still expand
  *   inside double quotes (`!` history expansion does not apply to sourced
@@ -58,10 +56,6 @@ export const detectShellFromEnv = (path: Path.Path, shellEnv: string): Option.Op
 /**
  * Render a path for embedding in a shell rc file. `~` never expands inside
  * double quotes, so home-relative paths use a literal `$HOME` prefix instead.
- * Must stay in lockstep with install.sh's render_bin_dir: the installer's
- * delegated_setup_verified compares its own rendering against the line this
- * command wrote byte for byte, so any disagreement makes every delegated
- * install look stale and forces a needless inline rewrite.
  */
 export const renderWithHome = (dir: string, homedir: string): string => {
   if (dir === homedir) return '$HOME';

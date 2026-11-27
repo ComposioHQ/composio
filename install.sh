@@ -417,25 +417,11 @@ compute_inherited_resolution() {
     fi
 }
 
-# Reject bin dirs that cannot be embedded safely in a managed rc line. The dir
-# is only ever emitted inside double quotes -- `export PATH="<dir>:$PATH"` for
-# bash/zsh and `set --export PATH "<dir>" $PATH` for fish -- so the set is
-# deliberately narrow and mirrors UNSAFE_PATH_CHARS in
-# ts/packages/cli/src/services/shell-config.ts, keeping this inline fallback and
-# `composio install` on one contract:
-#
-#   ` $ " \  the only characters bash and zsh still expand inside double
-#            quotes (fish expands a strict subset). Everything else -- `;`,
-#            `|`, `&`, `(`, `)`, `'` -- is literal there, so a bin dir like
-#            /Users/o'brien/.local/bin is written verbatim, not rejected.
-#   CR LF    structural: either would split the managed block into extra lines.
-#   :        structural: the PATH separator would silently prepend two entries.
-#
-# Aborting rather than escaping is what keeps the two branches equivalent: a dir
-# the CLI refuses must not slip into an rc file just because the CLI could not
-# run. It also means the value reaching append_path_block can no longer carry a
-# character that double quotes would interpret, so no escaping pass is needed
-# (and `${var//x/y}` is a bashism this POSIX script cannot use anyway).
+# Reject bin dirs that cannot be embedded safely in a managed rc line before
+# delegating to `composio install --shell`. Mirrors UNSAFE_PATH_CHARS in
+# ts/packages/cli/src/services/shell-config.ts:
+#   ` $ " \  expanded inside double quotes in bash/zsh
+#   CR LF :  structural line / PATH separators
 is_unsafe_path() {
     case $1 in *':'* | *'`'* | *'$'* | *'"'* | *\\*) return 0 ;; esac
     unsafe_path_cr=$(printf '\r')
@@ -444,122 +430,8 @@ is_unsafe_path() {
     return 1
 }
 
-# Renders the home directory itself and paths under it with a literal $HOME
-# prefix. Must stay in lockstep with the CLI's renderWithHome (shell-config.ts):
-# delegated_setup_verified compares the CLI-written line against this rendering
-# byte for byte, so any disagreement makes every delegated install look stale
-# and forces a needless inline rewrite.
-#
-# Callers must run is_unsafe_path first, so the only `$` in the result is the
-# `$HOME` this function introduces -- it survives as a live variable reference
-# in the rc line without any user-supplied `$` riding along with it.
-render_bin_dir() {
-    render_bin_dir_value=$1
-    case $render_bin_dir_value in
-        "$HOME") render_bin_dir_value=\$HOME ;;
-        "$HOME"/*) render_bin_dir_value=\$HOME/${render_bin_dir_value#"$HOME"/} ;;
-    esac
-    printf '%s\n' "$render_bin_dir_value"
-}
-
-path_block_line() {
-    case $1 in
-        fish) printf "set --export PATH \"%s\" \$PATH\n" "$2" ;;
-        *) printf "export PATH=\"%s:\$PATH\"\n" "$2" ;;
-    esac
-}
-
-# Succeeds only when the file holds exactly one managed marker block and that
-# block already names the expected line.
-path_block_current() {
-    awk -v expected="$2" '
-        $0 == "# Composio CLI" { markers++; pending = 1; next }
-        pending { pending = 0; if ($0 == expected) matches++ }
-        END { exit !(markers == 1 && matches == 1) }
-    ' "$1" 2>/dev/null
-}
-
-# Reconciles the single managed PATH block in one startup file: keeps an
-# already-current block, replaces stale managed blocks, preserves unmanaged
-# content, and reports every failure through its return status.
-write_path_block() {
-    write_path_file=$1
-    write_path_line=$(path_block_line "$2" "$3") || return 1
-    mkdir -p "$(dirname "$write_path_file")" 2>/dev/null || return 1
-    if [ -e "$write_path_file" ] && [ ! -f "$write_path_file" ]; then
-        return 1
-    fi
-    if [ ! -f "$write_path_file" ]; then
-        touch "$write_path_file" 2>/dev/null || return 1
-    fi
-    # Dotfile managers keep startup files as symlinks; rewrite the physical
-    # target so the tmp+rename replace below cannot detach the symlink.
-    write_path_target=$(resolve_physical_path "$write_path_file")
-    if path_block_current "$write_path_target" "$write_path_line"; then
-        info "$(tildify "$write_path_file") is already up to date."
-        return 0
-    fi
-    write_path_tmp=$write_path_target.composio.tmp.$$
-    # cp -p seeds the tmp with the original permission bits; the awk rewrite
-    # below truncates its content while the copied mode survives the rename.
-    if ! cp -p "$write_path_target" "$write_path_tmp" 2>/dev/null; then
-        rm -f "$write_path_tmp"
-        return 1
-    fi
-    if ! awk '
-        function is_managed_path_assignment(line) {
-            return line ~ /^[[:space:]]*export PATH=".*:\$PATH"[[:space:]]*$/ ||
-                line ~ /^[[:space:]]*set --export PATH ".*" \$PATH[[:space:]]*$/
-        }
-        # The previously released installer wrote a three-line managed block:
-        # the marker, an install-dir export, then a PATH line referencing it.
-        # Recognizing that exact pair migrates the whole legacy block instead
-        # of orphaning the two export lines once the marker is consumed.
-        function is_legacy_install_dir_assignment(line) {
-            return line ~ /^[[:space:]]*export COMPOSIO_INSTALL_DIR=".*"[[:space:]]*$/ ||
-                line ~ /^[[:space:]]*set --export COMPOSIO_INSTALL_DIR ".*"[[:space:]]*$/
-        }
-        function is_legacy_pair(first, second) {
-            if (first ~ /^[[:space:]]*export COMPOSIO_INSTALL_DIR=".*"[[:space:]]*$/)
-                return second ~ /^[[:space:]]*export PATH="\$COMPOSIO_INSTALL_DIR:\$PATH"[[:space:]]*$/
-            return second ~ /^[[:space:]]*set --export PATH \$COMPOSIO_INSTALL_DIR \$PATH[[:space:]]*$/
-        }
-        holding {
-            holding = 0
-            if (is_legacy_pair(held, $0)) { held = ""; next }
-            print held
-            held = ""
-        }
-        pending {
-            pending = 0
-            if (is_managed_path_assignment($0)) next
-            if (is_legacy_install_dir_assignment($0)) { held = $0; holding = 1; next }
-        }
-        $0 == "# Composio CLI" { pending = 1; next }
-        { print }
-        END { if (holding) print held }
-    ' "$write_path_target" >"$write_path_tmp" 2>/dev/null; then
-        rm -f "$write_path_tmp"
-        return 1
-    fi
-    if ! printf '\n# Composio CLI\n%s\n' "$write_path_line" >>"$write_path_tmp" 2>/dev/null; then
-        rm -f "$write_path_tmp"
-        return 1
-    fi
-    if ! mv "$write_path_tmp" "$write_path_target" 2>/dev/null; then
-        rm -f "$write_path_tmp"
-        return 1
-    fi
-    info "Updated $(tildify "$write_path_file")."
-    return 0
-}
-
-# Names the bash startup file a login shell reads the managed block from.
-# A login bash reads /etc/profile and then only the first existing of
-# ~/.bash_profile, ~/.bash_login, ~/.profile; it never reads ~/.bashrc, and
-# macOS Terminal.app starts exactly such a shell. An override that already
-# exists is reused; otherwise ~/.bash_profile is the file to create. ~/.profile
-# is never a target: every POSIX shell shares it.
+# Names the bash startup file a login shell reads the managed block from, so
+# the confirmation message names the same files `composio install --shell` edits.
 bash_login_path_file() {
     if [ ! -f "$HOME/.bash_profile" ] && [ -f "$HOME/.bash_login" ]; then
         printf '%s\n' "$HOME/.bash_login"
@@ -568,9 +440,6 @@ bash_login_path_file() {
     fi
 }
 
-# Single source of truth for the startup files the managed PATH block lands in,
-# in write order. Both setup paths and the confirmation message read it, so the
-# files the installer configures are exactly the files it verifies and names.
 shell_path_files() {
     case $1 in
         zsh) printf '%s\n' "$HOME/.zshrc" ;;
@@ -580,78 +449,6 @@ shell_path_files() {
     esac
 }
 
-# A ~/.bash_profile the installer creates shadows an existing ~/.profile, which
-# login bash read while no override existed. Seed the new file so it keeps
-# sourcing it; ~/.profile itself is left untouched.
-seed_bash_login_file() {
-    seed_login_shell=$1
-    seed_login_file=$2
-    if [ "$seed_login_shell" != bash ] || [ "$seed_login_file" != "$HOME/.bash_profile" ]; then
-        return 0
-    fi
-    if [ -e "$seed_login_file" ] || [ ! -f "$HOME/.profile" ]; then
-        return 0
-    fi
-    cat >"$seed_login_file" 2>/dev/null <<'SEED_BASH_LOGIN_FILE' || return 1
-# Created by the Composio CLI installer.
-# Bash reads this file instead of ~/.profile in login shells.
-if [ -f "$HOME/.profile" ]; then
-    . "$HOME/.profile"
-fi
-SEED_BASH_LOGIN_FILE
-    return 0
-}
-
-inline_shell_setup() {
-    inline_setup_shell=$1
-    inline_setup_bin_dir=$2
-    if is_unsafe_path "$inline_setup_bin_dir"; then
-        return 1
-    fi
-    inline_setup_rendered=$(render_bin_dir "$inline_setup_bin_dir")
-    inline_setup_list=$(shell_path_files "$inline_setup_shell") || return 1
-    inline_setup_status=0
-    while IFS= read -r inline_setup_file; do
-        [ -n "$inline_setup_file" ] || continue
-        if ! seed_bash_login_file "$inline_setup_shell" "$inline_setup_file"; then
-            inline_setup_status=1
-            continue
-        fi
-        write_path_block "$inline_setup_file" "$inline_setup_shell" "$inline_setup_rendered" ||
-            inline_setup_status=1
-    done <<EOF
-$inline_setup_list
-EOF
-    [ "$inline_setup_status" -eq 0 ] || return 1
-    return 0
-}
-
-# Succeeds when one startup file already holds the current managed block.
-delegated_file_current() {
-    [ -f "$1" ] && path_block_current "$1" "$2"
-}
-
-# Stable CLI --shell implementations skip any startup file that already
-# carries the managed marker, so a delegated exit 0 can leave a stale block
-# naming an old bin dir. Confirm every target startup file of the requested
-# shell names the current bin dir before trusting the delegation.
-delegated_setup_verified() {
-    delegated_rendered=$(render_bin_dir "$resolved_bin_dir")
-    delegated_line=$(path_block_line "$requested_shell" "$delegated_rendered") || return 1
-    delegated_list=$(shell_path_files "$requested_shell") || return 1
-    delegated_status=0
-    while IFS= read -r delegated_file; do
-        [ -n "$delegated_file" ] || continue
-        delegated_file_current "$delegated_file" "$delegated_line" || delegated_status=1
-    done <<EOF
-$delegated_list
-EOF
-    [ "$delegated_status" -eq 0 ]
-}
-
-# Both setup paths disclose the same fact: which startup files now carry the
-# managed PATH block. Whether the CLI or the inline fallback wrote them is an
-# implementation detail that stays on the debug channel.
 report_configured_shell() {
     report_configured_files=
     report_configured_list=$(shell_path_files "$requested_shell") || report_configured_list=
@@ -677,29 +474,24 @@ setup_requested_shell() {
         warn "Skipping automatic shell setup: the executable directory \"$resolved_bin_dir\" contains unsupported characters."
         return 1
     fi
-    if "$exe" install --help 2>&1 | grep -q -- '--shell'; then
-        debug "delegating shell setup to $exe install --shell $requested_shell"
-        # The delegated CLI prints its own branded report for a command the
-        # user never ran. Capture both of its streams so the installer keeps
-        # sole ownership of the presentation, and replay them under
-        # COMPOSIO_DEBUG so genuine failures stay diagnosable.
-        setup_delegated_log=$tmpdir/shell-setup-delegated.log
-        setup_delegated_status=0
-        COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" \
-            "$exe" install --shell "$requested_shell" >"$setup_delegated_log" 2>&1 ||
-            setup_delegated_status=$?
-        debug_captured_output \
-            "delegated shell setup exited $setup_delegated_status; captured output:" \
-            "$setup_delegated_log"
-        if [ "$setup_delegated_status" -eq 0 ] && delegated_setup_verified; then
-            debug "shell setup source: cli"
-            report_configured_shell
-            return 0
-        fi
+    if ! "$exe" install --help 2>&1 | grep -q -- '--shell'; then
+        debug "$exe does not support install --shell; skipping automatic shell setup"
+        return 1
     fi
-    debug "falling back to inline $requested_shell shell setup"
-    if inline_shell_setup "$requested_shell" "$resolved_bin_dir"; then
-        debug "shell setup source: fallback"
+    debug "delegating shell setup to $exe install --shell $requested_shell"
+    # The delegated CLI prints its own branded report for a command the user
+    # never ran. Capture both of its streams so the installer keeps sole
+    # ownership of the presentation, and replay them under COMPOSIO_DEBUG so
+    # genuine failures stay diagnosable.
+    setup_delegated_log=$tmpdir/shell-setup-delegated.log
+    setup_delegated_status=0
+    COMPOSIO_CLI_INVOCATION_ORIGIN=installer COMPOSIO_BIN_DIR="$resolved_bin_dir" \
+        "$exe" install --shell "$requested_shell" >"$setup_delegated_log" 2>&1 ||
+        setup_delegated_status=$?
+    debug_captured_output \
+        "delegated shell setup exited $setup_delegated_status; captured output:" \
+        "$setup_delegated_log"
+    if [ "$setup_delegated_status" -eq 0 ]; then
         report_configured_shell
         return 0
     fi
