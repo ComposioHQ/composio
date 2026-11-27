@@ -17,6 +17,8 @@ Permissions in Composio sit at four layers. Each one answers a different questio
 
 Scopes are the only layer the app itself enforces. The other three run in Composio before the request goes out.
 
+To restrict which toolkits' calls reach a webhook hook, see [Guardrails](/docs/hooks/webhooks#guardrails).
+
 ## Allow one tool, deny the rest
 
 This example uses Hacker News, which needs no connected account, so you can run it with only an API key. The session allows `HACKERNEWS_GET_USER` and nothing else from the toolkit.

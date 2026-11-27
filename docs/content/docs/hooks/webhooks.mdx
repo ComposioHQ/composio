@@ -2,7 +2,7 @@
 title: Webhooks
 experimental: true
 description: Allow, block, or modify your agent's tool calls from an endpoint you host
-keywords: [webhook, session webhook, tool execution webhook, hooks, before_execute, after_execute, fallback_action, timeout_ms, signing secret]
+keywords: [webhook, session webhook, tool execution webhook, hooks, before_execute, after_execute, fallback_action, timeout_ms, signing secret, guardrails, applies_to]
 ---
 
 A webhook sends each tool call to an endpoint you host, before or after the tool runs. You respond to allow the tool call, block it, or modify it.
@@ -97,6 +97,16 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tabs>
 
 Set `fallback_action` to choose what happens to a tool call if there's no valid response from your endpoint, and `timeout_ms` to choose how long to wait for one. See [Timeouts](#timeouts) and [Fallback](#fallback).
+
+## Guardrails
+
+A hook's `applies_to` (`appliesTo` in TypeScript) field, shown as `{"toolkits": ["gmail"]}` in the `check_gmail_calls` example above, scopes it to specific toolkits. With that scope, only Gmail tool calls go to your endpoint; every other toolkit's calls go through unchanged. Set `applies_to` to `"all"` instead to send every tool call, across every toolkit, to your endpoint.
+
+The team calls this toolkit-level scoping **Guardrails**: a way to guard which tool calls a given webhook hook can see and act on, instead of routing a session's entire tool traffic to one endpoint. `applies_to` scopes every hook type this way, not only webhooks; see [Which tool calls hooks run on](/docs/hooks#which-tool-calls-hooks-run-on) for how it applies to custom prompt checks and prompt injection detection too.
+
+<Callout type="info">
+Guardrails names the scoping `applies_to` already does, not a new field or behavior. The name is still settling internally, so expect this section's wording, not the underlying behavior, to change.
+</Callout>
 
 ## Request and response payloads
 
