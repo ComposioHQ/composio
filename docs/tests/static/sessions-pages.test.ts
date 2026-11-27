@@ -156,13 +156,18 @@ describe('Sessions task pages', () => {
       const pageChildren = folder.children.filter(node => node.type === 'page');
       expect(pageChildren.map(node => node.url)).toEqual(expectedPages.map(([, url]) => url));
 
-      // Hooks moved under Sessions as its own nested section.
+      // Hooks moved under Sessions as its own nested section. Its own
+      // meta.json lists "index" explicitly among its pages (so each hook
+      // page's frontmatter title is honored), which makes fumadocs treat the
+      // overview as a regular child page rather than the folder's `.index`.
       const hooksFolder = folder.children.find(
         node => node.type === 'folder' && node.name === 'Hooks'
       );
       expect(hooksFolder?.type).toBe('folder');
       if (hooksFolder?.type !== 'folder') throw new Error('Hooks folder is missing under Sessions');
-      expect(hooksFolder.index?.url).toBe('/docs/sessions/hooks');
+      expect(
+        hooksFolder.children.some(node => node.type === 'page' && node.url === '/docs/sessions/hooks')
+      ).toBe(true);
 
       // Bun's MDX test loader uses filename fallbacks for page names.
       // Production compilation reads these frontmatter titles.
