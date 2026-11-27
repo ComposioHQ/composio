@@ -37,6 +37,8 @@ The invocation learns which command it runs after `effect/cli` parsed argv, neve
 
 Each command uses `effect/cli`'s `Command.make()` pattern. The [contributor guide](CONTRIBUTING.md) traces a command from its flags through its handler and argv-level test.
 
+`login --key <id>` completes only the login this machine started and cached; otherwise use `--poll` or start a new login.
+
 Named options use `Flag.String()`, `Flag.Boolean()`, `Flag.Int()`, `Flag.Literals()`, `Flag.Directory()` (from `effect/cli`); positionals use `Argument.String()` / `Argument.variadic()`. Both share `.withDefault`/`.withDescription`/`.withAlias`/`.optional` combinators. Feature flags live in `feature-tags.ts` and `experimental-features.ts`.
 
 To find a command's source, grep [`src/commands/COMMANDS.md`](src/commands/COMMANDS.md) for its path: one row per command registration with its help summary, tree (root or `dev`), the `.cmd.ts` file that defines it, other registrations of the same definition (root shortcuts such as `link`), whether it needs a login, and whether it is unlisted or experimental. It is generated from the command tree (`test/src/commands/commands-map.test.ts`, which finds each registration's definition among the `.cmd.ts` exports); after adding, moving, renaming, or changing the description of a command, run `pnpm --filter @composio/cli run commands:map` and commit the result. `pnpm test` fails while it is stale.

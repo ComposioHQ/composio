@@ -62,7 +62,12 @@ composio execute <TOOL_SLUG> -d '{...}'
 
 `composio search` can return two toolkits for one product, such as `notion` and `notion_mcp`, and they are separate toolkits with separate connections. `composio link` links exactly the slug you give it, so link the same slug you plan to execute.
 
-Use `composio login --no-wait | jq` when the agent cannot open a browser. Give the returned login URL to the user and complete authentication with the returned key. Once installed, prefer the bundled `composio-cli` skill for current command and flag details.
+When the agent cannot open a browser, run `composio login --no-wait`. It prints a login URL and a confirmation code. Give both to the user, then run `composio login --poll --timeout 120` on the same machine; it saves the credentials once the user approves the login in the browser. If it exits with the login still pending, it prints the URL again: wait for the user, then run the same command again. Once installed, prefer the bundled `composio-cli` skill for current command and flag details.
+
+```bash
+composio login --no-wait
+composio login --poll --timeout 120
+```
 
 ## Connect apps when the task needs them
 

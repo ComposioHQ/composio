@@ -5,6 +5,7 @@
 import { Layer, Logger } from 'effect';
 import { CliConfig } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
+import { Digest, SecureRandom } from 'effect/crypto';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
@@ -163,6 +164,8 @@ export const InvocationLive = Layer.mergeAll(
   ProjectContextLive,
   PendingLoginSessionLive,
   BunServices.layer,
+  SecureRandom.layerWebCrypto,
+  Digest.layerWebCrypto,
   BunFileSystem.layer,
   BunPath.layer,
   FetchHttpClient.layer,

@@ -1,14 +1,17 @@
 ---
 title: Authenticate an unattended agent
 description: Obtain a Composio API key without a browser, configure your application, and verify a live tool call.
-keywords: [unattended, autonomous coding agent, agent login, API key, headless, signup, live verification]
+keywords:
+  [unattended, autonomous coding agent, agent login, API key, headless, signup, live verification]
 llmGuardrails: none
 ---
 
 Use `composio login --agent` to create a Composio agent account and sign in without a browser or a separate email signup.
 
 <Callout type="warn" title="Only when no human is available">
-Use this flow for an unattended agent. When a human is available, use their existing Composio account and the [human login flow](#log-in-with-a-human) instead. Agent signup creates a separate account; it does not grant access to a human's projects or connected apps.
+  Use this flow for an unattended agent. When a human is available, use their existing Composio
+  account and the [human login flow](#log-in-with-a-human) instead. Agent signup creates a separate
+  account; it does not grant access to a human's projects or connected apps.
 </Callout>
 
 ## Install and log in
@@ -62,12 +65,13 @@ from composio import Composio
 
 composio = Composio()
 result = composio.client.post(
-    "/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
-    cast_to=object,
-    body={"arguments": {"username": "pg"}},
+"/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
+cast_to=object,
+body={"arguments": {"username": "pg"}},
 )
 print(result)
-```
+
+````
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -78,7 +82,8 @@ const result = await composio.getClient().post<unknown>('/api/v3.1/tools/execute
   body: { arguments: { username: 'pg' } },
 });
 console.log(result);
-```
+````
+
 </Tab>
 <Tab value="API">
 ```bash
@@ -115,7 +120,7 @@ When a human is available but your terminal cannot open a browser, print a login
 composio login --no-wait
 ```
 
-Share the URL with the human so they can sign in to their account, then complete login. Bound the poll so it returns before your turn ends:
+Share the URL and the confirmation code it prints with the human, so they can sign in to their account and check that the browser page shows the same code. Then complete login, bounding the poll so it returns before your turn ends:
 
 ```bash
 composio login --poll --timeout 120

@@ -1,17 +1,19 @@
-import { Array as Arr, Data, Effect, Match, Option, Predicate, pipe } from 'effect';
+import { Array as Arr, Data, DateTime, Effect, Match, Option, pipe } from 'effect';
 import { commandInputError } from 'src/commands/errors';
 import { APP_VERSION } from 'src/constants';
 import { AUTHORIZATION_TIMEOUT_SECONDS } from 'src/effects/authorization-poll';
 import {
   browserLogin,
   emitLoginComplete,
-  loginUrlFor,
+  loginEmail,
   LoginSessionError,
+  mapSessionEnding,
   playgroundTestUserId,
   POLL_COMMAND,
+  reportLoginAccount,
+  settlingPendingLogin,
   storeCredentials,
   waitForLinkedSession,
-  type PendingLoginAnswer,
 } from 'src/effects/browser-login';
 import type { RetrievedSession } from 'src/models/session';
 import { completeAgentLogin } from 'src/effects/complete-agent-login';
@@ -32,7 +34,11 @@ import {
 } from 'src/services/composio-account';
 import { ComposioSessionRepository } from 'src/services/composio-clients';
 import { primeConsumerConnectedToolkitsCacheInBackground } from 'src/services/consumer-short-term-cache';
-import { PendingLoginSession } from 'src/services/pending-login-session';
+import {
+  PendingLoginError,
+  PendingLoginSession,
+  type PendingLogin,
+} from 'src/services/pending-login-session';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { ComposioUserContext } from 'src/services/user-context';
 import { InvalidOrganizationError, LoginSessionRequestError } from './login.errors';
@@ -43,10 +49,11 @@ import {
   INVALID_ORGANIZATION_MESSAGE,
   invalidTimeoutMessage,
   KEY_AND_USER_API_KEY_MESSAGE,
+  KEY_NOT_PENDING_MESSAGE,
   ORG_WITHOUT_USER_API_KEY_MESSAGE,
+  OUTDATED_PENDING_LOGIN_MESSAGE,
   POLL_WITH_OTHER_FLAGS_MESSAGE,
   REAUTHENTICATING_MESSAGE,
-  SESSION_NOT_FOUND_MESSAGE,
   SESSION_NOT_LINKED_HINT,
   SESSION_NOT_LINKED_MESSAGE,
   TIMEOUT_WITHOUT_POLL_MESSAGE,
@@ -126,42 +133,78 @@ const requireLinkedNow = (session: RetrievedSession) =>
     yield* ui.log.info(SESSION_NOT_LINKED_HINT);
     return yield* new LoginSessionError({
       message: 'Session not yet linked',
-      operation: 'poll',
       status: session.status,
     });
   });
 
-/**
- * Completes the CLI session behind `key`: checks it once (`noWait`) or waits until it is
- * linked, then stores its user API key. With `defaultToFirstOrg`, the first of the account's
- * organizations becomes the current org. Reports the login only when `announce`.
- */
-const loginWithKey = (params: {
+type ProvableLogin = {
   readonly key: string;
-  readonly noWait: boolean;
-  readonly announce: boolean;
-  readonly defaultToFirstOrg?: boolean;
-  /** Where the person finishes this login, and how a wait that runs out resumes it. */
-  readonly pending: PendingLoginAnswer;
-  /** How long to wait for the session to link; a pending login's lifetime when omitted. */
-  readonly timeoutSeconds?: number;
-}) =>
+  readonly verifier: string;
+  readonly expiresAt: DateTime.Utc;
+  /** The URL that finishes this login. */
+  readonly loginUrl: string;
+};
+
+const provableLogin = (pending: PendingLogin) =>
+  Effect.gen(function* () {
+    if (pending.verifier === undefined) {
+      return yield* new PendingLoginError({
+        message: OUTDATED_PENDING_LOGIN_MESSAGE,
+        reason: 'outdated',
+      });
+    }
+    const expiresAt = yield* Option.match(DateTime.make(pending.expiresAt), {
+      onNone: () =>
+        Effect.fail(
+          new PendingLoginError({ message: 'Pending login cache is invalid', reason: 'invalid' })
+        ),
+      onSome: Effect.succeed,
+    });
+    return {
+      key: pending.key,
+      verifier: pending.verifier,
+      expiresAt,
+      loginUrl: pending.loginUrl,
+    } satisfies ProvableLogin;
+  });
+
+/**
+ * Completes the cached CLI session: checks it once (`noWait`) or waits until it is linked,
+ * then stores its user API key. The cache is cleared once the key arrives or the API ends the
+ * login, unless it holds another login by then. With `defaultToFirstOrg`, the first of the
+ * account's organizations becomes the current org. Reports the login only when `announce`.
+ */
+const loginWithKey = (
+  params: ProvableLogin & {
+    readonly noWait: boolean;
+    readonly announce: boolean;
+    readonly defaultToFirstOrg?: boolean;
+    /** The command that resumes the wait on the same login when it runs out. */
+    readonly resumeCommand: string;
+    /** How long to wait for the session to link; a pending login's lifetime when omitted. */
+    readonly timeoutSeconds?: number;
+  }
+) =>
   Effect.gen(function* () {
     const client = yield* ComposioSessionRepository;
-    const getSession = client.getSession({ id: params.key }).pipe(
-      // Only a 404 means the session is gone; any other failure keeps its cause.
-      Effect.mapError(cause =>
-        Predicate.isTagged(cause, '@composio/client/NotFoundError')
-          ? new LoginSessionError({ message: SESSION_NOT_FOUND_MESSAGE, operation: 'load', cause })
-          : new LoginSessionRequestError({ message: 'Failed to load the login session.', cause })
-      )
-    );
-    const linkedSession = yield* params.noWait
-      ? Effect.flatMap(getSession, requireLinkedNow)
-      : waitForLinkedSession(getSession, {
-          ...params.pending,
-          timeoutSeconds: params.timeoutSeconds,
-        });
+    const getSession = client
+      .getSession({ id: params.key, verifier: params.verifier })
+      .pipe(
+        mapSessionEnding(
+          cause =>
+            new LoginSessionRequestError({ message: 'Failed to load the login session.', cause })
+        )
+      );
+    const linkedSession = yield* (
+      params.noWait
+        ? Effect.flatMap(getSession, requireLinkedNow)
+        : waitForLinkedSession(getSession, {
+            loginUrl: params.loginUrl,
+            resumeCommand: params.resumeCommand,
+            expiresAt: params.expiresAt,
+            timeoutSeconds: params.timeoutSeconds,
+          })
+    ).pipe(settlingPendingLogin(params.key));
 
     const uakApiKey = linkedSession.api_key;
     const sessionInfo = yield* getSessionInfoByUserApiKey({ userApiKey: uakApiKey });
@@ -192,7 +235,7 @@ const loginWithKey = (params: {
       linkAnalytics: true,
     });
 
-    const email = linkedSession.account.email ?? undefined;
+    const email = loginEmail(sessionInfo, linkedSession);
     if (params.announce) {
       yield* emitLoginComplete({ email, orgId, orgName });
     }
@@ -259,19 +302,15 @@ export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall' | 'ti
     const ui = yield* TerminalUI;
     const timeoutSeconds = yield* parsePollTimeout(params.timeout);
     const pendingLoginSession = yield* PendingLoginSession;
-    const pendingLogin = yield* pendingLoginSession.read;
+    const login = yield* Effect.flatMap(pendingLoginSession.read, provableLogin);
     const result = yield* loginWithKey({
-      key: pendingLogin.key,
+      ...login,
       noWait: false,
       announce: false,
       defaultToFirstOrg: true,
-      pending: {
-        loginUrl: pendingLogin.loginUrl,
-        resumeCommand: `${POLL_COMMAND} --timeout ${timeoutSeconds}`,
-      },
+      resumeCommand: `${POLL_COMMAND} --timeout ${timeoutSeconds}`,
       timeoutSeconds,
     });
-    yield* pendingLoginSession.clear;
 
     const summary: PollLoginSummary = {
       email: result.email,
@@ -283,6 +322,7 @@ export const handlePollLogin = (params: Pick<LoginParams, 'noSkillInstall' | 'ti
     if (canDecorate) {
       yield* ui.note(formatPollLoginComplete(summary), 'Login complete');
     }
+    yield* reportLoginAccount(result);
     yield* ui.output(formatPollLoginJson(summary), { force: true });
     yield* offerSkillInstall(params.noSkillInstall);
   });
@@ -298,20 +338,34 @@ const handleAgentLogin = (params: Pick<LoginParams, 'noSkillInstall'>) =>
     })
   );
 
-/** `login --key`: completes the CLI session a `login --no-wait` printed. */
+/**
+ * `login --key`: completes the CLI session a `login --no-wait` printed, only when it is the one
+ * this machine cached, since only that one comes with its verifier. Any other key fails before
+ * a request is sent.
+ */
 export const handleSessionKeyLogin = (
   params: Pick<LoginParams, 'noWait' | 'noSkillInstall'> & { readonly key: string }
 ) =>
   Effect.gen(function* () {
-    const ctx = yield* ComposioUserContext;
+    const pendingLoginSession = yield* PendingLoginSession;
+    const keyNotPending = invalidOptionValue(KEY_NOT_PENDING_MESSAGE, '--key');
+    const pending = yield* pendingLoginSession.read.pipe(
+      // An expired cache is already deleted, so `--poll` cannot complete it either; its own
+      // error tells the user to start a new login.
+      Effect.catchIf(
+        error => error instanceof PendingLoginError && error.reason === 'missing',
+        () => Effect.fail(keyNotPending)
+      )
+    );
+    if (pending.key !== params.key) {
+      return yield* keyNotPending;
+    }
+    const login = yield* provableLogin(pending);
     yield* loginWithKey({
-      key: params.key,
+      ...login,
       noWait: params.noWait,
       announce: true,
-      pending: {
-        loginUrl: loginUrlFor(ctx.data.webURL, params.key),
-        resumeCommand: `composio login --key ${params.key}`,
-      },
+      resumeCommand: `composio login --key ${params.key}`,
     });
     yield* offerSkillInstall(params.noSkillInstall);
   });

@@ -8,6 +8,12 @@ export const Session = Schema.Struct({
 }).annotate({ identifier: 'Session' });
 export type Session = Schema.Schema.Type<typeof Session>;
 
+export const CreatedSession = Schema.Struct({
+  ...Session.fields,
+  code_challenge_method: Schema.optional(Schema.NullOr(Schema.String)),
+}).annotate({ identifier: 'CreatedSession' });
+export type CreatedSession = Schema.Schema.Type<typeof CreatedSession>;
+
 const SessionAccount = Schema.Struct({
   id: Schema.String,
   email: Schema.String,
