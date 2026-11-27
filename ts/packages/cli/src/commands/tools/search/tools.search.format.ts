@@ -65,18 +65,19 @@ export const collectToolsForResult = (params: {
 export const buildSearchNextSteps = (params: {
   firstSlug?: string;
   firstToolkit?: string;
+  showLinkHint: boolean;
   firstDataArg: string;
   tree: CommandTree;
 }) => {
   const steps: Array<{ action: string; command: string }> = [];
-  if (params.firstToolkit) {
+  if (params.showLinkHint && params.firstToolkit) {
     steps.push({
       action: 'Link a user account',
       command:
         params.tree === 'root'
-          ? commandHintExample('root.link', { toolkit: String(params.firstToolkit).toLowerCase() })
+          ? commandHintExample('root.link', { toolkit: params.firstToolkit })
           : commandHintExample('dev.connectedAccounts.link', {
-              toolkit: String(params.firstToolkit).toLowerCase(),
+              toolkit: params.firstToolkit,
               userId: '<user-id>',
             }),
     });
@@ -106,6 +107,7 @@ export const emitHumanSearchOutput = (params: {
   resultsWithTools: Array<{ result: SearchResult; tools: Tool[] }>;
   nextStepsGuidance: ReadonlyArray<string>;
   firstSlug?: string;
+  showLinkHint: boolean;
   firstDataArg: string;
   tree: CommandTree;
   error: string | null;
@@ -154,7 +156,7 @@ export const emitHumanSearchOutput = (params: {
               userId: '<user-id>',
               data: params.firstDataArg,
             });
-      const steps = params.firstSlug.startsWith('LOCAL_') ? [executeHint] : [linkHint, executeHint];
+      const steps = params.showLinkHint ? [linkHint, executeHint] : [executeHint];
       yield* params.ui.log.step(steps.join('\n'));
     }
 
