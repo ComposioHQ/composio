@@ -93,15 +93,11 @@ ENV XDG_CACHE_HOME="/home/node/.cache"
 RUN pnpm install --frozen-lockfile --ignore-scripts && \
     rm -rf "$(pnpm store path --silent)" /home/node/.cache
 
-# Build and install composio CLI binary into /usr/local/bin/composio
-# This is a simplified version of ts/packages/cli/scripts/build-binary.ts + install-binary.ts
+# Build and install the composio CLI binary into /usr/local/bin/composio, with
+# its companion modules next to it, through the release build script.
 USER root
 WORKDIR /app/ts/packages/cli
-RUN bun build ./src/bin.ts \
-    --env DEBUG_OVERRIDE_* \
-    --compile \
-    --production \
-    --outfile /usr/local/bin/composio
+RUN bun scripts/build-binary.ts --outdir /usr/local/bin
 
 WORKDIR /app
 USER node
