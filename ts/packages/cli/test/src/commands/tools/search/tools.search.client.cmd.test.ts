@@ -188,6 +188,61 @@ describe('CLI: composio search over the API client', () => {
     );
   });
 
+  layer(testLayer)('[Given] a search result with a toolkit connection status', it => {
+    it.effect.each([
+      {
+        name: 'first tool is instant',
+        instantAccount: { allowed_tool_slugs: ['GMAIL_SEND_EMAIL'] },
+        shouldLink: false,
+      },
+      {
+        name: 'toolkit has no instant account',
+        instantAccount: undefined,
+        shouldLink: true,
+      },
+      {
+        name: 'only the related tool is instant',
+        instantAccount: { allowed_tool_slugs: ['GMAIL_CREATE_EMAIL_DRAFT'] },
+        shouldLink: true,
+      },
+    ])(
+      '$name renders the expected link hint in JSON and human output',
+      ({ instantAccount, shouldLink }) =>
+        Effect.gen(function* () {
+          const stub = searchingOver(() =>
+            Response.json({
+              ...searchResponse,
+              toolkit_connection_statuses: [
+                {
+                  toolkit: 'gmail',
+                  has_active_connection: false,
+                  instant_account: instantAccount,
+                },
+              ],
+            })
+          );
+          const search = ['search', 'send an email'];
+          const json = redirectedTerminalUI();
+          yield* cli([...search, '--json']).pipe(Effect.provide([stub.layer, json.layer]));
+          const { next_steps } = JSON.parse(json.stdout());
+          expect(next_steps.steps).toEqual([
+            ...(shouldLink
+              ? [{ action: 'Link a user account', command: 'composio link gmail' }]
+              : []),
+            {
+              action: 'Execute a tool',
+              command: `composio execute "GMAIL_SEND_EMAIL" -d '{"recipient_email":"","body":""}'`,
+            },
+          ]);
+
+          const human = redirectedTerminalUI({ decoratedStderr: true });
+          yield* cli([...search, '--human']).pipe(Effect.provide([stub.layer, human.layer]));
+          expect(human.stderr()).toContain('composio execute "GMAIL_SEND_EMAIL"');
+          expect(human.stderr().includes('composio link ')).toBe(shouldLink);
+        })
+    );
+  });
+
   layer(testLayer)('[Given] a 200 search response the command cannot read', it => {
     it.effect.each([
       { name: 'JSON of another shape', respond: () => Response.json({ unexpected: true }) },

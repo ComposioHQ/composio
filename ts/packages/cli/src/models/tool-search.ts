@@ -46,7 +46,13 @@ export const ToolSearchResponse = Schema.Struct({
   results: Schema.Array(SearchResult),
   tool_schemas: SearchToolSchemas,
   toolkit_connection_statuses: Schema.Array(
-    Schema.Struct({ toolkit: Schema.String, has_active_connection: Schema.Boolean })
+    Schema.Struct({
+      toolkit: Schema.String,
+      has_active_connection: Schema.Boolean,
+      instant_account: Schema.optional(
+        Schema.NullOr(Schema.Struct({ allowed_tool_slugs: Schema.Array(Schema.String) }))
+      ),
+    })
   ),
   error: Schema.optional(Schema.NullOr(Schema.String)),
   next_steps_guidance: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
