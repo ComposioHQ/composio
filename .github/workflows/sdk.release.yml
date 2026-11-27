@@ -75,7 +75,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
       # A dedicated release App, installed with only the permissions the runbook lists.
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # zizmor: ignore[github-app]
         id: app
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -143,7 +143,7 @@ jobs:
           name: sdk-release-patch
           path: /tmp/sdk-release
       # A dedicated release App, installed with only the permissions the runbook lists.
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # zizmor: ignore[github-app]
         id: app
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -209,7 +209,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
       # A dedicated release App, installed with only the permissions the runbook lists.
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # zizmor: ignore[github-app]
         id: app
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -246,7 +246,7 @@ jobs:
       - uses: ./.github/actions/setup-node-pnpm-bun
       - run: pnpm install --frozen-lockfile --ignore-scripts
       # A dedicated release App, installed with only the permissions the runbook lists.
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # zizmor: ignore[github-app]
         id: app
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
@@ -464,7 +464,7 @@ jobs:
             echo "needed=true" >> "$GITHUB_OUTPUT"
           fi
       # A dedicated release App, installed with only the permissions the runbook lists.
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # zizmor: ignore[github-app]
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # zizmor: ignore[github-app]
         id: app
         if: steps.changes.outputs.needed == 'true'
         with:
