@@ -1,31 +1,26 @@
 name: Claude Code
 
+# Claude runs only when a maintainer starts it from the Actions tab
+# (or `gh workflow run claude.yml -f task="..."`). It is not triggered by
+# issues, comments, or reviews: this repository is public, and those events
+# let outside users put text in front of an agent that can run shell
+# commands with repository write access (prompt injection).
 on:
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  issues:
-    types: [opened, assigned]
-  pull_request_review:
-    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What should Claude do? Example: 'Fix the failing test in X and open a PR.'"
+        required: true
+        type: string
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
-      id-token: write
+      contents: write # push Claude's own branch
+      pull-requests: write # open a pull request
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,29 +33,15 @@ jobs:
         uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_bots: "devin-ai-integration[bot],decimal-pr-bot[bot],github-actions[bot],dependabot[bot],zen-agent"
+          # Use the job's GITHUB_TOKEN (scoped to the permissions above and
+          # expiring with the job) instead of minting a GitHub App token.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            ${{ inputs.task }}
 
-          # Optional: Custom settings and environment variables for Claude
-          # settings: |
-          #   {
-          #     "env": {
-          #       "NODE_ENV": "test",
-          #       "CI": "true"
-          #     }
-          #   }
+            Always work on a new branch and open a pull request. Never push to `next`.
 
           # https://code.claude.com/docs/en/cli-reference#cli-flags
-          # -- model: "claude-opus-4-20250514"
           # claude_args: |
-          #   --allowedTools "Bash(pnpm install),Bash(pnpm build:packages),Bash(pnpm build:binary),Bash(pnpm test:*)"
-          #   --model: "claude-opus-4-20250514"
-          #   --append-system-prompt: |
-            #   Follow our coding standards
-            #   Ensure all new code has tests
-            #   Use TypeScript for new files
-
-          # Optional: Customize the trigger phrase (default: @claude)
-          # trigger_phrase: "/claude"
-          
-          # Optional: Trigger when specific user is assigned to an issue
-          # assignee_trigger: "claude-bot"
+          #   --model "claude-opus-4-20250514"
+          #   --append-system-prompt "Follow our coding standards"
