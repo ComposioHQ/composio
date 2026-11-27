@@ -58,7 +58,7 @@ describe("Navigation - meta.json validity", () => {
     expect(separators).toEqual([
       "---Get Started---",
       "---Core concepts---",
-      "---Governance---",
+      "---Guardrails---",
       "---Guides---",
       "---Direct execution (legacy)---",
       "---Security and Compliance---",
@@ -78,14 +78,14 @@ describe("Navigation - meta.json validity", () => {
 
     expect(
       pages.slice(
-        pages.indexOf("---Governance---") + 1,
+        pages.indexOf("---Guardrails---") + 1,
         pages.indexOf("---Guides---")
       )
     ).toEqual([
-      "governance/action-permissions",
-      "governance/tool-hints",
-      "governance/approvals",
-      "firewall",
+      "guardrails/index",
+      "guardrails/action-permissions",
+      "guardrails/tool-hints",
+      "guardrails/approvals",
     ]);
 
     expect(

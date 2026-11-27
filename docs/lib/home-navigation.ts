@@ -182,16 +182,6 @@ export const DOCS_PRODUCTS = {
           },
           {
             type: 'group',
-            label: 'Hooks',
-            links: [
-              { url: '/docs/sessions/hooks' },
-              { url: '/docs/sessions/hooks/custom-prompt-checks' },
-              { url: '/docs/sessions/hooks/prompt-injection-detection' },
-              { url: '/docs/sessions/hooks/webhooks' },
-            ],
-          },
-          {
-            type: 'group',
             label: 'Guardrails',
             links: [
               { url: '/docs/guardrails' },

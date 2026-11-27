@@ -231,11 +231,11 @@ describe('Docs product navigation', () => {
       '/docs/security/vendor-security-review',
     );
     expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])).toBeUndefined();
-    const governance = platformTree.children.find(
-      node => node.type === 'folder' && node.name === 'Governance',
+    const guardrails = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Guardrails',
     );
-    expect(governance?.type).toBe('folder');
-    expect(securityPages).not.toContain(governance);
+    expect(guardrails?.type).toBe('folder');
+    expect(securityPages).not.toContain(guardrails);
 
     const readiness = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],
