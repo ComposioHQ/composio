@@ -20,6 +20,7 @@ import { openapiSource, openapiPlugin } from 'fumadocs-openapi/server';
 import { getGuardrails } from './llm-guardrails';
 import { isHiddenApiTagUrl } from './filter-api-version';
 import { FILE_BUILDS } from './file-builds';
+import { replaceOutsideCode } from './markdown-code-guard';
 import { replaceRepoBrowserMarkdown } from './repo-browser-markdown';
 import { transformDeprecatedApiSidebarNode } from './deprecated-api-sidebar';
 import { API_BASE_URLS, detectApiVersion, type ApiVersion } from './api-version';
@@ -30,8 +31,9 @@ import { PACKAGE_MANAGERS } from './package-install';
 import { z } from 'zod';
 import { promptFor, SETUP_PROMPT } from './agent-prompts';
 import { AGENTS } from './agent-setup-clients';
-import { HOME_OG_DESCRIPTION } from './toolkit-count';
+import { HOME_OG_DESCRIPTION, resolveToolkitCount } from './toolkit-count';
 import { componentsToMarkdown } from './example-document';
+import { providerListMarkdown } from './providers';
 
 /**
  * True if a reference URL belongs to an intentionally-hidden API tag
@@ -354,7 +356,7 @@ function endpointsTableToMarkdown(payload: string, version: ApiVersion, url?: st
  * there since the changelog tree is not versioned.
  */
 export function mdxToCleanMarkdown(content: string, url?: string): string {
-  let result = content;
+  let result = resolveToolkitCount(content);
   const version = url ? detectApiVersion(url) : '3.1';
 
   // Remove frontmatter
@@ -418,8 +420,8 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
   result = result.replace(/<\/?Cards\b[^>]*>/g, '');
 
   result = result.replace(
-    /<ProviderCard[\s\S]*?name="([^"]*)"[\s\S]*?href="([^"]*)"[\s\S]*?languages=\{\[([^\]]*)\]\}[\s\S]*?\/>/g,
-    (_, name, href, langs) => `- [${name}](${href}) (${langs.replace(/"/g, '')})`
+    /<ProviderList\s+group="(ai-sdks|agent-frameworks|custom)"\s*\/>/g,
+    (_, group: 'ai-sdks' | 'agent-frameworks' | 'custom') => providerListMarkdown(group),
   );
 
   result = result.replace(/^[ \t]+(- \[)/gm, '$1');
@@ -539,13 +541,15 @@ export function mdxToCleanMarkdown(content: string, url?: string): string {
 
   result = replaceRepoBrowserMarkdown(result);
 
-  result = result.replace(
-    /<\/?(ProviderGrid|Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
-    ''
+  result = replaceOutsideCode(result, segment =>
+    segment
+      .replace(
+        /<\/?(Tabs|Frame|div|QuickstartFlow|IntegrationTabs|Accordions|ToolTypeFlow|ToolkitsLanding|TemplateGrid|Glossary|ConnectFlow|ConnectClientOption)[^>]*>/g,
+        ''
+      )
+      .replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '')
+      .replace(/<\/?[A-Z][a-zA-Z]*[^>]*>/g, '')
   );
-
-  result = result.replace(/<[A-Z][a-zA-Z]*[\s\S]*?\/>/g, '');
-  result = result.replace(/<\/?[A-Z][a-zA-Z]*[^>]*>/g, '');
 
   const lines = result.split('\n');
   const normalizedLines: string[] = [];

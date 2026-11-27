@@ -1,14 +1,17 @@
 ---
 title: Authenticate an unattended agent
 description: Obtain a Composio API key without a browser, configure your application, and verify a live tool call.
-keywords: [unattended, autonomous coding agent, agent login, API key, headless, signup, live verification]
+keywords:
+  [unattended, autonomous coding agent, agent login, API key, headless, signup, live verification]
 llmGuardrails: none
 ---
 
 Use `composio login --agent` to create a Composio agent account and sign in without a browser or a separate email signup.
 
 <Callout type="warn" title="Only when no human is available">
-Use this flow for an unattended agent. When a human is available, use their existing Composio account and the [human login flow](#log-in-with-a-human) instead. Agent signup creates a separate account; it does not grant access to a human's projects or connected apps.
+  Use this flow for an unattended agent. When a human is available, use their existing Composio
+  account and the [human login flow](#log-in-with-a-human) instead. Agent signup creates a separate
+  account; it does not grant access to a human's projects or connected apps.
 </Callout>
 
 ## Install and log in
@@ -62,12 +65,13 @@ from composio import Composio
 
 composio = Composio()
 result = composio.client.post(
-    "/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
-    cast_to=object,
-    body={"arguments": {"username": "pg"}},
+"/api/v3.1/tools/execute/HACKERNEWS_GET_USER",
+cast_to=object,
+body={"arguments": {"username": "pg"}},
 )
 print(result)
-```
+
+````
 </Tab>
 <Tab value="TypeScript">
 ```typescript
@@ -78,7 +82,8 @@ const result = await composio.getClient().post<unknown>('/api/v3.1/tools/execute
   body: { arguments: { username: 'pg' } },
 });
 console.log(result);
-```
+````
+
 </Tab>
 <Tab value="API">
 ```bash
@@ -97,6 +102,16 @@ Then run the integration's own script or API route with the same project key and
 
 For an authorized write action, verify the resulting object or state through a follow-up read or the provider's UI. Record the tool slug, sanitized result, and returned log ID if present. If only the Hacker News check succeeds, report that check separately from the requested integration action. If app authorization is unavailable, report the remaining connection step and leave the action unverified.
 
+## Hand the account to a human
+
+To let a person manage the agent's organization later, invite them as an admin from the machine that holds the agent identity:
+
+```bash
+composio agent claim person@example.com
+```
+
+The command uses the saved agent key and fails if the CLI is signed in as a human user. `composio agent whoami` reports the claiming admin in `claimed_by`, or `null` until the claim completes. Claiming is optional; the agent account works without it.
+
 ## Log in with a human
 
 When a human is available but your terminal cannot open a browser, print a login URL:
@@ -105,10 +120,10 @@ When a human is available but your terminal cannot open a browser, print a login
 composio login --no-wait
 ```
 
-Share the URL and the confirmation code it prints with the human, so they can sign in to their account and check that the browser page shows the same code. Then complete login:
+Share the URL and the confirmation code it prints with the human, so they can sign in to their account and check that the browser page shows the same code. Then complete login, bounding the poll so it returns before your turn ends:
 
 ```bash
-composio login --poll
+composio login --poll --timeout 120
 ```
 
-The pending login expires after ten minutes. Run `composio login --no-wait` again if it expires. For a human account, obtain a [project API key](/reference/authenticating-to-composio#project-api-key) from the dashboard.
+`--timeout` takes seconds, from 1 to 600. A poll that runs out exits non-zero, prints the login URL again, and says to run the same command again once the human has clicked. The pending login expires after ten minutes; run `composio login --no-wait` again if it expires. For a human account, obtain a [project API key](/reference/authenticating-to-composio#project-api-key) from the dashboard.

@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ComposioClient from '@composio/client';
 import { Webhooks, WebhookSubscriptions, WebhookEndpoints } from '../../src/models/Webhooks';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
+
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -85,12 +86,9 @@ describe('Webhooks', () => {
     });
 
     it('instruments every class with telemetry', () => {
-      expect(telemetry.instrument).toHaveBeenCalledWith(webhooks, 'Webhooks');
-      expect(telemetry.instrument).toHaveBeenCalledWith(
-        webhooks.subscriptions,
-        'WebhookSubscriptions'
-      );
-      expect(telemetry.instrument).toHaveBeenCalledWith(webhooks.endpoints, 'WebhookEndpoints');
+      expect(instrument).toHaveBeenCalledWith(webhooks, 'Webhooks');
+      expect(instrument).toHaveBeenCalledWith(webhooks.subscriptions, 'WebhookSubscriptions');
+      expect(instrument).toHaveBeenCalledWith(webhooks.endpoints, 'WebhookEndpoints');
     });
   });
 

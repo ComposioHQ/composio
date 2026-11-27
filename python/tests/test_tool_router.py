@@ -6,6 +6,7 @@ import os
 import traceback
 import typing as t
 import warnings
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -32,7 +33,6 @@ from pydantic import BaseModel, Field
 from composio.client import HttpClient
 from composio.core.models.experimental import ExperimentalAPI
 from composio.core.models.session_context import SessionContextImpl
-from composio.core.provider import get_execution_target
 from composio.core.models.tool_router import (
     SESSION_PRESET_DIRECT_TOOLS,
     ToolkitConnectionsDetails,
@@ -48,12 +48,15 @@ from composio.core.models.tool_router import (
 )
 from composio.core.models.tool_router_session import (
     DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX,
+    ToolRouterHook,
     ToolRouterSession,
     ToolRouterSessionExecuteResponse,
     ToolRouterSessionMetaToolSlug,
     ToolRouterSessionWithMcp,
 )
+from composio.core.provider import get_execution_target
 from composio.exceptions import (
+    ComposioDeprecationWarning,
     InvalidParams,
     MCPDestinationError,
     SessionConfigConflictError,
@@ -892,7 +895,7 @@ class TestToolRouter:
             tool_router.create(
                 user_id="user_123",
                 preload={"tools": ["GREP"]},
-                experimental={"custom_tools": [grep]},
+                experimental={"local_tools": [grep]},
             )
 
         mock_client.tool_router.session.create.assert_not_called()
@@ -984,7 +987,7 @@ class TestToolRouter:
             session_preset=SESSION_PRESET_DIRECT_TOOLS,
             toolkits=["github"],
             preload={"tools": ["GITHUB_CREATE_ISSUE"]},
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
@@ -1278,7 +1281,7 @@ class TestToolRouter:
         mock_custom_tool.extends_toolkit = None
         mock_response.experimental.custom_tools = [mock_custom_tool]
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
 
         mock_client.tool_router.session.attach.assert_called_once()
         kwargs = mock_client.tool_router.session.attach.call_args.kwargs
@@ -1286,8 +1289,8 @@ class TestToolRouter:
         assert "custom_toolkits" not in kwargs["experimental"]
         mock_client.tool_router.session.retrieve.assert_not_called()
         mock_client.post.assert_not_called()
-        assert session.custom_tools()[0].slug == "SERVER_GREP"
-        assert session.custom_tools()[0].name == "Grep"
+        assert session.local_tools()[0].slug == "SERVER_GREP"
+        assert session.local_tools()[0].name == "Grep"
 
     @patch("composio.core.models.tools.Tools")
     def test_use_session_attaches_preloaded_custom_tools(
@@ -1330,7 +1333,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
 
         mock_client.tool_router.session.attach.assert_called_once()
@@ -1386,7 +1389,7 @@ class TestToolRouter:
         mock_tools_class.return_value = mock_tools_instance
         mock_provider.wrap_tools.return_value = "mocked-custom-tools"
 
-        session = tool_router.use(session_id="session_123", custom_tools=[grep])
+        session = tool_router.use(session_id="session_123", local_tools=[grep])
         session.tools()
         session.search(query="search local text")
 
@@ -1734,7 +1737,7 @@ class TestToolRouter:
 
         session = tool_router.create(
             user_id="user_123",
-            experimental={"custom_tools": [grep]},
+            experimental={"local_tools": [grep]},
         )
         result = session.tools()
 
@@ -1901,6 +1904,192 @@ class TestToolRouter:
             "retrieved_session"
         )
         mock_client.post.assert_not_called()
+
+
+def _local_grep_tool():
+    @experimental_api.tool(slug="GREP", name="Grep", description="Search local text")
+    def grep(input: GrepInput, ctx):
+        return {"matches": []}
+
+    return grep
+
+
+def _local_role_toolkit():
+    toolkit = experimental_api.Toolkit(
+        slug="ROLES", name="Roles", description="Manage roles"
+    )
+
+    @toolkit.tool(slug="SET_ROLE")
+    def set_role(input: GrepInput, ctx):
+        """Set a role."""
+        return {"ok": True}
+
+    return toolkit
+
+
+def _mock_local_tools_response(response):
+    response.experimental = MagicMock()
+    response.experimental.assistive_prompt = None
+    server_tool = MagicMock()
+    server_tool.slug = "LOCAL_GREP"
+    server_tool.original_slug = "GREP"
+    server_tool.extends_toolkit = None
+    response.experimental.custom_tools = [server_tool]
+    server_toolkit = MagicMock()
+    server_toolkit.slug = "ROLES"
+    server_toolkit.tools = [
+        MagicMock(slug="LOCAL_ROLES_SET_ROLE", original_slug="SET_ROLE")
+    ]
+    response.experimental.custom_toolkits = [server_toolkit]
+
+
+class TestLocalToolsOptions:
+    """`local_tools`/`local_toolkits` and their deprecated `custom_*` aliases."""
+
+    def test_create_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "local_tools": [tool],
+                    "local_toolkits": [toolkit],
+                },
+            )
+
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+        assert [tk.slug for tk in session.local_toolkits()] == ["ROLES"]
+
+    def test_create_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.create.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.create(
+                user_id="user_123",
+                experimental={
+                    "custom_tools": [tool],
+                    "custom_toolkits": [toolkit],
+                },
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.create.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert experimental["custom_toolkits"][0]["slug"] == "ROLES"
+        assert session.local_tools()[0].slug == "LOCAL_GREP"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_create_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.create(
+                user_id="user_123",
+                experimental=t.cast(
+                    ToolRouterExperimentalConfig,
+                    {new_name: [value()], old_name: [value()]},
+                ),
+            )
+
+        mock_client.tool_router.session.create.assert_not_called()
+
+    def test_use_with_local_tools_sends_custom_wire_fields(
+        self, tool_router, mock_client
+    ):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            session = tool_router.use(
+                "session_123",
+                local_tools=[tool],
+                local_toolkits=[toolkit],
+            )
+
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert set(experimental) == {"custom_tools", "custom_toolkits"}
+        assert [tool.slug for tool in session.local_tools()] == [
+            "LOCAL_GREP",
+            "LOCAL_ROLES_SET_ROLE",
+        ]
+
+    def test_use_with_deprecated_custom_names_warns(self, tool_router, mock_client):
+        _mock_local_tools_response(mock_client.tool_router.session.attach.return_value)
+        tool = _local_grep_tool()
+        toolkit = _local_role_toolkit()
+
+        with pytest.warns(ComposioDeprecationWarning) as record:
+            session = tool_router.use(
+                "session_123",
+                custom_tools=[tool],
+                custom_toolkits=[toolkit],
+            )
+
+        assert [str(w.message) for w in record] == [
+            "`custom_tools` is deprecated; use `local_tools`",
+            "`custom_toolkits` is deprecated; use `local_toolkits`",
+        ]
+        assert record[0].filename == __file__
+        experimental = mock_client.tool_router.session.attach.call_args.kwargs[
+            "experimental"
+        ]
+        assert experimental["custom_tools"][0]["slug"] == "GREP"
+        assert session.local_toolkits()[0].slug == "ROLES"
+
+    @pytest.mark.parametrize(
+        ("new_name", "old_name", "value"),
+        [
+            ("local_tools", "custom_tools", _local_grep_tool),
+            ("local_toolkits", "custom_toolkits", _local_role_toolkit),
+        ],
+    )
+    def test_use_rejects_new_and_deprecated_names_together(
+        self, tool_router, mock_client, new_name, old_name, value
+    ):
+        with pytest.raises(
+            InvalidParams,
+            match=f"^Pass either `{new_name}` or `{old_name}`, not both",
+        ):
+            tool_router.use("session_123", **{new_name: [value()], old_name: [value()]})
+
+        mock_client.tool_router.session.attach.assert_not_called()
+        mock_client.tool_router.session.retrieve.assert_not_called()
 
 
 class TestToolRouterTypes:
@@ -2129,11 +2318,12 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Provider-wrapped session tools pass inline custom definitions."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_execute_response.result_type = "completed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"result": "success"},
+            error=None,
+            result_type="completed",
+            log_id="log-inline",
+        )
 
         from composio.core.models.tools import Tools as RealTools
 
@@ -2171,11 +2361,12 @@ class TestToolRouterExecution:
         self, tool_router, mock_client, mock_provider
     ):
         """Test that modifiers are applied before and after tool execution."""
-        mock_execute_response = MagicMock()
-        mock_execute_response.data = {"result": "success"}
-        mock_execute_response.error = None
-        mock_execute_response.result_type = "completed"
-        mock_client.tool_router.session.execute.return_value = mock_execute_response
+        mock_client.tool_router.session.execute.return_value = SessionExecuteResponse(
+            data={"result": "success"},
+            error=None,
+            result_type="completed",
+            log_id="log-modified",
+        )
 
         # Create modifier functions
         def before_modifier(tool, toolkit, params):
@@ -2832,7 +3023,7 @@ class TestSessionHooks:
     shape the generated client hands to the SDK.
     """
 
-    _HOOKS: t.List[t.Any] = [
+    _HOOKS: list[ToolRouterHook] = [
         {
             "type": "before_execute",
             "id": "no_external_email",
@@ -2852,11 +3043,37 @@ class TestSessionHooks:
         },
     ]
 
-    def test_create_sends_hooks(self, tool_router, mock_client):
-        tool_router.create(user_id="user_123", hooks=self._HOOKS)
+    _WEBHOOK_HOOKS: list[ToolRouterHook] = [
+        {
+            "type": "before_execute",
+            "id": "check_outgoing_email",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "webhook",
+                "fallback_action": "block",
+                "timeout_ms": 2000,
+            },
+        },
+        {
+            "type": "after_execute",
+            "id": "redact_results",
+            "applies_to": "all",
+            "handler": {"type": "webhook", "fallback_action": "continue"},
+        },
+    ]
+
+    @pytest.mark.parametrize(
+        "hooks",
+        [
+            pytest.param(_HOOKS, id="built-in"),
+            pytest.param(_WEBHOOK_HOOKS, id="webhook"),
+        ],
+    )
+    def test_create_sends_hooks(self, tool_router, mock_client, hooks):
+        tool_router.create(user_id="user_123", hooks=deepcopy(hooks))
 
         kwargs = mock_client.tool_router.session.create.call_args.kwargs
-        assert kwargs["hooks"] == self._HOOKS
+        assert kwargs["hooks"] == hooks
 
     def test_create_omits_hooks_by_default(self, tool_router, mock_client):
         tool_router.create(user_id="user_123")
@@ -2865,22 +3082,23 @@ class TestSessionHooks:
         assert "hooks" not in kwargs
 
     @pytest.mark.parametrize(
-        ("hooks", "expected"),
+        "hooks",
         [
-            pytest.param(_HOOKS, _HOOKS, id="replace"),
-            pytest.param(None, None, id="remove"),
+            pytest.param(_HOOKS, id="replace"),
+            pytest.param(_WEBHOOK_HOOKS, id="webhook"),
+            pytest.param(None, id="remove"),
         ],
     )
-    def test_update_sends_hooks(self, hooks, expected):
+    def test_update_sends_hooks(self, hooks):
         client, requests = _transport_client(
             auth=ProjectAuth("ak_test"), base_url="https://backend.composio.dev"
         )
         session = _created_session(client)
 
-        session.update(hooks=hooks)
+        session.update(hooks=deepcopy(hooks))
 
         body = json.loads(requests[-1].content)
-        assert body["hooks"] == expected
+        assert body["hooks"] == hooks
 
     @pytest.mark.parametrize(
         "hooks",
@@ -2946,6 +3164,10 @@ class TestSessionHooks:
         assert result.hook_results == [
             {"id": "no_external_email", "status": "evaluated", "outcome": "block"}
         ]
+        assert (
+            ToolRouterSessionExecuteResponse.model_validate(result.model_dump())
+            == result
+        )
 
     @pytest.mark.parametrize(
         "body",
@@ -3034,6 +3256,28 @@ class TestSessionHooks:
         assert result.hook_results == [
             {"id": "block_injection", "status": "unavailable"}
         ]
+
+    def test_unavailable_webhook_hook_says_why(self):
+        unavailable = {
+            "id": "check_outgoing_email",
+            "status": "unavailable",
+            "detail": "The webhook endpoint timed out",
+        }
+        client, _ = _answering_client(
+            {
+                **_BLOCKED_CALL_JSON,
+                "reason": {
+                    "type": "request_blocked",
+                    "hook_id": "check_outgoing_email",
+                },
+                "hook_results": [unavailable],
+            }
+        )
+
+        result = _created_session(client).execute("GMAIL_SEND_EMAIL", arguments={})
+
+        assert result.result_type == "blocked"
+        assert result.hook_results == [unavailable]
 
     @pytest.mark.parametrize(
         "run",
@@ -3254,7 +3498,13 @@ class TestSessionExecutionSuccess:
         result = _session_tool_execute_fn(client)("GMAIL_SEND_EMAIL", {})
 
         # The error is passed through as the API sent it.
-        assert result == {"data": {}, "error": error, "successful": successful}
+        assert result == {
+            "data": {},
+            "error": error,
+            "successful": successful,
+            "log_id": "log",
+            "result_type": result_type,
+        }
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
     def test_provider_tool_call_bound_to_a_session(
@@ -3268,7 +3518,13 @@ class TestSessionExecutionSuccess:
             target=_created_session(client), slug="GMAIL_SEND_EMAIL", arguments={}
         )
 
-        assert result == {"data": {}, "error": error, "successful": successful}
+        assert result == {
+            "data": {},
+            "error": error,
+            "successful": successful,
+            "log_id": "log",
+            "result_type": result_type,
+        }
 
     @pytest.mark.parametrize(("result_type", "error", "successful"), _EXECUTED_ANSWERS)
     def test_session_execute_exposes_result_type(self, result_type, error, successful):

@@ -51,17 +51,6 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
-      - name: Generate read-only KB source token
-        id: source-token
-        continue-on-error: true
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          client-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
-          owner: ComposioHQ
-          repositories: support-knowledge
-          permission-contents: read
-
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -93,7 +82,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm-bun
 
       # Docs must reflect PRODUCTION. No base-URL override is set here: the
-      # generators default to the production API (docs/scripts/production-api.mjs).
+      # Toolkit and OpenAPI generators default to production (docs/scripts/production-api.mjs).
       # Previously this step pointed the fetch at STAGING, which published staging
       # hosts (and unreleased content) into the committed docs.
       # NOTE: requires COMPOSIO_DOCS_API_KEY to have PRODUCTION read access.
@@ -119,6 +108,8 @@ jobs:
         run: bun run generate:api-index
 
       - name: Generate meta tools reference
+        env:
+          COMPOSIO_META_TOOLS_SCHEMA_URL: ${{ vars.COMPOSIO_META_TOOLS_SCHEMA_URL }}
         run: bun run generate:meta-tools
 
       # The published KB makes claims about tool slugs, toolkits, and provider docs.
@@ -128,17 +119,9 @@ jobs:
       - name: Verify KB freshness against refreshed data
         id: verify-kb
         continue-on-error: true
-        env:
-          # Resolves manifest.source.commit on the upstream KB repository. Without
-          # read access there the check reports "unverifiable" and stays silent,
-          # so an unset or narrow token degrades quietly rather than crying wolf.
-          GH_TOKEN: ${{ steps.source-token.outputs.token }}
         run: |
           set +e
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "KB source token unavailable; source-pin status will be unverifiable."
-          fi
-          bun scripts/verify-kb.ts --check-links --check-source-pin \
+          bun scripts/verify-kb.ts --check-links \
             --markdown "$RUNNER_TEMP/kb-freshness.md"
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           cat "$RUNNER_TEMP/kb-freshness.md" >> "$GITHUB_STEP_SUMMARY"
@@ -160,7 +143,7 @@ jobs:
       - name: Create Pull Request
         id: create-pr
         if: steps.changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
           token: ${{ steps.app-token.outputs.token }}
           commit-message: 'docs: update toolkits and API data'
@@ -177,7 +160,7 @@ jobs:
             - **Toolkit catalog** (`docs/public/data/toolkits.json`, `toolkits-list.json`) — refreshed list of available toolkits, auth schemes, and tools from the backend API
             - **OpenAPI specs** (`docs/public/openapi.json`, `docs/public/openapi-v3.json`, `docs/public/openapi-webhooks.json`) — latest v3.1 and v3.0 API specifications plus the webhook-events spec, fetched from production
             - **API reference pages** (`docs/content/reference/api-reference/`, `docs/content/reference/v3/api-reference/`) — regenerated index pages for both API versions
-            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — updated meta tool schemas and reference docs
+            - **Meta tools reference** (`docs/public/data/meta-tools.json`, `docs/content/toolkits/meta-tools/*.mdx`) — generated from the bundled schema snapshot or the configured Platform export
           branch: docs/auto-update-data
           base: next
           add-paths: |
@@ -335,7 +318,7 @@ jobs:
           {
             echo "\`verify:kb\` found published KB guides whose claims no longer match production."
             echo
-            echo "Fix the guide, or demote it to \`state: needs-review\` in \`docs/kb/manifest.json\`"
+            echo "Fix the guide, or demote it to \`state: needs-review\` in its \`docs/kb/guides/<slug>.json\`"
             echo "so it stops serving readers while it is wrong."
             echo
             cat "$RUNNER_TEMP/kb-freshness.md" 2>/dev/null \

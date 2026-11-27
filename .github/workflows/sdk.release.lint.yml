@@ -1,0 +1,41 @@
+name: SDK release lint
+
+# Checks the release workflows, and the reference-drift check that runs generators on PR code,
+# before they can run: actionlint for syntax, expressions and shell, and zizmor for security
+# problems such as template injection, unpinned actions and dangerous triggers. Each accepted
+# zizmor finding is suppressed inline with its reason.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/sdk.release*.yml'
+      - '.github/workflows/docs-sdk-reference-drift.yml'
+      - '.github/ISSUE_TEMPLATE/sdk-release.yml'
+      - '.github/actions/**'
+
+permissions:
+  contents: read
+
+jobs:
+  workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-python-uv
+        with:
+          enable-caching: 'false'
+      # actionlint 1.7.12 predates the concurrency `queue` key, which GitHub accepts.
+      - name: actionlint
+        run: >-
+          uvx --from actionlint-py==1.7.12.24 actionlint
+          -ignore 'unexpected key "queue" for "concurrency" section'
+          .github/workflows/sdk.release*.yml
+          .github/workflows/docs-sdk-reference-drift.yml
+      - name: zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          uvx zizmor==1.31.1 --min-severity medium --format github
+          .github/workflows/sdk.release*.yml
+          .github/workflows/docs-sdk-reference-drift.yml

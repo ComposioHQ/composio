@@ -34,7 +34,7 @@ type_stubs = [
     "types-jsonschema==4.26.0.20260518",
     "anthropic==0.120.0",
     # Keep this aligned with the CrewAI provider dependency metadata.
-    "crewai==1.15.7",
+    "crewai==1.15.42",
     "langchain==1.3.14",
     "langgraph==1.2.9",
     "llama-index==0.14.23",

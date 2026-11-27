@@ -5,7 +5,13 @@
  * it carries.
  */
 import { isAPIError } from '@composio/client/effect';
-import { Data, DateTime, Effect, Option, Schedule, pipe } from 'effect';
+import { Data, DateTime, Duration, Effect, Option, Ref, pipe } from 'effect';
+import { formatLoginStillPending } from 'src/commands/login/login.format';
+import {
+  AUTHORIZATION_TIMEOUT_MINUTES,
+  AUTHORIZATION_TIMEOUT_SECONDS,
+  authorizationPollScheduleFor,
+} from 'src/effects/authorization-poll';
 import { CODE_CHALLENGE_METHOD, makeCliSessionProof } from 'src/effects/cli-session-proof';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import open from 'open';
@@ -73,10 +79,14 @@ class LoginBrowserOpenError extends Data.TaggedError('commands/LoginBrowserOpenE
 
 export type LinkedSession = Extract<RetrievedSession, { readonly status: 'linked' }>;
 
-/** Seconds between two checks of a session that is not linked yet. */
-const LOGIN_POLL_INTERVAL_SECONDS = 5;
+/** The command that completes a browser login another process cached. */
+export const POLL_COMMAND = 'composio login --poll';
 
-const POLL_COMMAND = 'composio login --poll';
+/**
+ * The bound the login instructions teach an agent, in seconds: short enough to fit inside a turn
+ * of the caller's own deadline, long enough not to give up while a person finds the page.
+ */
+const AGENT_POLL_TIMEOUT_SECONDS = 120;
 
 const LINK_CONFLICT_SLUG = 'CLI_SessionLinkConflict';
 
@@ -113,7 +123,7 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL and the confirmation code above to the user, so they can check that the browser page shows the same code, then run the command above. The command uses the cached login key, polls for up to 10 minutes, and exits once credentials are saved. Do not ask the user whether to poll — they already requested login.
+hint: For agents: Show the URL and the confirmation code above to the user, so they can check that the browser page shows the same code, then run \`${params.pollCommand} --timeout ${AGENT_POLL_TIMEOUT_SECONDS}\`. It waits at most that long and exits once credentials are saved; the pending login lives ${AUTHORIZATION_TIMEOUT_MINUTES} minutes. If it exits with the login still pending, it prints the URL again — wait for the user to click, then run the same command again. Do not ask the user whether to poll — they already requested login.
 
 hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
 
@@ -195,15 +205,29 @@ export const playgroundTestUserId = (
     Option.getOrUndefined
   );
 
-const requireLinkedSession = (session: RetrievedSession) =>
+/** The URL a person opens to link the CLI session `sessionId`. */
+export const loginUrlFor = (webURL: string, sessionId: string) => `${webURL}?cliKey=${sessionId}`;
+
+/** Where a waiting login sends the person when it runs out, and how to pick it up again. */
+export type PendingLoginAnswer = {
+  /** The URL that finishes this login. */
+  readonly loginUrl: string;
+  /** The command that resumes the wait on the same login. */
+  readonly resumeCommand: string;
+};
+
+/** The answer a wait gives about a session that is still not linked. */
+const pendingLoginError = (status: string, pending: PendingLoginAnswer) =>
+  new LoginSessionError({
+    message: formatLoginStillPending({ status, ...pending }),
+    status,
+  });
+
+/** The session, or a `poll` failure carrying the status it is waiting on and where to finish it. */
+const requireLinkedSession = (session: RetrievedSession, pending: PendingLoginAnswer) =>
   session.status === 'linked'
     ? Effect.succeed(session)
-    : Effect.fail(
-        new LoginSessionError({
-          message: `Session status is still '${session.status}', waiting for 'linked'`,
-          status: session.status,
-        })
-      );
+    : Effect.fail(pendingLoginError(session.status, pending));
 
 const ended = (reason: LoginSessionEndReason, message: string, cause: unknown) =>
   Option.some(new LoginSessionEndedError({ reason, message, cause }));
@@ -242,40 +266,80 @@ export const loginEmail = (sessionInfo: SessionInfoResponse, linkedSession: Link
   sessionInfo.org_member.email || linkedSession.account.email || undefined;
 
 /**
- * Checks the session behind a spinner until it is linked, every `LOGIN_POLL_INTERVAL_SECONDS`
- * until `expiresAt`. A `LoginSessionEndedError` stops the wait at once. Any other failure is
- * retried until `expiresAt`; the wait then ends as `expired` only when the session was still
- * not linked, and otherwise fails with the last error unchanged.
+ * Checks the session behind a spinner until it is linked, on `authorizationPollScheduleFor`:
+ * `timeoutSeconds` at most (a pending login's own lifetime by default), and never past the
+ * session's `expiresAt`. A `LoginSessionEndedError` stops the wait at once; any other failure is
+ * retried. A wait that runs out before `expiresAt` fails with the status it last saw and where to
+ * finish the login, and stores nothing; one that reaches `expiresAt` ends the login as `expired`.
+ *
+ * The schedule bounds the retries, not a check already in flight: a slow answer, and the client's
+ * own retries of it, would outlast the bound. So the wait also gets a deadline of its own, and
+ * reports the last status it saw rather than nothing.
  */
 export const waitForLinkedSession = <E, R>(
   getSession: Effect.Effect<RetrievedSession, E, R>,
-  expiresAt: DateTime.Utc
+  pending: PendingLoginAnswer & {
+    /** When the session expires; the wait never runs past it. */
+    readonly expiresAt: DateTime.Utc;
+    /** How long to wait at most; a pending login's lifetime when omitted. */
+    readonly timeoutSeconds?: number;
+  }
 ) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
-    const beforeExpiry = Effect.map(DateTime.now, now => DateTime.isLessThan(now, expiresAt));
+    const now = yield* DateTime.now;
+    const secondsLeft = Math.max(
+      0,
+      Math.ceil(Duration.toSeconds(DateTime.distance(now, pending.expiresAt)))
+    );
+    const timeoutSeconds = Math.min(
+      pending.timeoutSeconds ?? AUTHORIZATION_TIMEOUT_SECONDS,
+      secondsLeft
+    );
+    // What the wait answers when its deadline cuts a check short: the last failure it saw, or a
+    // still-pending login when no check has answered yet.
+    const lastFailure = yield* Ref.make<Option.Option<E | LoginSessionError>>(Option.none());
+    const isExpired = Effect.map(DateTime.now, now => !DateTime.isLessThan(now, pending.expiresAt));
     return yield* ui.useMakeSpinner('Waiting for login...', spinner =>
-      Effect.flatMap(getSession, requireLinkedSession).pipe(
+      Effect.flatMap(getSession, session => requireLinkedSession(session, pending)).pipe(
+        Effect.tapError(error => Ref.set(lastFailure, Option.some(error))),
         Effect.retry({
-          schedule: Schedule.spaced(`${LOGIN_POLL_INTERVAL_SECONDS} seconds`),
-          while: error =>
-            error instanceof LoginSessionEndedError ? Effect.succeed(false) : beforeExpiry,
+          schedule: authorizationPollScheduleFor(timeoutSeconds),
+          while: error => !(error instanceof LoginSessionEndedError),
         }),
-        Effect.mapError(error =>
-          error instanceof LoginSessionError
-            ? new LoginSessionEndedError({
-                reason: 'expired',
-                message: LOGIN_EXPIRED_MESSAGE,
-                cause: error,
-              })
-            : error
+        Effect.timeoutOrElse({
+          duration: Duration.seconds(timeoutSeconds),
+          orElse: () =>
+            Effect.flatMap(Ref.get(lastFailure), last =>
+              Effect.fail(Option.getOrElse(last, () => pendingLoginError('pending', pending)))
+            ),
+        }),
+        // A login still pending when the session expires can no longer be completed.
+        Effect.catchIf(
+          (error): error is LoginSessionError => error instanceof LoginSessionError,
+          error =>
+            Effect.flatMap(isExpired, expired =>
+              Effect.fail(
+                expired
+                  ? new LoginSessionEndedError({
+                      reason: 'expired',
+                      message: LOGIN_EXPIRED_MESSAGE,
+                      cause: error,
+                    })
+                  : error
+              )
+            )
         ),
         Effect.tap(() => spinner.stop('Login successful')),
         Effect.tapError(error =>
           spinner.error(
-            error instanceof LoginSessionEndedError && error.reason === 'expired'
-              ? 'Login timed out.'
-              : 'Login stopped.'
+            error instanceof LoginSessionEndedError
+              ? error.reason === 'expired'
+                ? 'Login timed out.'
+                : 'Login stopped.'
+              : error instanceof LoginSessionError
+                ? 'Login still pending'
+                : 'Login failed'
           )
         )
       )
@@ -489,7 +553,7 @@ export const browserLogin = (params: {
     }
     yield* Effect.logDebug(`Created session: ${session.id}`);
 
-    const url = `${ctx.data.webURL}?cliKey=${session.id}`;
+    const url = loginUrlFor(ctx.data.webURL, session.id);
     yield* pendingLogin.write({
       key: session.id,
       loginUrl: url,
@@ -530,7 +594,7 @@ export const browserLogin = (params: {
       client
         .getSession({ id: session.id, verifier: proof.verifier })
         .pipe(mapSessionEnding(error => error)),
-      session.expiresAt
+      { loginUrl: url, resumeCommand: POLL_COMMAND, expiresAt: session.expiresAt }
     ).pipe(settlingPendingLogin(session.id));
     yield* Effect.logDebug(`Linked session ID: ${linkedSession.id}`);
 

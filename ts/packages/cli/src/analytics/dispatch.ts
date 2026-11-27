@@ -15,7 +15,7 @@ import {
 import { Base64Url } from 'effect/encoding';
 import { HttpClient, HttpClientRequest } from 'effect/http';
 import * as constants from 'src/constants';
-import { APP_CONFIG, TELEMETRY_CONFIG } from 'src/config';
+import { APP_CONFIG, TELEMETRY_CONFIG, telemetryDisabled } from 'src/config';
 import { resolveBackend, withoutTrailingSlashes } from 'src/config/backend';
 import { getDetachedWorkerSpawnArgs, spawnDetached } from 'src/services/detached-process';
 import { atomicWriteFileString } from 'src/utils/atomic-write';
@@ -23,6 +23,7 @@ import { sha256Hex } from 'src/utils/checksums';
 import { djb2Hash } from 'src/utils/djb2';
 import { NodeOs } from 'src/services/node-os';
 import { detectPluginHost, rawHostEnvironment } from 'src/services/agent-host-env';
+import { resolveAgentSession } from 'src/services/agent-session';
 import { TerminalUI } from 'src/services/terminal-ui';
 import { isTelemetryDebugEnabled, TELEMETRY_DEBUG_FLAG } from 'src/services/runtime-flags';
 import { cliInvocationContext } from 'src/services/runtime-cli-context';
@@ -75,8 +76,6 @@ type ConsumerShortTermCacheState = Record<
   }
 >;
 
-const analyticsDisabled = Effect.orDie(TELEMETRY_CONFIG.DISABLED);
-
 const getPostHogConfig = Effect.orDie(
   Effect.all({
     ingestUrl: TELEMETRY_CONFIG.POSTHOG_INGEST_URL,
@@ -85,7 +84,7 @@ const getPostHogConfig = Effect.orDie(
 );
 
 const postHogEnabled = Effect.gen(function* () {
-  if (yield* analyticsDisabled) {
+  if (yield* telemetryDisabled) {
     return false;
   }
   const { projectKey } = yield* getPostHogConfig;
@@ -536,7 +535,7 @@ const buildPostHogBody = (envelope: AnalyticsEnvelope, projectKey: string) => ({
 
 const captureToPostHog = (envelope: AnalyticsEnvelope) =>
   Effect.gen(function* () {
-    const disabled = yield* analyticsDisabled;
+    const disabled = yield* telemetryDisabled;
     const { ingestUrl, projectKey } = yield* getPostHogConfig;
     if (disabled || projectKey.length === 0) {
       yield* telemetryDebugLog('posthog_delivery_skipped', {
@@ -617,7 +616,7 @@ export const createCliCodactFailureBody = (
 const captureToComposioCodactFailures = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
-    const disabled = yield* analyticsDisabled;
+    const disabled = yield* telemetryDisabled;
     if (disabled) {
       yield* telemetryDebugLog('codact_delivery_skipped', {
         reason: 'disabled',
@@ -689,7 +688,7 @@ export const trackCliEventEffect = (event: TrackEvent) =>
 
     if (!(yield* postHogEnabled)) {
       yield* telemetryDebugLog('skip', {
-        reason: (yield* analyticsDisabled) ? 'disabled' : 'missing_project_key',
+        reason: (yield* telemetryDisabled) ? 'disabled' : 'missing_project_key',
         eventName: event.name,
       });
       return;
@@ -705,11 +704,23 @@ export const trackCliEventEffect = (event: TrackEvent) =>
     const distinctId = yield* getDistinctId(installId);
     const orgId = yield* getOrgId;
     const hostEnv = yield* rawHostEnvironment;
+    const agentSession = yield* resolveAgentSession;
     const sentAt = DateTime.formatIso(yield* DateTime.now);
     const properties = scrubSecrets({
       ...(enrichedEvent.properties ?? {}),
       ...(orgId ? { org_id: orgId } : {}),
       agent_host_env: detectPluginHost(hostEnv) ?? 'none',
+      // Not `agent_host`: setup events already send that name for the host they set up.
+      ...Option.match(agentSession, {
+        onNone: () => ({}),
+        onSome: session => ({
+          agent_session_host: session.host,
+          agent_session_id: session.id,
+          ...(session.compactionCount !== undefined
+            ? { agent_compaction_count: session.compactionCount }
+            : {}),
+        }),
+      }),
     }) as Record<string, unknown>;
     const envelope: AnalyticsEnvelope = {
       event: enrichedEvent.name,
@@ -861,7 +872,7 @@ export const trackCliCodactFailureEffect = (failure: CliCodactFailure) =>
   Effect.gen(function* () {
     const endpoint = yield* getCliCodactFailuresEndpoint;
     const userApiKey = yield* getUserApiKey;
-    const disabled = yield* analyticsDisabled;
+    const disabled = yield* telemetryDisabled;
     if (disabled || !userApiKey) {
       yield* telemetryDebugLog('codact_skip', {
         reason: disabled ? 'disabled' : 'missing_user_api_key',

@@ -1,0 +1,31 @@
+{
+  "slug": "toolkits-perplexityai",
+  "title": "Perplexity AI authentication",
+  "description": "Current API-key setup for the Perplexity AI toolkit.",
+  "articlePath": "toolkits-perplexityai.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/perplexityai/public.md",
+      "sourceHeading": "Perplexity AI uses the `generic_api_key` connection field"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "perplexityai",
+    "platform"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

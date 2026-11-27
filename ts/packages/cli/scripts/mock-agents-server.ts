@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { createServer, type ServerResponse } from 'node:http';
+import { SESSION_INFO } from './mock-whoami-server';
 
 /**
  * Mock agents.composio.dev + the minimal Apollo endpoints the login flows
@@ -83,6 +84,20 @@ export async function startMockAgentsServer(options?: {
             : { code_challenge_method: body.code_challenge_method }),
         });
       });
+      return;
+    }
+
+    // The session `composio whoami` reads, as the agent's account.
+    if (method === 'GET' && url.pathname === '/api/v3.1/auth/session/info') {
+      sendJson(res, 200, {
+        ...SESSION_INFO,
+        org_member: { ...SESSION_INFO.org_member, email: AGENT_IDENTITY.email },
+      });
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/api/v3.1/org/consumer/config') {
+      sendJson(res, 200, { enhanced_controls: false });
       return;
     }
 

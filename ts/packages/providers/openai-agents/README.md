@@ -4,6 +4,8 @@ Composio provider for the [OpenAI Agents SDK](https://openai.github.io/openai-ag
 
 ## Installation
 
+You need **Node.js 22.22.3 or newer**. The SDK is **ESM-only**: use `import` rather than CommonJS `require()`, and set `"type": "module"` in your project's `package.json`. See the [SDK quickstart](https://docs.composio.dev/docs/quickstart) for framework setup.
+
 ```bash
 npm install @composio/core @composio/openai-agents @openai/agents
 ```

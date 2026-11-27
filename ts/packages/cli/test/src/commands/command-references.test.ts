@@ -8,12 +8,18 @@
  * (`test/__utils__/command-tree.ts`). The walk stops at the first word that is not a subcommand;
  * the reference is broken when it stopped at a group whose next word looks like a subcommand
  * name, or before any command at all, unless that text is prose listed in `NOT_COMMANDS`.
+ *
+ * A help page's examples are checked again as the page renders them, since a definition
+ * registered on both trees renders one set of examples on two pages: each example must name a
+ * command on the tree of the page that shows it.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from '@effect/vitest';
+import { Effect } from 'effect';
 import type { Command } from 'effect/cli';
 import ts from 'typescript';
+import { cli, MockConsole, TestLive } from 'test/__utils__';
 import { registrationsOf } from 'test/__utils__/command-tree';
 
 const srcDir = path.resolve(import.meta.dirname, '../../../src');
@@ -111,4 +117,40 @@ describe('command references in user-facing strings', () => {
   it('lists no prose that is gone', () => {
     expect(NOT_COMMANDS.filter(reference => !unresolved.includes(reference))).toEqual([]);
   });
+});
+
+/** The tree a command path is on: everything under `dev` is the dev tree. */
+const treeOf = (names: ReadonlyArray<string>) => (names[0] === 'dev' ? 'dev' : 'root');
+
+/** The `composio …` lines of the EXAMPLES section of a rendered help page. */
+const examplesOf = (help: string): ReadonlyArray<string> => {
+  const [, section = ''] = help.split(/^EXAMPLES$/m);
+  return section
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('composio '));
+};
+
+const helpPages = registrationsOf()
+  .filter(({ identity, unlisted }) => identity.path.length > 0 && !unlisted)
+  .filter(({ identity }) => identity.path[0] !== 'help')
+  .map(({ identity }) => ({ path: identity.path, page: identity.path.join(' ') }));
+
+describe('help examples', () => {
+  // A fresh layer per page, so one page's output is not read as the next one's.
+  it.effect.each(helpPages)('on `composio $page --help` name commands on its tree', ({ path }) =>
+    Effect.gen(function* () {
+      yield* cli([...path, '--help']);
+      const help = (yield* MockConsole.getLines({ stripAnsi: true, stream: 'stdout' })).join('\n');
+      const offTree = examplesOf(help).flatMap(example =>
+        [...example.matchAll(REFERENCE)].flatMap(match => {
+          const { names } = resolve(match[1]!.trim().split(' '));
+          return names.length > 0 && treeOf(names) !== treeOf(path)
+            ? [`${example} (names \`composio ${names.join(' ')}\`)`]
+            : [];
+        })
+      );
+      expect(offTree).toEqual([]);
+    }).pipe(Effect.provide(TestLive()))
+  );
 });

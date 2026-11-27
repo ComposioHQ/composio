@@ -3,15 +3,6 @@ title: "RemoteFile"
 description: "Represents a file stored in a tool router session's file mount. Provides methods to fetch, save, and work with the file content."
 ---
 
-## Usage
-
-Access this class through the `composio.remoteFile` property:
-
-```typescript
-const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.remoteFile.list();
-```
-
 ## Properties
 
 | Name | Type | Description |
@@ -27,7 +18,7 @@ const result = await composio.remoteFile.list();
 
 Fetches the file content as a Blob.
 
-```typescript
+```typescript signature
 async blob(): Promise<Blob>
 ```
 
@@ -41,7 +32,7 @@ async blob(): Promise<Blob>
 
 Fetches the file content as a buffer.
 
-```typescript
+```typescript signature
 async buffer(): Promise<Uint8Array>
 ```
 
@@ -56,7 +47,7 @@ async buffer(): Promise<Uint8Array>
 Downloads and saves the file to the local filesystem.
 Requires a Node.js runtime with file system support (not available in Cloudflare Workers/Edge).
 
-```typescript
+```typescript signature
 async save(path?: string): Promise<string>
 ```
 
@@ -64,7 +55,7 @@ async save(path?: string): Promise<string>
 
 | Name | Type | Description |
 |------|------|-------------|
-| `path?` | `string` | Local path to save the file. If omitted, saves to the Composio temp directory using the filename from the mount path. An existing default destination gets a copy number before its extension. |
+| `path?` | `string` | Local path to save the file. An explicit path does not require a home directory. If omitted, saves to the Composio temp directory using the filename from the mount path. An existing default destination gets a copy number before its extension. |
 
 **Returns**
 
@@ -76,7 +67,7 @@ async save(path?: string): Promise<string>
 
 Fetches the file content as UTF-8 text.
 
-```typescript
+```typescript signature
 async text(): Promise<string>
 ```
 
@@ -90,7 +81,7 @@ async text(): Promise<string>
 
 Parses an API response (snake_case) and returns a RemoteFile instance.
 
-```typescript
+```typescript signature
 parse(data: unknown): RemoteFile
 ```
 

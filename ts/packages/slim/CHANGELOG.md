@@ -1,5 +1,65 @@
 # @composio/slim
 
+## 0.32.0
+
+### Minor Changes
+
+- 4c53cf0: Session hooks accept a `webhook` handler. `composio.sessions.create()` and `session.update()` take `handler: { type: 'webhook', fallbackAction, timeoutMs }` (TypeScript) or `{"type": "webhook", "fallback_action": ..., "timeout_ms": ...}` (Python) on a `before_execute` or `after_execute` hook. Composio sends each call the hook applies to, before or after it runs, to the project's session webhook URL and waits for your endpoint to let it run, block it, or change it; read the request there with `composio.sessions.webhooks.parse()`. `fallbackAction` is what happens when the endpoint can't answer. A hook result with `status: 'unavailable'` now carries `detail`, the reason the hook could not be evaluated. The event `composio.sessions.webhooks.parse()` returns types the optional `metadata.tool_call_id`, which pairs a call's `before_execute` event with its `after_execute`.
+- 94192e7: Read session webhook events with `composio.sessions.webhooks.parse()`. A session hook with a `webhook` handler sends each tool or proxy call it applies to, before or after it runs, to the project's session webhook URL and waits for the endpoint's answer. `parse({ body, headers, verifySecret })` (TypeScript) / `parse(body=..., headers=..., verify_secret=...)` (Python) verifies the signature with the project's session webhook secret, which is required, and returns the typed event with the field names of the webhook reference. `SessionWebhookBeforeExecuteResponse` and `SessionWebhookAfterExecuteResponse` type the answer.
+
+  Proxy webhook events and request overrides support file uploads through `binary_body`.
+
+### Patch Changes
+
+- Updated dependencies [1b88005]
+  - @composio/json-schema-to-zod@0.4.2
+
+## 0.31.0
+
+### Minor Changes
+
+- 7a1e7db: Choose which Composio-managed app an auth config uses. `composio.toolkits.get(slug)` returns `composioManagedAuth` in TypeScript, one entry per managed app with `managedAppId` and `isDefault`. Pass that id as `managedAppId` (TypeScript) or `managed_app_id` (Python) to `composio.authConfigs.create` / `composio.auth_configs.create`; omit it for the toolkit's default app. Auth config create, get and list responses return `managedAppId` in TypeScript (`null` when the auth config isn't on a managed app).
+
+## 0.30.0
+
+### Minor Changes
+
+- 6f8a704: Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.
+
+### Patch Changes
+
+- 41c4666: Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.
+- 4ee12da: Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+- Updated dependencies [d5c1861]
+  - @composio/json-schema-to-zod@0.4.1
+
+## 0.29.0
+
+### Minor Changes
+
+- f22ab26: Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.
+- f22ab26: Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.customToolkits`. Pass `experimental.localTools` and `experimental.localToolkits` to `composio.create()`, and `localTools` and `localToolkits` to `composio.use()`. List them with `session.localTools()` and `session.localToolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool`, `RegisteredLocalToolkit`, `CreateLocalToolParams`, `CreateLocalToolkitParams` and `LocalToolExecuteFn`. The `customTools` and `customToolkits` options, the `session.customTools()` and `session.customToolkits()` methods, and the `Custom*` type names are deprecated and keep working. Passing both a new option and its deprecated alias throws `ValidationError`. The request sent to the API is unchanged.
+
+## 0.28.0
+
+### Minor Changes
+
+- d2d4148: Requires `@composio/client` `2.0.0`. POST and PATCH requests, including tool execution and trigger creation, are now sent once instead of being retried on a lost response or a retryable status, because a write can complete on the server after its response is lost. Other requests keep their retries. On the client returned by `getClient()`, a write retries only when that call sets `maxRetries`.
+- e87ed85: Requires `@composio/client` `2.0.0-rc.20`. The SDK imports the client's types from the one `@composio/client/resources/*` spelling rc.20 publishes and reaches nested types by indexed access; every type the SDK exports keeps its shape. With rc.20, the resources of the client returned by `getClient()` are plain objects typed by interfaces: the resource classes, `Composio.Tools`-style statics and namespace-member types such as `SessionCreateParams.Experimental` are gone, and the `.js`/`.mjs` subpath spellings no longer resolve.
+- 3f3df9a: Requires `@composio/client` `2.0.0-rc.21`. The SDK's behaviour is unchanged. With rc.21, the client returned by `getClient()` no longer has `request()`, `Composio.Composio` or `Composio.DEFAULT_TIMEOUT`: call the raw verb for the method (`get`, `post`, `patch`, `put`, `delete`), which takes the same `query`, `body` and request options.
+- 54a935f: Requires `@composio/client` `2.0.0-rc.23`. `composio.sessionConfigs.list()` no longer sends `search`, which the Composio API removed: the option is deprecated, ignored, and logs a warning when set; filter `items` by name instead. With rc.23, the client returned by `getClient()` no longer has `cli.createCodactFailure` (now under `client._internal`, typed through `@composio/client/internal`) or `org.clanker.createClaim`, and its `sessionConfigs.list()` no longer accepts `search`.
+- 7434e02: Requires `@composio/client` `2.0.0-rc.22`. `composio.toolkits.get(slug)` now returns `meta.appUrl` when the API sends the toolkit's app URL; it was always left out before. `composio.sessionConfigs.get()` keeps the `require_approval` lists of a stored policy, and no longer fails validation on a policy entry that only sets `require_approval`; `SessionConfigPolicy` gains the matching optional `require_approval` fields and the approval-only entry. Session hooks, blocked calls and hook results are read from the API types of `@composio/client` instead of SDK copies, with the same results and errors for well-formed responses; a malformed `hook_results` or blocked response is no longer re-validated by the SDK, matching every other API response.
+- a5a1fc8: Requires `@composio/client` `2.0.1`. Adds `composio.experimental.customToolkits.create()` and `update()`, which call the v3.1 custom toolkit create and update endpoints. `create()` takes `userId` (`'all'` to share the toolkit, or the user it is private to), generates the slug, and returns a `connectLink` for a private toolkit. `upsert()` is deprecated and logs a warning once per process; it keeps working.
+
+  API-key auth schemes accept `additionalFields.genericId` with a required `displayName` and optional `description` to collect the value used by `{{generic_id}}` headers.
+
+- d2d4148: `composio.triggers.create()` accepts `type` (`'webhook'` or `'poll'`, for a trigger that supports both) and `pollingInterval` (minutes between polls, which wins over `triggerConfig.interval`), and returns the instance's `type`, `fallbackReason` and `pollingInterval` along with `triggerId`. `composio.triggers.listActive()` items carry the same three fields, and `getType()` / `listTypes()` return each trigger type's `type`, `types` and `requiresWebhookEndpointSetup`.
+
+### Patch Changes
+
+- 30f8ca1: `getExtensionFromMimeType` now maps `text/csv` to `csv` from its table, matching the Python SDK. The returned extension is unchanged.
+
 ## 0.27.0
 
 ### Minor Changes

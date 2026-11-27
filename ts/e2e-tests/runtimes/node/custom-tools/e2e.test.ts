@@ -3,7 +3,7 @@
  *
  * Verifies local tool execution, Zod validation, session context, error handling,
  * mixed local+remote chaining, and edge cases against the live Composio API.
- * Uses weathermap toolkit (no auth needed).
+ * Uses the hackernews toolkit (public, no auth needed).
  * Requires COMPOSIO_API_KEY in environment.
  */
 
@@ -17,7 +17,7 @@ declare module 'bun' {
 }
 
 e2e(import.meta.url, {
-  versions: { node: ['22.23.4', '24.22.1', '26.12.1'] },
+  versions: { node: ['22.23.5', '24.22.3', '26.13.1'] },
   usesFixtures: true,
   env: {
     COMPOSIO_API_KEY: Bun.env.COMPOSIO_API_KEY,

@@ -1,0 +1,58 @@
+---
+title: Composio Built vs Provider MCPs
+description: Which toolkit to use when a product ships more than one, such as notion or notion_mcp, decided from auth, triggers, and tool coverage
+keywords: [composio built vs provider mcp, which toolkit, notion vs notion_mcp, choose a toolkit, provider mcp, sibling toolkits, dcr oauth, triggers]
+isNew: true
+---
+
+Choose the toolkit whose tools and authentication fit your task. Use its exact slug when configuring a session.
+
+A **Composio Built** toolkit is one Composio builds and maintains against the product's public API. A [**Provider MCP**](/docs/apps-and-toolkits/provider-mcps) toolkit connects to the product's own hosted MCP server. Both are catalog toolkits, available to every project, and both use session discovery and execution. The catalog's Type filter carries these two labels, plus Custom for servers your own project registered. Their tool coverage and authentication can differ.
+
+## How they compare
+
+| | Composio Built | Provider MCP |
+| --- | --- | --- |
+| Who maintains the tools | Composio | The product's team |
+| What it connects to | The product's public API | The product's own hosted MCP server |
+| Example slug | `notion` | `notion_mcp` |
+| Tool naming | `NOTION_CREATE_PAGE` | `NOTION_MCP_NOTION_CREATE_PAGES` |
+| Auth | OAuth2, API Key, Bearer Token, or Basic, often with [Composio managed auth](/docs/authentication/custom-app-vs-managed-app) | Whatever the product's server declares, such as DCR OAuth |
+| [Triggers](/docs/triggers) | Available on many toolkits | None |
+| Staying current | Composio regenerates and versions the toolkit | A sync produces a new dated version |
+
+Neither is a subset of the other. Tool lists differ in both directions, and there's no general rule that one supersedes the other.
+
+## Decide in this order
+
+Compare each toolkit's details in the catalog.
+
+1. **Auth your users can complete.** Check this per toolkit rather than assuming it from the type. A Composio Built toolkit may offer [Composio managed](/docs/authentication/custom-app-vs-managed-app) OAuth2 or an API key. A Provider MCP toolkit may use DCR OAuth against the product's own server or another declared scheme, including no auth, so read the auth pills rather than assuming from the label.
+2. **Triggers.** [Triggers](/docs/triggers) exist only on Composio Built toolkits. If your agent needs an event, check that a toolkit exposes that specific trigger.
+3. **Tool coverage, checked in both directions.** A Provider MCP toolkit can expose capabilities only the product's own server offers, and it can also cover less of the product's API. Compare both tool lists before assuming the `_mcp` one is bigger or newer.
+4. **Which account your users already have.** [Siblings never share a connection](/docs/apps-and-toolkits#sibling-toolkits-never-share-a-connection), so reuse an existing connection when that toolkit covers the task.
+
+Enable the toolkit your task needs. Enable both only when you need tools from both. [Restrict tool access](/docs/sessions/tool-access) has the enable and disable recipes.
+
+<Callout type="info" title="Compare the task, not just the type">
+Two toolkits can have the same type and serve different jobs or acting identities. Compare the tools and authentication even when both say Composio Built.
+</Callout>
+
+## If neither fits
+
+The catalog is what Composio already runs. If no toolkit covers the product, or you need tools only your team can provide, register your own remote MCP server as a [Custom MCP](/docs/extending-sessions/custom-mcp) and you get a `CUSTOM_*` toolkit. It can be shared within your project or private to one user.
+
+## If an agent picks at runtime
+
+- **Use the slug you were given.** If the request or the session config names `notion` or `notion_mcp`, use exactly that toolkit.
+- **Decide from facts you can already read.** Auth schemes, whether the user already has a connected account, each tool list, and trigger counts are all observable. First check that the toolkit covers the task. Then prefer an existing connection or authentication the user can complete.
+- **Don't read `_mcp` as newer, bigger, or already connected.** Use the toolkit's catalog type to identify where its tools come from.
+- **State which slug you chose** when the toolkit was ambiguous, so the user can redirect you.
+
+## Related guides
+
+<Cards>
+  <Card icon={<Blocks />} title="Apps vs toolkits" href="/docs/apps-and-toolkits" description="How an App groups the toolkits that exist for one product" />
+  <Card icon={<Plug />} title="What are Provider MCPs" href="/docs/apps-and-toolkits/provider-mcps" description="Toolkits backed by a product's own hosted MCP server" />
+  <Card icon={<Wrench />} title="Restrict tool access" href="/docs/sessions/tool-access" description="Enable, disable, and pin toolkits for a session" />
+</Cards>

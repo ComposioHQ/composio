@@ -68,7 +68,7 @@ const session = await composio.create('direct-tools-example-user', {
     },
   },
   experimental: {
-    customToolkits: [hnResearch],
+    localToolkits: [hnResearch],
   },
 });
 

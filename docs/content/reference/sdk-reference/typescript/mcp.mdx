@@ -13,11 +13,15 @@ backwards compatibility. Prefer the session MCP endpoint; do not generate new co
 
 ## Usage
 
+The `composio.mcp` property is deprecated.
+
 Access this class through the `composio.mcp` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.mcp.list();
+const mcp = composio.mcp;
 ```
 
 ## Properties
@@ -32,7 +36,7 @@ const result = await composio.mcp.list();
 
 Create a new MCP configuration.
 
-```typescript
+```typescript signature
 async create(name: string, mcpConfig: MCPConfigCreationParams, requestOptions?: ComposioRequestOptions): Promise<MCPConfigCreateResponse>
 ```
 
@@ -51,18 +55,18 @@ async create(name: string, mcpConfig: MCPConfigCreationParams, requestOptions?: 
 **Example**
 
 ```typescript
-const server = await composio.mcpConfig.create("personal-mcp-server", {
+const server = await composio.mcp.create("personal-mcp-server", {
   toolkits: ["github", "slack"],
-  allowedTools: ["GMAIL_FETCH_EMAILS", "SLACK_SEND_MESSAGE"],
+  allowedTools: ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"],
   manuallyManageConnections: false
- }
 });
+```
 
-const server = await composio.mcpConfig.create("personal-mcp-server", {
+```typescript
+const server = await composio.mcp.create("personal-mcp-server", {
   toolkits: [{ toolkit: "gmail", authConfigId: "ac_243434343" }],
   allowedTools: ["GMAIL_FETCH_EMAILS"],
   manuallyManageConnections: false
- }
 });
 ```
 
@@ -72,7 +76,7 @@ const server = await composio.mcpConfig.create("personal-mcp-server", {
 
 Delete an MCP server configuration permanently
 
-```typescript
+```typescript signature
 async delete(serverId: string, requestOptions?: ComposioRequestOptions): Promise<{ id: string; deleted: boolean }>
 ```
 
@@ -91,7 +95,7 @@ async delete(serverId: string, requestOptions?: ComposioRequestOptions): Promise
 
 ```typescript
 // Delete an MCP server by ID
-const result = await composio.experimental.mcp.delete("mcp_12345");
+const result = await composio.mcp.delete("mcp_12345");
 
 if (result.deleted) {
   console.log(`Server ${result.id} has been successfully deleted`);
@@ -101,15 +105,15 @@ if (result.deleted) {
 
 // Example with error handling
 try {
-  const result = await composio.experimental.mcp.delete("mcp_12345");
+  const result = await composio.mcp.delete("mcp_12345");
   console.log("Deletion successful:", result);
 } catch (error) {
-  console.error("Failed to delete MCP server:", error.message);
+  console.error("Failed to delete MCP server:", error);
 }
 
 // Delete and verify from list
-await composio.experimental.mcp.delete("mcp_12345");
-const servers = await composio.experimental.mcp.list({});
+await composio.mcp.delete("mcp_12345");
+const servers = await composio.mcp.list({ page: 1, limit: 10, toolkits: [], authConfigs: [] });
 const serverExists = servers.items.some(server => server.id === "mcp_12345");
 console.log("Server still exists:", serverExists); // Should be false
 ```
@@ -121,7 +125,7 @@ console.log("Server still exists:", serverExists); // Should be false
 Get server URLs for an existing MCP server.
 The response is wrapped according to the provider's specifications.
 
-```typescript
+```typescript signature
 async generate(userId: string, mcpConfigId: string, options?: MCPGetInstanceParams, requestOptions?: ComposioRequestOptions): Promise<MCPServerInstance>
 ```
 
@@ -141,10 +145,10 @@ async generate(userId: string, mcpConfigId: string, options?: MCPGetInstancePara
 **Example**
 
 ```typescript
-import { Composio } from "@composio/code";
+import { Composio } from "@composio/core";
 
 const composio = new Composio();
-const mcp = await composio.experimental.mcp.generate("default", "<mcp_config_id>");
+const mcp = await composio.mcp.generate("default", "<mcp_config_id>");
 ```
 
 ---
@@ -153,7 +157,7 @@ const mcp = await composio.experimental.mcp.generate("default", "<mcp_config_id>
 
 Retrieve detailed information about a specific MCP server by its ID
 
-```typescript
+```typescript signature
 async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<MCPItem>
 ```
 
@@ -172,10 +176,10 @@ async get(serverId: string, requestOptions?: ComposioRequestOptions): Promise<MC
 
 ```typescript
 // Get a specific MCP server by ID
-const server = await composio.experimental.mcp.get("mcp_12345");
+const server = await composio.mcp.get("mcp_12345");
 
 console.log(server.name); // "My Personal MCP Server"
-console.log(server.allowedTools); // ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
+console.log(server.allowedTools); // ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"]
 console.log(server.toolkits); // ["github", "slack"]
 console.log(server.serverInstanceCount); // 3
 
@@ -194,7 +198,7 @@ const mcpUrl = server.MCPUrl;
 
 List the MCP servers with optional filtering and pagination
 
-```typescript
+```typescript signature
 async list(options: MCPListParams, requestOptions?: ComposioRequestOptions): Promise<MCPListResponse>
 ```
 
@@ -212,22 +216,31 @@ async list(options: MCPListParams, requestOptions?: ComposioRequestOptions): Pro
 **Example**
 
 ```typescript
-// List all MCP servers
-const allServers = await composio.experimental.mcp.list({});
+// List the first page of MCP servers
+const allServers = await composio.mcp.list({ page: 1, limit: 10, toolkits: [], authConfigs: [] });
 
 // List with pagination
-const pagedServers = await composio.experimental.mcp.list({
+const pagedServers = await composio.mcp.list({
   page: 2,
-  limit: 5
+  limit: 5,
+  toolkits: [],
+  authConfigs: []
 });
 
 // Filter by toolkit
-const githubServers = await composio.experimental.mcp.list({
-  toolkits: ['github', 'slack']
+const githubServers = await composio.mcp.list({
+  page: 1,
+  limit: 10,
+  toolkits: ['github', 'slack'],
+  authConfigs: []
 });
 
 // Filter by name
-const namedServers = await composio.experimental.mcp.list({
+const namedServers = await composio.mcp.list({
+  page: 1,
+  limit: 10,
+  toolkits: [],
+  authConfigs: [],
   name: 'personal'
 });
 ```
@@ -238,7 +251,7 @@ const namedServers = await composio.experimental.mcp.list({
 
 Update an existing MCP server configuration with new settings
 
-```typescript
+```typescript signature
 async update(serverId: string, config: MCPUpdateParams, requestOptions?: ComposioRequestOptions): Promise<MCPItem>
 ```
 
@@ -258,34 +271,32 @@ async update(serverId: string, config: MCPUpdateParams, requestOptions?: Composi
 
 ```typescript
 // Update server name only
-const updatedServer = await composio.experimental.mcp.update("mcp_12345", {
+const updatedServer = await composio.mcp.update("mcp_12345", {
   name: "My Updated MCP Server"
 });
 
 // Update toolkits and tools
-const serverWithNewTools = await composio.experimental.mcp.update("mcp_12345", {
+const serverWithNewTools = await composio.mcp.update("mcp_12345", {
   toolkits: [
-    {
-      toolkit: "github",
-      authConfigId: "auth_abc123",
-      allowedTools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_REPOS"]
-    },
-    {
-      toolkit: "slack",
-      authConfigId: "auth_xyz789",
-      allowedTools: ["SLACK_SEND_MESSAGE", "SLACK_LIST_CHANNELS"]
-    }
+    { toolkit: "github", authConfigId: "auth_abc123" },
+    { toolkit: "slack", authConfigId: "auth_xyz789" }
+  ],
+  allowedTools: [
+    "GITHUB_CREATE_AN_ISSUE",
+    "GITHUB_LIST_REPOS",
+    "SLACK_SEND_MESSAGE",
+    "SLACK_LIST_CHANNELS"
   ]
 });
 
 // Update connection management setting
-const serverWithManualAuth = await composio.experimental.mcp.update("mcp_12345", {
+const serverWithManualAuth = await composio.mcp.update("mcp_12345", {
   name: "Manual Auth Server",
   manuallyManageConnections: true
 });
 
 // Complete update example
-const fullyUpdatedServer = await composio.experimental.mcp.update("mcp_12345", {
+const fullyUpdatedServer = await composio.mcp.update("mcp_12345", {
   name: "Production MCP Server",
   toolkits: [
     {
@@ -293,7 +304,7 @@ const fullyUpdatedServer = await composio.experimental.mcp.update("mcp_12345", {
       authConfigId: "auth_gmail_prod",
     }
   ],
-  allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"]
+  allowedTools: ["GMAIL_SEND_EMAIL", "GMAIL_FETCH_EMAILS"],
   manuallyManageConnections: false
 });
 

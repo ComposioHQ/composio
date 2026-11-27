@@ -4,9 +4,16 @@ description: How toolkits group app tools, and how your agent discovers, authent
 keywords: [toolkits, tools, toolkit slug, tool slug, sessions, connected accounts]
 ---
 
-A **toolkit** is a collection of related tools for an app or service, such as GitHub, Gmail, or Slack. A **tool** is one action your agent can execute, such as creating a GitHub issue or fetching emails from Gmail.
+When an agent works across apps, you choose which apps it can access and let it
+find the actions it needs for each task. A **toolkit** groups related tools for
+an app or service, such as GitHub, Gmail, or Slack. A **tool** is one action,
+such as creating a GitHub issue or fetching emails from Gmail.
 
-You choose which toolkits a session can access. Your agent discovers the individual tools it needs for the task.
+Create a session with GitHub and Gmail enabled:
+
+<Callout>
+Enabling a toolkit makes its tools available to the session. It doesn't connect an account or grant access to an app's data.
+</Callout>
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -48,7 +55,47 @@ curl -X GET https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_I
 </Tab>
 </Tabs>
 
-This session can discover and use GitHub and Gmail tools. By default, `session.tools()` returns the session's meta tools for discovery, authentication, and execution, rather than every tool in those toolkits. If you omit `toolkits`, every toolkit in the catalog is discoverable.
+This session can discover and use GitHub and Gmail tools. By default,
+`session.tools()` returns the session's meta tools for discovery,
+authentication, and execution, rather than every tool in those toolkits. If
+you omit `toolkits`, every toolkit in the catalog is discoverable.
+
+## How your agent uses a toolkit
+
+In a default [session](/docs/sessions), your agent works through meta tools:
+
+1. **Discover.** The agent describes its task to `COMPOSIO_SEARCH_TOOLS`, which finds relevant tools within the session's allowed toolkits and returns their schemas.
+2. **Connect.** If a tool needs an account that isn't connected, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to get a Connect Link for your user.
+3. **Execute.** The agent calls the discovered tools through `COMPOSIO_MULTI_EXECUTE_TOOL` with the required arguments.
+
+Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_AN_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
+
+```mermaid
+sequenceDiagram
+    accTitle: Discover, connect if needed, and execute
+    accDescr: The agent searches for tools in the session. If an account is missing, it gets a Connect Link for the user. It then executes the discovered action through the execution meta tool.
+    participant Agent
+    participant Composio
+    Agent->>Composio: COMPOSIO_SEARCH_TOOLS
+    Composio-->>Agent: Relevant tools and schemas
+    opt Tool needs an account that is not connected
+        Agent->>Composio: COMPOSIO_MANAGE_CONNECTIONS
+        Composio-->>Agent: Connect Link for the user
+        Note over Agent,Composio: User connects through the Connect Link
+    end
+    Agent->>Composio: COMPOSIO_MULTI_EXECUTE_TOOL
+    Composio-->>Agent: Action result
+```
+
+Search finds tools within the session's allowed toolkits. If a tool needs an
+account that isn't connected, the agent gets a Connect Link for your user
+before executing the action through the execution meta tool.
+
+## Choose how tools are loaded
+
+Use the default discovery flow when your agent needs to find tools for a task.
+
+If you know the exact tools your agent needs upfront, use the [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset) to load them into `session.tools()` without a search step. This preset disables session meta tools by default, so use it for a narrow tool set that does not need dynamic discovery, in-chat auth, or workbench helpers.
 
 ## Toolkits and tools
 
@@ -66,21 +113,7 @@ Tool slugs follow the `{TOOLKIT}_{ACTION}` naming pattern. A tool defines an inp
 
 Use toolkit slugs when choosing which apps your agent can work with. Use tool slugs when selecting or executing specific actions. Browse the [toolkit catalog](/toolkits) to find available tools and their schemas.
 
-## How your agent uses a toolkit
-
-In a default [session](/docs/how-composio-works), your agent works through meta tools:
-
-1. **Discover.** The agent describes its task to `COMPOSIO_SEARCH_TOOLS`, which finds relevant tools within the session's allowed toolkits and returns their schemas.
-2. **Connect.** If a tool needs an account that isn't connected, the agent uses `COMPOSIO_MANAGE_CONNECTIONS` to get a Connect Link for your user.
-3. **Execute.** The agent calls the discovered tools through `COMPOSIO_MULTI_EXECUTE_TOOL` with the required arguments.
-
-Meta tools coordinate this flow across apps. App tools, such as `GITHUB_CREATE_AN_ISSUE`, perform the individual actions. See the [meta tools reference](/toolkits/meta-tools) for their schemas.
-
-If you know the exact tools your agent needs upfront, use the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) to load them into `session.tools()` without a search step.
-
 ## Toolkits and connected accounts
-
-Enabling a toolkit makes its tools available to the session. It doesn't connect an account or grant access to an app's data.
 
 A **connected account** stores a specific user's authenticated connection to a toolkit. For example, `gmail` is the toolkit, while your user's work Gmail account is a connected account. Tools that require authentication execute using that account's credentials and permissions.
 
@@ -92,12 +125,12 @@ See [Authentication](/docs/authentication) for connection flows and [Managing mu
 
 Toolkit filters choose the apps a session can access. Tool filters narrow that access to specific actions within an app. For example, you can enable Gmail but limit your agent to fetching emails and creating drafts.
 
-Use [session configuration](/docs/configuring-sessions) to enable or disable toolkits, select individual tools, or filter by tags such as read-only. The connected account's permissions still determine what those tools can do in the app.
+Use [session configuration](/docs/sessions/tool-access) to enable or disable toolkits, select individual tools, or filter by tags such as read-only. The connected account's permissions still determine what those tools can do in the app.
 
-You can also attach your own local, in-process tools with the experimental [custom tools and toolkits](/docs/extending-sessions/custom-tools-and-toolkits) API.
+You can also attach your own local, in-process tools with the experimental [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) API.
 
 ## Related concepts
 
-- [Sessions](/docs/how-composio-works) tie toolkits, connected accounts, and execution state to a user.
+- [Sessions](/docs/sessions) tie toolkits, connected accounts, and execution state to a user.
 - [Skills](/docs/skills) provide task-specific guidance about which tools to call and in what order. A skill can span multiple toolkits.
 - [Triggers](/docs/triggers) notify your app when an event happens in a connected service, so you can start an agent run in response.

@@ -3,7 +3,7 @@
   "defaultOpen": false,
   "pages": [
     "proxy-execute",
-    "custom-tools-and-toolkits",
+    "local-tools-and-toolkits",
     "shared-connections",
     "custom-mcp"
   ]

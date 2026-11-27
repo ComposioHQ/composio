@@ -8,6 +8,7 @@
 # assets are attached and verified. The release is only flipped to published by a later step.
 #
 # Inputs (env): RELEASE_TAG, RELEASE_NAME, CHECKOUT_REF, PRERELEASE, GH_TOKEN
+#               PREVIOUS_STABLE_TAG (optional, for stable release notes)
 #               BINARIES_DIR (optional, defaults to the CLI dist dir)
 set -euo pipefail
 
@@ -22,12 +23,23 @@ flags=(
 # Preserve prerelease status on the draft so betas stay prereleases once published.
 if [[ "$PRERELEASE" == "true" ]]; then
   flags+=(--prerelease)
+elif [[ -n "${PREVIOUS_STABLE_TAG:-}" ]]; then
+  flags+=(--notes-start-tag "$PREVIOUS_STABLE_TAG")
 fi
 
 # Idempotent for re-runs of a not-yet-published release: reuse an existing draft and clobber
 # its assets. Refuse to mutate a tag that is already published.
 if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
   echo "Draft $RELEASE_TAG already exists — re-uploading assets with --clobber"
+  # An earlier attempt may have attached an asset this run does not ship, such as a Windows
+  # archive that has since failed its checks. The new checksums.txt does not cover it, so
+  # remove it instead of publishing it.
+  while IFS= read -r asset; do
+    if [[ ! -e "$binaries_dir/$asset" ]]; then
+      echo "Removing stale asset $asset from draft $RELEASE_TAG"
+      gh release delete-asset "$RELEASE_TAG" "$asset" --yes
+    fi
+  done < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
   gh release upload "$RELEASE_TAG" \
     "$binaries_dir"/*.zip \
     "$binaries_dir/checksums.txt" --clobber

@@ -1,0 +1,34 @@
+name: SDK release note
+
+# Runs on every PR to next, with no path filter, so `next` can require it: a check that a
+# path filter skips never reports, and a required one would then block the PR forever.
+# The validator passes PRs that don't change published SDK behavior.
+on:
+  pull_request:
+    branches: [next]
+    # `edited` re-checks the release-note exemption when the PR description changes.
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release-note-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-note:
+    name: SDK release note
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-pnpm-bun
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Require a changeset for published SDK behavior
+        env:
+          SDK_RELEASE_NOTE_BASE: ${{ github.event.pull_request.base.sha }}
+          SDK_RELEASE_PR_BODY: ${{ github.event.pull_request.body }}
+        run: pnpm validate:changesets

@@ -171,7 +171,7 @@ jobs:
           GH_TOKEN: ${{ steps.write-token.outputs.token }}
           HEAD_REF: ${{ needs.authorize.outputs.head_ref }}
         run: |
-          git add kb/semantic-index.json content/kb/
+          git add kb/semantic-index.json
           if git diff --cached --quiet; then
             echo "::error::Semantic freshness failed, but rebuilding produced no tracked artifact changes."
             exit 1

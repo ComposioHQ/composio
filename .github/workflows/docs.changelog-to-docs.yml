@@ -50,6 +50,9 @@ jobs:
             FILES=$(git diff --name-only --diff-filter=AM "$BEFORE".."$AFTER" | grep '^docs/content/changelog/.*\.mdx$' || echo "")
           fi
 
+          # Skip generated SDK release entries (frontmatter `sdkRelease:`); their release PR covers them.
+          FILES=$(printf '%s\n' "$FILES" | bash scripts/sdk-release/changelog-filter.sh)
+
           if [ -z "$FILES" ]; then
             echo "found=false" >> $GITHUB_OUTPUT
           else
@@ -61,7 +64,7 @@ jobs:
 
       - name: Codex updates docs
         if: steps.detect.outputs.found == 'true'
-        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1.13
+        uses: openai/codex-action@306c6a196a99dcc6582530c396a19d2672d5e9ec # v1.14
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write

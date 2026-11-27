@@ -39,7 +39,7 @@ export function withoutFrontmatter(content: string): string {
  * Falls back to this when data.toc is unavailable (outside Next.js runtime).
  * Uses github-slugger to match rehype-slug's algorithm (handles Unicode, duplicate suffixes).
  */
-function extractHeadingsFromContent(content: string): string[] {
+export function extractHeadingsFromContent(content: string): string[] {
   const slugger = new GithubSlugger();
   const headings: string[] = [];
   let inCodeBlock = false;
@@ -49,6 +49,9 @@ function extractHeadingsFromContent(content: string): string[] {
       continue;
     }
     if (inCodeBlock) continue;
+    for (const anchor of line.matchAll(/<(?:span|a)\b[^>]*\sid=(["'])(.*?)\1/g)) {
+      headings.push(anchor[2]);
+    }
     const match = line.match(/^#{1,6}\s+(.+)$/);
     if (match) {
       headings.push(slugger.slug(match[1]));
@@ -71,18 +74,19 @@ const textPageDataSchema = z.object({
  * Get headings for a page, trying data.toc first then falling back to raw content parsing.
  */
 async function getHeadingsForPage(page: PageOf): Promise<string[]> {
+  const headings: string[] = [];
   const tocData = tocPageDataSchema.safeParse(page.data);
   if (tocData.success && tocData.data.toc.length > 0) {
-    return tocData.data.toc.flatMap(item => {
+    headings.push(...tocData.data.toc.flatMap(item => {
       const entry = tocEntrySchema.safeParse(item);
       return entry.success ? [entry.data.url.slice(1)] : [];
-    });
+    }));
   }
   const textData = textPageDataSchema.safeParse(page.data);
   if (textData.success) {
     try {
       const content = await textData.data.getText('raw');
-      return extractHeadingsFromContent(content);
+      return [...new Set([...headings, ...extractHeadingsFromContent(content)])];
     } catch {
       // fall through
     }
@@ -90,12 +94,12 @@ async function getHeadingsForPage(page: PageOf): Promise<string[]> {
   if (page.absolutePath) {
     try {
       const content = await readFile(page.absolutePath, 'utf-8');
-      return extractHeadingsFromContent(content);
+      return [...new Set([...headings, ...extractHeadingsFromContent(content)])];
     } catch {
       // fall through
     }
   }
-  return [];
+  return headings;
 }
 
 /**
@@ -112,10 +116,15 @@ async function buildPopulateEntries(src: AnySource) {
 
 const toolkitSlugsSchema = z.array(z.object({ slug: z.string() }));
 
-async function getDynamicToolkitEntries() {
+export async function getDynamicToolkitEntries() {
   const raw = await readFile('public/data/toolkits.json', 'utf-8');
   const toolkits = toolkitSlugsSchema.parse(JSON.parse(raw));
-  return toolkits.map(t => ({ value: { slug: [t.slug] }, hashes: [] as string[] }));
+  return toolkits.flatMap(t =>
+    ['', '.md', '.mdx'].map(suffix => ({
+      value: { slug: [`${t.slug}${suffix}`] },
+      hashes: [] as string[],
+    })),
+  );
 }
 
 export async function getKnowledgeToolkitRouteEntries() {

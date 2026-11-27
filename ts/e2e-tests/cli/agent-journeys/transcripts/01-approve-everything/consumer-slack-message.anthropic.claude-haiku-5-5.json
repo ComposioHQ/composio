@@ -1,0 +1,70 @@
+{
+  "journey": "consumer-slack-message",
+  "provider": "anthropic",
+  "model": "claude-haiku-5-5",
+  "recordedOn": "2026-11-11",
+  "revision": "82e851aad",
+  "cliPackageModified": false,
+  "skillSha256": "5193c95d25a111b643b6632335fdc82cde79e79608f8c9329c09d66055d8794b",
+  "prompt": "Send a Slack message to the #general channel that says: deploy finished",
+  "reachedGoal": true,
+  "stop": "finished",
+  "modelTurns": 5,
+  "checks": [
+    {
+      "name": "the model finished by itself, within the turn limit",
+      "ok": true
+    },
+    {
+      "name": "the last `composio execute` exited 0",
+      "ok": true
+    },
+    {
+      "name": "the message was sent once, on the consumer project, as the consumer user",
+      "ok": true
+    },
+    {
+      "name": "the account was linked on the consumer project",
+      "ok": true
+    },
+    {
+      "name": "no `composio dev` command ran",
+      "ok": true
+    },
+    {
+      "name": "every request that named a project named the consumer project",
+      "ok": true
+    }
+  ],
+  "commands": [
+    {
+      "command": "composio execute SLACK_SEND_MESSAGE --get-schema",
+      "exitCode": 0,
+      "stdout": "{\n  \"slug\": \"SLACK_SEND_MESSAGE\",\n  \"version\": \"20260101_00\",\n  \"schemaPath\": \"/home/journey/.composio/tool_definitions/SLACK_SEND_MESSAGE.json\",\n  \"inputSchema\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"channel\": {\n        \"type\": \"string\",\n        \"description\": \"Channel name or id to post to.\"\n      },\n      \"text\": {\n        \"type\": \"string\",\n        \"description\": \"Message text.\"\n      }\n    },\n    \"required\": [\n      \"channel\",\n      \"text\"\n    ]\n  }\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": "composio execute SLACK_SEND_MESSAGE -d '{ channel: \"#general\", text: \"deploy finished\" }'",
+      "exitCode": 1,
+      "stdout": "{\n  \"successful\": false,\n  \"error\": \"No active connection found for toolkit \\\"slack\\\". Run `composio link slack`, then retry.\",\n  \"slug\": \"ToolRouterV2_NoActiveConnection\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": "composio link slack",
+      "exitCode": 0,
+      "stdout": "{\n  \"status\": \"success\",\n  \"message\": \"Connected account \\\"ca_e2e0001\\\" is now ACTIVE (toolkit: slack).\",\n  \"connected_account_id\": \"ca_e2e0001\",\n  \"toolkit\": \"slack\",\n  \"redirect_url\": \"https://backend.composio.test/api/v3/s/ca_e2e0001\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": "composio execute SLACK_SEND_MESSAGE -d '{ channel: \"#general\", text: \"deploy finished\" }'",
+      "exitCode": 0,
+      "stdout": "{\n  \"successful\": true,\n  \"data\": {\n    \"ok\": true,\n    \"channel\": \"#general\",\n    \"ts\": \"1767225600.000100\",\n    \"message\": {\n      \"text\": \"deploy finished\"\n    }\n  },\n  \"error\": null,\n  \"logId\": \"log_e2e0001\"\n}\n",
+      "stderr": ""
+    }
+  ],
+  "messages": [
+    "Slack isn't connected yet, so I'll start the link flow.",
+    "The message \"deploy finished\" was posted to #general.\n\nSlack wasn't connected at first, so I ran `composio link slack` to authorize it, then retried the send. The link completed on the first try, and the send succeeded (log ID `log_e2e0001`)."
+  ],
+  "replies": []
+}

@@ -1,0 +1,38 @@
+---
+title: Deployment options
+description: Where Composio runs, who operates it, and where your credentials are stored, compared for Composio Cloud and BYOC.
+keywords: [deployment, deployment options, self-hosting, self-hosted, BYOC, bring your own cloud, private deployment, VPC, data residency, customer-managed keys, on-premises]
+---
+
+Composio runs either in Composio's cloud or in a cloud account you own. Composio operates the services in both cases.
+
+| | Composio Cloud | BYOC |
+| --- | --- | --- |
+| Where it runs | Composio's cloud in the United States | Your AWS, Google Cloud, or Azure account, in a region you choose |
+| Who operates it | Composio | Composio, through access you approve |
+| Where credentials are stored | Encrypted in Composio's database | Encrypted in a database in your account |
+| Who approves releases | Composio | Your team approves each release |
+| Where provider requests come from | [Composio's IP addresses](/docs/security/outbound-ips) | Your network |
+| OAuth apps | Composio-managed apps or your own | Your own |
+| Dashboard | Yes | No. You manage projects and keys through the API. |
+| How to start | [Quickstart](/docs/quickstart) | [Contact Composio](https://composio.dev/contact?utm_source=docs) |
+
+## Composio Cloud
+
+Composio Cloud is the default. Composio stores credentials and runs tool calls in its own infrastructure, and your application calls the hosted API. [Token custody and credential isolation](/docs/security/token-custody) explains how Composio protects stored credentials and keeps each user's accounts separate.
+
+If your encryption keys must stay in your own key management service, Composio can set up a customer-managed key deployment with you. A proxy in your cloud decrypts credentials with keys in AWS KMS, Google Cloud KMS, or HashiCorp Vault Transit. Composio doesn't hold the key material.
+
+## BYOC
+
+With BYOC, Composio runs its services in a cloud account you own. Tool calls run in your account, your account stores the credentials and logs, and your team approves every release. BYOC is available to Enterprise customers. Read the [BYOC overview](/docs/deployment/byoc).
+
+Choose BYOC when:
+
+- Your security or compliance rules require credentials and tool data to stay in your own cloud account.
+- You need Composio in a specific region, such as one in the EU.
+- Your applications must reach Composio only over private networking.
+
+## Self-hosted installations
+
+If your team wants to run and operate Composio itself with Helm, Composio can work with you on a self-hosted installation. [Contact Composio sales](https://composio.dev/contact?utm_source=docs) to discuss it. If you already run one, see [Self-hosted Helm installations](/kb/guide/platform-self-hosted-helm).

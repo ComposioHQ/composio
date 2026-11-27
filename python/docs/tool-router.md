@@ -135,7 +135,7 @@ session = composio.tool_router.create(
         'gmail': ['GMAIL_FETCH_EMAILS', 'GMAIL_SEND_EMAIL'],
         
         # Explicit enable configuration
-        'github': {'enable': ['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_ISSUES']},
+        'github': {'enable': ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_LIST_ISSUES']},
         
         # Explicit disable configuration
         'slack': {'disable': ['SLACK_DELETE_MESSAGE']},
@@ -459,7 +459,7 @@ session = composio.tool_router.create(
 tools = session.tools()
 
 response = client.messages.create(
-    model="claude-3-opus-20240229",
+    model="claude-opus-5-5",
     max_tokens=1024,
     messages=[{"role": "user", "content": "Find my last email from gmail"}],
     tools=tools,

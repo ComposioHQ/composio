@@ -1,7 +1,7 @@
 import { Context, Effect, Layer, Option, Stream, Array, Order } from 'effect';
 import * as Str from 'effect/String';
 import type { Cause } from 'effect';
-import { FetchHttpClient, Headers, HttpClient } from 'effect/http';
+import { FetchHttpClient, Headers, HttpClient, HttpClientRequest } from 'effect/http';
 import {
   // eslint-disable-next-line no-restricted-imports -- this module is the one place the client is built
   make as makeComposioClient,
@@ -27,8 +27,8 @@ import { TriggerTypes, TriggerTypesAsEnums } from 'src/models/trigger-types';
 import { cliClientIdentity } from './client-provenance';
 import { sha256Hex } from 'src/utils/checksums';
 import { getCurrentCwdSessionId } from 'src/analytics/dispatch';
+import { agentSessionHeaders, resolveAgentSession } from './agent-session';
 import { ComposioUserContext, ComposioUserContextLive } from './user-context';
-import { ProjectContext } from './project-context';
 import { makeClientMetricsCollector, type ClientMetricsCollector } from './composio-client-metrics';
 import { ComposioClientConfigurationError, type ClientError } from './composio-errors';
 import { isClientConfigurationError } from 'src/utils/api-error-extraction';
@@ -120,8 +120,9 @@ export type ClientScope = ClientCredential &
  */
 export interface ComposioClientSingletonShape {
   /**
-   * The client for the user's key and, when the working directory resolves to
-   * a project, that project's org and project.
+   * The client for the user's key, with no org or project: the backend acts on
+   * the key's default project. A command that acts on a project it resolved
+   * (a developer project, the consumer project) asks `getFor` for that one.
    */
   readonly get: () => Effect.Effect<ComposioClientShape, ClientBuildError | NoSuchElementError>;
   /**
@@ -188,20 +189,33 @@ export const clientScopeKey = (client: ComposioClientShape): string => {
 const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
   Effect.gen(function* () {
     const ctx = yield* ComposioUserContext;
-    const projectContextOpt = yield* Effect.serviceOption(ProjectContext);
     const httpClient = yield* HttpClient.HttpClient;
 
-    // Read from disk once per process, with the services captured here.
-    const sessionIdServices =
-      yield* Effect.context<Effect.Services<ReturnType<typeof getCurrentCwdSessionId>>>();
+    // Both read from disk once per process, when the first client is built, with the services
+    // and the configuration captured here.
+    const cachedReadServices =
+      yield* Effect.context<
+        Effect.Services<ReturnType<typeof getCurrentCwdSessionId> | typeof resolveAgentSession>
+      >();
     const currentCwdSessionId = yield* Effect.cached(
-      getCurrentCwdSessionId().pipe(Effect.provideContext(sessionIdServices))
+      getCurrentCwdSessionId().pipe(Effect.provideContext(cachedReadServices))
+    );
+    // Not resolved while the singleton is built: the compaction count is a file read, and a
+    // command that sends no backend request should not pay for it. The session variables and
+    // the telemetry switches do not change while a process runs.
+    const currentAgentSessionHeaders = yield* Effect.cached(
+      resolveAgentSession.pipe(
+        Effect.map(Option.match({ onNone: () => ({}), onSome: agentSessionHeaders })),
+        Effect.provideContext(cachedReadServices)
+      )
     );
 
     // `ctx.data` is read per call: a login or logout changes the user key.
     const getFor = (params?: ClientScope) =>
       Effect.gen(function* () {
         const cliSessionId = yield* currentCwdSessionId;
+        const sessionHeaders = yield* currentAgentSessionHeaders;
+        const sessionHeaderNames = Object.keys(sessionHeaders);
         const userApiKey = params?.anonymous
           ? undefined
           : normalizeApiKey(params?.userApiKey ?? Option.getOrUndefined(ctx.data.apiKey));
@@ -220,30 +234,42 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
             : '';
 
         const client = yield* Effect.try({
-          try: () =>
+          try: () => {
+            const baseURL = ctx.data.baseURL;
+            const origin = URL.parse(baseURL)?.origin;
+            // The SDK rebuilds default headers on each redirect hop. Scope the
+            // session headers where each request is handed to the transport.
+            const transport = HttpClient.mapRequest(httpClient, request =>
+              sessionHeaderNames.length === 0 || URL.parse(request.url, baseURL)?.origin === origin
+                ? request
+                : sessionHeaderNames.reduce(HttpClientRequest.removeHeader, request)
+            );
             // A call that passes `decode: true` has its response validated
             // against the client's schema for that operation.
-            makeComposioClient(
+            return makeComposioClient(
               {
                 auth,
                 scope:
                   orgId !== undefined && projectId !== undefined
                     ? { organizationId: orgId, projectId }
                     : undefined,
-                baseURL: ctx.data.baseURL,
+                baseURL,
                 // Preserve support for explicitly configured HTTP backends.
                 allowInsecureHTTP: true,
                 // The identity headers come from here; the client refuses them
                 // in `defaultHeaders`.
                 identity: cliClientIdentity(),
-                defaultHeaders:
-                  cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : undefined,
+                defaultHeaders: {
+                  ...(cliSessionId !== undefined ? { 'x-cli-session-id': cliSessionId } : {}),
+                  ...sessionHeaders,
+                },
                 // Only a call that passes `idempotent` is retried.
                 maxRetries: 0,
                 schemas: schemaLoaders,
               },
-              httpClient
-            ),
+              transport
+            );
+          },
           // The client's own error is kept as it is; anything else thrown is
           // reported as the CLI's configuration error.
           catch: (cause): ClientBuildError =>
@@ -263,19 +289,7 @@ const makeComposioClientSingleton = (metrics: ClientMetricsCollector) =>
 
     return {
       get: Effect.fn(function* () {
-        const resolvedProjectContext = yield* Option.match(projectContextOpt, {
-          onNone: () => Effect.succeed(Option.none()),
-          onSome: projectContext =>
-            projectContext.resolve.pipe(Effect.catch(() => Effect.succeed(Option.none()))),
-        });
-        return yield* Option.match(resolvedProjectContext, {
-          onNone: () => getFor(),
-          onSome: keys =>
-            getFor({
-              orgId: keys.orgId,
-              projectId: keys.projectId,
-            }),
-        });
+        return yield* getFor();
       }),
       getFor: Effect.fn(function* (params: ClientScope) {
         return yield* getFor(params);
@@ -351,7 +365,7 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
    * project-scoped, so they are absent from the build-time catalog and from
    * {@link getToolkits}, whose callers expect Composio-managed toolkits only.
    * @param scope - The org/project the command resolved; without it, the
-   *   project context decides, which is no project at all in consumer mode
+   *   backend picks the key's default project
    */
   const getProjectToolkits = (scope?: ToolkitProjectScope) => listToolkits('project', scope);
 
@@ -495,7 +509,9 @@ const makeComposioToolkitsRepository = Effect.gen(function* () {
      */
     getToolkitDetailed,
     ...lookupOperations(client),
-    ...resourceOperations(client),
+    ...resourceOperations(scope =>
+      clientSingleton.getFor({ orgId: scope.orgId, projectId: scope.projectId })
+    ),
   };
 });
 

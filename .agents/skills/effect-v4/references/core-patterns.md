@@ -116,8 +116,8 @@ Either way, recover with `Effect.catchTag`, `Effect.catchTags`, `Match.valueTags
 
 `Effect.tryPromise({ try, catch })` for a Promise that can reject and needs a typed
 error; `Effect.promise` turns rejection into a defect (only for Promises that are
-truly infallible). No `async`/`await` or `try`/`catch` inside Effect-hosted code — both
-are ESLint-banned in `ts/packages/cli/src`. From `@composio/cli-keyring`'s
+truly infallible). No `async`/`await` or `try`/`catch` inside Effect-hosted code. oxlint
+rejects `try`/`catch` in `ts/packages/cli/src`. Nothing lints `async`/`await`, so review catches it. From `@composio/cli-keyring`'s
 `effect.ts`, both `Effect.tryPromise` and `Effect.promise` kept their v3 signatures
 unchanged in v4.
 
@@ -249,8 +249,8 @@ export const isTelemetryDebugEnabled: Effect.Effect<boolean> = Effect.gen(functi
 on Effect's clock inside the code under test (`Effect.sleep`, `Effect.retry` with a
 `Schedule`, `Effect.timeout`, the API client's retry backoff) only completes when the test
 moves that clock. Awaiting such an effect on the test's own fiber hangs until the vitest
-timeout, because nothing is left to advance time. Do not fix that with `it.live`: a live
-clock makes CI wait out the real backoff.
+timeout, because nothing is left to advance time. Do not fix that with `it.live` when the
+code waits out a real backoff, because CI would wait too.
 
 The pattern is fork, then yield and adjust until the fiber settles, then join:
 
@@ -295,9 +295,16 @@ retry) and `ts/packages/cli/test/src/commands/setup.cmd.test.ts` (a two-minute c
 timeout).
 
 `it.live` is for code that sleeps outside Effect's clock, such as a spawned process or a
-`setTimeout` inside a non-Effect library, and even then the test should shorten the wait
-(the client retry tests pass a `retry-after-ms: 0` header). Nothing in the CLI suite waits on
-wall-clock time.
+`setTimeout` inside a non-Effect library, and even then the test should shorten the wait.
+
+One Effect-clock case also runs live: a test that answers the API client itself, through the
+recording stub (`ts/packages/cli/test/__utils__/services/stub-composio-client.ts`) or a mocked
+`fetch`, with a retryable response. Answer it with a `retry-after-ms: 0` header and run on the
+live clock, with `it.live` or `layer(..., { excludeTestServices: true })`. The client's retry
+then waits zero milliseconds, and a test that expects one request fails on the second instead
+of hanging. Real uses: `ts/packages/cli/test/src/services/composio-clients.test.ts` and
+`ts/packages/cli/test/src/commands/tools/execute/tools.execute.client.cmd.test.ts`. Nothing in the CLI suite
+waits on wall-clock time.
 
 ## v3 → v4 rename table (historical — recognize stale patterns, don't copy them)
 

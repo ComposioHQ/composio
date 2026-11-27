@@ -1,6 +1,6 @@
 ---
 title: Vercel AI SDK
-description: Build an agent with Vercel AI SDK and enable it to use 1000+ tools with Composio.
+description: Build an agent with Vercel AI SDK and enable it to use %TOOLKIT_COUNT% apps with Composio.
 keywords: [ai sdk, vercel]
 ---
 
@@ -46,7 +46,7 @@ const session = await composio.create("user_123");
 const tools = await session.tools();
 
 const { text } = await generateText({
-  model: anthropic("claude-opus-4-6"),
+  model: anthropic("claude-opus-5-5"),
   tools,
   prompt: "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'",
   stopWhen: stepCountIs(10),
@@ -81,4 +81,4 @@ The provider sends each Composio tool's JSON Schema to the model as is, so keywo
 
 ## Next
 
-<Card icon={<BookOpen />} title="What is a session?" href="/docs/how-composio-works" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />
+<Card icon={<BookOpen />} title="What is a session?" href="/docs/sessions" description="How sessions scope users, tools, and auth, and how to reuse them across requests." />

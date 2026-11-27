@@ -1,3 +1,48 @@
+## How do I set up custom OAuth credentials for Notion?
+
+Use your own Notion integration when you want your own name and logo on the consent screen and in Notion's activity, or to keep your users' tokens isolated to your product.
+
+### Create the Notion integration
+
+1. Go to [Notion integrations](https://www.notion.so/profile/integrations) and click **New integration**.
+2. Enter a name, such as `Composio Notion Integration`, and select the associated workspace.
+3. Set the integration type to **Public**. Composio's OAuth flow requires a public integration.
+4. Under **OAuth domains & URIs**, add the redirect URI `https://backend.composio.dev/api/v1/auth-apps/add`. Use it exactly as shown: HTTPS, no trailing slash, no fragments or wildcards. It must exactly match the `oauth_redirect_uri` field in your Composio auth config.
+5. Under **Capabilities**, select only what your integration needs, such as **Read content**, **Update content**, **Insert content**, and **Read user information**. Notion uses capabilities instead of OAuth scopes.
+
+   ![Notion integration Capabilities section with content and user capabilities](/images/toolkits/notion/capabilities.webp)
+6. Save, then copy the **Client ID** and **Client Secret**.
+
+   ![Notion integration configuration with redacted OAuth Client ID and hidden Client Secret](/images/toolkits/notion/oauth-credentials.webp)
+
+### Create the auth config in Composio
+
+1. In the Composio dashboard, go to **Auth Configs**, click **Create Auth Config**, and select **Notion**.
+
+   ![Composio Auth Configs page with the Create Auth Config button](/images/toolkits/shared/wIAvY0hheAM7HQEF4kG2KTYATY.webp)
+
+   ![Create Auth Config search results showing Notion](/images/toolkits/notion/composio-search-notion.webp)
+2. Set the authentication type to **OAuth2** and choose **Use your own developer authentication**.
+
+   ![Notion auth config with OAUTH2 selected and the Use your own developer credentials toggle](/images/toolkits/notion/oauth2-auth-config.webp)
+3. Paste the **Client ID** and **Client Secret** and click **Create Notion Auth Config**. Leave scopes empty.
+4. Click **Connect Account**, choose the pages to share during Notion's authorization, and confirm the account shows as **Active**.
+
+See [Custom auth configs](/docs/auth-configuration/custom-auth-configs) for the general flow.
+
+## How do I connect Notion with an API key?
+
+Use an internal integration secret when you connect your own workspace, don't need multi-user OAuth, and want to skip the redirect flow. API keys only work with internal integrations; public integrations must use OAuth.
+
+1. On [Notion integrations](https://www.notion.so/profile/integrations), click **New integration**, enter a name, select the workspace, and set the type to **Internal**.
+2. Copy the integration secret. It starts with `ntn_` or `secret_`.
+3. Share the pages and databases you want Composio to reach with the integration. The integration can only access pages shared with it.
+4. In the Composio dashboard, create a **Notion** auth config with the **API Key** auth type. Click **Connect Account**, paste the secret, and confirm the account shows as **Active**.
+
+   ![Notion auth config with API KEY selected as the authentication method](/images/toolkits/notion/api-key-auth-config.webp)
+
+   ![Composio connect screen with a redacted Notion API key](/images/toolkits/notion/connect-api-key.webp)
+
 ## Why do Notion operations show "Composio" instead of the user's name?
 
 Notion attributes actions to the integration itself, not the individual user. The name and logo shown come from the integration configuration. To use a custom name or logo, create your own Notion integration. See [Notion integration docs](https://developers.notion.com/docs/create-a-notion-integration).
@@ -18,7 +63,7 @@ It depends on the integration type. OAuth apps (public) let users select which p
 
 - **The user disconnects the integration from Notion.** Notion documents that OAuth-installed public connections appear under `Settings` -> `Connections` and can be disconnected from the workspace. If a user removes the Composio-managed or custom Notion app there, the existing token set should be treated as revoked, and the user should reconnect Notion. See Notion's official guide to [adding and managing workspace connections](https://www.notion.com/help/add-and-manage-connections-with-the-api).
 
-- **The same Notion user connects again through the same Notion app.** When a Notion user connects to a Notion app, Notion issues a new `access_token` and `refresh_token` pair for that connection. If the same user connects to the same Notion app again, whether it is Composio-managed or custom, Notion can issue a new token pair and invalidate the older `refresh_token`. The older `access_token` may continue working for some time, but once it expires, the older connection can no longer refresh and should be treated as expired. To avoid this, keep one active Notion connection per real user for a given Notion app, reuse that existing connection in your product, and avoid asking users to reconnect repeatedly. For production Notion integrations, we strongly recommend using your own Notion app so your users' tokens are isolated to your product. Follow the [Notion OAuth setup guide](https://composio.dev/auth/notion).
+- **The same Notion user connects again through the same Notion app.** When a Notion user connects to a Notion app, Notion issues a new `access_token` and `refresh_token` pair for that connection. If the same user connects to the same Notion app again, whether it is Composio-managed or custom, Notion can issue a new token pair and invalidate the older `refresh_token`. The older `access_token` may continue working for some time, but once it expires, the older connection can no longer refresh and should be treated as expired. To avoid this, keep one active Notion connection per real user for a given Notion app, reuse that existing connection in your product, and avoid asking users to reconnect repeatedly. For production Notion integrations, we strongly recommend using your own Notion app so your users' tokens are isolated to your product. See "How do I set up custom OAuth credentials for Notion?" on this page for the steps.
 
 ## How do I set up the Notion webhook ingress endpoint?
 

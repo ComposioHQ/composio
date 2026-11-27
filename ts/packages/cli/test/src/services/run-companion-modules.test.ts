@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as BunServices from '@effect/platform-bun/BunServices';
+import * as BunPath from '@effect/platform-bun/BunPath';
 import { afterEach, describe, expect, it, layer } from '@effect/vitest';
 import { ConfigProvider, Effect } from 'effect';
 import { vi } from 'vitest';
@@ -12,7 +13,9 @@ import {
   RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS,
   RUN_COMPANION_MODULE_BASENAMES,
   RUN_COMPANION_MODULE_FILENAMES,
+  RELEASE_MANIFEST_FILENAME,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
+  resolveRunCompanionModulePath,
 } from 'src/services/run-companion-modules';
 
 const extractZipMock = vi.hoisted(() => vi.fn());
@@ -94,6 +97,39 @@ const mockArchiveContents = (missingRelativePath?: string) => {
     }
   );
 };
+
+const mockManifestArchive = (relativePaths: ReadonlyArray<string>, manifest: unknown) => {
+  extractZipMock.mockImplementation(
+    async (archivePath: string, options: { readonly dir: string }) => {
+      const packageDirectory = path.join(options.dir, path.parse(archivePath).name);
+      relativePaths.forEach(relativePath => {
+        const filePath = path.join(packageDirectory, relativePath);
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        fs.writeFileSync(filePath, `new:${relativePath}`);
+      });
+      fs.writeFileSync(
+        path.join(packageDirectory, RELEASE_MANIFEST_FILENAME),
+        JSON.stringify(manifest)
+      );
+    }
+  );
+};
+
+const LIVE_COMPANIONS_WITH_BUNDLES = [
+  'generation-runtime.mjs',
+  'run-helpers-runtime.mjs',
+  'services/generation-runtime.mjs',
+  'services/run-helpers-runtime.mjs',
+];
+
+const listFilesRecursively = (directory: string): ReadonlyArray<string> =>
+  fs
+    .readdirSync(directory, { recursive: true, withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry =>
+      path.relative(directory, path.join(entry.parentPath, entry.name)).replaceAll(path.sep, '/')
+    )
+    .sort();
 
 describe('run-companion-modules', () => {
   afterEach(() => {
@@ -329,6 +365,81 @@ describe('run-companion-modules', () => {
       );
     });
 
+    it.effect(
+      '[Given] an archive with a manifest [Then] repair restores the files it lists and the manifest',
+      () => {
+        const installDirectory = fs.mkdtempSync(
+          path.join(os.tmpdir(), 'composio-run-repair-manifest-')
+        );
+        const execPath = path.join(installDirectory, 'composio');
+        const manifest = {
+          schemaVersion: 1,
+          minimumUpgradeFrom: '0.1.26',
+          companions: LIVE_COMPANIONS_WITH_BUNDLES,
+        };
+        stubRepairFetch();
+        mockManifestArchive(
+          [...LIVE_COMPANIONS_WITH_BUNDLES, ...RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS],
+          manifest
+        );
+
+        return Effect.gen(function* () {
+          const result = yield* repairMissingInstalledRunCompanionModules({
+            callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+            execPath,
+            appVersion: '0.0.0-test',
+          });
+
+          expect(result).toEqual({ repaired: true, releaseTag: TEST_RELEASE_TAG });
+          expect(listFilesRecursively(installDirectory)).toEqual(
+            [
+              ...LIVE_COMPANIONS_WITH_BUNDLES,
+              RELEASE_MANIFEST_FILENAME,
+              RUN_COMPANION_RELEASE_TAG_FILENAME,
+            ].sort()
+          );
+          expect(
+            JSON.parse(
+              fs.readFileSync(path.join(installDirectory, RELEASE_MANIFEST_FILENAME), 'utf8')
+            )
+          ).toEqual(manifest);
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+          )
+        );
+      }
+    );
+
+    it.effect('[Given] an archive with an invalid manifest [Then] repair restores nothing', () => {
+      const installDirectory = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'composio-run-repair-manifest-')
+      );
+      const execPath = path.join(installDirectory, 'composio');
+      stubRepairFetch();
+      mockManifestArchive(LIVE_COMPANIONS_WITH_BUNDLES, {
+        schemaVersion: 1,
+        minimumUpgradeFrom: '0.1.26',
+        companions: ['../outside.mjs'],
+      });
+
+      return Effect.gen(function* () {
+        const error = yield* repairMissingInstalledRunCompanionModules({
+          callerImportMetaUrl: 'file:///$bunfs/root/commands.mjs',
+          execPath,
+          appVersion: '0.0.0-test',
+        }).pipe(Effect.flip);
+
+        expect(error._tag).toBe('services/RunCompanionRepairError');
+        expect(error.message).toContain(`broken ${RELEASE_MANIFEST_FILENAME}`);
+        expect(fs.readdirSync(installDirectory)).toEqual([]);
+      }).pipe(
+        Effect.ensuring(
+          Effect.sync(() => fs.rmSync(installDirectory, { recursive: true, force: true }))
+        )
+      );
+    });
+
     it.effect('[Given] an incomplete archive [Then] repair preserves release metadata', () => {
       const installDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'composio-run-repair-test-'));
       const execPath = path.join(installDirectory, 'composio');
@@ -534,4 +645,17 @@ describe('loadInstalledCompanionModule', () => {
       })
     );
   });
+});
+
+describe('Windows compiled companion resolution', () => {
+  it.effect('falls back beside the executable for a Windows Bun virtual module', () =>
+    Effect.gen(function* () {
+      const result = yield* resolveRunCompanionModulePath({
+        callerImportMetaUrl: 'file:///B:/~BUN/root/commands.mjs',
+        execPath: 'C:\\Users\\Example User\\.composio\\composio.exe',
+        relativeNoExtensionFromCaller: '../../services/run-helpers-runtime',
+      });
+      expect(result).toBe('C:\\Users\\Example User\\.composio\\run-helpers-runtime.mjs');
+    }).pipe(Effect.provide(BunPath.layerWin32), Effect.provide(BunServices.layer))
+  );
 });

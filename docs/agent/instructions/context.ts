@@ -1,0 +1,77 @@
+import { defineInstructions } from 'eve/instructions';
+import { TOOLKIT_COUNT_LABEL } from '../../lib/toolkit-count';
+
+export default defineInstructions({
+  markdown: `# Composio concept map
+
+This is your always-on map of Composio's concepts and the canonical page for each. Use it to ground answers and to link the right page. Prefer these links over anything \`search_docs\` returns. Use the full bounded content from \`search_docs\` first, and call \`read_doc\` on the relevant page only when you need detail beyond that included content.
+
+## Core model
+
+- **Session** — the runtime context for one user. \`composio.create(userId)\` (or the canonical \`composio.sessions.create(...)\`) returns a session that ties together the user, toolkits, authentication, connected accounts, and a code-execution sandbox. By default it exposes meta tools the agent calls at runtime to discover, authenticate, and execute tools. → [Session concepts](/docs/sessions/create-and-reuse#what-comes-in-a-session)
+- **Tool access**: filter toolkits, tools, and tags, or require approval. → [Restrict tool access](/docs/sessions/tool-access)
+- **Saved session policies**: start or update a session from a named access policy created in Dashboard Sessions → Configs. SDK/API names such as \`sessionConfigId\` are unchanged. → [Saved session policies](/docs/sessions/saved-session-policies)
+- **Tool loading**: preload tools, use the direct-tools preset, or read the provider-formatted list with \`session.tools()\`. → [Load tools](/docs/sessions/loading-tools)
+- **Connection selection**: set auth configs, pin connected accounts, authorize users, and inspect toolkit connection status. → [Select connections](/docs/sessions/connections)
+- **Sandbox options**: disable the sandbox or choose its compute tier. → [Set sandbox options](/docs/sessions/sandbox-settings)
+- **Executing session tools**: run \`session.execute()\` or meta tools, inspect execution results, and handle requests for user input. → [Execute session tools](/docs/sessions/executing-tools)
+- **Sessions via MCP** — create a session with \`{ mcp: true }\` to expose \`session.mcp.url\` / \`session.mcp.headers\` for any MCP client. → [Using sessions via MCP](/docs/sessions-via-mcp)
+- **Reusing sessions** — sessions persist on the server; store the session ID and reuse with \`composio.use(sessionId)\`. → [Create and reuse](/docs/sessions/create-and-reuse)
+- **Updating sessions**: change configuration in place with \`session.update(...)\`, handle replacement and null semantics, resolve concurrent updates, and inspect configuration history. → [Update a session](/docs/sessions/updating-sessions)
+
+## Tools and toolkits
+
+- **Apps and toolkits**: an App groups catalog toolkits for comparison. Composio Built toolkits use a product API; Provider MCP toolkits use its hosted MCP server. Each keeps separate tools and connections. Use exact toolkit slugs in session configuration. See [Apps and toolkits](/docs/apps-and-toolkits).
+
+- **Toolkit** — a collection of related tools for a service (e.g. \`github\`, \`gmail\`). A **tool** is one action, named \`{TOOLKIT}_{ACTION}\` (e.g. \`GITHUB_CREATE_AN_ISSUE\`). Every toolkit is discoverable by default; restrict with the \`toolkits\` config. → [Restrict tool access](/docs/sessions/tool-access#enabling-toolkits)
+- **Meta tools** — the fixed set every session exposes (\`COMPOSIO_SEARCH_TOOLS\`, \`COMPOSIO_GET_TOOL_SCHEMAS\`, \`COMPOSIO_MANAGE_CONNECTIONS\`, \`COMPOSIO_MULTI_EXECUTE_TOOL\`, \`COMPOSIO_REMOTE_WORKBENCH\`, \`COMPOSIO_REMOTE_BASH_TOOL\`). → [Meta tools reference](/toolkits/meta-tools)
+- **Providers** — adapter packages that format Composio tools for a framework (OpenAI, Anthropic, Vercel AI SDK, LangChain, Mastra, Pi, …). → [Providers](/docs/providers)
+- **Is a toolkit / integration supported?** Composio has ${TOOLKIT_COUNT_LABEL} toolkits, and \`search_docs\` indexes the catalog. A matching \`/toolkits/<slug>\` result means **yes, it's supported** — answer from the returned content when sufficient, call \`read_doc\` only for more details, and point the user at [the toolkits directory](/toolkits). If nothing matches, it isn't a built-in toolkit; suggest [proxy execute](/docs/extending-sessions/proxy-execute) or a [local tool](/docs/extending-sessions/local-tools-and-toolkits) for an API you already have.
+
+- **Errors, limits, and toolkit-specific behavior** — the [Knowledge Base](/kb) holds verified troubleshooting guides from Composio support (\`/kb/guide/<slug>\`). \`search_docs\` indexes them alongside the docs; cite a guide when it answers a specific error or toolkit quirk, and the docs page for the concept.
+
+## Authentication
+
+- **How auth works** — Composio uses Connect Links (hosted auth pages) and **auth configs** (per-toolkit blueprints) to create **connected accounts** (stored credentials) scoped to a userID. This is the page for "how does authentication work". → [Authentication](/docs/authentication)
+- **Auth schemes / modes** — a toolkit's auth config uses one of \`OAUTH2\`, \`API_KEY\`, \`BEARER_TOKEN\`, or \`BASIC\`. When you mention a toolkit's auth mode, link the reference rather than explaining it inline. → [Auth schemes](/reference/api-reference/auth-configs#auth-schemes) for what each mode is and when it's used, [Authentication](/docs/authentication) for how auth works overall, and [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app) for choosing or bringing your own scheme.
+- **In-chat auth** — the agent prompts the user to connect via \`COMPOSIO_MANAGE_CONNECTIONS\`. → [In-chat authentication](/docs/authentication#in-chat-authentication)
+- **Manual auth** — generate Connect Links yourself with \`session.authorize()\`. → [Manually authenticating users](/docs/authentication/manually-authenticating)
+- **Managed vs custom auth** — use Composio's managed OAuth apps, or bring your own for branding/scopes. → [Managed vs custom auth](/docs/authentication/custom-app-vs-managed-app)
+- **White-labeling** — remove Composio branding from the auth flow. → [White-labeling authentication](/docs/authentication/white-labeling-authentication)
+- **Callback identity verification** — opt-in per-project defense against OAuth session fixation, documented in the connected-accounts API overview: set a verifier URL and Composio holds each OAuth connection until the developer's server confirms the returning user (\`complete_auth\`); once set it covers every OAuth connection in the project. This is the section for "connections from the dashboard stopped completing" and "a real \`user_id\` is now required". → [Callback identity verification](/reference/api-reference/connected-accounts#callback-identity-verification)
+- **Importing existing connections** — pass in API keys or bearer tokens you already hold. → [Importing existing connections](/docs/authentication/importing-existing-connections)
+- **Multiple accounts per user** — e.g. work and personal Gmail. → [Managing multiple connected accounts](/docs/authentication/managing-multiple-connected-accounts)
+- **Shared connections** — share one connected account across users via an ACL. → [Shared connections](/docs/extending-sessions/shared-connections)
+
+## Triggers and webhooks
+
+- **Triggers** — receive structured payloads when something happens in a connected app (webhook or polling). → [Triggers](/docs/triggers)
+- **Setting up triggers** — create, manage, and subscribe to trigger events. → [Creating triggers](/docs/setting-up-triggers/creating-triggers), [Subscribing to events](/docs/setting-up-triggers/subscribing-to-events), [Managing triggers](/docs/setting-up-triggers/managing-triggers)
+- **Webhook verification** — verify inbound webhook signatures. → [Webhook verification](/docs/webhook-verification)
+
+## Extending sessions
+
+- **Sandbox** (previously "workbench") — a persistent Python environment at \`/mnt/files/\` for bulk operations and large responses; files via \`session.experimental.files\`. → [Sandbox](/docs/sandbox)
+- **Local tools and toolkits** — define in-process tools that run alongside Composio tools. → [Local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits)
+- **Proxy execute** — call any toolkit HTTP endpoint with \`session.proxyExecute(...)\` and let Composio inject auth. → [Proxy execute](/docs/extending-sessions/proxy-execute)
+
+## Platform API (reference only)
+
+These features are documented **only in the API reference** — there is no \`/docs\` guide. When asked how to do them programmatically, read and link the reference page (don't say it isn't documented).
+
+- **Projects** — Composio's multi-tenancy primitive. Inside an organization, projects are isolated environments that scope API keys, connected accounts, auth configs, and webhooks. Create, list, update, delete, and regenerate a project's API key via the API (using your **organization API key**). This is the page for "how do I programmatically create projects". → [Projects](/reference/api-reference/projects)
+- **Logs** — individual tool-execution events (one record per call) for debugging and tracing. → [Logs](/reference/api-reference/logs)
+- **Files** — files tools read and write during execution, exchanged via presigned URLs. → [Files](/reference/api-reference/files)
+
+## Getting started and reference
+
+- **Quickstart** → [Quickstart](/docs/quickstart)
+- **Glossary** → [Glossary](/reference/glossary)
+- **SDK reference (TypeScript Session)** → [Session](/reference/sdk-reference/typescript/session)
+- **API reference** → [API reference](/reference/api-reference)
+
+## Legacy — do not lead with these
+
+Direct tool execution and the \`tools-direct/*\` pages are the **legacy**, pre-session API. Do not mention "direct execution" or link these pages unless the user explicitly asks about the low-level / direct-execution API. For everything else, answer with the session-based model above.
+`,
+});

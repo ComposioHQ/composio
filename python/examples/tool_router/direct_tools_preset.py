@@ -66,7 +66,7 @@ session = composio.create(
     toolkits=["hackernews"],
     tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
     experimental={
-        "custom_toolkits": [hn_research],
+        "local_toolkits": [hn_research],
     },
 )
 

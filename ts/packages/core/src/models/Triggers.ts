@@ -42,7 +42,6 @@ import { PusherService } from '../services/pusher/Pusher';
 import {
   ComposioTriggerTypeNotFoundError,
   ComposioWebhookPayloadError,
-  ComposioWebhookSignatureVerificationError,
 } from '../errors/TriggerErrors';
 import { transform } from '../utils/transform';
 import {
@@ -54,94 +53,26 @@ import {
 import { ToolkitVersionParam } from '../types/tool.types';
 import type { ComposioConfig } from '../composio';
 import type { BaseComposioProvider } from '../provider/BaseProvider';
-import { hmacSha256Base64, timingSafeEqual } from '../utils/crypto';
+import {
+  WEBHOOK_HEADERS,
+  getHeader,
+  assertWebhookBodySize,
+  readWebhookRequest,
+  validateWebhookTimestamp,
+  verifyWebhookSignature,
+} from '../utils/webhookVerification';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { invokeUserCallback } from '../utils/userCallback';
 
 /**
- * Safely converts a value to a string, returning the default if the value is null, undefined, or empty.
- * This prevents runtime crashes when calling string methods like `.toLowerCase()` on non-string values.
+ * Normalizes string and numeric identifiers, falling back for empty or malformed values.
  * @private
  */
 const toStringOrDefault = (value: unknown, defaultValue: string): string => {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  const str = String(value);
+  const str = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
   return str.length > 0 ? str : defaultValue;
-};
-
-/**
- * The signature header names Composio sends with every webhook delivery.
- * @private
- */
-const WEBHOOK_HEADERS = {
-  id: 'webhook-id',
-  timestamp: 'webhook-timestamp',
-  signature: 'webhook-signature',
-} as const;
-
-/**
- * Returns true if the value is a Fetch API `Request`.
- * @private
- */
-const isFetchRequest = (request: WebhookRequestLike): request is Request =>
-  typeof Request !== 'undefined' && request instanceof Request;
-
-/**
- * Reads a single header value case-insensitively from either a `Headers`
- * instance or a plain record (where values may be `string | string[]`).
- * Returns `undefined` when the header is missing.
- * @private
- */
-const getHeader = (headers: unknown, name: string): string | undefined => {
-  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
-    return headers.get(name) ?? undefined;
-  }
-
-  if (headers === null || typeof headers !== 'object') {
-    return undefined;
-  }
-
-  // Plain record: match the header name case-insensitively.
-  const target = name.toLowerCase();
-  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
-    if (key.toLowerCase() !== target) {
-      continue;
-    }
-    if (Array.isArray(value)) {
-      const first = value.find((item): item is string => typeof item === 'string');
-      return first;
-    }
-    return typeof value === 'string' ? value : undefined;
-  }
-  return undefined;
-};
-
-/**
- * Coerces an object request body (string, Buffer/Uint8Array, or already-parsed
- * value) into the raw string form expected by signature verification.
- * @private
- */
-const bodyToString = (body: unknown): string => {
-  if (typeof body === 'string') {
-    return body;
-  }
-  if (body instanceof Uint8Array) {
-    return new TextDecoder().decode(body);
-  }
-  if (body === null || body === undefined) {
-    return '';
-  }
-  // Already-parsed object (e.g. Next.js Pages Router with the JSON body parser).
-  // Note: re-stringifying cannot reproduce the exact bytes Composio signed, so
-  // signature verification on a pre-parsed body is best-effort only.
-  if (typeof body === 'object') {
-    return JSON.stringify(body);
-  }
-  return String(body);
 };
 
 /**
@@ -174,6 +105,8 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
+   * const APP_URL = 'https://your-app.com';
+   *
    * await composio.triggers.setWebhookSubscription({
    *   webhookUrl: `${APP_URL}/webhooks/composio`,
    * });
@@ -194,7 +127,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   * const triggers = await triggers.listActive({
+   * const activeTriggers = await composio.triggers.listActive({
    *   authConfigIds: ['123'],
    *   connectedAccountIds: ['456'],
    * });
@@ -451,12 +384,18 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     filters: TriggerSubscribeParams,
     data: IncomingTriggerPayload
   ): boolean {
-    // Check if toolkits filter is provided and matches
+    // Check if toolkits filter is provided and matches.
+    // Payloads don't carry the toolkit slug, so `data.toolkitSlug` is the trigger slug's
+    // first `_` segment, which is wrong for toolkits whose slug contains an underscore
+    // (`ONE_DRIVE_FILE_CREATED_TRIGGER` gives `ONE`). Trigger slugs start with
+    // `<TOOLKIT>_`, so a filter also matches on that prefix.
+    const toolkitSlug = data.toolkitSlug.toLowerCase();
+    const triggerSlug = data.triggerSlug.toLowerCase();
     if (
       filters.toolkits?.length &&
       !filters.toolkits
         .map(toolkit => toolkit.toLowerCase())
-        .includes(data.toolkitSlug.toLowerCase())
+        .some(toolkit => toolkit === toolkitSlug || triggerSlug.startsWith(`${toolkit}_`))
     ) {
       logger.debug(
         'Trigger does not match toolkits filter',
@@ -548,10 +487,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   *
-   * triggers.subscribe((data) => {
+   * await composio.triggers.subscribe((data) => {
    *   console.log(data);
-   * }, );
+   * });
    * ```
    */
   async subscribe(
@@ -718,11 +656,11 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   * composio.trigger.subscribe((data) => {
+   * await composio.triggers.subscribe((data) => {
    *   console.log(data);
    * });
    *
-   * await triggers.unsubscribe();
+   * await composio.triggers.unsubscribe();
    * ```
    */
   async unsubscribe() {
@@ -742,18 +680,22 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * Next.js Pages Router `req`). The signature headers (`webhook-id`,
    * `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
    *
+   * Configure a request body limit in your server or framework as well,
+   * especially if it buffers the body before calling this method.
+   *
    * @param {WebhookRequestLike} request - The incoming webhook HTTP request
    * @param {ParseWebhookOptions} [options] - Parse options
    * @param {string} [options.verifySecret] - Webhook secret; when set, the signature is verified
    * @param {number} [options.tolerance=300] - Max webhook age in seconds (only used when verifying)
+   * @param {number} [options.maxBodyBytes=10485760] - Max request body size in bytes (10 MiB)
    * @returns {Promise<VerifyWebhookResult>} The parsed (and optionally verified) webhook payload
    *
    * @throws {ValidationError} If `verifySecret` is set but the signature headers are missing
    * @throws {ComposioWebhookSignatureVerificationError} If signature verification fails
-   * @throws {ComposioWebhookPayloadError} If the payload cannot be parsed
+   * @throws {ComposioWebhookPayloadError} If the payload exceeds the limit or cannot be parsed
    *
    * @example
-   * ```ts
+   * ```ts nocheck="Express route handler; the checker has no express types"
    * // Express with express.raw (verify the signature)
    * app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
    *   try {
@@ -791,7 +733,10 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *     return new Response('Unauthorized', { status: 401 });
    *   }
    * }
+   * ```
    *
+   * @example
+   * ```ts
    * // Next.js App Router — parse only (no verification)
    * export async function POST(request: Request) {
    *   const result = await composio.triggers.parse(request);
@@ -805,15 +750,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     options?: ParseWebhookOptions
   ): Promise<VerifyWebhookResult> {
     // Extract the raw body and signature headers from either request shape.
-    let body: string;
-    let headers: unknown;
-    if (isFetchRequest(request)) {
-      body = await request.text();
-      headers = request.headers;
-    } else {
-      body = bodyToString(request.body);
-      headers = request.headers;
-    }
+    const { body, headers } = await readWebhookRequest(request, options?.maxBodyBytes);
 
     const verifySecret = options?.verifySecret;
 
@@ -881,6 +818,9 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${payload}, secret)`
    * and is expected in the format: `v1,base64EncodedSignature`
    *
+   * For a Fetch API `Request`, use {@link parse} to enforce a limit while reading
+   * the body. Set a server request limit if you buffer the payload yourself.
+   *
    * @param {VerifyWebhookParams} params - The verification parameters
    * @param {string} params.payload - The raw webhook payload as a string (request body)
    * @param {string} params.signature - The signature from the 'webhook-signature' header
@@ -888,6 +828,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    * @param {string} params.webhookId - The webhook ID from the 'webhook-id' header
    * @param {string} params.webhookTimestamp - The timestamp from the 'webhook-timestamp' header (Unix seconds)
    * @param {number} [params.tolerance=300] - Maximum allowed age of the webhook in seconds (default: 5 minutes). Set to 0 to disable timestamp validation.
+   * @param {number} [params.maxBodyBytes] - Max UTF-8 size of the supplied payload
    * @returns {VerifyWebhookResult} The verified and parsed webhook payload with version information
    *
    * @throws {ValidationError} If the parameters are invalid
@@ -896,26 +837,26 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
    *
    * @example
    * ```ts
-   * // In an Express.js webhook handler
-   * app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+   * // In a webhook route that receives a Fetch API Request (Next.js App Router, Hono, Remix)
+   * export async function POST(request: Request) {
    *   try {
    *     const result = await composio.triggers.verifyWebhook({
-   *       payload: req.body.toString(),
-   *       signature: req.headers['webhook-signature'] as string,
-   *       webhookId: req.headers['webhook-id'] as string,
-   *       webhookTimestamp: req.headers['webhook-timestamp'] as string,
+   *       payload: await request.text(),
+   *       signature: request.headers.get('webhook-signature') ?? '',
+   *       id: request.headers.get('webhook-id') ?? '',
+   *       timestamp: request.headers.get('webhook-timestamp') ?? '',
    *       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
    *     });
    *
    *     // Process the verified payload
    *     console.log('Webhook version:', result.version);
    *     console.log('Received trigger:', result.payload.triggerSlug);
-   *     res.status(200).send('OK');
+   *     return new Response('OK', { status: 200 });
    *   } catch (error) {
    *     console.error('Webhook verification failed:', error);
-   *     res.status(401).send('Unauthorized');
+   *     return new Response('Unauthorized', { status: 401 });
    *   }
-   * });
+   * }
    * ```
    */
   async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult> {
@@ -956,15 +897,20 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
       id: webhookId,
       timestamp: webhookTimestamp,
       tolerance,
+      maxBodyBytes,
     } = parsedParams.data;
+
+    if (maxBodyBytes !== undefined) {
+      assertWebhookBodySize(payload, maxBodyBytes);
+    }
 
     // Validate timestamp if tolerance is set
     if (tolerance > 0) {
-      this.validateWebhookTimestamp(webhookTimestamp, tolerance);
+      validateWebhookTimestamp(webhookTimestamp, tolerance);
     }
 
     // Verify signature using the correct format: msgId.timestamp.payload
-    await this.verifyWebhookSignature(webhookId, webhookTimestamp, payload, signature, secret);
+    await verifyWebhookSignature(webhookId, webhookTimestamp, payload, signature, secret);
 
     // Parse the payload and detect version
     const { version, rawPayload, normalizedPayload } = this.parseWebhookPayload(payload);
@@ -997,7 +943,7 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
     // Try V1/V2/V3 formats using shared parsing logic
     const result = this.tryParseVersionedPayload(jsonPayload);
     if (result.ok) {
-      const { ok, ...rest } = result;
+      const { ok: _ok, ...rest } = result;
       return rest;
     }
 
@@ -1161,110 +1107,5 @@ export class Triggers<TProvider extends BaseComposioProvider<unknown, unknown, u
         },
       },
     };
-  }
-
-  /**
-   * Verifies the HMAC-SHA256 signature of a webhook payload.
-   * The signature format used by Composio is: `v1,base64EncodedSignature`
-   * The signing input is: `${msgId}.${timestamp}.${payload}`
-   * @private
-   */
-  private async verifyWebhookSignature(
-    webhookId: string,
-    webhookTimestamp: string,
-    payload: string,
-    signature: string,
-    secret: string
-  ): Promise<void> {
-    if (payload.length === 0) {
-      throw new ComposioWebhookSignatureVerificationError('No webhook payload was provided.');
-    }
-
-    if (signature.length === 0) {
-      throw new ComposioWebhookSignatureVerificationError(
-        "No signature header value was provided. Please pass the value of the 'webhook-signature' header."
-      );
-    }
-
-    if (secret.length === 0) {
-      throw new ComposioWebhookSignatureVerificationError(
-        'No webhook secret was provided. You can find your webhook secret in your Composio dashboard.'
-      );
-    }
-
-    if (webhookId.length === 0) {
-      throw new ComposioWebhookSignatureVerificationError(
-        "No webhook ID was provided. Please pass the value of the 'webhook-id' header."
-      );
-    }
-
-    if (webhookTimestamp.length === 0) {
-      throw new ComposioWebhookSignatureVerificationError(
-        "No webhook timestamp was provided. Please pass the value of the 'webhook-timestamp' header."
-      );
-    }
-
-    // Parse signature - may have multiple signatures prefixed with version (e.g., "v1,base64sig")
-    const signatures = signature.split(' ');
-    const v1Signatures: string[] = [];
-
-    for (const sig of signatures) {
-      const [version, value] = sig.split(',');
-      if (version === 'v1' && value) {
-        v1Signatures.push(value);
-      }
-    }
-
-    if (v1Signatures.length === 0) {
-      throw new ComposioWebhookSignatureVerificationError(
-        'No valid v1 signature found in the webhook-signature header. ' +
-          "Expected format: 'v1,base64EncodedSignature'"
-      );
-    }
-
-    // Compute expected signature: HMAC-SHA256(msgId.timestamp.payload, secret) -> base64
-    const toSign = `${webhookId}.${webhookTimestamp}.${payload}`;
-    const expectedSignature = await hmacSha256Base64(secret, toSign);
-
-    // Check if any of the provided signatures match
-    let isValid = false;
-    for (const providedSignature of v1Signatures) {
-      if (timingSafeEqual(providedSignature, expectedSignature)) {
-        isValid = true;
-        break;
-      }
-    }
-
-    if (!isValid) {
-      throw new ComposioWebhookSignatureVerificationError(
-        'The signature provided is invalid. Please ensure you are using the correct webhook secret.'
-      );
-    }
-  }
-
-  /**
-   * Validates that the webhook timestamp is within the allowed tolerance
-   * @private
-   */
-  private validateWebhookTimestamp(webhookTimestamp: string, tolerance: number): void {
-    const timestampSeconds = parseInt(webhookTimestamp, 10);
-
-    if (Number.isNaN(timestampSeconds)) {
-      throw new ComposioWebhookPayloadError(
-        `Invalid webhook timestamp: ${webhookTimestamp}. Expected Unix timestamp in seconds.`
-      );
-    }
-
-    const webhookTimeMs = timestampSeconds * 1000;
-    const currentTime = Date.now();
-    const timeDifference = Math.abs(currentTime - webhookTimeMs);
-
-    if (timeDifference > tolerance * 1000) {
-      throw new ComposioWebhookSignatureVerificationError(
-        `The webhook timestamp is outside the allowed tolerance. ` +
-          `The webhook was sent ${Math.round(timeDifference / 1000)} seconds ago, ` +
-          `but the maximum allowed age is ${tolerance} seconds.`
-      );
-    }
   }
 }

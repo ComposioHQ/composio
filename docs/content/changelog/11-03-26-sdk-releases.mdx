@@ -1,0 +1,46 @@
+---
+title: 'SDK releases: custom toolkits in Python 0.31.0 and TypeScript 0.28.0'
+description: 'Create private custom MCP toolkits, configure trigger polling, and upgrade to Composio client 2.0.1.'
+date: '2026-11-03'
+---
+
+You can now create custom MCP toolkits for a single user or share them across your project. Both SDKs use Composio client `2.0.1`.
+
+### Release versions
+
+| SDK                              | Version  |
+| -------------------------------- | -------- |
+| Python `composio`                | `0.31.0` |
+| TypeScript `@composio/core`      | `0.28.0` |
+| TypeScript `@composio/slim`      | `0.28.0` |
+| TypeScript `@composio/anthropic` | `0.11.7` |
+
+All 13 Python provider packages are released at `0.31.0`.
+
+### What's new
+
+- **Custom MCP toolkits.** Use `composio.experimental.custom_toolkits.create()` in Python or `composio.experimental.customToolkits.create()` in TypeScript. Set `user_id` or `userId` to a user ID for a private toolkit, or to `'all'` to share it across the project. Creation returns a generated slug and, when available, a connect link for a private toolkit. Store the slug and pass it to `update()` to change the name, logo, or API key input copy. TypeScript also accepts `additionalFields.genericId` for headers that use `{{generic_id}}`.
+- **Trigger delivery and polling.** Pass `type` to choose webhook or polling delivery for a trigger that supports both. Set `polling_interval` in Python or `pollingInterval` in TypeScript to choose the minutes between polls. Created and listed instances include their delivery type, polling interval, and fallback reason. Trigger type metadata reports supported delivery types and whether webhook endpoint setup is required.
+- **Session policies.** TypeScript `sessionConfigs.get()` preserves `require_approval` lists and accepts policy entries that contain only approval requirements. Toolkit metadata also exposes `meta.appUrl` when the API returns it.
+- **Anthropic compatibility.** The TypeScript Anthropic provider accepts `@anthropic-ai/sdk` `^0.135.0`.
+
+### Migration notes
+
+<Callout type="warn">
+  Composio client `2.0.1` changes direct API client access and automatic retries for writes. Review
+  the steps below if you call the underlying client or relied on retries for POST and PATCH
+  requests.
+</Callout>
+
+1. **Custom toolkit registration.** `upsert()` still works, but warns once per process that it is deprecated. Before: register a toolkit with a caller-chosen slug through `upsert()`. After: call `create()`, store its returned slug, and use `update(slug, ...)` for later metadata changes. The server URL, auth schemes, and owning user cannot change after creation; delete and create the toolkit again to change them.
+2. **Write retries.** POST and PATCH requests are sent once by default. A write may complete on the server even when its response is lost, so retry only when you can prevent duplicate side effects. Reads keep their retry behavior. On the TypeScript client returned by `getClient()`, opt a write into retries with that call's `maxRetries` option.
+3. **Direct TypeScript client calls.** Replace `client.request(...)` with `client.get(path, options)` for GET requests, retaining the relevant query and request options. For other HTTP methods, use `post`, `patch`, `put`, or `delete`. Resource classes, `Composio.Tools`-style statics, namespace-member types, `Composio.Composio`, and `Composio.DEFAULT_TIMEOUT` are removed. Import types from `@composio/client/resources/*` without `.js` or `.mjs` suffixes, and use indexed access for nested types.
+4. **Session config search.** TypeScript `sessionConfigs.list()` ignores the deprecated `search` option and warns when you set it. Filter the returned `items` by name instead.
+
+### Bug fixes
+
+- **Local upload MIME types.** Files uploaded from local paths use the MIME type of their extension instead of always using `application/octet-stream`. Python and TypeScript use the same extension table. Files supplied as `File` objects or URLs keep the MIME type they carry.
+- **Python downloaded filenames.** Files downloaded from extensionless URLs use the extension corresponding to a known response MIME type, including formats such as CSV and PowerPoint. Unknown MIME types leave the generated filename extensionless.
+- **Python schema defaults.** Default coercion handles schemas whose `type` is a list, including nullable types.
+- **Python Gemini execution.** Manual function-call handling uses the user or session you supply, and rejects ambiguous ownership instead of choosing the last user to fetch tools. See the [Gemini provider fix](/docs/changelog/2026/10/27).
+- **TypeScript session authorization.** Sessions returned by `create()` and `use()` accept the already-supported `experimental` authorization options in their public types.

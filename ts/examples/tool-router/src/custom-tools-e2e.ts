@@ -26,7 +26,7 @@ function ok(label: string) {
 }
 function fail(label: string, err: unknown) {
   failed++;
-  console.error(`  ✗ ${label}: ${err instanceof Error ? err.message : err}`);
+  console.error(`  ✗ ${label}: ${err instanceof Error ? err.message : String(err)}`);
 }
 
 // ── Shared in-memory user store ──────────────────────────────────
@@ -139,8 +139,8 @@ const userManagement = experimental_createToolkit("USER_MANAGEMENT", {
   tools: [setUserRole, updateUserStatus],
 });
 
-const customTools = [getUserDetails, listUserKeys, formatGmailEmail];
-const customToolkits = [userManagement];
+const localTools = [getUserDetails, listUserKeys, formatGmailEmail];
+const localToolkits = [userManagement];
 
 // ────────────────────────────────────────────────────────────────
 // Run tests
@@ -160,8 +160,8 @@ async function main() {
       toolkits: ["weathermap", "gmail"],
       manageConnections: false,
       experimental: {
-        customTools,
-        customToolkits,
+        localTools,
+        localToolkits,
       },
     });
     ok(`Session created: ${session.sessionId}`);
@@ -173,7 +173,7 @@ async function main() {
 
   // ── Existing session reuse with local custom definitions ──
   try {
-    const reusedSession = await composio.use(session.sessionId, { customTools, customToolkits });
+    const reusedSession = await composio.use(session.sessionId, { localTools, localToolkits });
     const result = await reusedSession.execute("GET_USER_DETAILS", { user_id: "user-1" });
     if (result.data?.name !== "Alice Johnson") throw new Error(`Unexpected: ${JSON.stringify(result.data)}`);
     ok("Use: existing session binds custom tools for local execution");
@@ -229,8 +229,8 @@ async function main() {
     });
     if (result.error) throw new Error(`Execute error: ${result.error}`);
     if (result.data?.formatted !== true) throw new Error(`Not formatted: ${JSON.stringify(result.data)}`);
-    if (result.data?.html_body !== "Line 1<br>Line 2") throw new Error(`HTML mismatch: ${result.data?.html_body}`);
-    if (result.data?.user_id !== userId) throw new Error(`UserId mismatch: ${result.data?.user_id}`);
+    if (result.data?.html_body !== "Line 1<br>Line 2") throw new Error(`HTML mismatch: ${JSON.stringify(result.data?.html_body)}`);
+    if (result.data?.user_id !== userId) throw new Error(`UserId mismatch: ${JSON.stringify(result.data?.user_id)}`);
     ok("Extension: execute by original slug (FORMAT_GMAIL_EMAIL) + session context");
   } catch (err) {
     fail("Extension: execute by original slug", err);

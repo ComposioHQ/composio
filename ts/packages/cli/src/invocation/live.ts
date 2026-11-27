@@ -3,7 +3,6 @@
  * `cli-main.ts` provides it; tests provide `TestLive` instead.
  */
 import { Layer, Logger } from 'effect';
-import * as Path from 'effect/Path';
 import { CliConfig } from 'effect/cli';
 import { FetchHttpClient } from 'effect/http';
 import { Digest, SecureRandom } from 'effect/crypto';
@@ -74,7 +73,7 @@ export const ComposioToolkitsRepositoryCachedLive = Layer.provide(
 
 export const UpgradeBinaryLive = Layer.provide(
   UpgradeBinary.Default,
-  Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+  Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const TriggersRealtimeLive = Layer.provide(
@@ -129,11 +128,9 @@ export const CommandLifecycleTelemetryLive = Layer.provide(
   Layer.mergeAll(BunFileSystem.layer, BunPath.layer, NodeOs.Default, TerminalUILive)
 ) satisfies RequiredLayer;
 
-// `Path.layer`, not `BunPath.layer`: the update notice and the plugin hint have always resolved
-// their state files with Effect's own path implementation.
 export const UpdateNoticeLive = Layer.provide(
   UpdateNotice.Default,
-  Layer.mergeAll(TerminalUILive, BunFileSystem.layer, Path.layer, NodeOs.Default)
+  Layer.mergeAll(TerminalUILive, BunFileSystem.layer, BunPath.layer, NodeOs.Default)
 ) satisfies RequiredLayer;
 
 export const PluginHintLive = Layer.provide(
@@ -142,7 +139,7 @@ export const PluginHintLive = Layer.provide(
     TerminalUILive,
     CommandLifecycleTelemetryLive,
     BunFileSystem.layer,
-    Path.layer,
+    BunPath.layer,
     NodeOs.Default
   )
 ) satisfies RequiredLayer;

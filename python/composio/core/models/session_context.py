@@ -30,9 +30,6 @@ from composio.core.models.custom_tool_types import (
     ToolRouterSessionProxyExecuteCompleted,
     ToolRouterSessionProxyExecuteResponse,
 )
-from composio.core.models.inline_custom_tools_payload import (
-    inline_custom_tools_execute_experimental,
-)
 from composio.core.models.tools import (
     _serialize_arguments,
     hook_results_of,
@@ -206,9 +203,9 @@ class SessionContextImpl:
                 session_id=self._session_id,
                 tool_slug=tool_slug,
                 arguments=serialized,
-                experimental=inline_custom_tools_execute_experimental(
-                    self._inline_custom_tools_payload
-                ),
+                experimental=self._inline_custom_tools_payload
+                if self._inline_custom_tools_payload is not None
+                else omit,
             ),
             tool_slug,
         )

@@ -5,15 +5,15 @@ keywords: [session, direct execution, tool router, meta tools, architecture, dec
 legacy: true
 ---
 
-A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/how-composio-works#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
+## Should I use sessions or direct execution?
+
+Use sessions for new integrations. If your agent needs a fixed set of app tools, use a session's [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset) to keep session authentication and connected accounts without runtime tool discovery. Direct execution is a legacy interface that remains supported for existing integrations. If you maintain one, plan a [migration to sessions](/docs/migration-guide/direct-to-sessions).
+
+A **session** is the runtime context Composio creates for one of your users with `composio.create(userId)`. It ties together the user, available toolkits, auth, and connected accounts. By default it gives your agent [meta tools](/docs/sessions#meta-tools) so the agent discovers which app tools to use, authenticates users, and executes tools at runtime.
 
 **Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
-<Callout type="info" title="Use sessions for new integrations">
-Direct execution is a legacy interface that remains supported for existing integrations. We recommend sessions for new integrations and encourage existing users to [migrate to sessions](/docs/migration-guide/direct-to-sessions). Sessions handle runtime tool discovery, authentication, and execution.
-</Callout>
-
-If your application needs a fixed tool set, consider the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) within a session. If you need approval before execution, use [approvals](/docs/approvals): the session asks the user before it runs the tools you choose, including calls inside meta tools that execute multiple app tools. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
+If you need approval before execution, use [approvals](/docs/governance/approvals): the session asks the user before it runs the tools you choose, including calls inside meta tools that execute multiple app tools. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
 
 | | Sessions | Direct execution |
 |---|---|---|
@@ -23,16 +23,16 @@ If your application needs a fixed tool set, consider the [direct tools preset](/
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
 | **Auth** | [In-chat](/docs/authentication#in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authentication/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
 | **[Sandbox](/docs/sandbox/remote)** | Built in, large responses offloaded automatically | Not available |
-| **Human approval** | [Approvals](/docs/approvals) ask the user before the tools you choose run, including inside meta tools | You intercept before each call in your code |
+| **Human approval** | [Approvals](/docs/governance/approvals) ask the user before the tools you choose run, including inside meta tools | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
-Sessions are configurable. [Restrict toolkits](/docs/configuring-sessions), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/configuring-sessions#account-selection). See [Configuring Sessions](/docs/configuring-sessions) for the full list.
+Sessions are configurable. [Restrict toolkits](/docs/sessions/tool-access), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/sessions/connections#account-selection). See [Restrict tool access](/docs/sessions/tool-access) for the full list.
 
-Sessions aren't all-or-nothing. With the [direct tools preset](/docs/configuring-sessions#direct-tools-preset), a session returns a fixed set of tools directly from `session.tools()` with no search or meta tools, so the agent sees exactly the tools you list while you keep session auth, connected accounts, and the sandbox. It's the middle ground between runtime discovery and direct execution.
+Sessions aren't all-or-nothing. With the [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset), a session returns a fixed set of tools directly from `session.tools()` with no search or meta tools, so the agent sees exactly the tools you list while you keep session auth, connected accounts, and the sandbox. It's the middle ground between runtime discovery and direct execution.
 
 ## Sessions
 
-`composio.create()` returns [meta tools](/docs/how-composio-works#meta-tools):
+`composio.create()` returns [meta tools](/docs/sessions#meta-tools):
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -83,12 +83,12 @@ The agent discovers app tools through `COMPOSIO_SEARCH_TOOLS`:
 User: "Create a GitHub issue for the login bug"
 
 > Agent calls COMPOSIO_SEARCH_TOOLS({ query: "create github issue" })
-  Returns: GITHUB_CREATE_ISSUE schema + connection status
+  Returns: GITHUB_CREATE_AN_ISSUE schema + connection status
 
 > Agent calls COMPOSIO_MANAGE_CONNECTIONS({ toolkits: ["github"] })
   Returns: confirms connected (or auth link if not)
 
-> Agent calls COMPOSIO_MULTI_EXECUTE_TOOL({ tool: "GITHUB_CREATE_ISSUE", args: {...} })
+> Agent calls COMPOSIO_MULTI_EXECUTE_TOOL({ tool: "GITHUB_CREATE_AN_ISSUE", args: {...} })
   Returns: issue details
 
 Agent: "Created issue #42 on your-org/your-repo"
@@ -140,7 +140,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-See [Configuring Sessions](/docs/configuring-sessions) for details.
+See [Restrict tool access](/docs/sessions/tool-access) for details.
 
 ## Direct execution
 
@@ -160,7 +160,7 @@ composio = Composio(
 # Fetch specific tools
 tools = composio.tools.get(
     user_id="user_123",
-    tools=["GITHUB_CREATE_ISSUE", "GITHUB_LIST_ISSUES"]
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_ISSUES"]
 )
 
 # Or by toolkit
@@ -172,7 +172,7 @@ tools = composio.tools.get(
 
 # Execute without an LLM
 result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     user_id="user_123",
     arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
     dangerously_skip_version_check=True,  # required when running "latest"; or pin via version=...
@@ -192,7 +192,7 @@ const composio = new Composio({
 
 // Fetch specific tools
 const tools = await composio.tools.get("user_123", {
-  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_LIST_ISSUES"],
+  tools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_LIST_ISSUES"],
 });
 
 // Or by toolkit
@@ -202,7 +202,7 @@ const allTools = await composio.tools.get("user_123", {
 });
 
 // Execute without an LLM
-const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
+const result = await composio.tools.execute("GITHUB_CREATE_AN_ISSUE", {
   userId: "user_123",
   arguments: { owner: "my-org", repo: "my-repo", title: "Fix login bug" },
   dangerouslySkipVersionCheck: true, // required when running "latest"; or pin via version
@@ -212,7 +212,7 @@ const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
 <Tab value="API">
 ```bash
 # Fetch specific tools
-curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_ISSUE,GITHUB_LIST_ISSUES&toolkit_versions=latest" \
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_AN_ISSUE,GITHUB_LIST_ISSUES&toolkit_versions=latest" \
   -H "x-api-key: $COMPOSIO_API_KEY"
 
 # Or by toolkit
@@ -220,7 +220,7 @@ curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=github&lim
   -H "x-api-key: $COMPOSIO_API_KEY"
 
 # Execute without an LLM
-curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_ISSUE \
+curl -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_AN_ISSUE \
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -244,4 +244,4 @@ See the [migration guide](/docs/migration-guide/direct-to-sessions). Auth config
 
 ## Next
 
-<Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, and connected accounts" />
+<Card icon={<Wrench />} title="Restrict tool access" href="/docs/sessions/tool-access" description="Toolkits, auth configs, and connected accounts" />

@@ -39,8 +39,8 @@ import {
   SessionRetrieveResponse,
 } from '@composio/client/resources/tool-router/session';
 import type {
-  CustomTool,
-  CustomToolkit,
+  LocalTool,
+  LocalToolkit,
   InlineCustomToolsWirePayload,
 } from '../types/customTool.types';
 import {
@@ -54,12 +54,16 @@ import {
   transformToolRouterProxyExecuteParams,
   transformToolRouterHooksParams,
   resolveToolRouterSandboxConfig,
+  resolveLocalToolsOptions,
+  type LocalToolsOptions,
+  type SessionCreateBody,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { ToolRouterSession } from './ToolRouterSession';
+import { SessionWebhooks } from './SessionWebhooks';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
@@ -91,8 +95,8 @@ function preloadsAllCustomTools(preload?: { tools?: readonly string[] | string }
 }
 
 function prepareInlineCustomTools(options: {
-  customTools?: CustomTool[];
-  customToolkits?: CustomToolkit[];
+  customTools?: LocalTool[];
+  customToolkits?: LocalToolkit[];
   defaultPreload?: boolean;
   preloadTools?: readonly string[] | typeof PRELOAD_TOOLS_ALL;
 }): InlineCustomToolsWirePayload | undefined {
@@ -130,10 +134,17 @@ export class ToolRouter<
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
+  /**
+   * Read the events Composio sends to the project's session webhook URL, for
+   * session hooks with a `webhook` handler.
+   */
+  webhooks: SessionWebhooks;
+
   constructor(
     private client: ComposioClient,
     private config?: ComposioConfig<TProvider>
   ) {
+    this.webhooks = new SessionWebhooks();
     telemetry.instrument(this, 'ToolRouter');
   }
 
@@ -181,19 +192,40 @@ export class ToolRouter<
    * @param config {ToolRouterCreateSessionConfig} The config for the tool router session
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
+   * @throws {ValidationError} When a local tools option and its deprecated `custom*` alias are both passed
    *
    * @example
    * ```typescript
-   * import { Composio } from '@composio/core';
+   * import { Composio, experimental_createTool, experimental_createToolkit } from '@composio/core';
+   * import { z } from 'zod';
    *
    * const composio = new Composio();
+   *
+   * const myLocalTool = experimental_createTool('GET_WEATHER', {
+   *   name: 'Get Weather',
+   *   description: 'Get the weather for a city',
+   *   inputParams: z.object({ city: z.string() }),
+   *   execute: async ({ city }) => ({ city, forecast: 'sunny' }),
+   * });
+   * const myLocalToolkit = experimental_createToolkit('DEV_TOOLS', {
+   *   name: 'Dev Tools',
+   *   description: 'Local developer utilities',
+   *   tools: [
+   *     experimental_createTool('ECHO', {
+   *       name: 'Echo',
+   *       description: 'Return the input text',
+   *       inputParams: z.object({ text: z.string() }),
+   *       execute: async ({ text }) => ({ text }),
+   *     }),
+   *   ],
+   * });
    *
    * const session = await composio.sessions.create('user_123', {
    *   toolkits: ['gmail'],
    *   manageConnections: true,
    *   experimental: {
-   *     customTools: [myCustomTool],
-   *     customToolkits: [myToolkit],
+   *     localTools: [myLocalTool],
+   *     localToolkits: [myLocalToolkit],
    *   },
    * });
    *
@@ -225,9 +257,10 @@ export class ToolRouter<
     const routerConfig = parseSessionConfigInput(ToolRouterCreateSessionConfigSchema, config ?? {});
     const isDirectToolsPreset = routerConfig.sessionPreset === SessionPreset.DIRECT_TOOLS;
 
-    // Extract custom tools/toolkits from experimental config
-    const customTools = routerConfig.experimental?.customTools;
-    const customToolkits = routerConfig.experimental?.customToolkits;
+    const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(
+      routerConfig.experimental,
+      'create'
+    );
     const defaultCustomPreload = preloadsAllCustomTools(routerConfig.preload);
     const inlineCustomToolsPayload = prepareInlineCustomTools({
       customTools,
@@ -276,7 +309,7 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
@@ -306,7 +339,13 @@ export class ToolRouter<
     };
 
     const session = await withCancellation(
-      () => this.client.toolRouter.session.create(payload, requestOptions),
+      () =>
+        this.client.toolRouter.session.create(
+          // The `webhook` hook handler is not in `@composio/client` until it
+          // picks up ComposioHQ/platform#15328; the body is serialized as-is.
+          payload as SessionCreateParams,
+          requestOptions
+        ),
       requestOptions?.signal
     );
 
@@ -351,8 +390,12 @@ export class ToolRouter<
    * origins is logged, so native tools keep working.
    *
    * @param id {string} The id of the session to use
+   * @param options {object} Optional session reuse options
+   * @param options.localTools Local tools to attach to the session; `customTools` is a deprecated alias.
+   * @param options.localToolkits Toolkits of local tools to attach; `customToolkits` is a deprecated alias.
    * @returns {Promise<Session<TToolCollection, TTool, TProvider>>} The tool router session
    * @throws {ComposioMCPDestinationError} When `mcp: true` is passed and the MCP URL is not on the API origin
+   * @throws {ValidationError} When a local tools option and its deprecated `custom*` alias are both passed
    *
    * @example
    * ```typescript
@@ -360,7 +403,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    * const id = 'session_123';
-   * const session = await composio.sessions.use(id);
+   * const session = await composio.sessions.use(id, { mcp: true });
    *
    * console.log(session.mcp.url);
    * console.log(session.mcp.headers);
@@ -370,21 +413,23 @@ export class ToolRouter<
   // in the returned type. See https://docs.composio.dev/docs/sessions-via-mcp
   async use(
     id: string,
-    options: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp: true },
+    options: LocalToolsOptions & { mcp: true },
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>>;
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean },
+    options?: LocalToolsOptions & { mcp?: boolean },
     requestOptions?: ComposioRequestOptions
   ): Promise<SessionWithoutMcp<TToolCollection, TTool, TProvider>>;
   async use(
     id: string,
-    options?: { customTools?: CustomTool[]; customToolkits?: CustomToolkit[]; mcp?: boolean },
+    options?: LocalToolsOptions & { mcp?: boolean },
     requestOptions?: ComposioRequestOptions
   ): Promise<Session<TToolCollection, TTool, TProvider>> {
-    const customTools = options?.customTools;
-    const customToolkits = options?.customToolkits;
+    const { tools: customTools, toolkits: customToolkits } = resolveLocalToolsOptions(
+      options,
+      'use'
+    );
     const hasCustoms = !!(customTools?.length || customToolkits?.length);
 
     let session: SessionRetrieveResponse | SessionAttachResponse;

@@ -8,6 +8,7 @@ import { Triggers } from './models/Triggers';
 import { AuthConfigs } from './models/AuthConfigs';
 import { ConnectedAccounts } from './models/ConnectedAccounts';
 import { Experimental } from './models/Experimental';
+import { CustomToolkits } from './models/CustomToolkits';
 import { MCP } from './models/MCP';
 import { Webhooks } from './models/Webhooks';
 import { Logs } from './models/Logs';
@@ -30,7 +31,6 @@ import { checkForLatestVersionFromNPM } from './utils/version';
 import { OpenAIProvider } from './provider/OpenAIProvider';
 import { version } from '../package.json';
 import type { ComposioRequestHeaders } from './types/composio.types';
-import type { ComposioRequestOptions } from './types/requestOptions.types';
 import { Files } from '#files';
 import { getClientIdentity } from './utils/session';
 import { ToolkitVersionParam } from './types/tool.types';
@@ -354,6 +354,16 @@ export class Composio<
   /** Public transfer keys of the organization's customer-managed keyring */
   keyring: Keyring;
   /**
+   * Register and manage project-owned custom toolkits, such as a remote MCP
+   * server (`create()` / `update()` / `sync()` / `delete()`).
+   *
+   * @example
+   * ```typescript
+   * await composio.customToolkits.sync('CUSTOM_MY_TOOLKIT');
+   * ```
+   */
+  customToolkits: CustomToolkits;
+  /**
    * Experimental SDK methods whose shape may change in future releases.
    * Prefer domain-specific mounts (for example
    * `composio.connectedAccounts.updateAcl(...)`) when available; this
@@ -449,19 +459,31 @@ export class Composio<
    *
    * @example
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // Initialize with default configuration
    * const composio = new Composio();
+   * ```
+   *
+   * @example
+   * ```typescript
+   * import { Composio } from '@composio/core';
    *
    * // Initialize with custom API key and base URL
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
    *   baseURL: 'https://api.composio.dev'
    * });
+   * ```
    *
-   * // Initialize with custom provider
+   * @example
+   * ```typescript
+   * import { Composio, OpenAIProvider } from '@composio/core';
+   *
+   * // Initialize with an explicit provider
    * const composio = new Composio({
    *   apiKey: 'your-api-key',
-   *   provider: new CustomProvider()
+   *   provider: new OpenAIProvider()
    * });
    * ```
    */
@@ -576,6 +598,7 @@ export class Composio<
     this.logs = new Logs(this.client);
     this.keyring = new Keyring(this.client);
     this.experimental = new Experimental(this.client);
+    this.customToolkits = this.experimental.customToolkits;
     this.sessions = new Sessions(this.client, this.config);
     this.toolRouter = this.sessions;
     this.sessionConfigs = new SessionConfigs(this.client);
@@ -614,7 +637,7 @@ export class Composio<
 
     // Check for the latest version of the Composio SDK from NPM.
     if (!this.config.disableVersionCheck) {
-      checkForLatestVersionFromNPM(version);
+      void checkForLatestVersionFromNPM(version);
     }
   }
 
@@ -666,6 +689,8 @@ export class Composio<
    *
    * @example
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // Create a base Composio instance
    * const composio = new Composio({
    *   apiKey: 'your-api-key'
@@ -681,7 +706,7 @@ export class Composio<
    * });
    *
    * // Use the session for making API calls with the custom headers
-   * await composioWithCustomHeaders.tools.list();
+   * await composioWithCustomHeaders.tools.getRawComposioTools({ toolkits: ['github'] });
    * ```
    */
   createSession(options?: { headers?: ComposioRequestHeaders }): Composio<TProvider> {
@@ -705,14 +730,20 @@ export class Composio<
    * @returns {Promise<void>} A promise that resolves when all pending telemetry has been sent.
    *
    * @example
-   * ```typescript
+   * ```typescript nocheck="Cloudflare Worker handler; the checker has no Workers Env or ExecutionContext types"
+   * import { Composio } from '@composio/core';
+   *
    * // In a Cloudflare Worker, use ctx.waitUntil to ensure telemetry is flushed
    * export default {
    *   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
    *     const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
    *
    *     // Do your work...
-   *     const result = await composio.tools.execute(...);
+   *     const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+   *       userId: 'user_123',
+   *       version: '20250909_00',
+   *       arguments: { owner: 'composio' },
+   *     });
    *
    *     // Ensure telemetry flushes before worker terminates
    *     ctx.waitUntil(composio.flush());

@@ -1,5 +1,5 @@
 # Reusable Dockerfile for Node.js e2e tests
-# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.23.4 --build-arg NODE_VERSION_DIGEST=sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d -t test-name .
+# Usage: docker build -f Dockerfile.node --build-arg NODE_VERSION=22.23.5 --build-arg NODE_VERSION_DIGEST=sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee -t test-name .
 #
 # Uses official node:slim images. For multi-version testing, run the build/run
 # multiple times with different NODE_VERSION values from the shell script.
@@ -48,11 +48,22 @@ RUN mise install && \
 
 FROM toolchain
 
+# Prepare writable directories for the non-root user before copying workspace
+# files so every subsequent COPY/install layer is owned by node:node without a
+# recursive `chown -R /app` (which otherwise duplicates the entire workspace and
+# node_modules into a new overlayfs layer).
+# Pre-create /home/node/.composio to work around Bun issue #7967
+# (Bun-compiled binaries may silently fail to create directories in Docker):
+# https://github.com/oven-sh/bun/issues/7967
+RUN chown node:node /app && \
+    mkdir -p /home/node/.composio /home/node/.cache && \
+    chown -R node:node /home/node/.composio /home/node/.cache
+
 # Copy lockfile first for optimal layer caching
-COPY pnpm-lock.yaml ./
+COPY --chown=node:node pnpm-lock.yaml ./
 
 # Copy workspace configuration files
-COPY package.json \
+COPY --chown=node:node package.json \
      pnpm-workspace.yaml \
      .pnpmfile.cjs \
      tsconfig.base.json \
@@ -60,16 +71,31 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
+# pnpm applies these dependency patches during install
+COPY --chown=node:node patches/ ./patches/
+
 # Copy all ts/packages (pre-built)
-COPY ts/packages/ ./ts/packages/
+COPY --chown=node:node ts/packages/ ./ts/packages/
 
-# Install dependencies using pnpm
+# Copy e2e tests before `pnpm install` so pnpm creates native Linux node_modules
+# links for workspace runtime fixtures (e.g. runtimes/node/claude-agent-sdk)
+# instead of relying on copied host node_modules symlinks.
+COPY --chown=node:node ts/e2e-tests/ ./ts/e2e-tests/
+
+USER node
+ENV HOME="/home/node"
+ENV XDG_CACHE_HOME="/home/node/.cache"
+
+# Install dependencies as node:node and drop the pnpm store/cache in the same
+# layer so it is not exported into the final runtime image.
 # Note: We intentionally don't use --mount=type=cache for the pnpm store here
-# because it causes native binding issues (e.g., rolldown-binding) across builds
-RUN pnpm install --frozen-lockfile
+# because it causes native binding issues (e.g., rolldown-binding) across builds.
+RUN pnpm install --frozen-lockfile --ignore-scripts && \
+    rm -rf "$(pnpm store path --silent)" /home/node/.cache
 
-# Build and install composio CLI binary
+# Build and install composio CLI binary into /usr/local/bin/composio
 # This is a simplified version of ts/packages/cli/scripts/build-binary.ts + install-binary.ts
+USER root
 WORKDIR /app/ts/packages/cli
 RUN bun build ./src/bin.ts \
     --env DEBUG_OVERRIDE_* \
@@ -78,17 +104,6 @@ RUN bun build ./src/bin.ts \
     --outfile /usr/local/bin/composio
 
 WORKDIR /app
-
-# Copy e2e tests last (changes frequently)
-COPY ts/e2e-tests/ ./ts/e2e-tests/
-
-RUN chown -R node:node /app
-
-# Pre-create Composio CLI cache directory to work around Bun issue #7967
-# (Bun-compiled binaries may silently fail to create directories in Docker)
-# See: https://github.com/oven-sh/bun/issues/7967
-RUN mkdir -p /home/node/.composio && chown node:node /home/node/.composio
-
 USER node
 
 RUN pnpm --version && \

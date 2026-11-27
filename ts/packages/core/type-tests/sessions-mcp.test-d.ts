@@ -44,6 +44,7 @@ async function requestOptionsArg(): Promise<void> {
   await composio.create('user_123', { toolkits: ['gmail'] }, { signal: ctrl.signal });
   await composio.create('user_123', { mcp: true }, { signal: ctrl.signal });
   await composio.sessions.create('user_123', undefined, { signal: ctrl.signal });
+  await composio.use('session_123', { localTools: [] }, { signal: ctrl.signal });
   await composio.use('session_123', { customTools: [] }, { signal: ctrl.signal });
   await composio.use('session_123', { mcp: true }, { signal: ctrl.signal });
 }

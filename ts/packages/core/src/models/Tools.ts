@@ -1,5 +1,6 @@
 import ComposioClient, { APIError } from '@composio/client';
 import { FileToolModifier } from '#file_tool_modifier';
+import { z } from 'zod/v3';
 import {
   Tool,
   ToolExecuteParams,
@@ -43,8 +44,10 @@ import { ExecuteToolFn, GlobalExecuteToolFn } from '../types/provider.types';
 import {
   ComposioInvalidModifierError,
   ComposioToolFetchError,
+  ComposioToolFetchRateLimitError,
   ComposioToolNotFoundError,
   ComposioProviderNotDefinedError,
+  ComposioToolSchemaInvalidError,
   ComposioToolVersionRequiredError,
 } from '../errors/ToolErrors';
 import { ValidationError } from '../errors/ValidationErrors';
@@ -52,6 +55,7 @@ import { telemetry } from '../telemetry/Telemetry';
 import type { ComposioConfig } from '../composio';
 import { getToolkitVersion } from '../utils/toolkitVersion';
 import { handleToolExecutionError } from '../errors/ToolErrors';
+import { apiErrorSuggestedFixes, withApiErrorMessage } from '../errors/apiErrorDetails';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
 import { CONFIG_DEFAULTS } from '../utils/config-defaults';
 import { resolveEffectiveUploadAllowlist } from '../utils/fileDirs';
@@ -68,6 +72,7 @@ import {
   transformExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
 import { ComposioRequestCancelledError } from '../errors/SDKErrors';
+import { isRateLimitResponse } from '../utils/rateLimit';
 
 const TOOL_ROUTER_SESSION_TOOLS_PAGE_LIMIT = 500;
 
@@ -79,24 +84,129 @@ type RawToolParameters =
   | ToolRetrieveResponse['input_parameters']
   | ComposioToolListResponse['items'][0]['input_parameters'];
 
+type JsonSchemaNode = Record<string, unknown>;
+
+const isSchemaRecord = (value: unknown): value is JsonSchemaNode =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Flatten a value for interpolation into a log line.
+ *
+ * The logger writes straight to the console sink, and the slug and the zod
+ * issue paths here are built from property names a remote toolkit controls. A
+ * name carrying a newline could otherwise forge or erase a line in the host's
+ * log, and an ANSI clear-line sequence could hide what came before it.
+ */
+const sanitizeForLog = (value: string): string =>
+  // eslint-disable-next-line no-control-regex
+  value.replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ');
+
+/**
+ * Rewrite one JSON-Schema node into the strict subset `ParametersSchema`
+ * accepts, preserving its meaning:
+ *
+ * - boolean nodes (`items: true` / `items: false`) become `{}` / `{ not: {} }`
+ *   — the strict subset's way to express "anything" and "nothing", so the
+ *   meaning survives; booleans are still valid JSON Schema (draft-04 style)
+ *   that MCP toolkits emit;
+ * - draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum` (paired with
+ *   `minimum`/`maximum`) become the numeric form draft-07+ uses;
+ *
+ * Children are rewritten recursively. `additionalProperties` legitimately
+ * accepts a boolean, so it is only recursed into when it is a schema.
+ */
+function sanitizeJsonSchemaNode(node: unknown): unknown {
+  // Boolean JSON-Schema nodes (draft-04 style, still emitted by MCP toolkits):
+  // `true` accepts anything, which `{}` also expresses; `false` accepts
+  // nothing, which the strict subset (an object node) expresses as `not: {}`.
+  // Coercing `false` to `{}` would invert the schema's meaning.
+  if (typeof node === 'boolean') return node ? {} : { not: {} };
+  if (Array.isArray(node)) return node.map(sanitizeJsonSchemaNode);
+  if (!isSchemaRecord(node)) return node;
+
+  const schema: JsonSchemaNode = { ...node };
+
+  for (const [bound, limit] of [
+    ['exclusiveMinimum', 'minimum'],
+    ['exclusiveMaximum', 'maximum'],
+  ] as const) {
+    if (typeof schema[bound] !== 'boolean') continue;
+    if (schema[bound] && typeof schema[limit] === 'number') {
+      schema[bound] = schema[limit];
+    } else {
+      delete schema[bound];
+    }
+  }
+
+  for (const key of ['items', 'not', 'if', 'then', 'else', 'additionalProperties'] as const) {
+    const child = schema[key];
+    if (child === undefined) continue;
+    // Every keyword here takes a schema node except `additionalProperties`,
+    // which also accepts a boolean; the sanitizer coerces boolean nodes.
+    if (key === 'additionalProperties' && typeof child === 'boolean') continue;
+    schema[key] = sanitizeJsonSchemaNode(child);
+  }
+
+  for (const key of ['anyOf', 'oneOf', 'allOf'] as const) {
+    if (Array.isArray(schema[key])) {
+      schema[key] = sanitizeJsonSchemaNode(schema[key]);
+    }
+  }
+
+  for (const key of ['properties', 'patternProperties', '$defs', 'definitions'] as const) {
+    const children = schema[key];
+    if (!isSchemaRecord(children)) continue;
+    const mapped: JsonSchemaNode = {};
+    for (const [name, child] of Object.entries(children)) {
+      mapped[name] = sanitizeJsonSchemaNode(child);
+    }
+    schema[key] = mapped;
+  }
+
+  return schema;
+}
+
 /**
  * Normalize a raw `input_parameters` / `output_parameters` payload returned by
  * the Composio API. Maps `null`, `undefined`, and empty `{}` — all of which
  * mean "no declared schema" — to `undefined` so the strict `ParametersSchema`
- * validator never sees them. Non-empty objects pass through unchanged and
- * remain subject to strict Zod validation.
+ * validator never sees them, and rewrites the valid-but-unusual JSON Schema
+ * shapes MCP toolkits ship (boolean nodes, draft-04 boolean bounds, a bare
+ * combinator root) into the strict subset.
  *
  * MCP-backed toolkits (granola_mcp, apify_mcp, tavily_mcp, …) have no
  * declared output schema and the API serializes that as `{}`, which would
  * otherwise trip `ParametersSchema`. See
- * https://github.com/ComposioHQ/composio/issues/3354.
+ * https://github.com/ComposioHQ/composio/issues/3354. The malformed-shape
+ * handling covers the toolkits listed in
+ * https://github.com/ComposioHQ/composio/issues/4757.
  */
 function normalizeRawToolParameters(
   params: RawToolParameters | null | undefined
 ): RawToolParameters | undefined {
   if (params == null || Object.keys(params).length === 0) return undefined;
-  return params;
+  const sanitized = sanitizeJsonSchemaNode(params);
+  // A parameters root is a tool's named-argument object, so a bare combinator
+  // root (`oneOf`/`anyOf`/`allOf` with no `type`) still needs `type: "object"`
+  // to satisfy the strict schema.
+  if (
+    isSchemaRecord(sanitized) &&
+    sanitized.type === undefined &&
+    (Array.isArray(sanitized.anyOf) ||
+      Array.isArray(sanitized.oneOf) ||
+      Array.isArray(sanitized.allOf))
+  ) {
+    return { ...sanitized, type: 'object' } as RawToolParameters;
+  }
+  return sanitized as RawToolParameters;
 }
+
+/** How long `execute()` reuses a schema fetched for `latest`, which can change at any release. */
+const LATEST_TOOL_SCHEMA_TTL_MS = 5 * 60 * 1000;
+/** How long `execute()` reuses a schema fetched for a pinned toolkit version. */
+const PINNED_TOOL_SCHEMA_TTL_MS = 60 * 60 * 1000;
+/** Most schemas `execute()` keeps per `Tools` instance; the oldest is dropped first. */
+const MAX_CACHED_TOOL_SCHEMAS = 500;
 
 /**
  * This class is used to manage tools in the Composio SDK.
@@ -123,6 +233,15 @@ export class Tools<
    * Scoped per-instance so a fresh `Composio` starts with a clean slate.
    */
   private readonly warnedAutoUploadDisabledForTool = new Set<string>();
+  /** Tools whose parameters were dropped by `transformToolCases`; warn once each. */
+  private readonly warnedMalformedToolParametersSlugs = new Set<string>();
+
+  /**
+   * Schemas `execute()` already fetched, so repeated executions don't each spend a request.
+   * Holds what `getRawComposioToolBySlug` returned with no `modifySchema`, so a caller's schema
+   * modifiers never reach it.
+   */
+  private readonly executeToolSchemas = new Map<string, { tool: Tool; expiresAt: number }>();
 
   constructor(client: ComposioClient, config?: ComposioConfig<TProvider>) {
     if (!client) {
@@ -163,21 +282,79 @@ export class Tools<
    * making them more consistent with JavaScript/TypeScript conventions.
    *
    * @param {ToolRetrieveResponse | ComposioToolListResponse['items'][0]} tool - The tool object to transform
-   * @returns {Tool} The transformed tool with camelCase properties
+   * @returns {Tool} The transformed tool with camelCase properties, or
+   * `undefined` when its input schema is unrepairable and the tool is skipped
    *
    * @private
    */
   private transformToolCases(
     tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0]
-  ): Tool {
-    return ToolSchema.parse({
+  ): Tool | undefined {
+    const candidate = {
       ...tool,
       inputParameters: normalizeRawToolParameters(tool.input_parameters),
       outputParameters: normalizeRawToolParameters(tool.output_parameters),
       availableVersions: tool.available_versions,
       isDeprecated: tool.deprecated?.is_deprecated ?? false,
       isNoAuth: tool.no_auth,
-    });
+    };
+
+    const parsed = ToolSchema.safeParse(candidate);
+    if (parsed.success) return parsed.data;
+
+    // One malformed schema must not take down a whole toolkit's tool list
+    // (#4757). The output side degrades to "no schema"; the input side cannot,
+    // because providers build their call schema from it and a tool without one
+    // is not callable — @composio/langchain's wrapTool throws
+    // "Tool input parameters are not defined", so an unrepairable input schema
+    // would fail the provider's whole wrapTools pass one layer later. Such a
+    // tool is skipped instead, with the same warning. A failure outside the
+    // parameters is genuinely broken data and stays loud — including alongside
+    // a parameter failure, where skipping the tool would otherwise hide it.
+    const failingSides = new Set<'inputParameters' | 'outputParameters'>();
+    let hasNonParameterIssue = false;
+    for (const issue of parsed.error.issues) {
+      const root = issue.path[0];
+      if (root === 'inputParameters' || root === 'outputParameters') {
+        failingSides.add(root);
+      } else {
+        hasNonParameterIssue = true;
+      }
+    }
+    if (hasNonParameterIssue || failingSides.size === 0) throw parsed.error;
+
+    this.warnMalformedToolParameters(tool, parsed.error, [...failingSides]);
+    if (failingSides.has('inputParameters')) return undefined;
+    const degradedCandidate = { ...candidate };
+    for (const side of failingSides) {
+      degradedCandidate[side] = undefined;
+    }
+    const degraded = ToolSchema.safeParse(degradedCandidate);
+    if (degraded.success) return degraded.data;
+    throw parsed.error;
+  }
+
+  /**
+   * Warn once per tool that its declared parameters could not be parsed and
+   * were dropped, so a caller sees why a tool carries no schema instead of a
+   * bare TypeError from deep inside Zod.
+   */
+  private warnMalformedToolParameters(
+    tool: ToolRetrieveResponse | ComposioToolListResponse['items'][0],
+    error: z.ZodError,
+    droppedSides: Array<'inputParameters' | 'outputParameters'>
+  ): void {
+    const slug = typeof tool.slug === 'string' ? tool.slug : '';
+    if (slug && this.warnedMalformedToolParametersSlugs.has(slug)) return;
+    if (slug) this.warnedMalformedToolParametersSlugs.add(slug);
+    const inputFailed = droppedSides.includes('inputParameters');
+    logger.warn(
+      `Tool "${sanitizeForLog(slug) || '(unknown slug)'}" has ${droppedSides.join(' and ')} that do not ` +
+        `match the expected schema, so the tool was ` +
+        `${inputFailed ? 'skipped' : 'returned without those parameters'}. ` +
+        `${inputFailed ? 'It cannot be offered without an input schema.' : 'The tool still executes, but LLM callers will not see those parameters.'} ` +
+        `Issues: ${error.issues.map(issue => `${sanitizeForLog(issue.path.join('.'))}: ${sanitizeForLog(issue.message)}`).join('; ')}`
+    );
   }
 
   /**
@@ -409,9 +586,9 @@ export class Tools<
    * Lists Composio API tools available to the SDK.
    *
    * This method fetches remote Composio tools from the API in raw format. The response can be
-   * filtered and modified as needed. Local experimental custom tools are session-scoped; attach
+   * filtered and modified as needed. Experimental local tools are session-scoped; attach
    * them when creating or reusing a Tool Router session, then use `session.tools()`,
-   * `session.customTools()`, or `session.execute()`.
+   * `session.localTools()`, or `session.execute()`.
    * It provides access to the underlying tool data without provider-specific wrapping.
    *
    * @param {ToolListParams} query - Query parameters to filter the tools (required)
@@ -430,12 +607,6 @@ export class Tools<
    * // Get specific tools by slug
    * const specificTools = await composio.tools.getRawComposioTools({
    *   tools: ['GITHUB_GET_REPOS', 'HACKERNEWS_GET_USER']
-   * });
-   *
-   * // Get tools from specific toolkits
-   * const githubTools = await composio.tools.getRawComposioTools({
-   *   toolkits: ['github'],
-   *   limit: 10
    * });
    *
    * // Get tools with schema transformation
@@ -540,7 +711,9 @@ export class Tools<
     if (!tools) {
       return [];
     }
-    const caseTransformedTools = tools.items.map(tool => this.transformToolCases(tool));
+    const caseTransformedTools = tools.items
+      .map(tool => this.transformToolCases(tool))
+      .filter((tool): tool is Tool => tool !== undefined);
 
     let modifiedTools = await this.applyDefaultSchemaModifiers(caseTransformedTools);
 
@@ -597,7 +770,11 @@ export class Tools<
         () => this.client.toolRouter.session.tools(sessionId, sessionToolsParams, requestOptions),
         requestOptions?.signal
       );
-      tools.push(...response.items.map(tool => this.transformToolCases(tool)));
+      tools.push(
+        ...response.items
+          .map(tool => this.transformToolCases(tool))
+          .filter((tool): tool is Tool => tool !== undefined)
+      );
       cursor = response.next_cursor;
     } while (cursor);
 
@@ -628,8 +805,8 @@ export class Tools<
    * This method fetches a single tool in raw format without provider-specific wrapping,
    * providing direct access to the tool's schema and metadata. Tool versions are controlled
    * at the Composio SDK initialization level through the `toolkitVersions` configuration.
-   * Local experimental custom tools are session-scoped; attach them when creating or reusing a
-   * Tool Router session, then use `session.tools()`, `session.customTools()`, or
+   * Experimental local tools are session-scoped; attach them when creating or reusing a
+   * Tool Router session, then use `session.tools()`, `session.localTools()`, or
    * `session.execute()`.
    *
    * @param {string} slug - The unique identifier of the tool (e.g., 'GITHUB_GET_REPOS')
@@ -661,7 +838,7 @@ export class Tools<
    * );
    *
    * // Access tool properties
-   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_ISSUE');
+   * const githubTool = await composio.tools.getRawComposioToolBySlug('GITHUB_CREATE_AN_ISSUE');
    * console.log({
    *   slug: githubTool.slug,
    *   name: githubTool.name,
@@ -692,23 +869,58 @@ export class Tools<
       if (error instanceof ComposioRequestCancelledError) {
         throw error;
       }
+      if (isRateLimitResponse(error)) {
+        throw new ComposioToolFetchRateLimitError(
+          withApiErrorMessage(
+            `Rate limited while retrieving tool with slug ${slug}`,
+            error.details
+          ),
+          error,
+          { slug }
+        );
+      }
       // The tools endpoint reports an unknown slug as 404 (or 400 for a
       // malformed one). Anything else (401, 5xx, network) is not "not found",
       // so keep the client error reachable as `cause` under a generic error.
       if (error instanceof APIError && (error.status === 404 || error.status === 400)) {
-        throw new ComposioToolNotFoundError(`Tool with slug ${slug} not found`, {
+        throw new ComposioToolNotFoundError(
+          withApiErrorMessage(`Tool with slug ${slug} not found`, error.details),
+          {
+            meta: { slug },
+            cause: error,
+            possibleFixes: apiErrorSuggestedFixes(error.details),
+          }
+        );
+      }
+      const details = error instanceof APIError ? error.details : undefined;
+      const originalMessage =
+        error instanceof APIError && error.status !== undefined
+          ? undefined
+          : error instanceof Error
+            ? error.message
+            : undefined;
+      throw new ComposioToolFetchError(
+        withApiErrorMessage(`Unable to retrieve tool with slug ${slug}`, details, originalMessage),
+        {
           meta: { slug },
           cause: error,
-        });
-      }
-      throw new ComposioToolFetchError(`Unable to retrieve tool with slug ${slug}`, {
-        meta: { slug },
-        cause: error,
-      });
+          possibleFixes: apiErrorSuggestedFixes(details),
+        }
+      );
     }
 
     // change the case of the tool to camel case and apply default modifiers
-    let [modifiedTool] = await this.applyDefaultSchemaModifiers([this.transformToolCases(tool)]);
+    const transformedTool = this.transformToolCases(tool);
+    if (transformedTool === undefined) {
+      // The tool exists; its schema is what could not be parsed. Reporting that
+      // as TOOL_NOT_FOUND makes a caller that treats the code as "no such tool"
+      // hide a real one.
+      throw new ComposioToolSchemaInvalidError(
+        `Tool with slug ${slug} has an unusable input schema`,
+        { meta: { slug } }
+      );
+    }
+    let [modifiedTool] = await this.applyDefaultSchemaModifiers([transformedTool]);
     // apply local modifiers if they are provided
     if (options?.modifySchema) {
       const modifier = options.modifySchema;
@@ -1108,6 +1320,8 @@ export class Tools<
    *
    * @example Execute with SDK-level toolkit versions configuration
    * ```typescript
+   * import { Composio } from '@composio/core';
+   *
    * // If toolkitVersions are set during Composio initialization, no need to pass version
    * const composio = new Composio({ toolkitVersions: { github: '20250909_00' } });
    * const result = await composio.tools.execute('GITHUB_GET_REPOS', {
@@ -1153,14 +1367,38 @@ export class Tools<
     const requestOptions: ComposioRequestOptions | undefined =
       options?.signal != null ? { signal: options.signal } : undefined;
 
-    const tool = await this.getRawComposioToolBySlug(
-      slug,
-      {
-        version: executeParams.version,
-      },
-      requestOptions
-    );
+    const tool = await this.getToolSchemaForExecute(slug, executeParams.version, requestOptions);
     return this.executeWithTool(slug, executeParams, options, tool);
+  }
+
+  /** The tool's schema for `execute()`, fetched only if no unexpired copy is cached. Failures aren't cached. */
+  private async getToolSchemaForExecute(
+    slug: string,
+    version: string | undefined,
+    requestOptions: ComposioRequestOptions | undefined
+  ): Promise<Tool> {
+    const key = `${slug}\0${version ?? ''}`;
+    const cached = this.executeToolSchemas.get(key);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.tool;
+    }
+
+    const tool = await this.getRawComposioToolBySlug(slug, { version }, requestOptions);
+
+    const resolvedVersion =
+      version ?? getToolkitVersion(tool.toolkit?.slug ?? 'unknown', this.toolkitVersions);
+    const ttlMs =
+      resolvedVersion === 'latest' ? LATEST_TOOL_SCHEMA_TTL_MS : PINNED_TOOL_SCHEMA_TTL_MS;
+    // Re-insert so a refreshed entry counts as the newest.
+    this.executeToolSchemas.delete(key);
+    if (this.executeToolSchemas.size >= MAX_CACHED_TOOL_SCHEMAS) {
+      const oldestKey = this.executeToolSchemas.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.executeToolSchemas.delete(oldestKey);
+      }
+    }
+    this.executeToolSchemas.set(key, { tool, expiresAt: Date.now() + ttlMs });
+    return tool;
   }
 
   /**
@@ -1236,7 +1474,9 @@ export class Tools<
           withoutRetries(requestOptions)
         ),
       requestOptions?.signal
-    );
+    ).catch((error: unknown) => {
+      throw handleToolExecutionError(toolSlug, error as Error);
+    });
 
     const { data, error, logId, resultType, instantCharge } = transformExecuteResponse(
       response,
@@ -1274,7 +1514,7 @@ export class Tools<
    * ```typescript
    * // Get all available tools as an enum
    * const toolsEnum = await composio.tools.getToolsEnum();
-   * console.log(toolsEnum.items);
+   * console.log(toolsEnum); // ['GITHUB_GET_REPOS', ...]
    * ```
    */
   async getToolsEnum(requestOptions?: ComposioRequestOptions): Promise<ToolRetrieveEnumResponse> {
@@ -1300,7 +1540,7 @@ export class Tools<
    *
    * @example
    * ```typescript
-   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_ISSUE', {
+   * const { arguments: args, error } = await composio.tools.getInput('GITHUB_CREATE_AN_ISSUE', {
    *   text: 'Open an issue in composiohq/composio titled "Docs typo" describing the broken link',
    *   version: '20250909_00',
    * });

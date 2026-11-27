@@ -17,6 +17,7 @@ import {
   ToolRouterSessionExecuteResponseSchema,
 } from '../types/toolRouter.types';
 import { ValidationError } from '../errors';
+import { handleToolExecutionError } from '../errors/ToolErrors';
 import { transformProxyParams } from './proxyParamsTransform';
 import {
   assertUnambiguousCustomToolSlug,
@@ -28,7 +29,6 @@ import {
   transformProxyExecuteResponse,
 } from '../utils/transformers/toolRouterResponseTransform';
 import type { SessionExecuteParams } from '@composio/client/resources/tool-router/session';
-import { inlineCustomToolsExperimental } from './inlineCustomToolsPayload';
 import { withCancellation } from '../utils/cancellation';
 import { withoutRetries } from '../utils/retries';
 
@@ -97,11 +97,8 @@ export class SessionContextImpl implements SessionContext {
       tool_slug: toolSlug,
       arguments: arguments_,
     };
-    const experimental = inlineCustomToolsExperimental<
-      NonNullable<SessionExecuteParams['experimental']>
-    >(this.inlineCustomToolsPayload);
-    if (experimental) {
-      executeParams.experimental = experimental;
+    if (this.inlineCustomToolsPayload) {
+      executeParams.experimental = this.inlineCustomToolsPayload;
     }
 
     const response = await withCancellation(
@@ -112,7 +109,9 @@ export class SessionContextImpl implements SessionContext {
           withoutRetries(requestOptions)
         ),
       requestOptions?.signal
-    );
+    ).catch((error: unknown) => {
+      throw handleToolExecutionError(toolSlug, error as Error);
+    });
     return ToolRouterSessionExecuteResponseSchema.parse(
       transformExecuteResponse(response, toolSlug)
     );

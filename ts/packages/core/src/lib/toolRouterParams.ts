@@ -9,9 +9,6 @@ import {
   ToolRouterToolsParam,
   ToolRouterConfigManageConnectionsSchema,
   ToolRouterCreateSessionConfigSchema,
-  ToolRouterToolkitsParamSchema,
-  ToolRouterToolkitsDisabledConfigSchema,
-  ToolRouterToolkitsEnabledConfigSchema,
   ToolRouterUpdateSessionConfigSchema,
   ToolRouterUpdateManageConnectionsConfig,
   ToolRouterUpdateManageConnectionsSchema,
@@ -21,6 +18,7 @@ import {
   ToolRouterProxyExecute,
   ToolRouterHook,
 } from '../types/toolRouter.types';
+import type { LocalTool, LocalToolkit } from '../types/customTool.types';
 import { ValidationError } from '../errors';
 import { z } from 'zod';
 import type { TypeOf } from 'zod/v3';
@@ -40,7 +38,7 @@ const requireApprovalParam = <T extends string>(
   requireApproval !== undefined ? { require_approval: requireApproval } : {};
 
 export const transformToolRouterToolsParams = (
-  params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools> | undefined
+  params?: Record<string, ToolRouterToolsParam | ToolRouterConfigTools>
 ): Record<string, SessionToolsEntry> | undefined => {
   if (!params) {
     return undefined;
@@ -103,7 +101,7 @@ export const transformToolRouterTagsParams = (
 };
 
 export const transformToolRouterManageConnectionsParams = (
-  params?: boolean | z.infer<typeof ToolRouterConfigManageConnectionsSchema>
+  params?: z.infer<typeof ToolRouterConfigManageConnectionsSchema>
 ): NonNullable<SessionCreateParams['manage_connections']> => {
   if (params === undefined) {
     // Default case when params is undefined
@@ -136,7 +134,7 @@ export const transformToolRouterManageConnectionsParams = (
 
 export const resolveToolRouterSandboxConfig = (
   config: Pick<ParsedCreateSessionConfig, 'sandbox' | 'workbench'>
-): ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench'] => {
+): ParsedCreateSessionConfig['sandbox'] => {
   if (config.sandbox !== undefined && config.workbench !== undefined) {
     throw new ValidationError(
       'Pass either sandbox or workbench, not both. workbench is a backwards-compatible alias for sandbox.'
@@ -145,8 +143,47 @@ export const resolveToolRouterSandboxConfig = (
   return config.sandbox ?? config.workbench;
 };
 
+/** Local tools options, accepted under their current names and the deprecated `custom*` aliases. */
+export type LocalToolsOptions = {
+  localTools?: LocalTool[];
+  localToolkits?: LocalToolkit[];
+  /** @deprecated Use `localTools` instead. */
+  customTools?: LocalTool[];
+  /** @deprecated Use `localToolkits` instead. */
+  customToolkits?: LocalToolkit[];
+};
+
+/**
+ * Resolves local tools and toolkits from `localTools` / `localToolkits` or
+ * their deprecated `customTools` / `customToolkits` aliases. `source` picks
+ * the option path named in the error: `experimental.*` on create, bare on use.
+ */
+export const resolveLocalToolsOptions = (
+  options: LocalToolsOptions | undefined,
+  source: 'create' | 'use'
+): { tools?: LocalTool[]; toolkits?: LocalToolkit[] } => {
+  if (options?.localTools !== undefined && options.customTools !== undefined) {
+    throw new ValidationError(
+      source === 'create'
+        ? 'Pass either experimental.localTools or experimental.customTools, not both. experimental.customTools is a deprecated alias for experimental.localTools.'
+        : 'Pass either localTools or customTools, not both. customTools is a deprecated alias for localTools.'
+    );
+  }
+  if (options?.localToolkits !== undefined && options.customToolkits !== undefined) {
+    throw new ValidationError(
+      source === 'create'
+        ? 'Pass either experimental.localToolkits or experimental.customToolkits, not both. experimental.customToolkits is a deprecated alias for experimental.localToolkits.'
+        : 'Pass either localToolkits or customToolkits, not both. customToolkits is a deprecated alias for localToolkits.'
+    );
+  }
+  return {
+    tools: options?.localTools ?? options?.customTools,
+    toolkits: options?.localToolkits ?? options?.customToolkits,
+  };
+};
+
 export const transformToolRouterSandboxParams = (
-  params?: ParsedCreateSessionConfig['sandbox'] | ParsedCreateSessionConfig['workbench']
+  params?: ParsedCreateSessionConfig['sandbox']
 ): NonNullable<SessionCreateParams['workbench']> | undefined => {
   if (!params) {
     return undefined;
@@ -195,14 +232,40 @@ export type SessionPatchExperimentalBody = WithNull<
   'permissions' | 'link_url_overwrite' | 'fast_mode' | 'submit_feedback'
 >;
 
+type GeneratedSessionHook = NonNullable<SessionCreateParams['hooks']>[number];
+
+type SessionWebhookHandlerBody = {
+  type: 'webhook';
+  fallback_action: 'block' | 'continue';
+  timeout_ms?: number;
+};
+
 /**
- * `hooks` as sent on create and update: `appliesTo` becomes `applies_to`.
- * Create and patch take the same hook shape.
+ * `hooks` as sent on create and update. Wider than the generated type by the
+ * `webhook` handler, which `@composio/client` does not declare until it picks
+ * up ComposioHQ/platform#15328.
  */
-export const transformToolRouterHooksParams = (
-  hooks: ToolRouterHook[]
-): NonNullable<SessionCreateParams['hooks']> =>
-  hooks.map(({ appliesTo, ...hook }) => ({ ...hook, applies_to: appliesTo }));
+type SessionHooksBody = Array<
+  Omit<GeneratedSessionHook, 'handler'> & {
+    handler: GeneratedSessionHook['handler'] | SessionWebhookHandlerBody;
+  }
+>;
+
+export const transformToolRouterHooksParams = (hooks: ToolRouterHook[]): SessionHooksBody =>
+  hooks.map(({ appliesTo, handler, ...hook }) => ({
+    ...hook,
+    applies_to: appliesTo,
+    handler:
+      handler.type === 'webhook'
+        ? {
+            type: handler.type,
+            fallback_action: handler.fallbackAction,
+            ...(handler.timeoutMs !== undefined && { timeout_ms: handler.timeoutMs }),
+          }
+        : handler,
+  }));
+
+export type SessionCreateBody = Omit<SessionCreateParams, 'hooks'> & { hooks?: SessionHooksBody };
 
 /**
  * Request body of `session.update()`. Extends the generated `SessionPatchParams`
@@ -215,8 +278,9 @@ export type SessionPatchBody = Omit<
     SessionPatchParams,
     'toolkits' | 'tools' | 'tags' | 'auth_configs' | 'preload' | 'search' | 'execute'
   >,
-  'manage_connections' | 'multi_account' | 'experimental'
+  'manage_connections' | 'multi_account' | 'experimental' | 'hooks'
 > & {
+  hooks?: SessionHooksBody | null;
   manage_connections?: SessionPatchManageConnectionsBody | null;
   multi_account?: SessionPatchMultiAccountBody | null;
   experimental?: SessionPatchExperimentalBody | null;

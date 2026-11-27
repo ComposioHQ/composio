@@ -1,11 +1,14 @@
 /**
  * Shared docs access for the agent's retrieval tools.
  *
- * Builds a lazy in-memory index over `content/` plus the curated
- * `agent/knowledge.md`, maps page URLs to files, and flags legacy pages so the
- * search tool can heavily downrank them.
+ * Builds a lazy in-memory index over `content/` (docs, reference, examples,
+ * toolkits and the public knowledge base guides under `content/kb`), maps page
+ * URLs to files, and flags legacy pages so the search tool can heavily downrank
+ * them.
  */
 
+import { resolveToolkitCount } from '../../lib/toolkit-count';
+import { stripTagsOutsideCode } from '../../lib/markdown-code-guard';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,8 +45,7 @@ function resolveAppRoot(): string {
 
 const APP_ROOT = resolveAppRoot();
 const CONTENT_ROOT = join(APP_ROOT, 'content');
-const KNOWLEDGE_FILE = join(APP_ROOT, 'agent', 'knowledge.md');
-const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits'] as const;
+const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits', 'kb'] as const;
 
 /** URL prefixes for the legacy, pre-session / direct-execution docs. */
 const LEGACY_URL_PATTERNS = [
@@ -110,7 +112,7 @@ const STOPWORDS = new Set([
   'up',
 ]);
 
-export type Collection = 'docs' | 'examples' | 'reference' | 'toolkits' | 'knowledge';
+export type Collection = (typeof COLLECTIONS)[number];
 
 export interface DocPage {
   collection: Collection;
@@ -155,6 +157,7 @@ const BUNDLE = bundledIndex as {
   pages: BundlePage[];
   toolkits: BundleToolkit[];
   search?: BundleSearchIndex;
+  stableReference?: boolean;
 };
 
 /**
@@ -175,6 +178,7 @@ export function urlFromContentPath(absPath: string): string | undefined {
   if (collection === 'docs') return `/docs/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'examples') return `/examples/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'reference') return `/reference/${parts.join('/')}`.replace(/\/index$/, '');
+  if (collection === 'kb') return `/kb/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'toolkits') {
     if (parts[0] === 'faq') return undefined;
     return `/toolkits/${parts.join('/')}`.replace(/\/index$/, '');
@@ -229,15 +233,14 @@ function toPlainText(body: string): string {
 /** Clean MDX into Markdown the model can read: drop frontmatter and bare JSX tags. */
 export function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
-    .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+  return stripTagsOutsideCode(body, /<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
 /**
  * Extract a page's section anchors from its Markdown headings, so the assistant
- * can link a specific section (e.g. `/docs/how-composio-works#users`) instead
+ * can link a specific section (e.g. `/docs/sessions/create-and-reuse#users`) instead
  * of just the page. Anchor slugs match the docs' heading-id convention.
  */
 export function extractSections(markdown: string): { title: string; anchor: string }[] {
@@ -284,34 +287,6 @@ function makePage(args: {
     text,
     lowerText: `${args.title} ${args.description} ${text}`.toLowerCase(),
   };
-}
-
-/**
- * Parse `agent/knowledge.md` into searchable entries. Each `## Title (/url)`
- * section becomes one entry linked to its canonical doc page.
- */
-function loadKnowledge(): DocPage[] {
-  let raw: string;
-  try {
-    raw = readFileSync(KNOWLEDGE_FILE, 'utf8');
-  } catch {
-    return [];
-  }
-  const pages: DocPage[] = [];
-  const sectionRe = /^##\s+(.+?)\s*(?:\(([^)]+)\))?\s*$/gm;
-  const matches = [...raw.matchAll(sectionRe)];
-  for (let i = 0; i < matches.length; i++) {
-    const m = matches[i];
-    const title = m[1].trim();
-    const url = (m[2] ?? '').trim() || '/docs';
-    const bodyStart = m.index! + m[0].length;
-    const bodyEnd = i + 1 < matches.length ? matches[i + 1].index! : raw.length;
-    const body = raw.slice(bodyStart, bodyEnd).trim();
-    pages.push(
-      makePage({ collection: 'knowledge', title, description: '', url, legacy: false, body })
-    );
-  }
-  return pages;
 }
 
 /**
@@ -394,25 +369,19 @@ function loadToolkits(): DocPage[] {
 
 let indexCache: DocPage[] | undefined;
 
+function bundledPage(page: BundlePage): DocPage {
+  return makePage({
+    collection: page.collection,
+    title: page.title,
+    description: page.description,
+    url: page.url,
+    legacy: page.legacy || isLegacyUrl(page.url),
+    body: page.markdown,
+  });
+}
+
 export function buildBundledIndex(): DocPage[] {
-  const pages: DocPage[] = [];
-  let bundleHasKnowledge = false;
-  for (const p of BUNDLE.pages) {
-    if (p.collection === 'knowledge') bundleHasKnowledge = true;
-    pages.push(
-      makePage({
-        collection: p.collection,
-        title: p.title,
-        description: p.description,
-        url: p.url,
-        legacy: p.legacy || isLegacyUrl(p.url),
-        body: p.markdown,
-      })
-    );
-  }
-  if (!bundleHasKnowledge) pages.push(...loadKnowledge());
-  pages.push(...loadBundledToolkits());
-  return pages;
+  return [...BUNDLE.pages.map(bundledPage), ...loadBundledToolkits()];
 }
 
 export function buildIndex(): DocPage[] {
@@ -420,6 +389,10 @@ export function buildIndex(): DocPage[] {
   const pages: DocPage[] = [];
   if (CONTENT_AVAILABLE) {
     for (const collection of COLLECTIONS) {
+      if (collection === 'reference' && BUNDLE.stableReference) {
+        pages.push(...BUNDLE.pages.filter(page => page.collection === collection).map(bundledPage));
+        continue;
+      }
       const dir = join(CONTENT_ROOT, collection);
       let entries: string[];
       try {
@@ -434,7 +407,7 @@ export function buildIndex(): DocPage[] {
         if (!url) continue;
         let raw: string;
         try {
-          raw = readFileSync(absPath, 'utf8');
+          raw = resolveToolkitCount(readFileSync(absPath, 'utf8'));
         } catch {
           continue;
         }
@@ -457,7 +430,6 @@ export function buildIndex(): DocPage[] {
     indexCache = pages;
     return pages;
   }
-  pages.push(...loadKnowledge());
   pages.push(...loadToolkits());
   indexCache = pages;
   return pages;
@@ -491,13 +463,13 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
         `- **Category:** ${tk.category ?? 'n/a'}`,
         `- **Auth:** ${authSchemesMarkdown(tk.authSchemes)}`,
         '',
-        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Configuring sessions](/docs/configuring-sessions), [Authentication](/docs/authentication), and [auth schemes](/reference/api-reference/auth-configs#auth-schemes) for how its auth mode works.`,
+        `Connect it for a user with \`session.authorize("${tk.slug}")\` (or in-chat auth), then use its tools through the session. See [Restrict tool access](/docs/sessions/tool-access), [Authentication](/docs/authentication), and [auth schemes](/reference/api-reference/auth-configs#auth-schemes) for how its auth mode works.`,
       ].join('\n');
       return { title: `${name} toolkit`, raw };
     }
   }
 
-  if (CONTENT_AVAILABLE) {
+  if (CONTENT_AVAILABLE && (collection !== 'reference' || !BUNDLE.stableReference)) {
     const base = join(CONTENT_ROOT, collection, ...parts);
     const candidates = [
       `${base}.mdx`,
@@ -507,7 +479,7 @@ export function readPageByUrl(url: string): { title: string; raw: string } | und
     ];
     for (const candidate of candidates) {
       try {
-        const raw = readFileSync(candidate, 'utf8');
+        const raw = resolveToolkitCount(readFileSync(candidate, 'utf8'));
         const { title } = parseFrontmatter(raw);
         return { title: title || url, raw };
       } catch {

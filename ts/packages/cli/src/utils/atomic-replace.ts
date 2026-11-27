@@ -1,4 +1,4 @@
-import { Data, Effect, FileSystem, Path, Scope } from 'effect';
+import { Data, Effect, FileSystem, Path, Predicate, Schedule, Scope } from 'effect';
 
 export class AtomicReplaceError extends Data.TaggedError('utils/AtomicReplaceError')<{
   readonly targetPath: string;
@@ -10,12 +10,15 @@ type AtomicReplaceFileOptions = {
   readonly sourcePath: string;
   readonly targetPath: string;
   readonly mode?: number;
+  /** Move an in-use Windows executable aside before installing its replacement. */
+  readonly backupPath?: string;
 };
 
 export const atomicReplaceFile = ({
   sourcePath,
   targetPath,
   mode,
+  backupPath,
 }: AtomicReplaceFileOptions): Effect.Effect<
   void,
   AtomicReplaceError,
@@ -34,7 +37,33 @@ export const atomicReplaceFile = ({
     if (mode !== undefined) {
       yield* fs.chmod(stagedPath, mode);
     }
-    yield* fs.rename(stagedPath, targetPath);
+    if (backupPath === undefined || !(yield* fs.exists(targetPath))) {
+      yield* fs.rename(stagedPath, targetPath);
+      return;
+    }
+
+    // A loaded Windows executable cannot be overwritten. Keep its old image
+    // until the next upgrade, when the process using it has exited.
+    yield* fs.remove(backupPath, { force: true });
+    yield* Effect.uninterruptible(
+      fs.rename(targetPath, backupPath).pipe(
+        // Windows can briefly lock the new executable after a preceding upgrade.
+        Effect.retry({
+          times: 10,
+          schedule: Schedule.spaced('200 millis'),
+          while: error => Predicate.isTagged(error.reason, 'Busy'),
+        }),
+        Effect.andThen(
+          fs
+            .rename(stagedPath, targetPath)
+            .pipe(
+              Effect.catch(cause =>
+                fs.rename(backupPath, targetPath).pipe(Effect.andThen(Effect.fail(cause)))
+              )
+            )
+        )
+      )
+    );
   }).pipe(
     Effect.mapError(
       cause =>

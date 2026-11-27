@@ -18,6 +18,9 @@ permissions:
 
 jobs:
   typescript-check:
+    # This job installs the published SDK packages. A release PR checks its docs against the
+    # packages it will publish instead, in the `SDK candidate docs` check.
+    if: ${{ !startsWith(github.head_ref, 'sdk-release/batch-') }}
     runs-on: ubuntu-latest
     defaults:
       run:

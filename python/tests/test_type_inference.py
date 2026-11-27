@@ -151,3 +151,23 @@ def test_auth_config_response_types() -> None:
         assert_type(enabled.success, bool)
         assert_type(disabled.message, str)
         assert_type(custom.model_dump(), dict[str, Any])
+
+
+def test_auth_config_create_option_types() -> None:
+    """create accepts managed_app_id and still accepts the generated options type."""
+    if TYPE_CHECKING:
+        from composio_client.types.auth_config_create_params import (
+            AuthConfigUnionMember0,
+        )
+        from composio_client.types.auth_config_create_response import AuthConfig
+
+        composio = Composio()
+        on_app = composio.auth_configs.create(
+            "slack",
+            {"type": "use_composio_managed_auth", "managed_app_id": "ma_test"},
+        )
+        generated: AuthConfigUnionMember0 = {"type": "use_composio_managed_auth"}
+        on_default = composio.auth_configs.create("slack", generated)
+
+        assert_type(on_app, AuthConfig)
+        assert_type(on_default, AuthConfig)

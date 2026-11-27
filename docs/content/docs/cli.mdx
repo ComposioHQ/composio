@@ -14,7 +14,7 @@ When no human is available to log in, `composio login --agent` provisions or reu
 
 ## Install
 
-Install the CLI with one command:
+On Linux or macOS, install the CLI with one command:
 
 ```bash
 curl -fsSL https://composio.dev/install | sh
@@ -27,6 +27,8 @@ Open a new terminal, then log in:
 ```bash
 composio login
 ```
+
+For browserless human login, use `composio login --no-wait` to get an authorization URL. Use `composio login --poll --timeout <seconds>` to bound the wait. If authorization is still pending when the timeout expires, the CLI prints the URL and the command to resume polling. See [Log in with a human](/docs/agent-setup/unattended-authentication#log-in-with-a-human).
 
 If you skipped plugin setup or installed an agent host later, run:
 
@@ -46,6 +48,28 @@ If you explicitly need the standalone skill without the native plugin, install i
 composio setup skill claude
 composio setup skill codex
 ```
+
+### Windows x64 (experimental)
+
+Run in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+The installer verifies the release's SHA-256 checksum, installs `composio.exe` and its support files in `$HOME\.composio`, and adds that directory to your User PATH. Then run `composio login`. You don't need administrator access.
+
+To install a specific stable or beta release, set `COMPOSIO_INSTALL_VERSION` first:
+
+```powershell
+$env:COMPOSIO_INSTALL_VERSION = "X.Y.Z"; irm https://raw.githubusercontent.com/ComposioHQ/composio/next/install.ps1 | iex
+```
+
+Set `COMPOSIO_INSTALL_DIR` to choose the bundle directory, or `COMPOSIO_INSTALL_SHELL` to `none` to leave PATH unchanged. Keep the complete bundle together when moving it.
+
+Windows support is experimental. A failed Windows check can leave a release without a Windows archive. Installation, `composio run`, `composio upgrade`, and `composio setup` are tested on Windows; other commands may not work yet. `composio install` and shell completions support only zsh, bash, and fish: the PowerShell installer sets PATH for you.
+
+Windows requires Windows 10 version 1809 or newer and an x64 CPU with SSE4.2. Windows ARM64 is not supported. For a fully supported setup, run the Linux installer inside [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 ### Backend and Dashboard configuration
 
@@ -133,7 +157,7 @@ composio --version
 which composio
 ```
 
-The installer supports Linux x64, Linux ARM64, macOS Intel, and macOS Apple Silicon. On Windows, install and run it inside [WSL](https://learn.microsoft.com/windows/wsl/install).
+The CLI supports Linux x64, Linux ARM64, macOS Intel, and macOS Apple Silicon. Windows x64 support is experimental: use the [PowerShell installer](#windows-x64-experimental).
 
 ### Update
 
@@ -142,6 +166,10 @@ composio upgrade
 ```
 
 This replaces the bundle in `~/.composio` in place and leaves the `~/.local/bin/composio` entry point pointing at it. Pass a version to pin a specific release (`composio upgrade 0.3.1`), or `--beta` for the latest prerelease.
+
+The CLI uses the archive's `release-manifest.json` to determine which support files to install. On Windows, the CLI retries renaming a busy executable for up to two seconds.
+
+Some releases can only be installed over a recent enough CLI. If yours is too old, `composio upgrade` stops before changing anything and prints the install command to run instead. Rerun the [installer](#install) to get the new release.
 
 ### Install manually from GitHub Releases
 
@@ -175,6 +203,7 @@ rm -f \
   "$bin_dir/composio" \
   "$install_dir/composio" \
   "$install_dir/release-tag.txt" \
+  "$install_dir/release-manifest.json" \
   "$install_dir/run-helpers-runtime.mjs" \
   "$install_dir/run-subagent-shared.mjs" \
   "$install_dir/run-subagent-acp.mjs" \
@@ -269,29 +298,48 @@ Use `composio proxy` when the agent already knows the provider's API endpoint an
 composio proxy https://gmail.googleapis.com/gmail/v1/users/me/profile --toolkit gmail
 ```
 
+### Local file inputs
+
+Run the command from a directory that contains any local files you pass to it.
+`composio execute` and `composio dev playground-execute` apply this rule to local uploads and `-d @file` arguments. It also applies to `composio proxy -d @file` and `composio listen --params @file`.
+
+Symlinks must resolve inside the current working directory. The CLI blocks sensitive paths and fails before running the tool if it rejects a file.
+
+### Pass arguments or request bodies through stdin
+
+Pass `-d -` to read from stdin and wait for input. For `composio proxy`, `-d @-` also reads the request body from stdin. When you omit `-d`, proxy sends the request without a body. For a non-`GET` request with piped stdin, proxy also warns on stderr.
+
+With piped stdin and no `-d`, `composio execute` waits up to one second for JSON input to start arriving. If no input arrives, it exits `1` before running the tool. Pass arguments directly with `-d '{...}'` to avoid waiting on an idle pipe.
+
 ### Execution failures and exit codes
 
-`composio execute` exits `1` when a tool reports failure or the Dashboard or backend cannot run it. With `--parallel`, any failed call makes the command exit `1`. Meta tools follow the same rules. Failed tool results include `{"successful": false, ...}` on stdout, with diagnostic messages on stderr. Check the exit code in scripts and agents, even when stdout contains JSON.
+Check the exit code in scripts and agents, even when stdout contains JSON. A failed tool result includes `{"successful": false, ...}` on stdout. With `--parallel`, a failed call makes the command exit nonzero.
 
-Execution requests are sent once, without retries or redirects. After 15 minutes, the CLI stops waiting.
+The CLI exits `75` (`EX_TEMPFAIL`) when you can safely rerun the same command. This applies to HTTP `429` and to timeouts, connection failures, HTTP `408`, and HTTP `5xx` on idempotent requests. Other execution failures exit `1`. The CLI sends execution requests once, follows no redirects, and stops waiting after 15 minutes.
 
-<Callout type="warn">
-A timed-out tool may still have run. Check the result in the connected app before sending the request again.
-</Callout>
+A failed `composio execute` result may include a `retry` field. The value `"safe"` means you can repeat the request. The value `"check-first"` means the tool may already have run. Check the outcome in the connected app before repeating the request. A missing `retry` field gives you no retry guidance.
+
+Interrupted commands exit `130` for `SIGINT`, `143` for `SIGTERM`, and `129` for `SIGHUP`. Subscribed listeners stop cleanly and exit `0` on `SIGINT` or `SIGTERM`. On interruption, `composio run` forwards the signal to its child process group.
 
 Missing required IDs or names for `composio dev auth-configs info`, `composio tools info`, and `composio dev triggers create` or `enable` cause exit `1`. The `--custom-credentials` option for auth config creation and `--trigger-config` option for trigger creation must contain JSON objects. Invalid input prints a message on stderr, leaves stdout empty, and sends no request.
 
-If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
+When a toolkit has several connected accounts, pass `--account <id|alias>` or assign one account the `default` alias. If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
 
 ### Execution telemetry
 
-When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` to the Dashboard in the `x-cli-install-id` header. This random UUID is never sent to the backend API. Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to prevent the header from being sent.
+When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` only to the Dashboard, in the `x-cli-install-id` header.
+
+When the CLI runs inside a Claude Code or Codex chat, telemetry events include `agent_session_host` (`claude` or `codex`) and a derived `agent_session_id` to group commands from that chat. The original host session ID stays local. The CLI sends the same values in the `x-cli-agent-session-host` and `x-cli-agent-session-id` headers only on requests to the Composio backend, Dashboard execution requests, and `proxy()` calls from `composio run` to Composio.
+
+Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to omit the install ID header and disable agent session metadata in telemetry and request headers.
 
 ### Run scripts
 
 Reach for `composio run` when the agent needs a multi-step workflow: loops, parallel fan-out, or data transformation. It runs inline TS/JS or a file, with `execute()`, `search()`, `proxy()`, `result.prompt()`, and `z` injected.
 
 If a tool execution fails, `execute()` rejects with the tool's error message and the failed result.
+
+`execute()` writes `File` and `Blob` inputs to a private temporary directory and removes it when the call finishes. When `composio run` has a session directory, `execute()` also writes the argument JSON to a private file. Otherwise, it passes the JSON on the child process's command line, where sensitive values may appear in process listings.
 
 Run a single scripted workflow:
 
@@ -342,13 +390,17 @@ composio dev listen --toolkits github --forward https://example.com/webhook
 composio dev listen --toolkits slack --out ./events.jsonl
 ```
 
-Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source.
+Filter by toolkit, trigger slug, trigger ID, connected account ID, or userID to focus Claude on a single event source. Press Ctrl+C or send `SIGTERM` to stop a subscribed listener.
+
+The CLI escapes control characters from streamed events, execution and proxy responses, and API errors in terminal output. Parsing JSON output recovers the original values.
 
 ## Build on the Composio platform
 
 Use these commands while building on the Composio developer platform. They initialize local project context, create auth configs, manage connected accounts, test tool execution, inspect logs, and debug trigger flows.
 
 ### Initialize project context
+
+`composio dev init` creates or updates `.env.local` with owner-only read and write permissions (mode `0600`). It also tightens permissions on an existing file when the contents stay the same. The command stops with instructions if the path is a symlink or another non-regular file, or if it cannot set the permissions.
 
 ```bash
 # Initialize local project context
@@ -390,7 +442,7 @@ composio dev auth-configs create "GitHub OAuth" \
 
 ### Manage connected accounts
 
-Top-level `composio link` is the fastest path for personal knowledge work. Use the developer connected-account commands when you're building against project users, auth configs, and playground flows.
+Top-level `composio link` links accounts in your consumer project. Use `composio dev connected-accounts link` to link an account for an acting user in the selected developer project. Initialize the working directory with `composio dev init` or select the project explicitly if the CLI cannot resolve it. Developer commands reject shared flags they cannot apply.
 
 ```bash
 composio dev connected-accounts list

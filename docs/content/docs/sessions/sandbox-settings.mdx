@@ -1,0 +1,127 @@
+---
+title: Set sandbox options
+description: Disable the sandbox or choose its compute tier for a session
+keywords: [session, tools, toolkits, configuration]
+---
+
+## Sandbox
+
+Handle large responses and bulk operations in the remote sandbox. Instead of stuffing long tool responses into the model context, the agent reads files, searches outputs, writes Python, transforms data, and calls Composio tools in bulk.
+
+The sandbox is scoped to the session, so files, variables, helper functions, and intermediate results stay available while the agent works through a task. Learn more about [sandboxes here](/docs/sandbox/remote).
+
+## Disabling the sandbox
+
+By default, sessions include the [sandbox](/docs/sandbox/remote), a persistent environment that provides `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL`. If your use case doesn't need code execution, disable it:
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    sandbox={
+        "enable": False
+    }
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  sandbox: {
+    enable: false,
+  },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+# The REST API names the sandbox block `workbench`
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "workbench": {"enable": false}}'
+```
+</Tab>
+</Tabs>
+
+When disabled:
+- `COMPOSIO_REMOTE_WORKBENCH` and `COMPOSIO_REMOTE_BASH_TOOL` are excluded from the session
+- Sandbox-related system prompt lines are stripped
+- Direct sandbox calls are rejected with a 400 error
+
+[Zero Data Retention](/docs/security/zero-data-retention) does not cover the sandbox, so disable it in sessions that handle data that needs ZDR.
+
+To keep the sandbox but block raw HTTP calls from it, set `enable_proxy_execution` (Python) or `enableProxyExecution` (TypeScript) to `false`. See [Proxy execute](/docs/extending-sessions/proxy-execute#session-restrictions) for how session restrictions apply to proxy calls.
+
+<Callout>
+`sandbox` is the preferred config key. `workbench` still works as a fully supported alias and isn't deprecated, so existing code keeps running unchanged.
+</Callout>
+
+## Sandbox compute tier
+
+The sandbox runs per session. Pick a compute tier to match the workload: heavier code execution or larger in-memory data benefits from a bigger sandbox. Pass the tier via `sandbox.sandbox_size` (snake_case on the wire, `sandboxSize` in the TypeScript SDK).
+
+<Callout type="info">
+Requires `@composio/core` ≥ `0.8.1` (TypeScript) or `composio` ≥ `0.12.1` (Python). Older SDKs reject `sandboxSize` (TypeScript) or silently drop `sandbox_size` (Python). See the [release notes](/docs/changelog/2026/04/28).
+</Callout>
+
+
+| Tier       | vCPU | RAM   |
+| ---------- | ---- | ----- |
+| `standard` | 1    | 1 GB  |
+| `medium`   | 2    | 2 GB  |
+| `large`    | 4    | 4 GB  |
+| `xlarge`   | 8    | 8 GB  |
+
+Defaults to `standard` when omitted.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+session = composio.sessions.create(
+    user_id="user_123",
+    sandbox={
+        "enable": True,
+        "sandbox_size": "large",
+    },
+)
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+// @noErrors
+import { Composio } from '@composio/core';
+const composio = new Composio({ apiKey: 'your_api_key' });
+// ---cut---
+const session = await composio.create("user_123", {
+  sandbox: {
+    enable: true,
+    sandboxSize: "large",
+  },
+});
+```
+</Tab>
+<Tab value="API">
+```bash
+curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "user_123", "workbench": {"enable": true, "sandbox_size": "large"}}'
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+**Pricing:** Sandboxes are not billed today. Composio plans to begin billing for sandbox usage soon (metered by tier and runtime). Pick a tier that matches your workload, but expect future pricing to track actual usage.
+</Callout>
+
+Changing `sandbox_size` on an existing session recreates the sandbox on the next access. The sandbox's in-memory filesystem state is lost, but the persistent [`/mnt/files/` mount](/docs/sandbox/remote#files-and-mounts) survives the restart.
+
+## Next
+
+<Card icon={<Database />} title="Sandbox" href="/docs/sandbox/remote" description="Give sessions a persistent compute environment with COMPOSIO_REMOTE_WORKBENCH and COMPOSIO_REMOTE_BASH_TOOL" />

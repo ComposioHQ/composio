@@ -109,6 +109,7 @@ const commands: SkillCommand[] = [
     ],
     notes: [
       '`--file` only works when the tool exposes a single uploadable file input. Otherwise use explicit `-d` JSON.',
+      'Local file arguments, including `--file`, file uploads in JSON, and `-d @file`, must resolve to a file under the current working directory. Copy the file into the current directory, or run the command from a directory that contains it.',
     ],
   },
   {
@@ -131,17 +132,25 @@ const commands: SkillCommand[] = [
       'Use `link` when `execute` reports that a toolkit is not connected, or when the user explicitly wants to authorize an account.',
     examples: [
       {
-        code: 'composio link gmail\ncomposio link googlecalendar --no-browser',
+        code: 'composio link gmail\ncomposio link googlecalendar --no-browser --no-wait',
       },
     ],
     flags: [
+      {
+        name: '`--no-wait`',
+        description:
+          'Print the authorization URL as JSON (`redirect_url`) and return at once instead of waiting for the authorization.',
+      },
       {
         name: '`--alias`',
         description:
           'Assign an alias to the connected account. Required when creating an additional account for the same toolkit.',
       },
     ],
-    notes: ['Retry the original `execute` command after linking succeeds.'],
+    notes: [
+      "When the user has to open the page themselves, run `link` with `--no-wait`, show them the `redirect_url`, and wait for them to say they approved. Without `--no-wait` the command blocks until the authorization completes, so the URL reaches the user only if they can see the command's output.",
+      'Retry the original `execute` command after linking succeeds.',
+    ],
   },
   {
     id: 'listen',
@@ -239,11 +248,12 @@ const defaultWorkflow = (build: SkillBuildContext) => {
     '3. If `execute` says the toolkit is not connected, run `composio link <toolkit>` and retry.',
     '4. If the arguments are unclear, run `composio execute <slug> --get-schema` or `--dry-run` before guessing.',
     '5. Reach for `composio search "<task>"` only when the slug is unknown. `search` accepts one or more queries, so batch related discovery work into a single command when useful.',
+    '6. If a command exits 75, the failure was temporary and running it again cannot act twice: wait a moment and run the same command again. If a failed `execute` result has `"retry": "check-first"`, the tool may already have run: check before running it again.',
   ];
 
   if (build.experimentalFeatures[CLI_EXPERIMENTAL_FEATURES.LISTEN]) {
     lines.push(
-      '6. If the CLI build enables the experimental `listen` feature, use it for temporary consumer-project trigger subscriptions.'
+      '7. If the CLI build enables the experimental `listen` feature, use it for temporary consumer-project trigger subscriptions.'
     );
   }
 
@@ -336,7 +346,7 @@ export const renderComposioCliSkill = (
     '',
     'If the user is stuck on top-level commands or needs fallback inspection commands, load [references/troubleshooting.md](references/troubleshooting.md).',
     '',
-    'If the user explicitly asks about developer projects, auth configs, connected accounts, triggers, logs, orgs, or projects, load [references/composio-dev.md](references/composio-dev.md). `composio dev` is not the default end-user path.'
+    'If the user explicitly asks about developer projects, auth configs, connected accounts, triggers, logs, orgs, or projects, load [references/composio-dev.md](references/composio-dev.md). `composio dev` is not the default end-user path. In a developer project, run tools with `composio dev playground-execute`, not `composio execute`.'
   );
 
   return lines.join('\n') + '\n';

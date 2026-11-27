@@ -17,6 +17,7 @@ import {
 import { loadGenerationRuntime } from 'src/effects/generation-runtime';
 import { actingUser } from 'src/commands/surface';
 import { type RunHelperContext } from 'src/services/run-helpers-runtime';
+import { agentSessionHeaders, resolveAgentSession } from 'src/services/agent-session';
 import { warmToolInputDefinitions } from 'src/services/tool-input-validation';
 import { ComposioUserContext } from 'src/services/user-context';
 import { resolveConsumerExecutionTransport } from 'src/services/dashboard-tool-execution';
@@ -31,6 +32,7 @@ import { invocationRunId } from 'src/invocation/command-identity';
 import {
   repairMissingInstalledRunCompanionModules,
   resolveRunCompanionModulePath,
+  isBunVirtualPath,
 } from 'src/services/run-companion-modules';
 import {
   appendCliSessionHistory,
@@ -66,7 +68,7 @@ export const inferCliInvocationPrefix = (
     // Compiled Bun binaries report an internal $bunfs entrypoint which cannot be
     // re-executed as a real filesystem path. In that case the binary itself is
     // the CLI entrypoint.
-    if (entrypoint.startsWith('/$bunfs/')) {
+    if (isBunVirtualPath(entrypoint)) {
       return [process.execPath];
     }
 
@@ -218,11 +220,18 @@ const resolveRunHelperContext = () =>
     // choice of Dashboard. When this process keeps the backend transport (a
     // custom backend with no web URL), forward none so the child decides alike.
     const forwardWebURL = (yield* resolveConsumerExecutionTransport) === 'dashboard';
+    // The helper runtime reads no environment variable, so the agent session its `proxy()`
+    // requests carry is resolved here; none while telemetry is disabled.
+    const agentSession = yield* resolveAgentSession;
     const baseContext = {
       apiKey,
       baseURL: userContext.data.baseURL,
       ...(forwardWebURL ? { webURL: userContext.data.webURL } : {}),
       orgId,
+      ...Option.match(agentSession, {
+        onNone: () => ({}),
+        onSome: session => ({ agentSessionHeaders: agentSessionHeaders(session) }),
+      }),
     } satisfies RunHelperContext;
 
     if (!apiKey || !orgId) {

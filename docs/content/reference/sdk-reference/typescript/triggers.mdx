@@ -8,8 +8,10 @@ description: "Trigger (Instance) class"
 Access this class through the `composio.triggers` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.triggers.list();
+const triggers = composio.triggers;
 ```
 
 ## Methods
@@ -19,7 +21,10 @@ const result = await composio.triggers.list();
 Create a new trigger instance for a user
 If the connected account id is not provided, the first connected account for the user and toolkit will be used
 
-```typescript
+For a trigger that supports both webhook and polling, `body.type` picks one; omit it to let Composio choose.
+`body.pollingInterval` sets the minutes between polls and wins over `triggerConfig.interval`.
+
+```typescript signature
 async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceUpsertResponse>
 ```
 
@@ -34,7 +39,8 @@ async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams, r
 
 **Returns**
 
-`Promise<TriggerInstanceUpsertResponse>` — The created trigger instance
+`Promise<TriggerInstanceUpsertResponse>` — The trigger instance, with the type it uses, why it polls
+when it fell back from a webhook, and its polling interval
 
 ---
 
@@ -42,7 +48,7 @@ async create(userId: string, slug: string, body?: TriggerInstanceUpsertParams, r
 
 Delete a trigger instance
 
-```typescript
+```typescript signature
 async delete(triggerId: string, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceManageDeleteResponse>
 ```
 
@@ -63,7 +69,7 @@ async delete(triggerId: string, requestOptions?: ComposioRequestOptions): Promis
 
 Disable a trigger instance
 
-```typescript
+```typescript signature
 async disable(triggerId: string, requestOptions?: ComposioRequestOptions): Promise<ManageUpdateResponse>
 ```
 
@@ -84,7 +90,7 @@ async disable(triggerId: string, requestOptions?: ComposioRequestOptions): Promi
 
 Enable a trigger instance
 
-```typescript
+```typescript signature
 async enable(triggerId: string, requestOptions?: ComposioRequestOptions): Promise<ManageUpdateResponse>
 ```
 
@@ -106,7 +112,7 @@ async enable(triggerId: string, requestOptions?: ComposioRequestOptions): Promis
 Retrieve a trigger type by its slug for the provided version of the app
 Use the global toolkit versions param when initializing composio to pass a toolkitversion
 
-```typescript
+```typescript signature
 async getType(slug: string, requestOptions?: ComposioRequestOptions): Promise<TriggersTypeRetrieveResponse>
 ```
 
@@ -127,7 +133,7 @@ async getType(slug: string, requestOptions?: ComposioRequestOptions): Promise<Tr
 
 Fetch list of all the active triggers
 
-```typescript
+```typescript signature
 async listActive(query?: TriggerInstanceListActiveParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceListActiveResponse>
 ```
 
@@ -145,7 +151,7 @@ async listActive(query?: TriggerInstanceListActiveParams, requestOptions?: Compo
 **Example**
 
 ```typescript
-const triggers = await triggers.listActive({
+const activeTriggers = await composio.triggers.listActive({
   authConfigIds: ['123'],
   connectedAccountIds: ['456'],
 });
@@ -159,7 +165,7 @@ Fetches the list of all the available trigger enums
 
 This method is used by the CLI where filters are not required.
 
-```typescript
+```typescript signature
 async listEnum(requestOptions?: ComposioRequestOptions): Promise<TriggersTypeRetrieveEnumResponse>
 ```
 
@@ -179,7 +185,7 @@ async listEnum(requestOptions?: ComposioRequestOptions): Promise<TriggersTypeRet
 
 List all the trigger types
 
-```typescript
+```typescript signature
 async listTypes(query?: TriggersTypeListParams, requestOptions?: ComposioRequestOptions): Promise<TriggersTypeListResponse>
 ```
 
@@ -210,7 +216,10 @@ Remix) or a plain `{ body, headers }` object (Express with `express.raw`,
 Next.js Pages Router `req`). The signature headers (`webhook-id`,
 `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
 
-```typescript
+Configure a request body limit in your server or framework as well,
+especially if it buffers the body before calling this method.
+
+```typescript signature
 async parse(request: WebhookRequestLike, options?: ParseWebhookOptions): Promise<VerifyWebhookResult>
 ```
 
@@ -227,7 +236,7 @@ async parse(request: WebhookRequestLike, options?: ParseWebhookOptions): Promise
 
 **Example**
 
-```typescript
+```typescript nocheck="Express route handler; the checker has no express types"
 // Express with express.raw (verify the signature)
 app.post('/webhooks/composio', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
@@ -264,7 +273,9 @@ export async function POST(request: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
 }
+```
 
+```typescript
 // Next.js App Router — parse only (no verification)
 export async function POST(request: Request) {
   const result = await composio.triggers.parse(request);
@@ -282,7 +293,7 @@ Create or update the project webhook subscription used for webhook delivery.
 If a subscription already exists, the first subscription is updated. Otherwise a new
 subscription is created. By default this subscribes to V3 trigger message events.
 
-```typescript
+```typescript signature
 async setWebhookSubscription(params: SetWebhookSubscriptionParams): Promise<WebhookSubscription>
 ```
 
@@ -299,6 +310,8 @@ async setWebhookSubscription(params: SetWebhookSubscriptionParams): Promise<Webh
 **Example**
 
 ```typescript
+const APP_URL = 'https://your-app.com';
+
 await composio.triggers.setWebhookSubscription({
   webhookUrl: `${APP_URL}/webhooks/composio`,
 });
@@ -310,7 +323,7 @@ await composio.triggers.setWebhookSubscription({
 
 Subscribe to all the triggers
 
-```typescript
+```typescript signature
 async subscribe(fn: (_data: IncomingTriggerPayload) => void, filters?: TriggerSubscribeParams, onSubscriptionError?: (data: Record<string, unknown>) => void): Promise<void>
 ```
 
@@ -329,9 +342,9 @@ async subscribe(fn: (_data: IncomingTriggerPayload) => void, filters?: TriggerSu
 **Example**
 
 ```typescript
-triggers.subscribe((data) => {
+await composio.triggers.subscribe((data) => {
   console.log(data);
-}, );
+});
 ```
 
 ---
@@ -344,7 +357,7 @@ Ends every subscription made with subscribe on this instance, including one that
 still connecting, and closes the realtime connection so that a script can exit. A later
 `subscribe()` opens a new connection.
 
-```typescript
+```typescript signature
 async unsubscribe(): Promise<void>
 ```
 
@@ -355,11 +368,11 @@ async unsubscribe(): Promise<void>
 **Example**
 
 ```typescript
-composio.trigger.subscribe((data) => {
+await composio.triggers.subscribe((data) => {
   console.log(data);
 });
 
-await triggers.unsubscribe();
+await composio.triggers.unsubscribe();
 ```
 
 ---
@@ -368,7 +381,7 @@ await triggers.unsubscribe();
 
 Update an existing trigger instance
 
-```typescript
+```typescript signature
 async update(triggerId: string, body: TriggerInstanceManageUpdateParams, requestOptions?: ComposioRequestOptions): Promise<TriggerInstanceManageUpdateResponse>
 ```
 
@@ -397,7 +410,10 @@ This method validates that the webhook request is authentic by:
 The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${payload}, secret)`
 and is expected in the format: `v1,base64EncodedSignature`
 
-```typescript
+For a Fetch API `Request`, use parse to enforce a limit while reading
+the body. Set a server request limit if you buffer the payload yourself.
+
+```typescript signature
 async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult>
 ```
 
@@ -414,26 +430,26 @@ async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult>
 **Example**
 
 ```typescript
-// In an Express.js webhook handler
-app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+// In a webhook route that receives a Fetch API Request (Next.js App Router, Hono, Remix)
+export async function POST(request: Request) {
   try {
     const result = await composio.triggers.verifyWebhook({
-      payload: req.body.toString(),
-      signature: req.headers['webhook-signature'] as string,
-      webhookId: req.headers['webhook-id'] as string,
-      webhookTimestamp: req.headers['webhook-timestamp'] as string,
+      payload: await request.text(),
+      signature: request.headers.get('webhook-signature') ?? '',
+      id: request.headers.get('webhook-id') ?? '',
+      timestamp: request.headers.get('webhook-timestamp') ?? '',
       secret: process.env.COMPOSIO_WEBHOOK_SECRET!,
     });
 
     // Process the verified payload
     console.log('Webhook version:', result.version);
     console.log('Received trigger:', result.payload.triggerSlug);
-    res.status(200).send('OK');
+    return new Response('OK', { status: 200 });
   } catch (error) {
     console.error('Webhook verification failed:', error);
-    res.status(401).send('Unauthorized');
+    return new Response('Unauthorized', { status: 401 });
   }
-});
+}
 ```
 
 ---

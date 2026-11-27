@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod/v3';
 import { ToolRouter } from '../../src/models/ToolRouter';
 import ComposioClient, {
+  APIError,
   BadRequestError,
   ConflictError,
   NotFoundError,
   PermissionDeniedError,
 } from '@composio/client';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { MockProvider } from '../utils/mocks/provider.mock';
 import { Tools } from '../../src/models/Tools';
 import { ConnectedAccountStatuses } from '../../src/types/connectedAccounts.types';
@@ -22,11 +22,14 @@ import { createCustomTool } from '../../src/models/CustomTool';
 import { DIRECT_CUSTOM_TOOL_DESCRIPTION_PREFIX } from '../../src/models/ToolRouterSession';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import { ComposioSessionConfigConflictError } from '../../src/errors/ToolRouterErrors';
+import { ComposioToolExecutionError } from '../../src/errors/ToolErrors';
 
 // Mock dependencies
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -191,7 +194,7 @@ describe('ToolRouter', () => {
   describe('constructor', () => {
     it('should create an instance successfully', () => {
       expect(toolRouter).toBeInstanceOf(ToolRouter);
-      expect(telemetry.instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
+      expect(instrument).toHaveBeenCalledWith(toolRouter, 'ToolRouter');
     });
 
     it('should store the config reference', () => {
@@ -268,6 +271,23 @@ describe('ToolRouter', () => {
       expect(bodies[1]).not.toHaveProperty('hooks');
     });
 
+    it('rejects a webhook handler with a misspelled field before calling the API', async () => {
+      await expect(
+        toolRouter.create(userId, {
+          hooks: [
+            {
+              type: 'before_execute',
+              id: 'check_outgoing_email',
+              appliesTo: 'all',
+              // @ts-expect-error the field is fallbackAction
+              handler: { type: 'webhook', fallback_action: 'block' },
+            },
+          ],
+        })
+      ).rejects.toThrow();
+      expect(mockClient.toolRouter.session.create).not.toHaveBeenCalled();
+    });
+
     it('rejects a prompt injection check on a before_execute hook, as the API does', async () => {
       await expect(
         toolRouter.create(userId, {
@@ -276,7 +296,7 @@ describe('ToolRouter', () => {
               type: 'before_execute',
               id: 'block_injection',
               appliesTo: 'all',
-              // @ts-expect-error a before_execute hook only takes a condition_check handler
+              // @ts-expect-error a before_execute hook takes no prompt_injection_check handler
               handler: { type: 'prompt_injection_check', action: 'block' },
             },
           ],
@@ -2054,9 +2074,12 @@ describe('ToolRouter', () => {
         ['toolkits', { toolkits: { disable: ['x'] } }],
         ['tools', { tools: { github: ['GITHUB_GET_REPO'] } }],
         ['tags', { tags: ['readOnlyHint'] }],
+        ['experimental.localTools', { experimental: { localTools: [customTool] } }],
+        ['experimental.localToolkits', { experimental: { localToolkits: [customToolkit] } }],
         ['experimental.customTools', { experimental: { customTools: [customTool] } }],
         ['experimental.customToolkits', { experimental: { customToolkits: [customToolkit] } }],
         ['toolkits', { toolkits: [] }],
+        ['experimental.localTools', { experimental: { localTools: [] } }],
         ['experimental.customTools', { experimental: { customTools: [] } }],
       ])(
         'rejects sessionConfigId combined with %s (%j) without calling the API',
@@ -3050,13 +3073,49 @@ describe('ToolRouter', () => {
       expect(result.instantCharge).toEqual({ amount: '0.01', currency: 'USD' });
     });
 
-    it('should propagate execute API errors', async () => {
+    it('wraps execute API errors with the tool context', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      mockClient.toolRouter.session.execute.mockRejectedValueOnce(new Error('Execute failed'));
+      const cause = new Error('Execute failed');
+      mockClient.toolRouter.session.execute.mockRejectedValueOnce(cause);
 
       const session = await toolRouter.create(userId);
+      const error = await session.execute('GMAIL_SEND_EMAIL').catch(e => e);
 
-      await expect(session.execute('GMAIL_SEND_EMAIL')).rejects.toThrow('Execute failed');
+      expect(error).toBeInstanceOf(ComposioToolExecutionError);
+      expect(error.message).toBe('Error executing the tool GMAIL_SEND_EMAIL: Execute failed');
+      expect(error.cause).toBe(cause);
+    });
+
+    it('surfaces the server details of a rejected execute', async () => {
+      mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
+      mockClient.toolRouter.session.execute.mockRejectedValueOnce(
+        new APIError(
+          410,
+          {
+            error: {
+              message: 'Toolkit version 20250101_00 is retired',
+              code: 1410,
+              slug: 'TOOLKIT_VERSION_RETIRED',
+              status: 410,
+              suggested_fix: 'Pin 20250909_00',
+            },
+          },
+          undefined,
+          new Headers({ 'x-request-id': 'req_router_410' })
+        )
+      );
+
+      const session = await toolRouter.create(userId);
+      const error = await session.execute('GMAIL_SEND_EMAIL').catch(e => e);
+
+      expect(error).toBeInstanceOf(ComposioToolExecutionError);
+      expect(error.message).toBe(
+        'Error executing the tool GMAIL_SEND_EMAIL: Toolkit version 20250101_00 is retired'
+      );
+      expect(error.statusCode).toBe(410);
+      expect(error.apiErrorCode).toBe(1410);
+      expect(error.requestId).toBe('req_router_410');
+      expect(error.possibleFixes).toEqual(['Pin 20250909_00']);
     });
 
     it('should default arguments to empty object when omitted', async () => {
@@ -3185,13 +3244,17 @@ describe('ToolRouter', () => {
       );
     });
 
-    it('should propagate executeMeta API errors', async () => {
+    it('wraps executeMeta API errors with the tool context', async () => {
       mockClient.toolRouter.session.create.mockResolvedValueOnce(mockSessionCreateResponse);
-      mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(new Error('Execute failed'));
+      const cause = new Error('Execute failed');
+      mockClient.toolRouter.session.executeMeta.mockRejectedValueOnce(cause);
 
       const session = await toolRouter.create(userId);
+      const error = await session.executeMeta('COMPOSIO_SEARCH_TOOLS').catch(e => e);
 
-      await expect(session.executeMeta('COMPOSIO_SEARCH_TOOLS')).rejects.toThrow('Execute failed');
+      expect(error).toBeInstanceOf(ComposioToolExecutionError);
+      expect(error.message).toBe('Error executing the tool COMPOSIO_SEARCH_TOOLS: Execute failed');
+      expect(error.cause).toBe(cause);
     });
 
     it('should pass inline custom tools to executeMeta when custom tools are bound', async () => {
@@ -3941,6 +4004,51 @@ describe('ToolRouter', () => {
         }),
       ]);
     });
+
+    it('should attach local tools passed as localTools with the same wire payload', async () => {
+      const grepTool = createCustomTool('GREP', {
+        name: 'Grep',
+        description: 'Search local text',
+        inputParams: z.object({ pattern: z.string() }),
+        execute: vi.fn(async () => ({ matches: [] })),
+      });
+      const attachResponse = {
+        ...mockSessionRetrieveResponse,
+        experimental: {
+          custom_tools: [{ slug: 'LOCAL_GREP', original_slug: 'GREP', extends_toolkit: null }],
+        },
+      };
+      mockClient.toolRouter.session.attach
+        .mockResolvedValueOnce(attachResponse)
+        .mockResolvedValueOnce(attachResponse);
+
+      const session = await toolRouter.use(sessionId, { localTools: [grepTool] });
+      await toolRouter.use(sessionId, { customTools: [grepTool] });
+
+      const [[, localBody], [, customBody]] = mockClient.toolRouter.session.attach.mock.calls;
+      expect(localBody).toEqual({
+        experimental: { custom_tools: [expect.objectContaining({ slug: 'GREP' })] },
+      });
+      expect(customBody).toEqual(localBody);
+      expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      expect(session.localTools()).toEqual([expect.objectContaining({ slug: 'LOCAL_GREP' })]);
+      expect(session.customTools()).toEqual(session.localTools());
+    });
+
+    it.each([
+      ['localTools or customTools', { localTools: [], customTools: [] }],
+      ['localToolkits or customToolkits', { localToolkits: [], customToolkits: [] }],
+    ])(
+      'should reject passing both %s to use() without calling the API',
+      async (fields, options) => {
+        const error = await toolRouter.use(sessionId, options).catch(e => e);
+
+        expect(error).toBeInstanceOf(ValidationError);
+        expect(error.message).toContain(`Pass either ${fields}, not both`);
+        expect(mockClient.toolRouter.session.attach).not.toHaveBeenCalled();
+        expect(mockClient.toolRouter.session.retrieve).not.toHaveBeenCalled();
+      }
+    );
 
     it('should return a session with correct session ID', async () => {
       const customResponse = {

@@ -11,7 +11,7 @@ import {
   shouldAnimateDocsProductSwitch,
 } from '../../lib/home-navigation';
 import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree';
-import { referenceSource, source } from '../../lib/source';
+import { knowledgeBaseSource, referenceSource, source } from '../../lib/source';
 
 describe('Docs product navigation', () => {
   test('defines the product labels, descriptions, landings, and themes once', () => {
@@ -45,6 +45,8 @@ describe('Docs product navigation', () => {
     expect(classifyDocsProduct('/docs/using-composio-skill')).toBeNull();
     expect(classifyDocsProduct('/docs/security/overview')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/token-custody')).toBe('platform');
+    expect(classifyDocsProduct('/docs/deployment')).toBe('platform');
+    expect(classifyDocsProduct('/docs/deployment/byoc')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/data-retention')).toBe('platform');
     expect(classifyDocsProduct('/docs/security/zero-data-retention')).toBe('platform');
   });
@@ -129,8 +131,9 @@ describe('Docs product navigation', () => {
     for (const url of [
       '/docs/quickstart',
       '/docs/providers',
-      '/docs/how-composio-works',
+      '/docs/sessions',
       '/docs/authentication',
+      '/docs/authentication/session-cant-find-account',
       '/docs/skills',
       '/docs/triggers',
       '/docs/consumer-agents',
@@ -175,22 +178,64 @@ describe('Docs product navigation', () => {
 
     const securityUrls = [
       '/docs/security/overview',
-      '/docs/security/token-custody',
+      '/docs/security/vendor-security-review',
+      'https://trust.composio.dev',
       '/docs/security/data-retention',
       '/docs/security/zero-data-retention',
+      '/docs/security/token-custody',
+      '/docs/deployment/byoc',
+      '/docs/security/audit-logs',
+      '/docs/security/outbound-ips',
     ];
-    const security = platformTree.children.flatMap(node =>
-      node.type === 'folder' ? [node, ...node.children] : [node],
-    ).find(node => node.type === 'folder' && node.name === 'Security and data');
-    expect(security?.type).toBe('folder');
-    if (security?.type !== 'folder') throw new Error('Security and data folder missing');
-    expect(security.children.flatMap(node => node.type === 'page' ? [node.url] : [])).toEqual(
-      securityUrls,
+    const securityStart = platformTree.children.findIndex(
+      node => node.type === 'separator' && node.name === 'Security and Compliance',
     );
+    expect(securityStart).toBeGreaterThan(-1);
+    const shipStart = platformTree.children.findIndex(
+      node => node.type === 'separator' && node.name === 'Ship',
+    );
+    expect(shipStart).toBeGreaterThan(-1);
+    expect(platformTree.children.slice(shipStart + 1, securityStart)).toMatchObject([
+      { type: 'page', url: '/docs/production-readiness' },
+      { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
+      { type: 'folder', $ref: { folder: 'deployment' } },
+      { type: 'folder', $ref: { folder: 'poc-to-prod' } },
+    ]);
+    const securityPages = platformTree.children.slice(
+      securityStart + 1,
+      platformTree.children.findIndex(
+        (node, index) => index > securityStart && node.type === 'separator',
+      ),
+    );
+    expect(securityPages).toMatchObject([
+      { type: 'page', url: '/docs/security/overview' },
+      { type: 'folder', name: 'Compliance' },
+      { type: 'folder', name: 'Data privacy' },
+      { type: 'folder', name: 'Security controls' },
+    ]);
+    expect(pageTreeUrls({ children: securityPages })).toEqual(securityUrls);
+    expect(securityPages.slice(1).map(node => node.type)).toEqual(['folder', 'folder', 'folder']);
+    const compliance = securityPages[1];
+    if (compliance.type !== 'folder') throw new Error('Compliance group missing');
+    expect(compliance.index?.url).toBe('/docs/security/vendor-security-review');
+    expect(compliance.children).toContainEqual(expect.objectContaining({
+      type: 'page', url: 'https://trust.composio.dev', external: true,
+    }));
     for (const url of securityUrls) {
-      expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(1);
+      expect(platformUrls.filter(candidate => candidate === url)).toHaveLength(
+        url === '/docs/deployment/byoc' ? 2 : 1,
+      );
       expect(forYouUrls).not.toContain(url);
     }
+    expect(source.getPage(['security', 'vendor-security-review'])?.url).toBe(
+      '/docs/security/vendor-security-review',
+    );
+    expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])).toBeUndefined();
+    const governance = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Governance',
+    );
+    expect(governance?.type).toBe('folder');
+    expect(securityPages).not.toContain(governance);
 
     const readiness = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],
@@ -201,6 +246,7 @@ describe('Docs product navigation', () => {
     expect(readinessUrls).toEqual([
       '/docs/authentication/custom-app-vs-managed-app',
       '/reference/rate-limits',
+      '/docs/poc-to-prod/avoid-rate-limits',
       '/docs/poc-to-prod/stream-logs-to-a-siem',
     ]);
     for (const url of readinessUrls) {

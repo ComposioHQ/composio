@@ -1,3 +1,4 @@
+import { Formatter } from 'effect';
 import colors from 'picocolors';
 import { S_BAR, S_BAR_H, unicodeOr } from '@clack/prompts';
 
@@ -5,29 +6,17 @@ const S_CORNER_TOP_LEFT = unicodeOr('╭', '+');
 const S_CORNER_BOTTOM_LEFT = unicodeOr('╰', '+');
 
 export function renderPrettyError(errorLines: Array<[key: string, value: unknown]>): string {
-  return Array.from(renderPrettyErrorGen(errorLines)).join('\n');
-}
-
-function* renderPrettyErrorGen(
-  errorLines: Array<[key: string, value: unknown]>
-): Generator<string, void, unknown> {
-  if (errorLines.length === 0) {
-    yield '';
-  } else if (errorLines.length <= 2) {
-    for (const [key, value] of errorLines) {
-      yield `${colors.inverse(S_BAR)}  ${colors.blueBright(key)}: ${value}`;
-    }
-  } else if (errorLines.length > 2) {
-    for (let i = 0; i < errorLines.length; i++) {
-      const [key, value] = errorLines[i];
-
-      if (i === 0) {
-        yield `${colors.inverse(`${S_CORNER_TOP_LEFT}${S_BAR_H}`)} ${colors.blueBright(key)}: ${value}`;
-      } else if (i === errorLines.length - 1) {
-        yield `${colors.inverse(`${S_CORNER_BOTTOM_LEFT}${S_BAR_H}`)} ${colors.blueBright(key)}: ${value}`;
-      } else {
-        yield `${colors.inverse(S_BAR)}  ${colors.blueBright(key)}: ${value}`;
+  const showCorners = errorLines.length > 2;
+  return errorLines
+    .map(([key, value], index) => {
+      const text = typeof value === 'string' ? value : Formatter.format(value);
+      let prefix = `${colors.inverse(S_BAR)}  `;
+      if (showCorners && index === 0) {
+        prefix = `${colors.inverse(`${S_CORNER_TOP_LEFT}${S_BAR_H}`)} `;
+      } else if (showCorners && index === errorLines.length - 1) {
+        prefix = `${colors.inverse(`${S_CORNER_BOTTOM_LEFT}${S_BAR_H}`)} `;
       }
-    }
-  }
+      return `${prefix}${colors.blueBright(key)}: ${text}`;
+    })
+    .join('\n');
 }

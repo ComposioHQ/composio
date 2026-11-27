@@ -10,14 +10,14 @@ gallery:
   order: 4
 ---
 
-Most Composio examples hand the agent a session and let Composio's [meta tools](/docs/how-composio-works#meta-tools) find, authenticate, and run tools. That default works well until you already have your own planner, retrieval index, dispatcher, and permission layer. Then you need the 1000+ apps and managed auth, not another agent inside yours.
+Most Composio examples hand the agent a session and let Composio's [meta tools](/docs/sessions#meta-tools) find, authenticate, and run tools. That default works well until you already have your own planner, retrieval index, dispatcher, and permission layer. Then you need the %TOOLKIT_COUNT% apps and managed auth, not another agent inside yours.
 
 Composio sits underneath your harness in four calls:
 
 1. **List toolkits.** [`composio.toolkits.get()`](/reference/sdk-reference/typescript/toolkits) returns the catalog independent of any user. That's your integrations directory.
 2. **Connect what the user picks.** [`session.authorize(slug)`](/docs/authentication) starts the OAuth flow for this user. Bring your own OAuth credentials via [auth configs](/docs/authentication/programmatic-auth-configs) for a white-label flow, or [import existing tokens](/docs/authentication/importing-existing-connections) to migrate from another store.
-3. **Fetch tools.** Load raw JSON Schema with [`composio.tools.getRawComposioTools({ toolkits })`](/docs/configuring-sessions#browsing-the-catalog), or serve the same tools over [MCP](/docs/sessions-via-mcp) and let your harness call them through the protocol.
-4. **Execute by slug.** [`session.execute(slug, args)`](/docs/how-composio-works#executing-session-tools) runs one tool as the connected user and hands back data.
+3. **Fetch tools.** Load raw JSON Schema with [`composio.tools.getRawComposioTools({ toolkits })`](/docs/sessions/tool-access#browsing-the-catalog), or serve the same tools over [MCP](/docs/sessions-via-mcp) and let your harness call them through the protocol.
+4. **Execute by slug.** [`session.execute(slug, args)`](/docs/sessions/executing-tools#executing-session-tools) runs one tool as the connected user and hands back data.
 
 Nothing here asks a model to make a decision. Every call is one your code makes, at a moment you choose, because your planner decided.
 
@@ -52,7 +52,7 @@ Nothing here asks a model to make a decision. Every call is one your code makes,
 
 Read this one if you already own the loop: your own planner, your own tool search or retrieval, your own execution and approval path. You get the app catalog, managed auth, and a single execute call, and Composio stays out of the reasoning.
 
-Read [What is a session?](/docs/how-composio-works) instead if you'd rather Composio did the discovery. Runtime search returns guidance and recommended steps alongside schemas, keeps a shared context across calls, and costs you far less context than loading hundreds of schemas upfront. That's a real advantage to give up knowingly.
+Read [What is a session?](/docs/sessions) instead if you'd rather Composio did the discovery. Runtime search returns guidance and recommended steps alongside schemas, keeps a shared context across calls, and costs you far less context than loading hundreds of schemas upfront. That's a real advantage to give up knowingly.
 </Callout>
 
 ## Setup
@@ -70,9 +70,9 @@ You need a [Composio API key](https://dashboard.composio.dev/~/project/settings/
 
 ## Create a session your code drives
 
-A [session](/docs/how-composio-works) is the per-user context: which toolkits are in play, which accounts are connected, what may run. You still want one. What changes is that nothing on it ever reaches a model. Your harness never calls `session.tools()`, so the search and execute meta tools sit on the session unused.
+A [session](/docs/sessions) is the per-user context: which toolkits are in play, which accounts are connected, what may run. You still want one. What changes is that nothing on it ever reaches a model. Your harness never calls `session.tools()`, so the search and execute meta tools sit on the session unused.
 
-Two settings are still worth passing at creation. `manageConnections: false` drops the connection meta-tools, because your settings page is doing that job. [Disabling the sandbox](/docs/configuring-sessions#disabling-the-sandbox) drops the code-execution tools, because your harness runs its own code. Leave the toolkit filter open and the session can execute any tool your planner names.
+Two settings are still worth passing at creation. `manageConnections: false` drops the connection meta-tools, because your settings page is doing that job. [Disabling the sandbox](/docs/sessions/sandbox-settings#disabling-the-sandbox) drops the code-execution tools, because your harness runs its own code. Leave the toolkit filter open and the session can execute any tool your planner names.
 
 If you want a white-label flow, pass `authConfigs` at creation to pin the session to your own OAuth app. `session.authorize()` then sends the user through your consent screen instead of Composio's managed app. You can update those configs later, so migrating from a default app to your own app is a session patch, not a rebuild.
 
@@ -585,9 +585,9 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_
 </Tab>
 </Tabs>
 
-Check `resultType` (`result_type` in Python), not `error`, to tell whether execution succeeded. A failed execution can have null or empty error text. The tool-specific `data` payload has no guaranteed `successful` field. See [Reading execution results](/docs/how-composio-works#reading-execution-results) for the result envelope.
+Check `resultType` (`result_type` in Python), not `error`, to tell whether execution succeeded. A failed execution can have null or empty error text. The tool-specific `data` payload has no guaranteed `successful` field. See [Reading execution results](/docs/sessions/executing-tools#reading-execution-results) for the result envelope.
 
-Transport failures, cancellation, and [requests for user input](/docs/how-composio-works#handling-requests-for-user-input) can raise exceptions instead of returning a result. `logId` (`log_id` in Python) ties the call to its entry in the dashboard so you can inspect what Composio sent upstream.
+Transport failures, cancellation, and [requests for user input](/docs/sessions/executing-tools#handling-requests-for-user-input) can raise exceptions instead of returning a result. `logId` (`log_id` in Python) ties the call to its entry in the dashboard so you can inspect what Composio sent upstream.
 
 When the thing you need isn't wrapped as a tool, [`session.proxyExecute()`](/docs/extending-sessions/proxy-execute) calls the raw API endpoint under the same connected account.
 
@@ -608,12 +608,12 @@ When the thing you need isn't wrapped as a tool, [`session.proxyExecute()`](/doc
 Your planner, context window, approval gate, and traces stay the same. Composio takes over the global app catalog, OAuth registration, token refresh, schema maintenance, and the execute path, whether you call `session.execute()` directly or through the MCP server.
 
 <Callout type="info" title="If the tool set is fixed">
-A harness with a known, small tool set doesn't need step three at all. Create the session with the [direct tools preset](/docs/configuring-sessions#direct-tools-preset) and an explicit `tools` filter, and `session.tools()` hands back exactly those tools with search, multi-execute, connection management, and the sandbox all off. That's `sessionPreset: SessionPreset.DIRECT_TOOLS` in TypeScript and `session_preset=SESSION_PRESET_DIRECT_TOOLS` in Python. Worth it when the list is short and stable; the four calls above are for when the list is whatever the user connected this morning.
+A harness with a known, small tool set doesn't need step three at all. Create the session with the [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset) and an explicit `tools` filter, and `session.tools()` hands back exactly those tools with search, multi-execute, connection management, and the sandbox all off. That's `sessionPreset: SessionPreset.DIRECT_TOOLS` in TypeScript and `session_preset=SESSION_PRESET_DIRECT_TOOLS` in Python. Worth it when the list is short and stable; the four calls above are for when the list is whatever the user connected this morning.
 </Callout>
 
 <Cards>
-  <Card title="Configuring sessions" href="/docs/configuring-sessions" description="Every filter a session takes: toolkits, tools, tags, auth configs, connected accounts" />
-  <Card title="What is a session?" href="/docs/how-composio-works" description="The runtime context behind all four calls, and what the meta tools do when you leave them on" />
+  <Card title="Restrict tool access" href="/docs/sessions/tool-access" description="Every filter a session takes: toolkits, tools, tags, auth configs, connected accounts" />
+  <Card title="What is a session?" href="/docs/sessions" description="The runtime context behind all four calls, and what the meta tools do when you leave them on" />
   <Card title="Authentication" href="/docs/authentication" description="Managed auth, your own OAuth credentials, and pre-connecting accounts" />
   <Card title="Proxy execute" href="/docs/extending-sessions/proxy-execute" description="Call an API endpoint Composio doesn't wrap, as the connected account" />
 </Cards>

@@ -13,11 +13,11 @@ import type {
   SessionExecuteParams,
 } from '@composio/client/resources/tool-router/session';
 import type {
-  CustomTool,
-  CustomToolkit,
+  LocalTool,
+  LocalToolkit,
   InlineCustomToolsWirePayload,
-  RegisteredCustomTool,
-  RegisteredCustomToolkit,
+  RegisteredLocalTool,
+  RegisteredLocalToolkit,
 } from './customTool.types';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { addSessionConfigConflictIssue } from '../lib/sessionConfigConflict';
@@ -364,6 +364,28 @@ export type ToolRouterHookPromptInjectionCheckHandler = z.infer<
   typeof ToolRouterHookPromptInjectionCheckHandlerSchema
 >;
 
+/**
+ * Sends the call to the project's session webhook URL and waits for your
+ * endpoint's answer: let it run, block it, or change it. Read the request in
+ * your endpoint with `composio.sessions.webhooks.parse()`.
+ */
+export const ToolRouterHookWebhookHandlerSchema = z
+  .object({
+    type: z.literal('webhook'),
+    fallbackAction: z
+      .enum(['block', 'continue'])
+      .describe(
+        "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+      ),
+    timeoutMs: z
+      .number()
+      .int()
+      .optional()
+      .describe('How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000.'),
+  })
+  .strict();
+export type ToolRouterHookWebhookHandler = z.infer<typeof ToolRouterHookWebhookHandlerSchema>;
+
 const toolRouterHookIdentityFields = {
   id: z.string().describe('Unique within the session. Shows up in results and logs.'),
   name: z
@@ -376,14 +398,18 @@ const toolRouterHookIdentityFields = {
 /**
  * A hook on a session's tool calls. A `before_execute` hook can block a call
  * before it runs; an `after_execute` hook can block its result before the
- * agent sees it.
+ * agent sees it. A hook with a `webhook` handler can also change the call or
+ * its result.
  */
 export const ToolRouterHookSchema = z.discriminatedUnion('type', [
   z
     .object({
       type: z.literal('before_execute'),
       ...toolRouterHookIdentityFields,
-      handler: ToolRouterHookConditionCheckHandlerSchema,
+      handler: z.discriminatedUnion('type', [
+        ToolRouterHookConditionCheckHandlerSchema,
+        ToolRouterHookWebhookHandlerSchema,
+      ]),
     })
     .strict(),
   z
@@ -393,6 +419,7 @@ export const ToolRouterHookSchema = z.discriminatedUnion('type', [
       handler: z.discriminatedUnion('type', [
         ToolRouterHookConditionCheckHandlerSchema,
         ToolRouterHookPromptInjectionCheckHandlerSchema,
+        ToolRouterHookWebhookHandlerSchema,
       ]),
     })
     .strict(),
@@ -517,24 +544,34 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           })
           .optional()
           .describe('Configuration for assistive prompt generation'),
+        localTools: z
+          .array(z.custom<LocalTool>())
+          .optional()
+          .describe(
+            'Local tools to include in this session. They run in your process. Created via experimental_createTool() from @composio/core.'
+          ),
+        localToolkits: z
+          .array(z.custom<LocalToolkit>())
+          .optional()
+          .describe(
+            'Toolkits of local tools to include in this session. Created via experimental_createToolkit() from @composio/core.'
+          ),
+        /** @deprecated Use `localTools` instead. */
         customTools: z
-          .array(z.custom<CustomTool>())
+          .array(z.custom<LocalTool>())
           .optional()
-          .describe(
-            'Custom tools to include in this session. Created via createCustomTool() from @composio/core/experimental.'
-          ),
+          .describe('Deprecated alias for localTools. Accepted for backwards compatibility.'),
+        /** @deprecated Use `localToolkits` instead. */
         customToolkits: z
-          .array(z.custom<CustomToolkit>())
+          .array(z.custom<LocalToolkit>())
           .optional()
-          .describe(
-            'Custom toolkits to include in this session. Created via createCustomToolkit() from @composio/core/experimental.'
-          ),
+          .describe('Deprecated alias for localToolkits. Accepted for backwards compatibility.'),
         sessionConfigId: z
           .string()
           .min(1)
           .optional()
           .describe(
-            'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, customTools or customToolkits.'
+            'ID of a saved Session config (`sc_…`) to apply when the session is created. Cannot be combined with toolkits, tools, tags, localTools or localToolkits.'
           ),
         /**
          * What happens to a call that needs the user's approval when the
@@ -558,6 +595,8 @@ const ToolRouterCreateSessionConfigBaseSchema = z
           config.tools !== undefined && 'tools',
           config.tags !== undefined && 'tags',
           config.hooks !== undefined && 'hooks',
+          config.experimental.localTools !== undefined && 'experimental.localTools',
+          config.experimental.localToolkits !== undefined && 'experimental.localToolkits',
           config.experimental.customTools !== undefined && 'experimental.customTools',
           config.experimental.customToolkits !== undefined && 'experimental.customToolkits',
         ].filter((field): field is string => field !== false)
@@ -626,7 +665,11 @@ export const ToolRouterCreateSessionConfigSchema = z
  * @param {object} [preload] - Tools to preload into session.tools() and the MCP tool list
  * @param {string[] | 'all'} [preload.tools] - Tool slugs to preload, or "all" to preload every app tool allowed by the session filters. "all" requires a positive filter such as toolkits, tools, or tags; the backend validates and caps the final tool set.
  * @param {object} [experimental] - Experimental features configuration. Not stable; may change or be removed.
- * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `hooks`, `experimental.customTools` or `experimental.customToolkits`. Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
+ * @param {LocalTool[]} [experimental.localTools] - Local tools to include in this session, created with `experimental_createTool()`. They run in your process.
+ * @param {LocalToolkit[]} [experimental.localToolkits] - Toolkits of local tools to include in this session, created with `experimental_createToolkit()`.
+ * @param {LocalTool[]} [experimental.customTools] - Deprecated alias for `experimental.localTools`.
+ * @param {LocalToolkit[]} [experimental.customToolkits] - Deprecated alias for `experimental.localToolkits`.
+ * @param {string} [experimental.sessionConfigId] - ID of a saved Session config (`sc_…`) to apply at creation; see `composio.sessionConfigs`. Cannot be combined with `toolkits`, `tools`, `tags`, `hooks`, `experimental.localTools` or `experimental.localToolkits` (or their deprecated aliases `experimental.customTools` / `experimental.customToolkits`). Per-session fields such as `authConfigs`, `connectedAccounts`, `manageConnections`, `sandbox`, `multiAccount` and `preload` stay allowed.
  */
 export type ToolRouterCreateSessionConfig =
   InlineAccessCreateSessionConfig | SavedConfigCreateSessionConfig;
@@ -652,9 +695,11 @@ type SavedConfigCreateSessionConfig = Omit<
   hooks?: never;
   experimental: Omit<
     ParsedCreateSessionExperimental,
-    'sessionConfigId' | 'customTools' | 'customToolkits'
+    'sessionConfigId' | 'localTools' | 'localToolkits' | 'customTools' | 'customToolkits'
   > & {
     sessionConfigId: string;
+    localTools?: never;
+    localToolkits?: never;
     customTools?: never;
     customToolkits?: never;
   };
@@ -829,8 +874,9 @@ export type ToolRouterSessionSearchResponse = z.infer<typeof ToolRouterSessionSe
 
 /**
  * What one session hook decided about a call. `unavailable` means the hook
- * could not be evaluated (for example it timed out); it does not block the
- * call.
+ * could not be evaluated (for example it timed out), and `detail` says why
+ * when the API gives a reason. An unavailable hook does not block the call,
+ * unless it has a `webhook` handler with `fallbackAction: 'block'`.
  */
 export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
   z.object({
@@ -841,6 +887,7 @@ export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
   z.object({
     id: z.string().describe('The hook id'),
     status: z.literal('unavailable'),
+    detail: z.string().optional().describe('Why the hook could not be evaluated'),
   }),
 ]);
 export type ToolRouterHookResult = z.infer<typeof ToolRouterHookResultSchema>;
@@ -1468,10 +1515,14 @@ export interface Session<
   listConfigHistory: ToolRouterSessionListConfigHistoryFn;
   /** Proxy an API call through Composio's auth layer using the session's connected account */
   proxyExecute: ToolRouterSessionProxyExecuteFn;
-  /** List custom tools registered in this session, with their final slugs and schemas */
-  customTools: (options?: { toolkit?: string }) => RegisteredCustomTool[];
-  /** List custom toolkits registered in this session, with final slugs on nested tools */
-  customToolkits: () => RegisteredCustomToolkit[];
+  /** List local tools registered in this session, with their final slugs and schemas */
+  localTools: (options?: { toolkit?: string }) => RegisteredLocalTool[];
+  /** List toolkits of local tools registered in this session, with final slugs on nested tools */
+  localToolkits: () => RegisteredLocalToolkit[];
+  /** @deprecated Use `localTools()` instead. */
+  customTools: (options?: { toolkit?: string }) => RegisteredLocalTool[];
+  /** @deprecated Use `localToolkits()` instead. */
+  customToolkits: () => RegisteredLocalToolkit[];
   /** Experimental features (files, assistive prompt, etc.) */
   experimental: SessionExperimental;
 }

@@ -6,7 +6,7 @@ written: "December 2025"
 ---
 
 <Callout type="info">
-This guide covers migrating from the legacy SDK (v1) — `composio-core` on PyPI and npm — to the current SDK (v3): `composio` on PyPI, `@composio/core` on npm. Provider packages such as `composio-openai` kept their names across the rewrite: current releases work with v3, v1-era releases don't. The recommended way to use Composio is now through **sessions** — see [Migrating from Direct Tools to Sessions](/docs/migration-guide/direct-to-sessions) or [Configuring Sessions](/docs/configuring-sessions) if you're starting fresh.
+This guide covers migrating from the legacy SDK (v1) — `composio-core` on PyPI and npm — to the current SDK (v3): `composio` on PyPI, `@composio/core` on npm. Provider packages such as `composio-openai` kept their names across the rewrite: current releases work with v3, v1-era releases don't. The recommended way to use Composio is now through **sessions** — see [Migrating from Direct Tools to Sessions](/docs/migration-guide/direct-to-sessions) or [Restrict tool access](/docs/sessions/tool-access) if you're starting fresh.
 </Callout>
 
 In the last few months, we have experienced very rapid growth in usage of our platform. As such, our team has been working hard to radically improve the performance and developer experience of our platform.
@@ -620,11 +620,11 @@ const result_2 = await composio.tools.execute(
   </Tab>
 </Tabs>
 
-### Custom Tools
+### Local tools
 
-Custom tools are now session-scoped. Define local tools with the experimental custom-tools API and attach them when creating or reusing a session.
+Custom tools are now called local tools, and they are session-scoped. Define them with the experimental local tools API and attach them when creating or reusing a session.
 
-{/* code-example: no-api reason="custom tool handlers are defined and run in-process in the SDK" */}
+{/* code-example: no-api reason="local tool handlers are defined and run in-process in the SDK" */}
 <Tabs groupId="language" items={['Python', 'TypeScript']} persist>
   <Tab value="Python">
 ```python
@@ -650,7 +650,7 @@ def get_issue_info(input: GetIssueInfoInput, ctx) -> dict:
 
 session = composio.create(
     user_id="default",
-    experimental={"custom_tools": [get_issue_info]},
+    experimental={"local_tools": [get_issue_info]},
 )
 ```
   </Tab>
@@ -682,13 +682,13 @@ const getIssueInfo = experimental_createTool("GET_ISSUE_INFO", {
 });
 
 const session = await composio.create("default", {
-  experimental: { customTools: [getIssueInfo] },
+  experimental: { localTools: [getIssueInfo] },
 });
 ```
   </Tab>
 </Tabs>
 
-For more information, see [Custom Tools and Toolkits](/docs/extending-sessions/custom-tools-and-toolkits).
+For more information, see [Local Tools and Toolkits](/docs/extending-sessions/local-tools-and-toolkits).
 
 ### Auth configs (formerly integrations)
 

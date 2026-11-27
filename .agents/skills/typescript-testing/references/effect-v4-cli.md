@@ -17,6 +17,8 @@ repo-local `effect-v4` skill.
   under test sleeps outside Effect's clock; a retry, timeout, or `Effect.sleep` inside the code
   under test is driven on `it.effect` by forking the effect, looping `Effect.yieldNow` and `TestClock.adjust`
   until `fiber.pollUnsafe()` is set, and `Fiber.join` (see "Time in tests" in the `effect-v4` skill's core-patterns reference).
+  The exception is a test that answers the API client itself with a retryable response. It answers
+  with `retry-after-ms: 0` and runs on the live clock, as that section describes.
 - Reusable service layers go through `layer(...)`, not manual `Effect.provide` scattered per test:
 
 ```ts no-check
@@ -126,6 +128,6 @@ Port tests by contract, not file count:
 
 ## Authoring-skill examples
 
-`bun run validate:cli-skills` compiles the skill snippets, checks linked excerpts against current source, and runs the documented teaching command through `cliExit()` over `TestLive`. Its request assertions use the native `@composio/client/effect` implementation over the recording HTTP transport from `test/__utils__/services/stub-composio-client.ts`. The same command also runs the existing registration and invocation contracts and Effect diagnostics.
+`bun run validate:cli-skills` compiles the skill snippets, checks linked excerpts against current source, and runs the documented teaching command through `cliExit()` over `TestLive`. Its request assertions use the native `@composio/client/effect` implementation over the recording HTTP transport from `test/__utils__/services/stub-composio-client.ts`. The same command also runs the existing registration and invocation contracts; Effect diagnostics run in `ts.typecheck.yml` via `pnpm --filter @composio/cli run lint:effect`.
 
 This is recipe and contract verification. It does not measure agent performance on an unseen authoring task. The separate trial protocol lives in the `cli-command` command-example reference.

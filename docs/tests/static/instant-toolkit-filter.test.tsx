@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { filterToolkits, withInstantEligibility } from '../../lib/instant-toolkit-filter';
 import { fetchInstantToolkitSlugs } from '../../lib/instant-toolkit-api';
+import { TOOLKIT_PAGE_SIZE } from '../../lib/composio-api';
 import { InstantBolt } from '../../components/toolkits/instant-bolt';
 import { InstantBadge } from '../../components/toolkits/instant-badge';
 
@@ -52,14 +53,15 @@ describe('live Instant eligibility', () => {
   const item = (slug: string, supported = true) => ({ slug, type: 'native', enabled: true, instant: { supported } });
   const fakeFetch = (fn: (input: Parameters<typeof fetch>[0], init?: RequestInit) => Promise<Response>) => Object.assign(mock(fn), { preconnect: fetch.preconnect });
 
-  test('follows cursors, requests pricing, deduplicates and only accepts explicit support', async () => {
+  test('follows cursors, deduplicates and only accepts explicit support', async () => {
     const fetcher = fakeFetch(async input => String(input).includes('cursor=next')
       ? Response.json({ items: [item('ALPHA'), item('beta'), item('no', false)], next_cursor: null })
       : Response.json({ items: [item('alpha'), { slug: 'null', instant: null }, { slug: 'missing' }], next_cursor: 'next' }));
     expect(await fetchInstantToolkitSlugs('test-key', fetcher)).toEqual(['alpha', 'beta']);
     expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(String(fetcher.mock.calls[0][0])).toContain('include_pricing=true');
-    expect(fetcher.mock.calls[0][1]?.headers).toEqual({ 'x-api-key': 'test-key' });
+    expect(new URL(String(fetcher.mock.calls[0][0])).pathname).toBe('/api/v3.1/toolkits');
+    expect(fetcher.mock.calls.map(([input]) => new URL(String(input)).searchParams.get('limit'))).toEqual([String(TOOLKIT_PAGE_SIZE), String(TOOLKIT_PAGE_SIZE)]);
+    expect(new Headers(fetcher.mock.calls[0][1]?.headers).get('x-api-key')).toBe('test-key');
   });
 
   test('partial responses, missing eligibility, malformed data and repeated cursors fail rather than imply no results', async () => {

@@ -11,7 +11,7 @@ import {
   verifyKb,
   type CatalogToolkit,
 } from '@/lib/kb/verify';
-import { getKbCatalog } from '@/lib/kb/repository';
+import { getKbCatalog, readKbManifest } from '@/lib/kb/repository';
 import type { KbGuide, KbManifest } from '@/lib/kb/types';
 
 const TOOLKITS: CatalogToolkit[] = [
@@ -39,12 +39,6 @@ const catalog = buildProductCatalog(TOOLKITS);
 
 const MANIFEST: KbManifest = {
   schemaVersion: 2,
-  source: {
-    repository: 'ComposioHQ/example-knowledge',
-    commit: 'abc1234',
-    capturedAt: '2026-07-22',
-    contentHash: 'sha256:fixture',
-  },
   topics: [],
   guides: [],
 };
@@ -201,6 +195,31 @@ describe('verifyKb', () => {
     expect(finding?.severity).toBe('error');
   });
 
+  describe('review window boundary', () => {
+    const expiryFor = (at: string) =>
+      verifyKb({
+        manifest: MANIFEST,
+        catalog,
+        now: new Date(at),
+        guides: [guide({ slug: 'due', body: 'text', reviewAfter: '2026-11-10' })],
+      }).findings.find((entry) => entry.kind === 'review-window-expired');
+
+    test.each(['2026-11-09T12:25:00Z', '2026-11-09T15:05:00Z', '2026-11-09T23:59:59.999Z'])(
+      'stays open before the deadline (%s)',
+      (at) => {
+        expect(expiryFor(at)).toBeUndefined();
+      }
+    );
+
+    test('expires at the deadline', () => {
+      expect(expiryFor('2026-11-10T00:00:00Z')?.detail).toBe('review window expired 0 day(s) ago');
+    });
+
+    test('counts whole days elapsed since the deadline', () => {
+      expect(expiryFor('2026-11-11T12:00:00Z')?.detail).toBe('review window expired 1 day(s) ago');
+    });
+  });
+
   test('flags a cohort of guides that all expire on one date', () => {
     const guides = Array.from({ length: 6 }, (_, index) =>
       guide({ slug: `guide-${index}`, body: 'text', reviewAfter: '2026-10-20' })
@@ -219,32 +238,6 @@ describe('verifyKb', () => {
       options: { staleVerificationDays: 30 },
     });
     expect(report.findings.some((entry) => entry.kind === 'verification-stale')).toBe(true);
-  });
-
-  test('reports an unresolvable source pin', () => {
-    const report = verifyKb({
-      manifest: MANIFEST,
-      catalog,
-      now,
-      guides: [guide({ slug: 'any', body: 'text' })],
-      options: { sourcePinStatus: 'missing' },
-    });
-    const finding = report.findings.find((entry) => entry.kind === 'source-pin-unresolvable');
-    expect(finding?.severity).toBe('warning');
-    expect(finding?.detail).toContain('abc1234');
-  });
-
-  test('stays silent when the pin cannot be verified by this token', () => {
-    for (const status of ['resolved', 'unverifiable'] as const) {
-      const report = verifyKb({
-        manifest: MANIFEST,
-        catalog,
-        now,
-        guides: [guide({ slug: 'any', body: 'text' })],
-        options: { sourcePinStatus: status },
-      });
-      expect(report.findings.some((entry) => entry.kind === 'source-pin-unresolvable')).toBe(false);
-    }
   });
 
   test('treats provider rate-limiting as inconclusive, not as rot', () => {
@@ -288,9 +281,7 @@ describe('live corpus', () => {
    * Published prose belongs in `kb/articles`; `kb/source` must stay verbatim.
    */
   test('no published guide renders from the source snapshot', () => {
-    const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), 'kb/manifest.json'), 'utf8')
-    ) as { guides: Array<{ slug: string; state: string; articlePath?: string }> };
+    const manifest = readKbManifest();
     const rendersFromSource = manifest.guides
       .filter((guide) => guide.state === 'published' && !guide.articlePath)
       .map((guide) => guide.slug);

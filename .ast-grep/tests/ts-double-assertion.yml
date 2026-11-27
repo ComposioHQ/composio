@@ -1,0 +1,11 @@
+id: ts-double-assertion
+valid:
+  - 'const user = parseUser(input);'
+  - 'const config = { retries: 3 } satisfies Config;'
+  - 'const id = value as UserId;'
+  - 'const literal = "value as unknown as User";'
+invalid:
+  - 'const user = value as unknown as User;'
+  - 'const user = value as any as User;'
+  - 'const user = (value as unknown) as User;'
+  - 'const view = <Widget user={value as unknown as User} />;'

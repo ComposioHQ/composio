@@ -163,39 +163,39 @@ class MCP(Resource):
         :return: Created server details with generate method
 
         Examples:
-            >>> # Using toolkit configuration objects with auth
-            >>> server = composio.experimental.mcp.create(
-            ...     'personal-mcp-server',
-            ...     toolkits=[
-            ...         {
-            ...             'toolkit': 'github',
-            ...             'auth_config_id': 'ac_xyz',
-            ...         },
-            ...         {
-            ...             'toolkit': 'slack',
-            ...             'auth_config_id': 'ac_abc',
-            ...         },
-            ...     ],
-            ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'GITHUB_LIST_REPOS', 'SLACK_SEND_MESSAGE'],
-            ...     manually_manage_connections=False
-            ... )
-            >>>
-            >>> # Using simple toolkit names (most common usage)
-            >>> server = composio.experimental.mcp.create(
-            ...     'simple-mcp-server',
-            ...     toolkits=['composio_search', 'text_to_pdf'],
-            ...     allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
-            ... )
-            >>>
-            >>> # Using all tools from toolkits (default behavior)
-            >>> server = composio.experimental.mcp.create(
-            ...     'all-tools-server',
-            ...     toolkits=['composio_search', 'text_to_pdf']
-            ...     # allowed_tools=None means all tools from these toolkits
-            ... )
-            >>>
-            >>> # Get server instance for a user
-            >>> mcp = server.generate('user_12345')
+            # Using toolkit configuration objects with auth
+            server = composio.mcp.create(
+                'personal-mcp-server',
+                toolkits=[
+                    {
+                        'toolkit': 'github',
+                        'auth_config_id': 'ac_xyz',
+                    },
+                    {
+                        'toolkit': 'slack',
+                        'auth_config_id': 'ac_abc',
+                    },
+                ],
+                allowed_tools=['GITHUB_CREATE_AN_ISSUE', 'GITHUB_LIST_REPOS', 'SLACK_SEND_MESSAGE'],
+                manually_manage_connections=False
+            )
+
+            # Using simple toolkit names (most common usage)
+            server = composio.mcp.create(
+                'simple-mcp-server',
+                toolkits=['composio_search', 'text_to_pdf'],
+                allowed_tools=['COMPOSIO_SEARCH_DUCK_DUCK_GO_SEARCH', 'TEXT_TO_PDF_CONVERT_TEXT_TO_PDF']
+            )
+
+            # Using all tools from toolkits (default behavior)
+            server = composio.mcp.create(
+                'all-tools-server',
+                toolkits=['composio_search', 'text_to_pdf']
+                # allowed_tools=None means all tools from these toolkits
+            )
+
+            # Get server instance for a user
+            mcp = server.generate('user_12345', None)
         """
         if not toolkits:
             raise ValidationError("At least one toolkit configuration is required")
@@ -273,14 +273,14 @@ class MCP(Resource):
         :return: Paginated list of MCP servers
 
         Examples:
-            >>> # List all servers
-            >>> all_servers = composio.experimental.mcp.list()
-            >>>
-            >>> # List with pagination
-            >>> paged_servers = composio.experimental.mcp.list(page_no=2, limit=5)
-            >>>
-            >>> # Filter by toolkit
-            >>> github_servers = composio.experimental.mcp.list(toolkits='github', name='personal')
+            # List all servers
+            all_servers = composio.mcp.list()
+
+            # List with pagination
+            paged_servers = composio.mcp.list(page_no=2, limit=5)
+
+            # Filter by toolkit
+            github_servers = composio.mcp.list(toolkits='github', name='personal')
         """
 
         try:
@@ -316,12 +316,12 @@ class MCP(Resource):
         :return: Complete MCP server information
 
         Example:
-            >>> server = composio.experimental.mcp.get('mcp_12345')
-            >>>
-            >>> print(server['name'])  # "My Personal MCP Server"
-            >>> print(server['allowed_tools'])  # ["GITHUB_CREATE_ISSUE", "SLACK_SEND_MESSAGE"]
-            >>> print(server['toolkits'])  # ["github", "slack"]
-            >>> print(server['server_instance_count'])  # 3
+            server = composio.mcp.get('mcp_12345')
+
+            print(server['name'])  # "My Personal MCP Server"
+            print(server['allowed_tools'])  # ["GITHUB_CREATE_AN_ISSUE", "SLACK_SEND_MESSAGE"]
+            print(server['toolkits'])  # ["github", "slack"]
+            print(server['server_instance_count'])  # 3
         """
         try:
             response = self._client.mcp.retrieve(server_id)
@@ -350,29 +350,29 @@ class MCP(Resource):
         :return: Updated MCP server information
 
         Examples:
-            >>> # Update server name only
-            >>> updated_server = composio.experimental.mcp.update(
-            ...     'mcp_12345',
-            ...     name='My Updated MCP Server'
-            ... )
-            >>>
-            >>> # Update toolkits and tools
-            >>> server_with_new_tools = composio.experimental.mcp.update(
-            ...     'mcp_12345',
-            ...     toolkits=['github', 'slack'],
-            ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE']
-            ... )
-            >>>
-            >>> # Update with auth configs
-            >>> server_with_auth = composio.experimental.mcp.update(
-            ...     'mcp_12345',
-            ...     toolkits=[
-            ...         {'toolkit': 'github', 'auth_config_id': 'auth_abc123'},
-            ...         {'toolkit': 'slack', 'auth_config_id': 'auth_def456'}
-            ...     ],
-            ...     allowed_tools=['GITHUB_CREATE_ISSUE', 'SLACK_SEND_MESSAGE'],
-            ...     manually_manage_connections=False
-            ... )
+            # Update server name only
+            updated_server = composio.mcp.update(
+                'mcp_12345',
+                name='My Updated MCP Server'
+            )
+
+            # Update toolkits and tools
+            server_with_new_tools = composio.mcp.update(
+                'mcp_12345',
+                toolkits=['github', 'slack'],
+                allowed_tools=['GITHUB_CREATE_AN_ISSUE', 'SLACK_SEND_MESSAGE']
+            )
+
+            # Update with auth configs
+            server_with_auth = composio.mcp.update(
+                'mcp_12345',
+                toolkits=[
+                    {'toolkit': 'github', 'auth_config_id': 'auth_abc123'},
+                    {'toolkit': 'slack', 'auth_config_id': 'auth_def456'}
+                ],
+                allowed_tools=['GITHUB_CREATE_AN_ISSUE', 'SLACK_SEND_MESSAGE'],
+                manually_manage_connections=False
+            )
         """
         try:
             update_params: t.Dict[str, t.Any] = {}
@@ -439,13 +439,13 @@ class MCP(Resource):
         :return: Deletion result
 
         Example:
-            >>> # Delete a server
-            >>> result = composio.experimental.mcp.delete('mcp_12345')
-            >>>
-            >>> if result['deleted']:
-            ...     print(f"Server {result['id']} has been successfully deleted")
-            >>> else:
-            ...     print(f"Failed to delete server {result['id']}")
+            # Delete a server
+            result = composio.mcp.delete('mcp_12345')
+
+            if result['deleted']:
+                print(f"Server {result['id']} has been successfully deleted")
+            else:
+                print(f"Failed to delete server {result['id']}")
         """
         try:
             response = self._client.mcp.delete(server_id)
@@ -475,14 +475,14 @@ class MCP(Resource):
         :return: MCP server instance
 
         Example:
-            >>> mcp = composio.experimental.mcp.generate(
-            ...     'user_12345',
-            ...     'mcp_67890',
-            ...     manually_manage_connections=False
-            ... )
-            >>>
-            >>> print(mcp['url'])  # Server URL for the user
-            >>> print(mcp['allowed_tools'])  # Available tools
+            mcp = composio.mcp.generate(
+                'user_12345',
+                'mcp_67890',
+                manually_manage_connections=False
+            )
+
+            print(mcp['url'])  # Server URL for the user
+            print(mcp['allowed_tools'])  # Available tools
         """
 
         try:

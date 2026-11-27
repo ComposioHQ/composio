@@ -14,10 +14,11 @@ description: "Complete API reference for the Composio TypeScript SDK (@composio/
 | [`Composio`](/reference/sdk-reference/typescript/composio) | This is the core class for Composio. |
 | [`AuthConfigs`](/reference/sdk-reference/typescript/auth-configs) | AuthConfigs class |
 | [`ConnectedAccounts`](/reference/sdk-reference/typescript/connected-accounts) | ConnectedAccounts class |
-| [`CustomToolkits`](/reference/sdk-reference/typescript/custom-toolkits) | `composio.experimental.customToolkits` — toolkits your project registers |
+| [`CustomToolkits`](/reference/sdk-reference/typescript/custom-toolkits) | `composio.customToolkits` — toolkits your project registers |
 | [`Keyring`](/reference/sdk-reference/typescript/keyring) | `composio.keyring` — the organization's customer-managed keyring. |
 | [`Logs`](/reference/sdk-reference/typescript/logs) | `composio.logs` — tool-execution logs. |
 | [`SessionConfigs`](/reference/sdk-reference/typescript/session-configs) | `composio.sessionConfigs` — saved, reusable Session configs. |
+| [`SessionWebhooks`](/reference/sdk-reference/typescript/session-webhooks) | `composio.sessions.webhooks` — for the endpoint at a project's session |
 | [`Experimental`](/reference/sdk-reference/typescript/experimental) | Experimental API |
 | [`MCP`](/reference/sdk-reference/typescript/mcp) | MCP (Model Control Protocol) class |
 | [`RemoteFile`](/reference/sdk-reference/typescript/remote-file) | Represents a file stored in a tool router session's file mount. |
@@ -47,8 +48,9 @@ const tools = await composio.tools.get('user-123', {
 });
 
 // Execute a tool
-const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+const result = await composio.tools.execute('GITHUB_LIST_STARGAZERS', {
   userId: 'user-123',
-  arguments: { owner: 'composio' }
+  arguments: { owner: 'ComposioHQ', repo: 'composio' },
+  version: '20250909_00'
 });
 ```

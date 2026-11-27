@@ -6,14 +6,14 @@ keywords: [proxy, proxy execute, session proxy, custom api call, raw api, raw re
 
 `session.proxyExecute()` calls any HTTP endpoint on a toolkit your session can already reach, and Composio injects the authentication (OAuth token, API key, basic auth, and so on) on the server side. Your code never handles raw credentials.
 
-The session is already scoped to a [userID](/docs/how-composio-works), so you pass a `toolkit` slug rather than an account ID. Composio resolves the user's connected account for that toolkit and signs the request with it.
+The session is already scoped to a [userID](/docs/sessions), so you pass a `toolkit` slug rather than an account ID. Composio resolves the user's connected account for that toolkit and signs the request with it.
 
 Proxy execute is a building block, not just a fallback. Use it to build experiences on top of Composio that reach past predefined tools, like the [Pi + Slack bot example](/examples/general-agent-with-pi#reach-the-gaps-with-the-proxy), which drops down to the proxy for the Slack Web API calls the toolkit doesn't wrap as tools. We'll link more examples here as we add them.
 
 For the complete connection-to-request flow in your own backend, follow [Managed authentication for your own tools](/docs/authentication/managed-auth-for-custom-tools). It covers per-user OAuth, connection status, and account-specific proxy requests without an agent framework.
 
 <Callout title="Use a scoped API key">
-Authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has **Proxy execute** enabled. Session tool execution alone does not cover `session.proxyExecute()` or proxy calls made from that session's sandbox. Default full-access keys already include this permission.
+For `session.proxyExecute()`, authenticate with a [scoped project API key](/reference/authenticating-to-composio/project-api-key-permissions) that has **Session tool execution → Write only** or **Proxy execute (Legacy) → Write only**. Either permission grants the session proxy route. The direct `/tools/execute/proxy` route requires **Proxy execute (Legacy)**. Default full-access keys already cover both routes.
 </Callout>
 
 ## When to use it
@@ -155,14 +155,16 @@ At creation, the API rejects a disabled proxy setting combined with an enabled s
 
 Proxy execute follows the session's toolkit lists: a call for a toolkit outside `toolkits.enable` or inside `toolkits.disable` is rejected with the same error a blocked tool call gets, including from the session's sandbox.
 
-Hint filters and per-toolkit tool rules do not apply, because a proxy request names an endpoint, not a tool. To remove the raw HTTP path from the session's sandbox, turn proxy execution off in the sandbox config:
+A proxy request names an endpoint, not a tool, so Composio can't match it against a tool rule. Instead, the session refuses every proxy call for a toolkit that has a tool `enable` or `disable` list, or a hint filter that applies to it, with `403` `ToolRouterV2_ProxyExecutionDisabled`. Toolkits without those filters keep proxy access to any endpoint on their API domain. See [Per-action permissions](/docs/governance/action-permissions).
+
+To remove the raw HTTP path from the session's sandbox for every toolkit, turn proxy execution off in the sandbox config:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
 session = composio.create(
     user_id="user_123",
-    tags=["readOnlyHint"],
+    toolkits=["github"],
     sandbox={"enable": True, "enable_proxy_execution": False},
 )
 ```
@@ -173,7 +175,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your_api_key' });
 // ---cut---
 const session = await composio.create("user_123", {
-  tags: ["readOnlyHint"],
+  toolkits: ["github"],
   sandbox: { enable: true, enableProxyExecution: false },
 });
 ```
@@ -185,7 +187,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "user_123",
-    "tags": {"enable": ["readOnlyHint"]},
+    "toolkits": {"enable": ["github"]},
     "workbench": {"enable": true, "enable_proxy_execution": false}
   }'
 ```
@@ -266,7 +268,7 @@ Don't set the `Authorization` header yourself through `parameters`. Composio inj
 
 For completed results, `status` and `data` reflect what the toolkit API returned. Check `status` and branch on the common failures.
 
-If the call needs user input before it can run, the SDK raises `ToolInputRequiredError` in Python or `ComposioToolInputRequiredError` in TypeScript instead of returning an HTTP response. Nothing was executed. See [Handling requests for user input](/docs/how-composio-works#handling-requests-for-user-input) for the error fields and continuation state.
+If the call needs user input before it can run, the SDK raises `ToolInputRequiredError` in Python or `ComposioToolInputRequiredError` in TypeScript instead of returning an HTTP response. Nothing was executed. See [Handling requests for user input](/docs/sessions/executing-tools#handling-requests-for-user-input) for the error fields and continuation state.
 
 | Status | Typical cause | How to resolve |
 |---|---|---|
@@ -279,4 +281,4 @@ Composio sends a proxied call exactly once. A timeout, a connection error, or a 
 
 ## Next
 
-<Card icon={<Blocks />} title="Custom tools and toolkits" href="/docs/extending-sessions/custom-tools-and-toolkits" description="Define in-process tools and toolkits that run alongside Composio tools" />
+<Card icon={<Blocks />} title="Local tools and toolkits" href="/docs/extending-sessions/local-tools-and-toolkits" description="Define in-process tools and toolkits that run alongside Composio tools" />

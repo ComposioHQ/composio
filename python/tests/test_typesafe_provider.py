@@ -1351,7 +1351,7 @@ class TestExecute:
     def test_executes_through_a_session_which_takes_no_modifiers(self) -> None:
         session = Mock()
         session.execute.return_value = Mock(
-            data={"ok": True}, error=None, result_type="completed"
+            data={"ok": True}, error=None, result_type="completed", log_id="log_123"
         )
         result = self.provider.execute(
             session=session, decision=PARTIAL, arguments={"body": "text"}
@@ -1359,7 +1359,13 @@ class TestExecute:
         session.execute.assert_called_once_with(
             tool_slug="ISSUES_CREATE", arguments={"priority": "low", "body": "text"}
         )
-        assert result == {"data": {"ok": True}, "error": None, "successful": True}
+        assert result == {
+            "data": {"ok": True},
+            "error": None,
+            "successful": True,
+            "log_id": "log_123",
+            "result_type": "completed",
+        }
         self.execute_tool.assert_not_called()
         with pytest.raises(ValueError, match="modifiers"):
             self.provider.execute(  # type: ignore[call-overload]

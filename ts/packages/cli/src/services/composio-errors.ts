@@ -19,6 +19,13 @@ export class ComposioClientConfigurationError extends Data.TaggedError(
  */
 export class HttpDecodingError extends Data.TaggedError('services/HttpDecodingError')<{
   readonly cause?: unknown;
+  /**
+   * The request whose response failed, as the client names its operation
+   * (`toolRouter.session.search`). With it, the failure is reported like the
+   * client's own `DecodeError`: by operation, with an upgrade hint, never with
+   * the schema issues, which may quote the response.
+   */
+  readonly operation?: string;
 }> {}
 
 /**

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { instantSchema } from './instant';
 import { isPublicToolkitSlug, normalizeToolkitSlug } from '@/lib/public-toolkit-policy';
-import { PRODUCTION_API_V3_URL } from '@/scripts/production-api.mjs';
+import { createComposioClient } from './composio-api';
 import type { AuthConfigDetail, AuthConfigField, Toolkit } from '@/types/toolkit';
 
 const NEGATIVE_CACHE_TTL_MS = 60_000;
@@ -261,24 +261,11 @@ export async function fetchToolkitFromProduction(slug: string): Promise<Toolkit 
 
 async function fetchAndMapToolkit(normalizedSlug: string, apiKey: string): Promise<Toolkit | null> {
   try {
-    const response = await fetch(`${PRODUCTION_API_V3_URL}/toolkits/${normalizedSlug}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      next: { revalidate: 3600 },
+    const client = createComposioClient(apiKey, { revalidate: 3600, maxRetries: 0 });
+    const response = await client.toolkits.retrieve(normalizedSlug, null, {
       signal: AbortSignal.timeout(PRODUCTION_REQUEST_TIMEOUT_MS),
     });
-
-    if (!response.ok) {
-      recordNegative(normalizedSlug);
-      console.warn(
-        `[Toolkits] Production toolkit lookup failed for "${normalizedSlug}": ${response.status}`
-      );
-      return null;
-    }
-
-    const payload = rawToolkitSchema.parse(await response.json());
+    const payload = rawToolkitSchema.parse(response);
     if (payload.type !== 'native' || payload.enabled !== true) {
       recordNegative(normalizedSlug);
       console.warn(

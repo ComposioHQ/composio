@@ -8,15 +8,17 @@ description: "Experimental class reference"
 Access this class through the `composio.experimental` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.experimental.list();
+const experimental = composio.experimental;
 ```
 
 ## Properties
 
 | Name | Type | Description |
 |------|------|-------------|
-| `customToolkits` | `CustomToolkits` | Register and manage project-owned custom toolkits (`upsert()` / `sync()` / `delete()`). **Experimental — custom toolkits are in pilot; shape may change.** |
+| `customToolkits` | `CustomToolkits` | Same object as `composio.customToolkits`. |
 | `usage` | `Usage` | Project-scoped usage metering (`summary()` / `breakdown()`). **Experimental — shape may change in future releases.** |
 
 ## Methods
@@ -45,7 +47,7 @@ Resolution rule (deny wins):
  3. requesting `userId` in `allowedUserIds` → ALLOW
  4. otherwise → DENY
 
-```typescript
+```typescript signature
 async updateAcl(nanoid: string, params: UpdateConnectedAccountAclParams): Promise<ConnectedAccountPatchResponse>
 ```
 
@@ -96,6 +98,5 @@ list **replaces** the list, it does not extend it:
 - `notAllowedUserIds: []` → **clears the deny list**, which silently
   re-grants access to users you previously blocked. Always pair an
   empty deny list with a deliberate audit of the allow side.
-```
 
 ---

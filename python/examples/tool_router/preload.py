@@ -3,8 +3,8 @@ Tool Router preload with OpenAI Agents.
 
 Shows direct tool exposure for:
 1. Composio tools via preload["tools"].
-2. SDK custom tools via preload=True on the custom tool or toolkit.
-3. A nested custom tool override with preload=False inside a preloaded toolkit.
+2. SDK local tools via preload=True on the local tool or toolkit.
+3. A nested local tool override with preload=False inside a preloaded toolkit.
 
 Usage:
     COMPOSIO_API_KEY=... OPENAI_API_KEY=... python examples/tool_router/preload.py
@@ -80,7 +80,7 @@ def lookup_internal_user(input: UserLookupInput, ctx):
     slug="SEARCH_INTERNAL_USERS",
     name="Search internal users",
     description=(
-        "Search demo internal users by team. This custom tool is search-only "
+        "Search demo internal users by team. This local tool is search-only "
         "because preload is not enabled."
     ),
 )
@@ -137,8 +137,8 @@ session = composio.create(
     preload={"tools": ["HACKERNEWS_GET_USER"]},
     manage_connections=False,
     experimental={
-        "custom_tools": [lookup_internal_user, search_internal_users],
-        "custom_toolkits": [internal_admin],
+        "local_tools": [lookup_internal_user, search_internal_users],
+        "local_toolkits": [internal_admin],
     },
 )
 

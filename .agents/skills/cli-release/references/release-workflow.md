@@ -17,9 +17,10 @@
 - `.github/scripts/cli-release/resolve-release-target.sh` decides the tag and source commit.
 - `.github/scripts/cli-release/verify-assets.sh` defines the required asset set.
 - `.github/workflows/cli.test-installation.yml` validates installers after publication.
+- `.github/workflows/cli.changelog.yml` opens a changelog PR as the SDK release App after a successful promotion.
 - `.changeset/config.json` ignores `@composio/cli`.
 
-`ts.release.yml` is the TypeScript SDK/npm release train. It is not the normal CLI binary release path.
+`sdk.release.yml` owns stable and beta Python/TypeScript publication from `next`; `ts.release.yml` retains the 1.0 prerelease train on `main`. CLI binary releases use their own workflow.
 
 ## Choose The Path
 
@@ -40,7 +41,13 @@ Never create a `.changeset/*.md` entry for `@composio/cli` while it remains in `
 
 An ignored-package changeset makes `changesets/action` enter version-PR mode, while `changeset version` emits no commit. The action then fails with `No commits between next and changeset-release/next` and blocks unrelated SDK publishing.
 
-If a CLI change needs a human-facing note, update `ts/packages/cli/CHANGELOG.md` directly. Run this guard before handoff:
+Add human-facing CLI notes as bullets under `## Unreleased` in
+`ts/packages/cli/CHANGELOG.md`. The changelog workflow compares the changelog
+snapshots at published stable tags and opens or updates a PR that moves shipped
+notes into version sections. If that PR was missed, dispatch
+`cli.changelog.yml` on `next` to regenerate it.
+
+Run this guard before handoff:
 
 ```bash
 pnpm validate:changesets
@@ -71,12 +78,13 @@ gh release view "$BETA_TAG" \
   --jq '{tagName,isDraft,isPrerelease,publishedAt,targetCommitish,assets:[.assets[] | {name,state}]}'
 ```
 
-The beta must have `isDraft: false`, `isPrerelease: true`, and these six assets in `uploaded` state:
+The beta must have `isDraft: false`, `isPrerelease: true`, and these seven assets in `uploaded` state:
 
 - `composio-linux-x64.zip`
 - `composio-linux-aarch64.zip`
 - `composio-darwin-x64.zip`
 - `composio-darwin-aarch64.zip`
+- `composio-windows-x64.zip` (experimental: absent when the `Windows x64` job failed, which does not block the release)
 - `composio-skill.zip`
 - `checksums.txt`
 
@@ -164,7 +172,7 @@ Do not call the release complete until all of these are true:
 
 1. `Build CLI Binaries` completed successfully.
 2. The stable release is published with `isDraft: false` and `isPrerelease: false`.
-3. All six canonical assets are present and uploaded.
+3. All seven canonical assets are present and uploaded, or six when the experimental `Windows x64` job failed.
 4. The workflow's installation-test matrix passed.
 
 ```bash

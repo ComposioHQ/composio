@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ComposioClient from '@composio/client';
 import { Keyring } from '../../src/models/Keyring';
-import { telemetry } from '../../src/telemetry/Telemetry';
+
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
 
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -35,7 +36,7 @@ describe('Keyring', () => {
   });
 
   it('instruments itself', () => {
-    expect(telemetry.instrument).toHaveBeenCalledWith(keyring, 'Keyring');
+    expect(instrument).toHaveBeenCalledWith(keyring, 'Keyring');
   });
 
   it('returns the active kid and keeps the JWK field names', async () => {

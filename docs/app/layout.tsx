@@ -22,7 +22,7 @@ import {
 const defaultLinkSlugs: { slug: string[]; source: typeof source }[] = [
   { slug: ['quickstart'], source },
   { slug: ['authentication'], source },
-  { slug: ['configuring-sessions'], source },
+  { slug: ['sessions', 'tool-access'], source },
   { slug: ['authentication', 'white-labeling-authentication'], source },
   { slug: ['glossary'], source: referenceSource },
   { slug: ['troubleshooting'], source },
@@ -34,7 +34,7 @@ const defaultLinks = defaultLinkSlugs.flatMap(({ slug, source: pageSource }) => 
   return [{ title: page.data.title, description: page.data.description ?? '', href: page.url }];
 });
 
-const SITE_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} tools. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
+const SITE_DESCRIPTION = `Build AI agents with ${TOOLKIT_COUNT_LABEL} apps. Connect LLMs to external services like GitHub, Slack, Gmail, and more.`;
 const HOME_OG_IMAGE = getOgImageUrl('docs', [], 'Composio Docs', HOME_OG_DESCRIPTION);
 
 export const metadata: Metadata = {

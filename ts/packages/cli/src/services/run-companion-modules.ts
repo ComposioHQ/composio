@@ -5,6 +5,7 @@
 import * as FileSystem from 'effect/FileSystem';
 import * as Path from 'effect/Path';
 import { Data, Effect, Option, PlatformError, Schema } from 'effect';
+import semver from 'semver';
 import { extractZipSafely } from 'src/utils/extract-zip-safely';
 import { APP_VERSION, IS_RELEASE_BUILD } from 'src/constants';
 import { GitHubRelease } from 'src/effects/resolve-cli-release';
@@ -31,6 +32,10 @@ export const RUN_COMPANION_MODULE_FILENAMES = RUN_COMPANION_MODULE_BASENAMES.map
 
 export const RUN_COMPANION_RELEASE_TAG_FILENAME = 'release-tag.txt';
 
+export const RELEASE_MANIFEST_FILENAME = 'release-manifest.json';
+
+export const RELEASE_MANIFEST_SCHEMA_VERSION = 1;
+
 // Paths the removed `experimental_subAgent` helper used to ship. Release archives
 // keep them as zero-byte files because every stable CLI from 0.2.12 to 0.4.2
 // verifies a downloaded upgrade package against its own copy of this list, by
@@ -54,6 +59,106 @@ export const RUN_COMPANION_LEGACY_PLACEHOLDER_RELATIVE_PATHS: ReadonlyArray<stri
   'acp-adapters/codex/linux-x64/codex-acp',
 ];
 
+const isArchiveRelativePath = (value: string): boolean =>
+  !value.startsWith('/') &&
+  !value.includes('\\') &&
+  !/^[A-Za-z]:/.test(value) &&
+  value.split('/').every(segment => segment !== '' && segment !== '.' && segment !== '..');
+
+const ArchiveRelativePath = Schema.String.check(
+  Schema.makeFilter(isArchiveRelativePath, {
+    expected: 'a relative POSIX path with no empty, "." or ".." segments',
+  })
+);
+
+const isSortedAndUnique = (values: ReadonlyArray<string>): boolean =>
+  values.every((value, index) => index === 0 || values[index - 1]! < value);
+
+/**
+ * What a release archive says it contains, written by packaging as
+ * `release-manifest.json` next to the executable. A client that reads it checks
+ * the download against `companions` instead of the companion names compiled
+ * into itself, so a later archive can drop a file without breaking upgrades.
+ *
+ * Adding a field keeps schema version 1, since decoding ignores unknown keys. A
+ * change an older reader would misread bumps the version, and a client refuses a
+ * version it does not know.
+ */
+export const ReleaseManifest = Schema.Struct({
+  schemaVersion: Schema.Literal(RELEASE_MANIFEST_SCHEMA_VERSION),
+  /** The earliest CLI version that may upgrade to this archive. */
+  minimumUpgradeFrom: Schema.String.check(
+    Schema.makeFilter(value => semver.valid(value) === value, { expected: 'a semver version' })
+  ),
+  companions: Schema.NonEmptyArray(ArchiveRelativePath).check(
+    Schema.makeFilter(isSortedAndUnique, { expected: 'sorted, unique paths' })
+  ),
+});
+export type ReleaseManifest = typeof ReleaseManifest.Type;
+
+const ReleaseManifestVersion = Schema.fromJsonString(
+  Schema.Struct({ schemaVersion: Schema.Unknown })
+);
+const ReleaseManifestFromJson = Schema.fromJsonString(ReleaseManifest);
+
+export class ReleaseManifestError extends Data.TaggedError('services/ReleaseManifestError')<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
+export type ArchiveCompanions = Data.TaggedEnum<{
+  Manifest: { readonly manifest: ReleaseManifest; readonly relativePaths: ReadonlyArray<string> };
+  CompiledNames: { readonly relativePaths: ReadonlyArray<string> };
+}>;
+export const ArchiveCompanions = Data.taggedEnum<ArchiveCompanions>();
+
+const manifestError = (message: string) => (cause: unknown) =>
+  new ReleaseManifestError({ message, cause });
+
+const decodeReleaseManifest = (
+  text: string
+): Effect.Effect<ReleaseManifest, ReleaseManifestError> =>
+  Effect.gen(function* () {
+    const { schemaVersion } = yield* Schema.decodeUnknownEffect(ReleaseManifestVersion)(text).pipe(
+      Effect.mapError(manifestError(`${RELEASE_MANIFEST_FILENAME} is not valid JSON`))
+    );
+    if (schemaVersion !== RELEASE_MANIFEST_SCHEMA_VERSION) {
+      return yield* new ReleaseManifestError({
+        message: `${RELEASE_MANIFEST_FILENAME} has schema version ${String(schemaVersion)}, which this CLI cannot read`,
+      });
+    }
+    return yield* Schema.decodeUnknownEffect(ReleaseManifestFromJson)(text).pipe(
+      Effect.mapError(manifestError(`${RELEASE_MANIFEST_FILENAME} is invalid`))
+    );
+  });
+
+/**
+ * Resolves what the release package extracted at `packageDir` provides. A
+ * manifest that is present but unreadable or invalid fails: the archive is
+ * broken, and guessing from compiled names could install a partial release.
+ */
+export const resolveArchiveCompanions = (
+  packageDir: string
+): Effect.Effect<ArchiveCompanions, ReleaseManifestError, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const manifestText = yield* fs
+      .readFileString(path.join(packageDir, RELEASE_MANIFEST_FILENAME), 'utf8')
+      .pipe(
+        Effect.map(Option.some),
+        Effect.catchReason('PlatformError', 'NotFound', () => Effect.succeed(Option.none())),
+        Effect.mapError(manifestError(`Cannot read ${RELEASE_MANIFEST_FILENAME}`))
+      );
+    if (Option.isNone(manifestText)) {
+      return ArchiveCompanions.CompiledNames({
+        relativePaths: yield* collectExpectedRunCompanionAssetRelativePaths(packageDir),
+      });
+    }
+    const manifest = yield* decodeReleaseManifest(manifestText.value);
+    return ArchiveCompanions.Manifest({ manifest, relativePaths: manifest.companions });
+  });
+
 export class RunCompanionRepairError extends Data.TaggedError('services/RunCompanionRepairError')<{
   readonly message: string;
   readonly cause?: unknown;
@@ -66,6 +171,10 @@ const isImportGraphFile = (relativePath: string) => /\.(?:m?js|ts)$/.test(relati
 
 const fileExists = (fs: FileSystem.FileSystem, filePath: string) =>
   fs.exists(filePath).pipe(Effect.orElseSucceed(() => false));
+
+export const isBunVirtualPath = (filePath: string): boolean =>
+  /^(?:\/?[A-Za-z]:)?[/\\]\$bunfs[/\\]/.test(filePath) ||
+  /^\/?[A-Za-z]:[/\\]~BUN[/\\]/.test(filePath);
 
 const filePathFromUrl = (path: Path.Path, url: string): Effect.Effect<string> =>
   Schema.decodeUnknownEffect(Schema.URLFromString)(url).pipe(
@@ -157,7 +266,7 @@ export const collectExpectedRunCompanionAssetRelativePaths = (
     return [...collected].sort();
   });
 
-const resolveBinaryAssetName = ({
+export const resolveBinaryAssetName = ({
   platform = process.platform,
   arch = process.arch,
 }: {
@@ -173,6 +282,8 @@ const resolveBinaryAssetName = ({
       return 'composio-linux-x64.zip';
     case 'linux-arm64':
       return 'composio-linux-aarch64.zip';
+    case 'win32-x64':
+      return 'composio-windows-x64.zip';
     default:
       return undefined;
   }
@@ -239,6 +350,17 @@ export const resolveRunningCliVersion = (
   isReleaseBuild
     ? Effect.succeed(normalizeCliReleaseVersion(appVersion))
     : resolveInstalledCliVersion(execPath, appVersion);
+
+export const resolveRecordedRunningCliVersion = (
+  execPath: string,
+  appVersion: string,
+  isReleaseBuild = IS_RELEASE_BUILD
+): Effect.Effect<Option.Option<string>, never, FileSystem.FileSystem | Path.Path> =>
+  isReleaseBuild
+    ? Effect.succeed(Option.some(normalizeCliReleaseVersion(appVersion)))
+    : Effect.map(readInstalledReleaseTag(execPath), releaseTag =>
+        Option.map(Option.fromNullishOr(releaseTag), normalizeCliReleaseVersion)
+      );
 
 export const resolveRunningCliReleaseTag = (
   execPath: string,
@@ -428,7 +550,7 @@ export const repairMissingInstalledRunCompanionModules = ({
     const path = yield* Path.Path;
 
     const currentFilePath = yield* filePathFromUrl(path, callerImportMetaUrl);
-    if (!currentFilePath.startsWith('/$bunfs/')) {
+    if (!isBunVirtualPath(currentFilePath)) {
       return { repaired: false as const };
     }
 
@@ -538,10 +660,20 @@ export const repairMissingInstalledRunCompanionModules = ({
         });
 
         const installDirectory = path.dirname(execPath);
-        const companionRelativePaths =
-          yield* collectExpectedRunCompanionAssetRelativePaths(packageDirectory);
+        const archiveCompanions = yield* resolveArchiveCompanions(packageDirectory).pipe(
+          Effect.mapError(
+            error =>
+              new RunCompanionRepairError({
+                message: `Release ${release.tag_name} has a broken ${RELEASE_MANIFEST_FILENAME} (${error.message}); cannot restore the CLI's bundled support files. Reinstall the CLI and try again.`,
+                cause: error,
+              })
+          )
+        );
+        const restoredRelativePaths = ArchiveCompanions.$is('Manifest')(archiveCompanions)
+          ? [...archiveCompanions.relativePaths, RELEASE_MANIFEST_FILENAME]
+          : archiveCompanions.relativePaths;
 
-        for (const relativePath of companionRelativePaths) {
+        for (const relativePath of restoredRelativePaths) {
           const sourcePath = path.join(packageDirectory, relativePath);
           const sourceExists = yield* fileExists(fs, sourcePath);
           if (!sourceExists) {
@@ -608,7 +740,7 @@ export const resolveRunCompanionModulePath = ({
 
     const found = yield* Effect.findFirst(candidates, candidate => fileExists(fs, candidate));
     return Option.getOrElse(found, () =>
-      currentFilePath.startsWith('/$bunfs/')
+      isBunVirtualPath(currentFilePath)
         ? path.resolve(executableDirectory, `${baseName}.mjs`)
         : path.resolve(currentDirectory, `${baseName}.mjs`)
     );

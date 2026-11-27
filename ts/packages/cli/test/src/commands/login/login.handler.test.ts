@@ -28,12 +28,14 @@ import {
   AGENT_WITH_OTHER_FLAGS_MESSAGE,
   ALREADY_LOGGED_IN_MESSAGE,
   INVALID_ORGANIZATION_MESSAGE,
+  invalidTimeoutMessage,
   KEY_AND_USER_API_KEY_MESSAGE,
   KEY_NOT_PENDING_MESSAGE,
   ORG_WITHOUT_USER_API_KEY_MESSAGE,
   OUTDATED_PENDING_LOGIN_MESSAGE,
   POLL_WITH_OTHER_FLAGS_MESSAGE,
   SESSION_NOT_LINKED_MESSAGE,
+  TIMEOUT_WITHOUT_POLL_MESSAGE,
   USER_API_KEY_WITH_SESSION_FLAGS_MESSAGE,
 } from 'src/commands/login/login.format';
 import {
@@ -44,6 +46,7 @@ import {
   LOGIN_PROOF_REJECTED_MESSAGE,
   LOGIN_SESSION_NOT_FOUND_MESSAGE,
 } from 'src/effects/browser-login';
+import { AUTHORIZATION_TIMEOUT_SECONDS } from 'src/effects/authorization-poll';
 import type { RetrievedSession } from 'src/models/session';
 import type { OrganizationSummary } from 'src/services/composio-account';
 import {
@@ -124,6 +127,7 @@ const sessionInfoFor = (scope: MockRequestScope) =>
 const params = (overrides: Partial<LoginParams> = {}): LoginParams => ({
   noBrowser: false,
   poll: false,
+  timeout: Option.none(),
   noWait: false,
   key: Option.none(),
   userApiKey: Option.none(),
@@ -393,6 +397,22 @@ const loginHandlerTest = (fixture: LoginFixture = {}) => {
 
 const stderr = MockConsole.getLines({ stream: 'stderr', stripAnsi: true });
 
+/**
+ * Runs an effect whose context is already provided on the test clock, with a pump fiber that
+ * keeps advancing the clock while it runs: every pump iteration lets the effect reach its next
+ * scheduled sleep, then moves the clock past it. Answers what the effect answered once done.
+ */
+const runWithAdvancingClock = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  Effect.gen(function* () {
+    const run = yield* Effect.forkChild(effect);
+    const pump = yield* Effect.forkChild(
+      Effect.forever(Effect.andThen(Effect.yieldNow, () => TestClock.adjust('10 seconds')))
+    );
+    const result = yield* Fiber.join(run);
+    yield* Fiber.interrupt(pump);
+    return result;
+  });
+
 describe('runLogin', () => {
   // The checks run in a fixed order; each row also proves the earlier checks let it through.
   it.effect.each([
@@ -425,6 +445,18 @@ describe('runLogin', () => {
       flags: { poll: true, agent: true },
       message: POLL_WITH_OTHER_FLAGS_MESSAGE,
       option: '--poll',
+    },
+    {
+      name: '--timeout without --poll',
+      flags: { timeout: Option.some('60') },
+      message: TIMEOUT_WITHOUT_POLL_MESSAGE,
+      option: '--timeout',
+    },
+    {
+      name: '--timeout with --no-browser',
+      flags: { timeout: Option.some('60'), noBrowser: true },
+      message: TIMEOUT_WITHOUT_POLL_MESSAGE,
+      option: '--timeout',
     },
     {
       name: '--agent with --no-wait',
@@ -475,6 +507,38 @@ describe('runLogin', () => {
     }).pipe(Effect.provide(layer));
   });
 
+  // A --timeout the parser accepts is only known to be usable once the poll has something to
+  // wait for, which no cached login here provides.
+  it.effect.each([
+    { name: '0', timeout: '0', outcome: 'is rejected' },
+    { name: '-5', timeout: '-5', outcome: 'is rejected' },
+    { name: '1.5', timeout: '1.5', outcome: 'is rejected' },
+    { name: 'a duration instead of seconds', timeout: '2m', outcome: 'is rejected' },
+    { name: 'empty', timeout: '', outcome: 'is rejected' },
+    { name: 'one more than a pending login lives', timeout: '601', outcome: 'is rejected' },
+    { name: 'one second', timeout: '1', outcome: 'is accepted' },
+    { name: 'the pending login lifetime', timeout: '600', outcome: 'is accepted' },
+  ])('[Given] --poll --timeout $name [Then] it $outcome', ({ timeout, outcome }) => {
+    const accepted = outcome === 'is accepted';
+    const { layer } = loginHandlerTest();
+    return Effect.gen(function* () {
+      const error = yield* Effect.flip(
+        runLogin(params({ poll: true, timeout: Option.some(timeout) }))
+      );
+
+      if (accepted) {
+        expect(error).toMatchObject({ _tag: 'commands/PendingLoginError', reason: 'missing' });
+      } else {
+        expect(error).toMatchObject({
+          _tag: 'commands/CommandInputError',
+          command: 'login',
+          message: invalidTimeoutMessage(AUTHORIZATION_TIMEOUT_SECONDS),
+          option: '--timeout',
+        });
+      }
+    }).pipe(Effect.provide(layer));
+  });
+
   it.effect('[Given] --user-api-key [Then] runs the direct flow, not the browser one', () => {
     const { layer, logins, createdSessions } = loginHandlerTest();
     return Effect.gen(function* () {
@@ -503,7 +567,7 @@ describe('handlePollLogin', () => {
         pending: cachedLogin(),
       });
       return Effect.gen(function* () {
-        yield* handlePollLogin({ noSkillInstall: true });
+        yield* handlePollLogin({ noSkillInstall: true, timeout: Option.none() });
 
         expect(sessionRequests).toEqual([{ id: 'session-key', verifier: VERIFIER }]);
         expect(logins).toEqual([
@@ -531,11 +595,86 @@ describe('handlePollLogin', () => {
   );
 
   it.effect(
+    '[Given] --timeout long enough for the person to finish [Then] completes the login as the default wait does',
+    () => {
+      const { layer, logins, pending } = loginHandlerTest({ pending: cachedLogin() });
+      return Effect.gen(function* () {
+        yield* handlePollLogin({ noSkillInstall: true, timeout: Option.some('60') });
+
+        expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
+        expect(Option.isNone(pending.current())).toBe(true);
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a lookup slower than the whole bound [When] --timeout runs out [Then] reports it still pending without waiting for the answer',
+    () => {
+      // A check in flight is not interrupted by the retry schedule, so without a deadline of its
+      // own the wait would sit on this one answer long past its bound.
+      const { layer, logins, pending } = loginHandlerTest({
+        pending: cachedLogin(),
+        session: Effect.never,
+      });
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          runWithAdvancingClock(
+            handlePollLogin({ noSkillInstall: true, timeout: Option.some('5') })
+          )
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginSessionError',
+          status: 'pending',
+        });
+        expect(error.message).toContain('Login still pending');
+        expect(error.message).toContain('composio login --poll --timeout 5');
+        expect(logins).toEqual([]);
+        expect(pending.current()).toEqual(cachedLogin());
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
+    '[Given] a session that never links [When] the --timeout runs out [Then] reports it still pending, with the URL and the command to run again, and keeps the cached login',
+    () => {
+      const { layer, logins, outputs, sessionRequests, pending } = loginHandlerTest({
+        pending: cachedLogin(),
+        session: Effect.succeed(pendingSession('session-key')),
+      });
+      return Effect.gen(function* () {
+        const error = yield* Effect.flip(
+          runWithAdvancingClock(
+            handlePollLogin({ noSkillInstall: true, timeout: Option.some('5') })
+          )
+        );
+
+        expect(error).toMatchObject({
+          _tag: 'commands/LoginSessionError',
+          status: 'pending',
+        });
+        expect(isUsageFailure(error)).toBe(true);
+        expect(error.message).toContain("Login still pending: session status is 'pending'");
+        expect(error.message).toContain('https://platform.mock.invalid/?cliKey=session-key');
+        expect(error.message).toContain('composio login --poll --timeout 5');
+        // The wait stopped at its own bound instead of running the ten-minute default: with the
+        // clock the pump advances, that default would have checked the session dozens of times.
+        expect(sessionRequests.length).toBeLessThan(10);
+        expect(logins).toEqual([]);
+        expect(outputs).toEqual([]);
+        expect(pending.current()).toEqual(cachedLogin());
+      }).pipe(Effect.provide(layer));
+    }
+  );
+
+  it.effect(
     '[Given] another terminal caches its own login while --poll waits [Then] completes this login and keeps the other one cached',
     () => {
       const { layer, logins, pending } = loginHandlerTest({ pending: cachedLogin() });
       return Effect.gen(function* () {
-        yield* whileAnotherTerminalCaches(handlePollLogin({ noSkillInstall: true }));
+        yield* whileAnotherTerminalCaches(
+          handlePollLogin({ noSkillInstall: true, timeout: Option.none() })
+        );
 
         expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
         expect(pending.current()).toEqual(Option.some(OTHER_LOGIN));
@@ -548,7 +687,7 @@ describe('handlePollLogin', () => {
     () => {
       const { layer } = loginHandlerTest({ pending: cachedLogin() });
       return Effect.gen(function* () {
-        yield* handlePollLogin({ noSkillInstall: true });
+        yield* handlePollLogin({ noSkillInstall: true, timeout: Option.none() });
 
         expect(yield* stderr).toContain('Logged in as cli@example.com (First Org)');
       }).pipe(Effect.provide(layer));
@@ -562,7 +701,9 @@ describe('handlePollLogin', () => {
         pending: cachedLogin({ verifier: undefined }),
       });
       return Effect.gen(function* () {
-        const error = yield* Effect.flip(handlePollLogin({ noSkillInstall: true }));
+        const error = yield* Effect.flip(
+          handlePollLogin({ noSkillInstall: true, timeout: Option.none() })
+        );
 
         expect(error).toMatchObject({
           _tag: 'commands/PendingLoginError',
@@ -631,7 +772,9 @@ describe('handlePollLogin', () => {
         session: Effect.fail(failure),
       });
       return Effect.gen(function* () {
-        const error = yield* whilePolling(Effect.flip(handlePollLogin({ noSkillInstall: true })));
+        const error = yield* whilePolling(
+          Effect.flip(handlePollLogin({ noSkillInstall: true, timeout: Option.none() }))
+        );
 
         expect(error).toMatchObject({ _tag: 'commands/LoginSessionEndedError', reason, message });
         expect(isUsageFailure(error)).toBe(true);
@@ -655,7 +798,7 @@ describe('handlePollLogin', () => {
       );
       const { layer, logins, pending } = loginHandlerTest({ pending: cachedLogin(), session });
       return Effect.gen(function* () {
-        yield* whilePolling(handlePollLogin({ noSkillInstall: true }));
+        yield* whilePolling(handlePollLogin({ noSkillInstall: true, timeout: Option.none() }));
 
         expect(logins.map(login => login.apiKey)).toEqual(['uak_linked']);
         expect(Option.isNone(pending.current())).toBe(true);
@@ -671,15 +814,18 @@ describe('handlePollLogin', () => {
         session: Effect.succeed(pendingSession('session-key')),
       });
       return Effect.gen(function* () {
-        const error = yield* whilePolling(Effect.flip(handlePollLogin({ noSkillInstall: true })));
+        const error = yield* whilePolling(
+          Effect.flip(handlePollLogin({ noSkillInstall: true, timeout: Option.none() }))
+        );
 
         expect(error).toMatchObject({
           _tag: 'commands/LoginSessionEndedError',
           reason: 'expired',
           message: LOGIN_EXPIRED_MESSAGE,
         });
-        // One check at the start and one every five seconds until the ten-minute expiry.
-        expect(sessionRequests).toHaveLength(121);
+        // One check at the start, five more while the interval ramps from 0.3s up to five
+        // seconds, then one every five seconds until the ten-minute expiry.
+        expect(sessionRequests).toHaveLength(124);
         expect(Option.isNone(pending.current())).toBe(true);
         expect(logins).toEqual([]);
       }).pipe(Effect.provide(layer));
@@ -701,14 +847,16 @@ describe('handlePollLogin', () => {
         session: Effect.fail(connectionError),
       });
       return Effect.gen(function* () {
-        const error = yield* whilePolling(Effect.flip(handlePollLogin({ noSkillInstall: true })));
+        const error = yield* whilePolling(
+          Effect.flip(handlePollLogin({ noSkillInstall: true, timeout: Option.none() }))
+        );
 
         expect(error).toMatchObject({
           _tag: 'commands/LoginSessionRequestError',
           cause: connectionError,
         });
         expect(isUsageFailure(error)).toBe(false);
-        expect(sessionRequests).toHaveLength(121);
+        expect(sessionRequests).toHaveLength(124);
         expect(Option.isSome(pending.current())).toBe(true);
         expect(logins).toEqual([]);
       }).pipe(Effect.provide(layer));

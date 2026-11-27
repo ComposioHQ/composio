@@ -505,6 +505,7 @@ export class Toolkits {
    *
    * @example
    * ```typescript
+   * const userId = 'user_123';
    * const connectionRequest = await composio.toolkits.authorize(userId, 'github');
    * ```
    *

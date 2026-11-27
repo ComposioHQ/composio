@@ -1,17 +1,21 @@
 from .auth_configs import AuthConfigs
 from .connected_accounts import ConnectedAccounts
-from .custom_tool import ExperimentalToolkit
+from .custom_tool import ExperimentalToolkit, LocalToolkit
 from .custom_tool_types import (
     CustomTool,
+    LocalTool,
     ProxyExecuteBinaryData,
     RegisteredCustomTool,
     RegisteredCustomToolkit,
+    RegisteredLocalTool,
+    RegisteredLocalToolkit,
     SessionContext,
     ToolRouterSessionProxyExecuteBlocked,
     ToolRouterSessionProxyExecuteCompleted,
     ToolRouterSessionProxyExecuteResponse,
 )
 from .experimental import (
+    CustomToolkits,
     ExperimentalAPI,
     ExperimentalCustomToolkits,
     ExperimentalUsage,
@@ -20,6 +24,15 @@ from .experimental import (
 from .keyring import Keyring
 from .logs import Logs
 from .mcp import MCP
+from .session_webhooks import (
+    SessionWebhookAfterExecuteEvent,
+    SessionWebhookAfterExecuteResponse,
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+    SessionWebhookEvent,
+    SessionWebhookEventType,
+    SessionWebhooks,
+)
 from .tool_router import ToolRouter
 from .tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .tool_router_session import (
@@ -58,10 +71,13 @@ __all__ = [
     "ConnectionState",
     "ConnectionStatusEnum",
     "CustomTool",
+    "CustomToolkits",
     "ExperimentalAPI",
     "ExperimentalCustomToolkits",
     "ExperimentalToolkit",
     "ExperimentalUsage",
+    "LocalTool",
+    "LocalToolkit",
     "UsageSummaryResponse",
     "Keyring",
     "Logs",
@@ -69,9 +85,18 @@ __all__ = [
     "ProxyExecuteBinaryData",
     "RegisteredCustomTool",
     "RegisteredCustomToolkit",
+    "RegisteredLocalTool",
+    "RegisteredLocalToolkit",
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",
+    "SessionWebhookAfterExecuteEvent",
+    "SessionWebhookAfterExecuteResponse",
+    "SessionWebhookBeforeExecuteEvent",
+    "SessionWebhookBeforeExecuteResponse",
+    "SessionWebhookEvent",
+    "SessionWebhookEventType",
+    "SessionWebhooks",
     "SingleConnectedAccountDetailedResponse",
     "ToolRouter",
     "ToolRouterSession",

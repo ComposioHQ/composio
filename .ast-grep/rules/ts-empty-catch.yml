@@ -1,0 +1,28 @@
+id: ts-empty-catch
+language: Tsx
+severity: error
+message: Handle or propagate the error; an empty catch silently discards it.
+files: ['ts/packages/**', 'ts/scripts/**', 'scripts/**', '.github/scripts/**']
+ignores:
+  - '**/node_modules/**'
+  - '**/dist/**'
+  - '**/generated/**'
+  - '**/.generated/**'
+  - '**/pack/**'
+  - '**/*.d.ts'
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - '**/__tests__/**'
+  - '**/test/**'
+  - '**/tests/**'
+rule:
+  any:
+    - pattern:
+        context: 'try {} catch {}'
+        selector: catch_clause
+    - pattern:
+        context: 'try {} catch ($ERROR) {}'
+        selector: catch_clause
+    - pattern:
+        context: 'try {} catch ($ERROR: $TYPE) {}'
+        selector: catch_clause

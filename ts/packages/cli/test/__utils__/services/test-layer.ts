@@ -72,7 +72,7 @@ import type {
   SessionSearchParams,
   SessionToolkitsParams,
 } from '@composio/client/resources/tool-router';
-import { Stdin } from 'src/services/stdin';
+import { makeStreamStdin, Stdin } from 'src/services/stdin';
 import { ProjectContext } from 'src/services/project-context';
 import { ProjectEnvironmentDetector } from 'src/services/project-environment-detector';
 import type { CommandRunnerShape } from 'src/services/command-runner';
@@ -186,6 +186,11 @@ export interface TestLiveInput {
   stdin?: {
     isTTY: boolean;
     data: string;
+    /**
+     * Reads this stream with the real stdin reader instead of returning `data`: a `PassThrough`
+     * the test writes to (or leaves open, like an agent harness can) when timing matters.
+     */
+    stream?: NodeJS.ReadableStream;
   };
 
   /**
@@ -336,7 +341,7 @@ export const TestLayer = (input?: TestLiveInput) =>
       ComposioToolkitsRepository.of({
         ...toolkitCatalogMethods(toolkitsData),
         ...connectedAccountRepositoryMethods(authConfigsData, connectedAccountsData),
-        listActiveTriggers: (params: TriggerInstanceListActiveParams) => {
+        listActiveTriggers: (_scope, params: TriggerInstanceListActiveParams) => {
           let results = [...triggersData.items];
 
           const userIds = params.user_ids;
@@ -384,7 +389,7 @@ export const TestLayer = (input?: TestLiveInput) =>
             next_cursor: null,
           });
         },
-        createTrigger: (triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
+        createTrigger: (_scope, triggerSlug: string, params?: TriggerInstanceUpsertParams) =>
           Effect.succeed({
             trigger_id: `trg_${triggerSlug.toLowerCase()}_${params?.connected_account_id ?? 'new'}`,
             type: 'webhook' as const,
@@ -484,15 +489,18 @@ export const TestLayer = (input?: TestLiveInput) =>
 
     const UpgradeBinaryTest = Layer.provide(
       UpgradeBinary.Default,
-      Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer)
+      Layer.mergeAll(BunFileSystem.layer, FetchHttpClient.layer, NodeOsTest)
     );
 
     const StdinTest = Layer.succeed(
       Stdin,
-      Stdin.of({
-        isTTY: () => input?.stdin?.isTTY ?? true,
-        readAll: () => Effect.succeed(input?.stdin?.data ?? ''),
-      })
+      input?.stdin?.stream === undefined
+        ? Stdin.of({
+            isTTY: () => input?.stdin?.isTTY ?? true,
+            readAll: () => Effect.succeed(input?.stdin?.data ?? ''),
+            readAllUnlessSilent: () => Effect.succeed(Option.some(input?.stdin?.data ?? '')),
+          })
+        : makeStreamStdin(input.stdin.stream, () => input.stdin?.isTTY ?? true)
     );
 
     // --- Tool Router mock (ComposioClientSingleton) ---

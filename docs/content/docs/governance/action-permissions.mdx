@@ -1,0 +1,150 @@
+---
+title: Per-action permissions
+description: Restrict which tools an agent can run in each session, and see where Composio enforces that policy
+keywords: [per-action permissions, action-level authorization, least privilege, restrict tools per session, tool allowlist, tool denylist, permissions, governance, authorization]
+---
+
+A connected account holds a user's credentials for an app. A session decides which actions an agent can take with those credentials. You set the session's policy with toolkit, tool, and [hint](/docs/governance/tool-hints) filters, and the Composio backend checks it on every Composio tool call made through the session. A tool the policy blocks never reaches the app's API. [Local tools](/docs/extending-sessions/local-tools-and-toolkits) run in your own process and need their own checks.
+
+Permissions in Composio sit at four layers. Each one answers a different question:
+
+| Layer | Controls | Where you set it |
+| --- | --- | --- |
+| [OAuth scopes](/docs/authentication/controlling-scopes) | What the app's API lets the credentials do | Auth config |
+| Connected account ownership | Whose credentials a call uses | `user_id` on the session or execution |
+| Session tool policy | Which toolkits and tools the agent can run | `toolkits`, `tools`, and `tags` on the session |
+| [Approvals](/docs/governance/approvals) and [Firewall](/docs/firewall) | Whether a person or a check signs off on a specific call (both experimental) | `require_approval` and `hooks` on the session |
+
+Scopes are the only layer the app itself enforces. The other three run in Composio before the request goes out.
+
+## Allow one tool, deny the rest
+
+This example uses Hacker News, which needs no connected account, so you can run it with only an API key. The session allows `HACKERNEWS_GET_USER` and nothing else from the toolkit.
+
+<Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
+<Tab value="Python">
+```python
+from composio import Composio
+from composio_client import BadRequestError
+
+composio = Composio()
+
+session = composio.create(
+    user_id="user_123",
+    toolkits=["hackernews"],
+    tools={"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}},
+)
+
+allowed = session.execute("HACKERNEWS_GET_USER", arguments={"username": "pg"})
+print(allowed.result_type)  # completed
+
+try:
+    session.execute("HACKERNEWS_GET_LATEST_POSTS", arguments={})
+except BadRequestError as error:
+    print(error.message)
+    # 400 [Session Restriction] Tool 'HACKERNEWS_GET_LATEST_POSTS' is not enabled for this session. ...
+```
+</Tab>
+<Tab value="TypeScript">
+```typescript
+import { Composio, ComposioToolExecutionError } from '@composio/core';
+
+const composio = new Composio();
+
+const session = await composio.create('user_123', {
+  toolkits: ['hackernews'],
+  tools: { hackernews: { enable: ['HACKERNEWS_GET_USER'] } },
+});
+
+const allowed = await session.execute('HACKERNEWS_GET_USER', { username: 'pg' });
+console.log(allowed.resultType); // completed
+
+try {
+  await session.execute('HACKERNEWS_GET_LATEST_POSTS', {});
+} catch (error) {
+  if (!(error instanceof ComposioToolExecutionError)) throw error;
+  console.log(error.statusCode, error.apiErrorCode); // 400 4310
+}
+```
+</Tab>
+<Tab value="API">
+```bash
+SESSION_ID=$(curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user_123",
+    "toolkits": {"enable": ["hackernews"]},
+    "tools": {"hackernews": {"enable": ["HACKERNEWS_GET_USER"]}}
+  }' | jq -r '.session_id')
+
+# Allowed: returns the user's profile
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool_slug": "HACKERNEWS_GET_USER", "arguments": {"username": "pg"}}'
+
+# Denied: HTTP 400 before any request reaches Hacker News
+curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_ID/execute \
+  -H "x-api-key: $COMPOSIO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool_slug": "HACKERNEWS_GET_LATEST_POSTS", "arguments": {}}'
+```
+
+The denied call returns:
+
+```json
+{
+  "error": {
+    "message": "[Session Restriction] Tool 'HACKERNEWS_GET_LATEST_POSTS' is not enabled for this session. You cannot execute this tool.",
+    "code": 4310,
+    "slug": "ToolRouterV2_ToolNotInEnabledList",
+    "status": 400
+  }
+}
+```
+</Tab>
+</Tabs>
+
+The same policy shape works with `disable` lists, toolkit allowlists, and hint filters such as `tags: { disable: ["destructiveHint"] }`. See [Configuring sessions](/docs/sessions/tool-access#enabling-or-disabling-specific-tools) for every option. If you change the policy with `session.update()`, the next call follows the new policy.
+
+## Where the session policy applies
+
+We checked each path below against a test project with an allowed and a blocked tool. For apps that need credentials, we used a connection with a deliberately invalid key: an allowed call came back with the app's own "invalid API key" error, so it reached the app, and a blocked call came back with a Composio error, so it never left Composio.
+
+| Path | Blocked tool |
+| --- | --- |
+| `session.execute()` and `POST /tool_router/session/{id}/execute` | Rejected with a session restriction error |
+| `COMPOSIO_MULTI_EXECUTE_TOOL` | That tool's result carries the session restriction error. Allowed tools in the same batch still run |
+| `run_composio_tool()` inside the [sandbox](/docs/sandbox/remote) | Rejected with the same error. Sandbox credentials only work for their own session: calls to the direct execution endpoint or to another session's endpoints return `401` |
+| Session MCP URL | Not listed in `tools/list`, so a direct `tools/call` returns `Tool ... not found`. Through `COMPOSIO_MULTI_EXECUTE_TOOL`, it returns the session restriction error |
+| `COMPOSIO_SEARCH_TOOLS` | Left out of results. The response tells the agent the tool is restricted |
+| `session.proxyExecute()` and `COMPOSIO_PROXY_EXECUTE` | Refused with `403` for any toolkit that has a tool allowlist, denylist, or applicable hint filter, so the proxy can't be used to reach an endpoint whose tool you blocked |
+| Tools that need approval | Return `input_required` and don't run until the person answers. Two exceptions: over MCP, a client without elicitation support runs them without asking if you set `no_elicitation_support_fallback` to `"allow"`, and a sandbox script can call a tool the approval check misses. If approval must never be skipped, [disable the sandbox](/docs/sessions/sandbox-settings#disabling-the-sandbox). See [Approvals](/docs/governance/approvals) |
+
+Ownership is checked on both session and direct execution. A session can't be pinned to another user's connected account (`4306`), and a direct execution with a `connected_account_id` that belongs to a different `user_id` fails (`1812`). Which Composio `user_id` a request maps to is still your application's decision. See [Building B2B agents](/docs/b2b-agents) for shared and workspace-owned connections.
+
+## What the session policy does not cover
+
+These limits are current behavior. Plan around them.
+
+- **Direct execution has no session policy.** `composio.tools.execute()` and `POST /api/v3/tools/execute/{tool_slug}` run any tool in the project for the user's connected account. Your backend decides which tools to call on this path. Give agents a session instead of direct execution when you want Composio to enforce a tool policy.
+- **Proxy calls on an unfiltered toolkit can reach any endpoint on its domain.** In a session, a toolkit with no tool or hint filters allows proxy calls to any endpoint on that toolkit's API domain. The legacy `POST /api/v3/tools/execute/proxy` takes a connected account ID and never checks a session policy. Use [OAuth scopes](/docs/authentication/controlling-scopes) to bound what the credentials can do at the app.
+- **Auth config tool lists don't block execution.** The deprecated `tool_access_config.tools_available_for_execution` and `restrict_to_following_tools` fields are saved and returned, but tools outside them still run on direct and session execution. Set scopes on the auth config and tool filters on the session instead.
+- **Local tools run in your process.** SDK [local tools and toolkits](/docs/extending-sessions/local-tools-and-toolkits) run in your application when `session.execute()` calls them, without a backend policy check. Put permission checks in their handlers.
+- **Scoped API keys gate endpoints, not tools.** [Project API key permissions](/reference/authenticating-to-composio/project-api-key-permissions) decide whether a key can manage sessions, execute tools, or use the proxy. They don't pick individual tools.
+
+## Error codes
+
+| Code | Slug | Cause |
+| --- | --- | --- |
+| `4310` | `ToolRouterV2_ToolNotInEnabledList` | The tool isn't in the toolkit's `enable` list |
+| `4311` | `ToolRouterV2_ToolDisabledInSession` | The tool is in the toolkit's `disable` list |
+| `4324` | `ToolRouterV2_ToolkitNotAllowed` | The toolkit isn't in the session's toolkit allowlist |
+| `4325` | `ToolRouterV2_ToolkitDisabled` | The toolkit is in the session's toolkit denylist |
+| `4328` | `ToolRouterV2_ToolTagNotAllowed` | A hint filter blocks the tool |
+| `4327` | `ToolRouterV2_ProxyExecutionDisabled` | Proxy call to a toolkit that has tool or hint filters |
+| `4306` | `ToolRouterV2_InvalidConnectedAccountIds` | The session names a connected account that belongs to another user |
+| `1812` | `ActionExecute_ConnectedAccountEntityIdMismatch` | Direct execution with a connected account that belongs to another user |
+
+In TypeScript, read the code from `error.apiErrorCode` on `ComposioToolExecutionError`. In Python, `session.execute()` raises `composio_client.BadRequestError` with `status_code` `400`.

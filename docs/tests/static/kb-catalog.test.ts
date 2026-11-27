@@ -44,12 +44,6 @@ This is the second safe answer.
 function manifest(overrides: Partial<KbManifest['guides'][number]> = {}): KbManifest {
   return {
     schemaVersion: 2,
-    source: {
-      repository: 'ComposioHQ/example-knowledge',
-      commit: '5eed614',
-      capturedAt: '2026-07-21',
-      contentHash: 'sha256:fixture',
-    },
     topics: [
       {
         slug: 'platform',
@@ -399,14 +393,30 @@ This is the second safe answer.`);
       }
     }
     const heldGuides = getKbCatalog().guides.filter(guide => guide.state === 'needs-review');
-    // Reconciled support-knowledge contains only reviewed public leaves, so the
+    // The published snapshot contains only reviewed public leaves, so the
     // imported snapshot should not create downstream editorial holds.
     expect(heldGuides).toHaveLength(0);
   });
 
-  test('rejects an expired published review window', () => {
+  test('keeps an evergreen guide published after its review deadline without extending it', () => {
+    const catalog = buildKbCatalog(
+      manifest({ reviewAfter: '2026-07-22' }),
+      () => source,
+      new Date('2026-07-23')
+    );
+
+    expect(getPublishedKbGuides(catalog).map(guide => guide.slug)).toEqual(['stable-answer']);
+    expect(catalog.guides[0]?.reviewAfter).toBe('2026-07-22');
+    expect(catalog.guides[0]?.lastVerifiedAt).toBe('2026-07-21');
+  });
+
+  test('rejects an expired published time-sensitive review window', () => {
     expect(() =>
-      buildKbCatalog(manifest({ reviewAfter: '2026-07-20' }), () => source, new Date('2026-07-21'))
+      buildKbCatalog(
+        manifest({ freshness: 'time-sensitive', reviewAfter: '2026-07-20' }),
+        () => source,
+        new Date('2026-07-21')
+      )
     ).toThrow('review window expired');
   });
 

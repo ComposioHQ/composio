@@ -171,6 +171,8 @@ export class ConnectedAccounts {
    *
    * @example
    * ```typescript
+   * import { AuthScheme } from '@composio/core';
+   *
    * // For OAuth2 authentication
    * const connectionRequest = await composio.connectedAccounts.initiate(
    *   'user_123',
@@ -183,17 +185,27 @@ export class ConnectedAccounts {
    *     })
    *   }
    * );
+   * ```
+   *
+   * @example
+   * ```typescript
+   * import { AuthScheme } from '@composio/core';
    *
    * // For API Key authentication
    * const connectionRequest = await composio.connectedAccounts.initiate(
    *   'user_123',
    *   'auth_config_123',
    *   {
-   *     config: AuthScheme.ApiKey({
+   *     config: AuthScheme.APIKey({
    *       api_key: 'your_api_key'
    *     })
    *   }
    * );
+   * ```
+   *
+   * @example
+   * ```typescript
+   * import { AuthScheme } from '@composio/core';
    *
    * // For Basic authentication
    * const connectionRequest = await composio.connectedAccounts.initiate(
@@ -456,8 +468,8 @@ export class ConnectedAccounts {
   /**
    * Waits for a connection request to complete and become active.
    *
-   * This method continuously polls the Composio API to check the status of a connection
-   * until it either becomes active, enters a terminal error state, or times out.
+   * This method polls the Composio API, backing off from 1 second to 5 seconds between polls,
+   * to check the status of a connection until it either becomes active, enters a terminal error state, or times out.
    *
    * @param {string} connectedAccountId - The ID of the connected account to wait for
    * @param {number} [timeout=60000] - Maximum time to wait in milliseconds (default: 60 seconds)
@@ -470,7 +482,10 @@ export class ConnectedAccounts {
    * ```typescript
    * // Wait for a connection to complete with default timeout
    * const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_123abc');
+   * ```
    *
+   * @example
+   * ```typescript
    * // Wait with a custom timeout of 2 minutes
    * const connectedAccount = await composio.connectedAccounts.waitForConnection('conn_123abc', 120000);
    * ```
@@ -658,11 +673,16 @@ export class ConnectedAccounts {
    *
    * @example
    * ```typescript
-   * // In your verifier route, after authenticating the user:
-   * const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
-   *   userId: 'user_123',
-   *   sessionUri, // the session URI from the verifier redirect
-   * });
+   * // Your verifier route, after authenticating the user
+   * export async function GET(request: Request) {
+   *   // The session URI arrives as the `session_uri` query parameter of the verifier redirect
+   *   const sessionUri = new URL(request.url).searchParams.get('session_uri') ?? '';
+   *   const { connectedAccountId, toolkitSlug } = await composio.connectedAccounts.completeAuth({
+   *     userId: 'user_123',
+   *     sessionUri,
+   *   });
+   *   return new Response(`Connected ${toolkitSlug}: ${connectedAccountId}`);
+   * }
    * ```
    */
   async completeAuth(
@@ -702,10 +722,9 @@ export class ConnectedAccounts {
    *   enabled: true
    * });
    *
-   * // Disable a connected account with a reason
+   * // Disable a connected account
    * const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
-   *   enabled: false,
-   *   reason: 'Token expired'
+   *   enabled: false
    * });
    * ```
    */
@@ -729,7 +748,7 @@ export class ConnectedAccounts {
    * ```typescript
    * // Enable a previously disabled connected account
    * const enabledAccount = await composio.connectedAccounts.enable('conn_abc123');
-   * console.log(enabledAccount.isDisabled); // false
+   * console.log(enabledAccount.success); // true
    * ```
    */
   async enable(
@@ -751,13 +770,7 @@ export class ConnectedAccounts {
    * ```typescript
    * // Disable a connected account
    * const disabledAccount = await composio.connectedAccounts.disable('conn_abc123');
-   * console.log(disabledAccount.isDisabled); // true
-   *
-   * // You can also use updateStatus with a reason
-   * // const disabledAccount = await composio.connectedAccounts.updateStatus('conn_abc123', {
-   * //   enabled: false,
-   * //   reason: 'No longer needed'
-   * // });
+   * console.log(disabledAccount.success); // true
    * ```
    */
   async disable(

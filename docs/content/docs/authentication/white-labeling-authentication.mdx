@@ -62,7 +62,7 @@ Set `COMPOSIO_API_KEY` in your server environment; the API option also requires 
 Use [your own OAuth app](#using-your-own-oauth-apps) to change the provider consent-screen identity in either mode. Use an application `callbackUrl` to return to your product after authentication. If you don't want the hosted connection page, follow [Build an app-owned connection UI](#build-an-app-owned-connection-ui).
 
 <Callout type="warn" title="Branding is not domain replacement">
-Connect Link branding doesn't change its `connect.composio.dev` host. A custom OAuth app doesn't remove provider domains or Composio's callback domain. The setup below doesn't provide a CNAME or a self-hosted Connect Link.
+In Composio Cloud, Connect Link branding doesn't change its `connect.composio.dev` host. A custom OAuth app doesn't remove provider domains or Composio's callback domain. The setup below doesn't provide a CNAME or a self-hosted Connect Link. In a BYOC deployment, you use your own OAuth apps, and the redirect URI uses your deployment's hostname. See [Use your own OAuth apps](/docs/deployment/byoc#use-your-own-oauth-apps).
 </Callout>
 
 ## Customizing the Connect Link
@@ -110,6 +110,7 @@ The Connect Link shows English by default. To show it in your user's language, a
 |----------|----------------|
 | English | `en` (default) |
 | Spanish | `es` |
+| French | `fr` |
 | Simplified Chinese | `zh-CN` |
 
 Use these values exactly as written. Any other value, including variants such as `es-MX` or `zh-cn`, shows English. The language stays the same for the whole flow, including the success or failure screen after the user returns from the OAuth provider.
@@ -240,11 +241,8 @@ Set `COMPOSIO_API_KEY` in your server environment. Persist `request.id` with the
 
 ### Switching from Composio-managed to your own OAuth app
 
-Existing connected accounts are tied to the auth config they were created with. Switching to a custom auth config affects new connections for that toolkit; existing users keep using their current connected accounts until they re-authenticate or you import/migrate their credentials.
-
-- To use the custom config for new connections, pass `authConfigs` when creating or updating the session.
-- Existing connections continue refreshing with their original auth config.
-- To fully migrate an existing user, delete the old connected account and have them re-authenticate with the new auth config, or import their credentials into the new config where supported.
+Existing connected accounts stay on the auth config they were created with, and tokens issued to Composio's app can't move to yours, so existing users reconnect.
+Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app) to run both configs side by side, reconnect users, and recreate their triggers.
 
 ## Build an app-owned connection UI
 

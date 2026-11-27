@@ -137,8 +137,8 @@ async def run_test(prompt, test_name):
         toolkits=["gmail", "weathermap"],
         manage_connections=True,
         experimental={
-            "custom_tools": [get_user, greet, create_draft],
-            "custom_toolkits": [role_manager],
+            "local_tools": [get_user, greet, create_draft],
+            "local_toolkits": [role_manager],
         },
     )
     tools = session.tools()

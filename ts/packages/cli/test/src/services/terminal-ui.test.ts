@@ -4,13 +4,15 @@ import { beforeEach, vi } from 'vitest';
 import * as p from '@clack/prompts';
 import { CANCEL_SYMBOL } from '@clack/core';
 import stringWidth from 'fast-string-width';
-import { Data, Effect } from 'effect';
+import { assert } from '@effect/vitest';
+import { Cause, Data, Effect, Exit, Fiber } from 'effect';
 import {
   clampSpinnerMessage,
   getTerminalCapabilities,
   makeTerminalUI,
   TerminalUI,
 } from 'src/services/terminal-ui';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { TestLive, MockConsole } from 'test/__utils__';
 
 vi.mock('@clack/prompts', async importOriginal => {
@@ -185,6 +187,129 @@ describe('TerminalUI', () => {
     );
   });
 
+  describe('a stdout write that fails', () => {
+    /**
+     * A redirected stdout whose every write fails with `code`, as the OS reports it. An `error`
+     * event nothing listens to, which would crash the process, is recorded in `unhandled`.
+     */
+    const failingStdout = (code: string) => {
+      const attempts: string[] = [];
+      const unhandled: unknown[] = [];
+      const sink = new Writable({
+        write(chunk, _encoding, callback) {
+          attempts.push(String(chunk));
+          callback(Object.assign(new Error(`${code}: write failed`), { code }));
+        },
+      });
+      const emit = sink.emit.bind(sink);
+      sink.emit = ((event: string | symbol, ...args: unknown[]) => {
+        if (event === 'error' && sink.listenerCount('error') === 0) {
+          unhandled.push(args[0]);
+          return false;
+        }
+        return emit(event, ...args);
+      }) as typeof sink.emit;
+      return Object.assign(sink, { isTTY: false, attempts, unhandled });
+    };
+
+    /** Lets the stream emit what it deferred to the next turn of the event loop. */
+    const settle = Effect.promise(() => new Promise<void>(resolve => setImmediate(resolve)));
+
+    it.effect('drops the data once the reader closed stdout (EPIPE), and the command goes on', () =>
+      Effect.gen(function* () {
+        const stdout = failingStdout('EPIPE');
+        const ui = makeTerminalUI({ stdin: { isTTY: false }, stdout, stderr: makeSink(false) });
+
+        yield* ui.output('{"first":true}');
+        yield* ui.output('{"second":true}');
+
+        yield* settle;
+
+        // Nothing more can reach a reader that went away, and its error does not crash the CLI.
+        expect(stdout.attempts).toEqual(['{"first":true}\n']);
+        expect(stdout.unhandled).toEqual([]);
+      })
+    );
+
+    it.effect('completes stdoutClosed once the reader closed stdout (EPIPE)', () =>
+      Effect.gen(function* () {
+        const ui = makeTerminalUI({
+          stdin: { isTTY: false },
+          stdout: failingStdout('EPIPE'),
+          stderr: makeSink(false),
+        });
+        const closed = yield* Effect.forkChild(ui.stdoutClosed);
+        yield* Effect.yieldNow;
+        expect(closed.pollUnsafe()).toBeUndefined();
+
+        yield* ui.output('{"first":true}');
+
+        expect(Exit.isSuccess(yield* Fiber.await(closed))).toBe(true);
+      })
+    );
+
+    it.effect('leaves stdoutClosed pending while the reader takes the data', () =>
+      Effect.gen(function* () {
+        const ui = makeTerminalUI({
+          stdin: { isTTY: false },
+          stdout: makeSink(false),
+          stderr: makeSink(false),
+        });
+        const closed = yield* Effect.forkChild(ui.stdoutClosed);
+
+        yield* ui.output('{"first":true}');
+        yield* settle;
+
+        expect(closed.pollUnsafe()).toBeUndefined();
+        yield* Fiber.interrupt(closed);
+      })
+    );
+
+    it.effect('is a defect for any other failure', () =>
+      Effect.gen(function* () {
+        const stdout = failingStdout('EIO');
+        const ui = makeTerminalUI({ stdin: { isTTY: false }, stdout, stderr: makeSink(false) });
+
+        const exit = yield* Effect.exit(ui.output('{"machine":"data"}'));
+
+        assert(Exit.isFailure(exit));
+        expect(Cause.hasDies(exit.cause)).toBe(true);
+        expect(Cause.squash(exit.cause)).toMatchObject({ code: 'EIO' });
+      })
+    );
+  });
+
+  describe('escaping external text for display', () => {
+    // Formatting fixtures: standalone controls at each range edge, CR/LF and a tab.
+    const controls = '\u0000 \u0007 \u001f \u007f \u0080 \u0085 \u009f';
+
+    it('escapes C0, DEL and C1 controls as JSON-style escapes on one line', () => {
+      expect(escapeTerminalText(`a${controls}b`)).toBe(
+        'a\\u0000 \\u0007 \\u001f \\u007f \\u0080 \\u0085 \\u009fb'
+      );
+      expect(escapeTerminalText('one\r\ntwo\tthree')).toBe('one\\u000d\\u000atwo\\u0009three');
+    });
+
+    it('keeps printable text, backslashes, combining marks and astral characters', () => {
+      const printable = 'plain C:\\temp \\u0007 e\u0301 \u{1f600} \u00a0 \u00e9';
+      expect(escapeTerminalText(printable)).toBe(printable);
+      expect(escapeTerminalLines(printable)).toBe(printable);
+    });
+
+    it('keeps LF and TAB in multiline text, folds CRLF and escapes a lone CR', () => {
+      expect(escapeTerminalLines('one\r\ntwo\tcol\rthree\n\u0007')).toBe(
+        'one\ntwo\tcol\\u000dthree\n\\u0007'
+      );
+    });
+
+    it('keeps serialized JSON decodable to the same value', () => {
+      const value = { 'key\u0085': 'v\u007f\u0007', lines: 'a\r\nb', nested: [{ c: '\u0086' }] };
+      const shown = escapeTerminalLines(JSON.stringify(value, null, 2));
+      expect(shown).not.toMatch(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/u);
+      expect(JSON.parse(shown)).toEqual(value);
+    });
+  });
+
   describe('clampSpinnerMessage keeps live spinner messages on one terminal row', () => {
     it('leaves a message that fits untouched', () => {
       expect(clampSpinnerMessage(80, 'Checking for updates')).toBe('Checking for updates');
@@ -221,7 +346,7 @@ describe('TerminalUI', () => {
     it('measures and truncates whole grapheme clusters', () => {
       const keycap = '1\uFE0F\u20E3';
       expect(stringWidth(keycap)).toBe(2);
-      expect([...keycap].reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
+      expect(Array.from(keycap).reduce((width, char) => width + stringWidth(char), 0)).toBe(1);
 
       const clamped = clampSpinnerMessage(20, keycap.repeat(20));
       expect(clamped).toMatch(/^(?:1\uFE0F\u20E3)*…$/u);

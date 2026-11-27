@@ -15,7 +15,8 @@ const openapiV3Path = join(process.cwd(), 'public/openapi-v3.json');
 // v3.1 (latest) — clean operationIds, default API reference.
 // The webhook-events spec (openapi-webhooks.json) is a separate OpenAPI 3.1
 // document whose top-level `webhooks` block documents the payloads Composio
-// delivers to customer webhook URLs; it renders under the "Webhook Events" tag.
+// delivers to customer webhook URLs; each of its tags (e.g. "Webhook Events")
+// renders as its own section.
 export const openapi = createOpenAPI({
   input: {
     [openapiPath]: () => loadOpenAPISchema(openapiPath),

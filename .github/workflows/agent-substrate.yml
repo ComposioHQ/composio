@@ -34,6 +34,30 @@ permissions:
   contents: read
 
 jobs:
+  antislop:
+    name: Anti-slop (TypeScript, Python, YAML)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js, pnpm, Bun
+        uses: ./.github/actions/setup-node-pnpm-bun
+        with:
+          cache-save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/next' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Test anti-slop rules and enforcement
+        run: pnpm test:antislop
+
+      - name: Typecheck Effect lint rules
+        run: pnpm typecheck:effect-rules
+
+      - name: Reject new anti-slop findings
+        run: pnpm lint:antislop
+
   validate:
     name: Validate agent guidance
     runs-on: ubuntu-latest
@@ -59,8 +83,55 @@ jobs:
       - name: Validate skill routing
         run: bun run validate:skill-routing
 
+      - name: Decide whether CLI skill certification needs full CLI checks
+        id: cli-skills-scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$EVENT_NAME" != pull_request ]]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          inputs=(
+            'ts/packages/cli/**'
+            'ts/packages/cli-keyring/**'
+            'ts/packages/json-schema-to-effect-schema/**'
+            'ts/scripts/check-cli-skills.ts'
+            'test/cli-skills.test.ts'
+            '.agents/skills/cli-command/**'
+            '.agents/skills/effect-v4/**'
+            '.agents/skills/typescript-testing/**'
+            '.github/workflows/agent-substrate.yml'
+            '.github/actions/setup-node-pnpm-bun/action.yml'
+            'package.json'
+            'pnpm-lock.yaml'
+            'pnpm-workspace.yaml'
+            'patches/**'
+            'mise.toml'
+            'mise.lock'
+            'turbo.jsonc'
+          )
+          if [[ -z "$PR_BASE_SHA" ]] || ! git fetch --no-tags --depth=1 origin "$PR_BASE_SHA"; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git diff --quiet "$PR_BASE_SHA" HEAD -- "${inputs[@]/#/:(glob)}"; then
+            echo "No CLI or CLI-skill input changed; running excerpts-only check."
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Certify CLI skill examples and invocation contracts
-        run: bun run validate:cli-skills
+        env:
+          FULL_CLI_CHECKS: ${{ steps.cli-skills-scope.outputs.full }}
+        run: |
+          if [[ "$FULL_CLI_CHECKS" == "true" ]]; then
+            bun run validate:cli-skills
+          else
+            bun test test/cli-skills.test.ts && bun ts/scripts/check-cli-skills.ts --excerpts-only
+          fi
 
       - name: Typecheck agent tooling
         run: bun run typecheck:agent-workflow
@@ -70,3 +141,6 @@ jobs:
 
       - name: Verify issue triage security boundary
         run: pnpm test:issue-triage
+
+      - name: Verify API client dependency reconciliation
+        run: bun test test/composio-client-update.test.ts

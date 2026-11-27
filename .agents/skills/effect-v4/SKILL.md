@@ -48,8 +48,8 @@ when an excerpt or explanation disagrees with the implementation.
   when no Schema fields are needed) and recover with `Effect.catchTag`/`catchTags`/`Match`,
   never manual `_tag` string comparisons.
 - Wrap fallible Promises with `Effect.tryPromise({ try, catch })`; `Effect.promise` turns
-  rejection into a defect. No `async`/`await` or `try`/`catch` inside Effect workflows —
-  ESLint bans them in `ts/packages/cli/src`.
+  rejection into a defect. No `async`/`await` or `try`/`catch` inside Effect workflows.
+  oxlint rejects `try`/`catch` in `ts/packages/cli/src`. Nothing lints `async`/`await`, so review catches it.
 - Treat every remembered v3 package name and API as wrong until verified against
   `ts/vendor/effect` (read-only source oracle — never edit or import from it) and the
   installed `effect@^4.1.0` typings. Source may be ahead of the published package;

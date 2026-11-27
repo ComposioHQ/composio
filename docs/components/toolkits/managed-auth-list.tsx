@@ -150,9 +150,13 @@ export function ManagedAuthList() {
   return (
     <div className="space-y-4">
       {/* Search */}
+      <label htmlFor="managed-auth-toolkit-search" className="sr-only">
+        Search toolkits by managed OAuth availability
+      </label>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fd-muted-foreground" aria-hidden="true" />
         <input
+          id="managed-auth-toolkit-search"
           type="text"
           placeholder="Search toolkits..."
           autoComplete="off"

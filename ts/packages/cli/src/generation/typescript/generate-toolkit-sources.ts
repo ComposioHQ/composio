@@ -294,28 +294,20 @@ function generateTypeScriptToolkitSource(_banner: string) {
             .setDocComment(ts.docComment(`${triggerType.description}`))
       );
 
-      // write the toolkit const object declaration
-      const toolValueDeclaration = ts.propertyValue(
-        toolkitName,
-        ts
-          .objectValue()
-          .add(ts.propertyValue('slug', ts.stringLiteral(slug).asValue()))
-          .add(ts.propertyValue('tools', ts.objectValue().addMultiple(toolsValueEntries)))
-          .add(
-            ts.propertyValue('triggerTypes', ts.objectValue().addMultiple(triggerTypesValueEntries))
-          )
-      );
+      const toolkitValue = ts
+        .objectValue()
+        .add(ts.propertyValue('slug', ts.stringLiteral(slug).asValue()))
+        .add(ts.propertyValue('tools', ts.objectValue().addMultiple(toolsValueEntries)))
+        .add(
+          ts.propertyValue('triggerTypes', ts.objectValue().addMultiple(triggerTypesValueEntries))
+        );
 
       file.add(
         ts
-          .moduleExport(
-            ts
-              .constDeclaration(toolValueDeclaration.name as string)
-              .setValue(toolValueDeclaration.value)
-          )
+          .moduleExport(ts.constDeclaration(toolkitName).setValue(toolkitValue))
           .setDocComment(
             ts.docComment(
-              `Map of Composio's ${toolValueDeclaration.name} toolkit.${version ? `\n@toolkit-version: ${version}` : ''}`
+              `Map of Composio's ${toolkitName} toolkit.${version ? `\n@toolkit-version: ${version}` : ''}`
             )
           )
       );

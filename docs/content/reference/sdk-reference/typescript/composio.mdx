@@ -12,7 +12,7 @@ Creates a new instance of the Composio SDK.
 The constructor initializes the SDK with the provided configuration options,
 sets up the API client, and initializes all core models (tools, toolkits, etc.).
 
-```typescript
+```typescript signature
 constructor(config?: ComposioConfig): Composio
 ```
 
@@ -29,19 +29,29 @@ constructor(config?: ComposioConfig): Composio
 **Example**
 
 ```typescript
+import { Composio } from '@composio/core';
+
 // Initialize with default configuration
 const composio = new Composio();
+```
+
+```typescript
+import { Composio } from '@composio/core';
 
 // Initialize with custom API key and base URL
 const composio = new Composio({
   apiKey: 'your-api-key',
   baseURL: 'https://api.composio.dev'
 });
+```
 
-// Initialize with custom provider
+```typescript
+import { Composio, OpenAIProvider } from '@composio/core';
+
+// Initialize with an explicit provider
 const composio = new Composio({
   apiKey: 'your-api-key',
-  provider: new CustomProvider()
+  provider: new OpenAIProvider()
 });
 ```
 
@@ -54,6 +64,7 @@ const composio = new Composio({
 | `authConfigs` | `AuthConfigs` | Manage authentication configurations for toolkits |
 | `connectedAccounts` | `ConnectedAccounts` | Manage authenticated connections |
 | `create` | `(...) => Promise<Session>` | Creates a new tool router session for a user. Use `sessionPreset: SessionPreset.DIRECT_TOOLS` when all needed tools should be exposed directly; see `ToolRouterCreateSessionConfig`. |
+| `customToolkits` | `CustomToolkits` | Register and manage project-owned custom toolkits, such as a remote MCP server (`create()` / `update()` / `sync()` / `delete()`). |
 | `experimental` | `Experimental` | Experimental SDK methods whose shape may change in future releases. Prefer domain-specific mounts (for example `composio.connectedAccounts.updateAcl(...)`) when available; this namespace keeps compatibility aliases while APIs are experimental. Stateless experimental factories (e.g. `experimental_createTool`) stay at the top level. |
 | `files` | `Files` | Upload and download files |
 | `keyring` | `Keyring` | Public transfer keys of the organization's customer-managed keyring |
@@ -66,7 +77,7 @@ const composio = new Composio({
 | `toolRouter` | `ToolRouter` | Legacy alias for `composio.sessions`. |
 | `tools` | `Tools` | List, retrieve, and execute tools |
 | `triggers` | `Triggers` | Manage webhook triggers and event subscriptions |
-| `use` | `(id: string, options: \{ customToolkits?: CustomToolkit[]; customTools?: CustomTool[]; mcp: true \}, requestOptions: ComposioRequestOptions) => Promise<Session>` | Use an existing tool router session |
+| `use` | `(...) => Promise<Session>` | Use an existing tool router session |
 | `webhooks` | `Webhooks` | Manage the project's webhook subscription (`webhooks.subscriptions`) and inbound per-toolkit webhook endpoints (`webhooks.endpoints`). |
 
 ## Methods
@@ -88,7 +99,7 @@ This method is particularly useful when you need to:
 The new instance inherits all configuration from the parent instance (apiKey, baseURL, provider, etc.)
 but allows you to specify custom request options that will be used for all API calls made through this session.
 
-```typescript
+```typescript signature
 createSession(options?: { headers?: ComposioRequestHeaders }): Composio
 ```
 
@@ -105,6 +116,8 @@ createSession(options?: { headers?: ComposioRequestHeaders }): Composio
 **Example**
 
 ```typescript
+import { Composio } from '@composio/core';
+
 // Create a base Composio instance
 const composio = new Composio({
   apiKey: 'your-api-key'
@@ -120,7 +133,7 @@ const composioWithCustomHeaders = composio.createSession({
 });
 
 // Use the session for making API calls with the custom headers
-await composioWithCustomHeaders.tools.list();
+await composioWithCustomHeaders.tools.getRawComposioTools({ toolkits: ['github'] });
 ```
 
 ---
@@ -133,7 +146,7 @@ In Node.js-compatible environments, telemetry is automatically flushed on proces
 However, in environments like Cloudflare Workers that don't support process exit events,
 you should call this method manually to ensure all telemetry is sent.
 
-```typescript
+```typescript signature
 async flush(): Promise<void>
 ```
 
@@ -143,14 +156,20 @@ async flush(): Promise<void>
 
 **Example**
 
-```typescript
+```typescript nocheck="Cloudflare Worker handler; the checker has no Workers Env or ExecutionContext types"
+import { Composio } from '@composio/core';
+
 // In a Cloudflare Worker, use ctx.waitUntil to ensure telemetry is flushed
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const composio = new Composio({ apiKey: env.COMPOSIO_API_KEY });
 
     // Do your work...
-    const result = await composio.tools.execute(...);
+    const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+      userId: 'user_123',
+      version: '20250909_00',
+      arguments: { owner: 'composio' },
+    });
 
     // Ensure telemetry flushes before worker terminates
     ctx.waitUntil(composio.flush());
@@ -166,7 +185,7 @@ export default {
 
 Get the Composio SDK client.
 
-```typescript
+```typescript signature
 getClient(): ComposioClient
 ```
 
@@ -187,7 +206,7 @@ mutating the live config object would silently no-op. Freezing makes
 that contract visible at the call site instead of letting the mutation
 appear successful.
 
-```typescript
+```typescript signature
 getConfig(): Readonly<ComposioConfig>
 ```
 

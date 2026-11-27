@@ -1,0 +1,34 @@
+---
+title: "SDK release 42589989280"
+date: "2026-11-09"
+sdkRelease: "42589989280"
+sdkReleaseTargets: {"@composio/core":"0.29.0","@composio/python-sdk":"0.32.0","@composio/slim":"0.29.0"}
+---
+
+See the [release request](https://github.com/ComposioHQ/composio/issues/5277) for publication status.
+
+### SDK Versions
+
+| SDK | Version |
+| --- | --- |
+| TypeScript `@composio/core` | `0.29.0` |
+| Python `composio` | `0.32.0` |
+| TypeScript `@composio/slim` | `0.29.0` |
+
+### Changes
+
+Update @composio/client to 2.1.0 to include the latest API changes.
+
+Breaking (experimental API): `composio.experimental.customToolkits.create()` and `upsert()` take the MCP server URL as `mcpUrl` instead of `appUrl`, and send it to the API as `mcp_url`.
+
+Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.customToolkits`. Pass `experimental.localTools` and `experimental.localToolkits` to `composio.create()`, and `localTools` and `localToolkits` to `composio.use()`. List them with `session.localTools()` and `session.localToolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool`, `RegisteredLocalToolkit`, `CreateLocalToolParams`, `CreateLocalToolkitParams` and `LocalToolExecuteFn`. The `customTools` and `customToolkits` options, the `session.customTools()` and `session.customToolkits()` methods, and the `Custom*` type names are deprecated and keep working. Passing both a new option and its deprecated alias throws `ValidationError`. The request sent to the API is unchanged.
+
+Update `composio-client` to 2.1.0. Breaking (experimental API): `composio.experimental.custom_toolkits.create()` and `upsert()` take the MCP server URL as `mcp_url` instead of `app_url`.
+
+Renames in-process custom tools to local tools, so they are no longer confused with the server-side custom toolkits on `composio.experimental.custom_toolkits`. Pass `experimental={"local_tools": ..., "local_toolkits": ...}` to `composio.create()`, and `local_tools=` and `local_toolkits=` to `composio.use()`. List them with `session.local_tools()` and `session.local_toolkits()`. The types are now `LocalTool`, `LocalToolkit`, `RegisteredLocalTool` and `RegisteredLocalToolkit`. The `custom_tools` and `custom_toolkits` options and session methods still work but emit `ComposioDeprecationWarning`, and the `Custom*` type names remain as aliases. Passing both a new option and its deprecated alias raises `InvalidParams`. The request sent to the API is unchanged.
+
+The error for a missing API key now explains how to set `COMPOSIO_API_KEY` or pass `api_key=`, and links to where to get a project API key, instead of suggesting `composio login`, which the Python package doesn't install.
+
+`wait_for_connection()` handles rate limits: the delay between polls grows from 1 to 5 seconds, and a poll rejected with a 429 waits as long as its `Retry-After` header asks (up to the timeout) and polls again instead of failing the wait. A NaN timeout now times out instead of polling forever.
+
+Handle rate limits better: `tools.execute()` reuses tool schemas instead of fetching one per call, `waitForConnection()` backs off between polls and waits out a 429, and tool fetches and executions rejected with a 429 throw `ComposioToolFetchRateLimitError` or `ComposioToolExecutionRateLimitError` (check with `isComposioRateLimitError`).

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import functools
 import logging
+import math
 import time
 import typing as t
 import warnings
+from email.utils import parsedate_to_datetime
 
 import typing_extensions as te
-from composio_client import BadRequestError, ConflictError, omit
+from composio_client import BadRequestError, ConflictError, RateLimitError, omit
 
 from composio import exceptions
 from composio.client import HttpClient
@@ -35,6 +37,11 @@ _TERMINAL_CONNECTION_STATES: t.FrozenSet[str] = frozenset(
     {"FAILED", "EXPIRED", "REVOKED"}
 )
 
+# Delay between `wait_for_connection` polls. Mirrors TS `ConnectionRequest.ts`.
+_INITIAL_POLL_DELAY_SECONDS = 1.0
+_MAX_POLL_DELAY_SECONDS = 5.0
+_POLL_DELAY_GROWTH = 1.5
+
 # One-time-per-process guard so long-running services don't spam the deprecation
 # warning on every initiate() call.
 _legacy_initiate_warning_emitted = False
@@ -49,6 +56,20 @@ _REFRESH_VALIDATE_CREDENTIALS_IGNORED = (
     "connected_accounts.refresh(): the API no longer accepts "
     "validate_credentials; the argument is ignored."
 )
+
+
+def _retry_after_seconds(error: RateLimitError) -> float:
+    """Seconds a 429 asks the caller to wait, from its ``Retry-After`` header (seconds or an HTTP date); 0 if unusable."""
+    value = error.response.headers.get("retry-after", "").strip()
+    try:
+        seconds = float(value)
+    except ValueError:
+        try:
+            seconds = parsedate_to_datetime(value).timestamp() - time.time()
+        except (TypeError, ValueError):
+            return 0.0
+    # `float()` also accepts "nan" and "inf", which aren't waits.
+    return max(0.0, seconds) if math.isfinite(seconds) else 0.0
 
 
 class ConnectionRequest(Resource):
@@ -87,24 +108,48 @@ class ConnectionRequest(Resource):
         """
         Wait for the connection to be established.
 
+        The delay between polls grows from 1 second to 5 seconds, so a connection
+        can be up to 5 seconds old when this returns. A rate-limited poll doesn't
+        fail the wait: once the client's own retries run out, it waits as long as
+        the response asks before polling again. If that delay reaches the timeout,
+        the wait times out without another poll. The client's retries can carry
+        the wait past the timeout, because they aren't bound by it.
+
         :param timeout: The timeout to wait for the connection to be established.
         :return: Connected account object.
         """
         timeout = self.DEFAULT_WAIT_TIMEOUT if timeout is None else timeout
         deadline = time.time() + timeout
-        while deadline > time.time():
-            connection = self._client.connected_accounts.retrieve(nanoid=self.id)
-            self.status = connection.status
-            if self.status == "ACTIVE":
-                return connection
-            if self.status in _TERMINAL_CONNECTION_STATES:
-                raise exceptions.SDKError(
-                    message=(
-                        f"Connection {self.id} entered terminal state "
-                        f"{self.status!r} before becoming active"
-                    ),
-                )
-            time.sleep(1)
+        poll_delay = _INITIAL_POLL_DELAY_SECONDS
+        while True:
+            delay = poll_delay
+            rate_limited = False
+            try:
+                connection = self._client.connected_accounts.retrieve(nanoid=self.id)
+            except RateLimitError as error:
+                rate_limited = True
+                delay = max(delay, _retry_after_seconds(error))
+            else:
+                self.status = connection.status
+                if self.status == "ACTIVE":
+                    return connection
+                if self.status in _TERMINAL_CONNECTION_STATES:
+                    raise exceptions.SDKError(
+                        message=(
+                            f"Connection {self.id} entered terminal state "
+                            f"{self.status!r} before becoming active"
+                        ),
+                    )
+
+            remaining = deadline - time.time()
+            # Written so a NaN timeout times out rather than polling forever.
+            if not remaining > 0:
+                break
+            time.sleep(min(delay, remaining))
+            # Don't start a fresh client retry cycle after a rate-limited wait expires.
+            if rate_limited and time.time() >= deadline:
+                break
+            poll_delay = min(poll_delay * _POLL_DELAY_GROWTH, _MAX_POLL_DELAY_SECONDS)
 
         raise exceptions.ComposioSDKTimeoutError(
             message=f"Timeout while waiting for connection {self.id} to be active",
@@ -479,11 +524,13 @@ class ConnectedAccounts:
         :return: The completed ``connected_account_id`` and its ``toolkit_slug``.
 
         Example:
-            result = composio.connected_accounts.complete_auth(
-                user_id="user_123",
-                session_uri=session_uri,  # from the verifier redirect
-            )
-            print(result.connected_account_id)
+            def complete_connection(user_id: str, session_uri: str) -> str:
+                # Pass the session URI received in the verifier redirect.
+                result = composio.connected_accounts.complete_auth(
+                    user_id=user_id,
+                    session_uri=session_uri,
+                )
+                return result.connected_account_id
         """
         return self._client.connected_accounts.complete_auth(
             user_id=user_id, session_uri=session_uri
@@ -846,8 +893,11 @@ class ConnectedAccounts:
         """
         Wait for connected account with given ID to be active
         """
-        return ConnectionRequest.from_id(
+        # No fetch first: a 429 on it would end the wait before polling starts.
+        return ConnectionRequest(
             id=id,
+            status="INITIATED",
+            redirect_url=None,
             client=self._client,
         ).wait_for_connection(
             timeout=timeout,

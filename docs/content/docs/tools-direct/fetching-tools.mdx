@@ -7,7 +7,7 @@ legacy: true
 ---
 
 <Callout type="info" title="Legacy API: prefer sessions">
-This guide covers legacy direct-execution methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/configuring-sessions) to discover and fetch tools at runtime. If you need a fixed tool set, consider the [direct tools preset](/docs/configuring-sessions#direct-tools-preset). See [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions).
+This guide covers legacy direct-execution methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/sessions/tool-access) to discover and fetch tools at runtime. If you need a fixed tool set, consider the [direct tools preset](/docs/sessions/loading-tools#direct-tools-preset). See [Sessions vs direct execution](/docs/sessions-vs-direct-execution) and the [migration guide](/docs/migration-guide/direct-to-sessions).
 </Callout>
 
 Fetch specific tools, filter by permissions or search, and inspect schemas for type information. Tools are automatically formatted for your provider.
@@ -46,7 +46,7 @@ curl -X GET "https://backend.composio.dev/api/v3.1/tools?toolkit_slug=GITHUB" \
   </Tab>
 </Tabs>
 
-Returns up to 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User scoping](/docs/how-composio-works) and [Authentication](/docs/tools-direct/authenticating-tools).
+Returns up to 20 tools by default. Tools require a `user_id` because they're scoped to authenticated accounts. See [User scoping](/docs/sessions) and [Authentication](/docs/tools-direct/authenticating-tools).
 
 ## Tool schemas
 
@@ -149,12 +149,12 @@ Fetch specific tools when you know their names.
 # Fetch specific tools by name
 tools = composio.tools.get(
     user_id,
-    tools=["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 )
 
 # Get schemas without user_id
 raw_tools = composio.tools.get_raw_composio_tools(
-    tools=["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+    tools=["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 )
 ```
   </Tab>
@@ -166,19 +166,19 @@ const userId = 'user_123';
 // ---cut---
 // Fetch specific tools by name
 const specificTools = await composio.tools.get(userId, {
-  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+  tools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 });
 
 // Get schemas without userId
 const specificRawTools = await composio.tools.getRawComposioTools({
-  tools: ["GITHUB_CREATE_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
+  tools: ["GITHUB_CREATE_AN_ISSUE", "GITHUB_CREATE_PULL_REQUEST"]
 });
 ```
   </Tab>
   <Tab value="API">
 ```bash
 # Fetch specific tools by name
-curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_ISSUE,GITHUB_CREATE_PULL_REQUEST" \
+curl -X GET "https://backend.composio.dev/api/v3.1/tools?tool_slugs=GITHUB_CREATE_AN_ISSUE,GITHUB_CREATE_PULL_REQUEST" \
   -H "x-api-key: $COMPOSIO_API_KEY"
 ```
   </Tab>

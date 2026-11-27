@@ -29,6 +29,7 @@ import {
 import { getOrFetchToolInputDefinition } from 'src/services/tool-input-validation';
 import type { CliDebugFlags } from 'src/services/runtime-flags';
 import {
+  localFileScope,
   readRunStagedFiles,
   ToolFileUploadError,
   uploadToolInputFiles,
@@ -299,6 +300,7 @@ const prepareToolExecution = (
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const manifestPath = yield* Effect.orDie(APP_CONFIG.RUN_STAGED_FILES_FILE);
+    const uploadScope = yield* localFileScope(path, manifestPath);
     const stagedFiles = yield* readRunStagedFiles(fs, manifestPath);
     const preparedArguments = isMetaToolSlug(slug)
       ? params.arguments
@@ -321,6 +323,7 @@ const prepareToolExecution = (
               inputSchema: definition.schema,
               client,
               stagedFiles,
+              uploadScope,
             }).pipe(
               Effect.catchIf(
                 isComposioError,
@@ -355,9 +358,8 @@ export const ToolsExecutorLive = Layer.effect(
     return ToolsExecutor.of({
       execute: (slug, params) =>
         Effect.gen(function* () {
-          // Resolved lazily: `get()` walks the project context off disk, and every
-          // caller on the execute path already hands in a client built for the
-          // resolved org/project.
+          // Every caller on the execute path hands in a client built for the resolved
+          // org/project; `get()` is unscoped and acts on the key's default project.
           const resolvedClient = params.client ?? (yield* clientSingleton.get());
           const sessionContext = yield* resolveToolRouterSessionContext(
             resolvedClient,

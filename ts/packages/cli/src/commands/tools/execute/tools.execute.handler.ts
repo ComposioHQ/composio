@@ -1,31 +1,37 @@
 import { Effect, Option } from 'effect';
 import { CommandSurface } from 'src/commands/surface';
-import { toolkitFromToolSlug } from 'src/effects/toolkit-from-tool-slug';
 import { appendCliSessionHistory } from 'src/services/cli-session-artifacts';
-import {
-  getFreshConsumerConnectedToolkitsFromCache,
-  refreshConsumerConnectedToolkitsCache,
-} from 'src/services/consumer-short-term-cache';
 import { logToolDebug } from 'src/services/runtime-debug-logger';
-import type { TerminalUI } from 'src/services/terminal-ui';
+import { TerminalUI } from 'src/services/terminal-ui';
 import {
   getOrFetchToolInputDefinition,
   invalidateToolInputDefinition,
   ToolInputValidationError,
 } from 'src/services/tool-input-validation';
 import { detectInBandWarning } from 'src/services/tools-executor';
-import type { ToolExecuteParams, ToolsExecutor } from 'src/services/tools-executor';
+import { escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { redact } from 'src/ui/redact';
 import {
-  resolveExecuteContext,
-  resolveSchemaContext,
+  checkPreparedCallConnection,
+  previewPreparedCall,
+  runPreparedCall,
+} from './tools.execute.call';
+import {
+  prepareExecuteCall,
+  resolveExecuteSchemaProject,
   toolkitProjectScope,
-  type ResolvedExecuteContext,
+  type PreparedExecuteCall,
   type RunToolsExecuteParams,
 } from './tools.execute.context';
 import { perfDebugLog } from './tools.execute.debug';
 import { invalidArguments, ReportedToolExecutionError } from './tools.execute.errors';
-import { emitExecuteFailureTelemetry, handleExecutionError } from './tools.execute.failure';
+import {
+  emitExecuteFailureTelemetry,
+  handleExecutionError,
+  inspectExecuteFailure,
+  inspectFailedResponse,
+  printExecuteRetryAdvice,
+} from './tools.execute.failure';
 import {
   ciRedactReplacer,
   connectionTips,
@@ -33,117 +39,42 @@ import {
   emitCachedSchema,
   executionSuccessSuffix,
   writeExecuteStdout,
-  type DryRunSummary,
 } from './tools.execute.format';
 import { prepareExecuteOutput } from './tools.execute.output';
-import { runParallelFromCommand } from './tools.execute.parallel';
-import { checkDryRunArguments, validateToolInputBeforeExecute } from './tools.execute.validation';
+import { runParallelToolsExecute } from './tools.execute.parallel';
+import { readParallelExecuteArgv } from './tools.execute.parallel-argv';
 
-const runConnectedToolkitFailFast = (params: {
-  readonly slug: string;
-  readonly surface: 'root' | 'dev';
-  readonly ui: TerminalUI;
-  readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
-  readonly resolvedUserId: string;
-  readonly skipConnectionCheck: boolean;
-  readonly skipChecks: boolean;
-}) =>
+const runConnectedToolkitFailFast = (
+  call: PreparedExecuteCall,
+  params: Pick<RunToolsExecuteParams, 'surface' | 'skipConnectionCheck' | 'skipChecks'>,
+  ui: TerminalUI
+) =>
   Effect.gen(function* () {
-    if (params.skipConnectionCheck || params.skipChecks) {
-      yield* perfDebugLog('execute.connected_toolkits.skipped', {
-        slug: params.slug,
-        reason: params.skipChecks ? 'skip-checks' : 'skip-connection-check',
-      });
-      return;
-    }
-    if (params.resolvedProject.projectType !== 'CONSUMER') return;
-
-    yield* perfDebugLog('execute.connected_toolkits.refresh_start', {
-      slug: params.slug,
-      orgId: params.resolvedProject.orgId,
-      consumerUserId: params.resolvedUserId,
+    const missing = yield* checkPreparedCallConnection(call, {
+      skipConnectionCheck: params.skipConnectionCheck,
+      skipChecks: params.skipChecks,
+      debug: true,
     });
-    yield* refreshConsumerConnectedToolkitsCache({
-      orgId: params.resolvedProject.orgId,
-      consumerUserId: params.resolvedUserId,
-    }).pipe(
-      Effect.tap(() =>
-        perfDebugLog('execute.connected_toolkits.refresh_end', {
-          slug: params.slug,
-          orgId: params.resolvedProject.orgId,
-          consumerUserId: params.resolvedUserId,
-          successful: true,
-        })
-      ),
-      Effect.catch(() =>
-        perfDebugLog('execute.connected_toolkits.refresh_end', {
-          slug: params.slug,
-          orgId: params.resolvedProject.orgId,
-          consumerUserId: params.resolvedUserId,
-          successful: false,
-        })
-      ),
-      Effect.forkDetach,
-      Effect.asVoid
-    );
+    if (Option.isNone(missing)) return;
 
-    const toolkit = yield* toolkitFromToolSlug(
-      params.slug,
-      toolkitProjectScope(params.resolvedProject)
+    const { toolkit, message } = missing.value;
+    yield* ui.log.error(escapeTerminalText(message));
+    yield* ui.note(
+      connectionTips({ toolkit, toolSlug: call.slug, surface: params.surface }),
+      'Tips'
     );
-    if (!toolkit) return;
-
-    const cachedToolkits = yield* getFreshConsumerConnectedToolkitsFromCache({
-      orgId: params.resolvedProject.orgId,
-      consumerUserId: params.resolvedUserId,
+    yield* writeExecuteStdout(
+      ui,
+      JSON.stringify({ successful: false, error: message, slug: call.slug }, ciRedactReplacer, 2)
+    );
+    return yield* new ReportedToolExecutionError({
+      reason: 'connection_check',
+      toolSlug: call.slug,
+      message,
     });
-    yield* perfDebugLog(
-      Option.isSome(cachedToolkits)
-        ? 'execute.connected_toolkits.cache_hit'
-        : 'execute.connected_toolkits.cache_miss',
-      {
-        slug: params.slug,
-        toolkit,
-        orgId: params.resolvedProject.orgId,
-        consumerUserId: params.resolvedUserId,
-        cachedToolkits: Option.isSome(cachedToolkits) ? cachedToolkits.value : undefined,
-      }
-    );
-
-    if (Option.isSome(cachedToolkits) && !cachedToolkits.value.includes(toolkit)) {
-      yield* perfDebugLog('execute.connected_toolkits.fail_fast', {
-        slug: params.slug,
-        toolkit,
-        orgId: params.resolvedProject.orgId,
-        consumerUserId: params.resolvedUserId,
-      });
-      const message = `Toolkit "${toolkit}" is not connected for this user (cached within the last 5 minutes). If you just connected the account, use --skip-connection-check.`;
-      yield* params.ui.log.error(message);
-      yield* params.ui.note(
-        connectionTips({ toolkit, toolSlug: params.slug, surface: params.surface }),
-        'Tips'
-      );
-      yield* writeExecuteStdout(
-        params.ui,
-        JSON.stringify(
-          {
-            successful: false,
-            error: message,
-            slug: params.slug,
-          },
-          ciRedactReplacer,
-          2
-        )
-      );
-      return yield* new ReportedToolExecutionError({
-        reason: 'connection_check',
-        toolSlug: params.slug,
-        message,
-      });
-    }
   });
 
-const executeSessionHistoryScope = (resolvedProject: ResolvedExecuteContext['resolvedProject']) =>
+const executeSessionHistoryScope = (resolvedProject: PreparedExecuteCall['resolvedProject']) =>
   resolvedProject.projectType === 'CONSUMER'
     ? {
         orgId: resolvedProject.orgId,
@@ -151,135 +82,120 @@ const executeSessionHistoryScope = (resolvedProject: ResolvedExecuteContext['res
       }
     : {};
 
-const runExecuteWithSpinner = (params: {
-  readonly slug: string;
-  readonly surface: 'root' | 'dev';
-  readonly projectMode: 'consumer' | 'developer';
-  readonly dryRun: boolean;
-  readonly ui: TerminalUI;
-  readonly executor: ToolsExecutor;
-  readonly resolvedProject: ResolvedExecuteContext['resolvedProject'];
-  readonly args: Record<string, unknown>;
-  readonly resolvedUserId: string;
-  readonly executeParams: ToolExecuteParams;
-  readonly executeOutputDir?: string;
-  readonly skipToolParamsCheck: boolean;
-  readonly skipChecks: boolean;
-}) =>
+const runExecuteWithSpinner = (
+  call: PreparedExecuteCall,
+  params: Pick<
+    RunToolsExecuteParams,
+    'surface' | 'projectMode' | 'dryRun' | 'skipToolParamsCheck' | 'skipChecks'
+  >,
+  ui: TerminalUI
+) =>
   Effect.gen(function* () {
+    const { slug, args, resolvedProject } = call;
     const verificationDisabled = params.skipChecks || params.skipToolParamsCheck;
 
-    yield* params.ui.useMakeSpinner(`Executing tool "${params.slug}"...`, spinner =>
+    yield* ui.useMakeSpinner(`Executing tool "${escapeTerminalText(slug)}"...`, spinner =>
       Effect.gen(function* () {
         if (params.dryRun) {
-          const definition = yield* checkDryRunArguments({
-            slug: params.slug,
-            args: params.args,
-            projectScope: {
-              orgId: params.resolvedProject.orgId,
-              projectId: params.resolvedProject.projectId,
-            },
-            verificationDisabled,
-          }).pipe(
+          const summary = yield* previewPreparedCall(call, verificationDisabled).pipe(
             Effect.tapError(error =>
               emitExecuteFailureTelemetry({
-                toolSlug: params.slug,
-                args: params.args,
+                toolSlug: slug,
+                args,
                 error,
                 surface: params.surface,
                 projectMode: params.projectMode,
                 stage: 'dry_run',
-                projectScope: toolkitProjectScope(params.resolvedProject),
+                projectScope: toolkitProjectScope(resolvedProject),
               })
             )
           );
-          const summary: DryRunSummary = {
-            successful: true,
-            dryRun: true,
-            slug: params.slug,
-            arguments: params.args,
-            userId: params.resolvedUserId,
-            schemaPath: definition?.schemaPath,
-            schemaVersion: definition?.version,
-          };
           yield* spinner.stop('Dry run successful');
-          yield* params.ui.log.message(
+          yield* ui.log.message(
             verificationDisabled
               ? 'No tool was executed. Local validation was skipped.'
               : 'No tool was executed. Arguments were validated locally only.'
           );
-          yield* writeExecuteStdout(params.ui, JSON.stringify(summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(ui, JSON.stringify(summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
-            ...executeSessionHistoryScope(params.resolvedProject),
+            ...executeSessionHistoryScope(resolvedProject),
             entry: {
               command: 'execute',
               status: 'dry-run',
-              slug: params.slug,
-              arguments: params.args,
+              slug,
+              arguments: args,
             },
           }).pipe(Effect.catch(() => Effect.void));
           return;
         }
 
-        yield* perfDebugLog('execute.tool_call.start', { slug: params.slug });
-        const validateArgs = verificationDisabled
-          ? Effect.void
-          : validateToolInputBeforeExecute({
-              slug: params.slug,
-              args: params.args,
-              resolvedProject: params.resolvedProject,
-            });
-        const result = yield* validateArgs.pipe(
-          Effect.andThen(params.executor.execute(params.slug, params.executeParams)),
+        yield* perfDebugLog('execute.tool_call.start', { slug });
+        const result = yield* runPreparedCall(
+          call,
+          verificationDisabled ? 'skip' : 'best-effort'
+        ).pipe(
           Effect.matchEffect({
             onFailure: error =>
               Effect.gen(function* () {
-                yield* logToolDebug('execute_result', { slug: params.slug, result: error });
+                yield* logToolDebug('execute_result', { slug, result: error });
                 yield* perfDebugLog('execute.tool_call.end', {
-                  slug: params.slug,
+                  slug,
                   successful: false,
                 });
                 // The validation error points the user at the cached schema, so
                 // it has to stay on disk.
                 if (!(error instanceof ToolInputValidationError)) {
-                  yield* invalidateToolInputDefinition(params.slug).pipe(
-                    Effect.catch(() => Effect.void)
-                  );
+                  yield* invalidateToolInputDefinition(slug).pipe(Effect.catch(() => Effect.void));
                 }
                 yield* spinner.error();
-                const summary = yield* handleExecutionError(params.ui, error, {
-                  toolSlug: params.slug,
-                  args: params.args,
+                const scope = {
+                  toolSlug: slug,
                   surface: params.surface,
+                  projectScope: toolkitProjectScope(resolvedProject),
+                };
+                const failure = yield* inspectExecuteFailure(error, scope);
+                const summary = yield* handleExecutionError(ui, failure, {
+                  ...scope,
+                  args,
                   projectMode: params.projectMode,
                   stage: 'execution',
-                  projectScope: toolkitProjectScope(params.resolvedProject),
                 });
+                // Whether the request can be sent again as it is: `"retry": "safe"` (exit 75) or
+                // `"retry": "check-first"` when it may have run before it failed.
+                const retry = Option.getOrUndefined(failure.retry);
+                if (retry !== undefined) {
+                  yield* printExecuteRetryAdvice(ui, retry, params.surface);
+                }
                 yield* writeExecuteStdout(
-                  params.ui,
-                  JSON.stringify({ successful: false, ...summary }, ciRedactReplacer, 2)
+                  ui,
+                  JSON.stringify(
+                    { successful: false, ...summary, ...(retry === undefined ? {} : { retry }) },
+                    ciRedactReplacer,
+                    2
+                  )
                 );
                 yield* appendCliSessionHistory({
-                  ...executeSessionHistoryScope(params.resolvedProject),
+                  ...executeSessionHistoryScope(resolvedProject),
                   entry: {
                     command: 'execute',
                     status: 'error',
-                    slug: params.slug,
-                    arguments: params.args,
+                    slug,
+                    arguments: args,
                     error: summary.error,
                   },
                 }).pipe(Effect.catch(() => Effect.void));
                 return yield* new ReportedToolExecutionError({
                   reason: 'execution_failed',
-                  toolSlug: params.slug,
+                  toolSlug: slug,
                   message: summary.error,
+                  ...(retry === 'safe' ? { retryable: true } : {}),
                 });
               }),
             onSuccess: result =>
               Effect.gen(function* () {
-                yield* logToolDebug('execute_result', { slug: params.slug, result });
+                yield* logToolDebug('execute_result', { slug, result });
                 yield* perfDebugLog('execute.tool_call.end', {
-                  slug: params.slug,
+                  slug,
                   successful: true,
                 });
                 return result;
@@ -287,25 +203,29 @@ const runExecuteWithSpinner = (params: {
           })
         );
         if (!result.successful) {
-          yield* invalidateToolInputDefinition(params.slug).pipe(Effect.catch(() => Effect.void));
+          yield* invalidateToolInputDefinition(slug).pipe(Effect.catch(() => Effect.void));
           const logId = result.logId
-            ? ` (logId: ${redact({ value: result.logId, prefix: 'log_' })})`
+            ? ` (logId: ${escapeTerminalText(redact({ value: result.logId, prefix: 'log_' }))})`
             : '';
           yield* spinner.error(`Execution failed${logId}`);
 
-          const summary = yield* handleExecutionError(params.ui, result.error ?? result, {
-            toolSlug: params.slug,
-            args: params.args,
+          const scope = {
+            toolSlug: slug,
             surface: params.surface,
+            projectScope: toolkitProjectScope(resolvedProject),
+          };
+          const failure = yield* inspectFailedResponse(result, scope);
+          const summary = yield* handleExecutionError(ui, failure, {
+            ...scope,
+            args,
             projectMode: params.projectMode,
             stage: 'execution',
             logId: result.logId,
-            projectScope: toolkitProjectScope(params.resolvedProject),
           });
-          yield* writeExecuteStdout(params.ui, JSON.stringify(result, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(ui, JSON.stringify(result, ciRedactReplacer, 2));
           return yield* new ReportedToolExecutionError({
             reason: 'execution_failed',
-            toolSlug: params.slug,
+            toolSlug: slug,
             message: summary.error,
           });
         }
@@ -313,23 +233,23 @@ const runExecuteWithSpinner = (params: {
         yield* spinner.stop(`Execution successful${executionSuccessSuffix(result)}`);
         const inBandWarning = detectInBandWarning(result.data);
         if (inBandWarning) {
-          yield* params.ui.log.warn(
-            `The tool executed successfully but the response may contain an error: ${inBandWarning}`
+          yield* ui.log.warn(
+            `The tool executed successfully but the response may contain an error: ${escapeTerminalText(inBandWarning)}`
           );
         }
-        const output = yield* prepareExecuteOutput(params.slug, result, params.executeOutputDir);
+        const output = yield* prepareExecuteOutput(slug, result, call.executeOutputDir);
         if (output.kind === 'file') {
-          yield* params.ui.log.message(
+          yield* ui.log.message(
             `Response stored in ${output.summary.outputFilePath} (${describeStoredOutputSize(output.summary)})`
           );
-          yield* writeExecuteStdout(params.ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
+          yield* writeExecuteStdout(ui, JSON.stringify(output.summary, ciRedactReplacer, 2));
           yield* appendCliSessionHistory({
-            ...executeSessionHistoryScope(params.resolvedProject),
+            ...executeSessionHistoryScope(resolvedProject),
             entry: {
               command: 'execute',
               status: 'success',
-              slug: params.slug,
-              arguments: params.args,
+              slug,
+              arguments: args,
               storedInFile: true,
               outputFilePath: output.summary.outputFilePath,
               tokenCount: output.summary.tokenCount,
@@ -340,14 +260,14 @@ const runExecuteWithSpinner = (params: {
           return;
         }
 
-        yield* writeExecuteStdout(params.ui, output.json);
+        yield* writeExecuteStdout(ui, output.json);
         yield* appendCliSessionHistory({
-          ...executeSessionHistoryScope(params.resolvedProject),
+          ...executeSessionHistoryScope(resolvedProject),
           entry: {
             command: 'execute',
             status: 'success',
-            slug: params.slug,
-            arguments: params.args,
+            slug,
+            arguments: args,
             storedInFile: false,
             logId: result.logId,
           },
@@ -359,10 +279,11 @@ const runExecuteWithSpinner = (params: {
 const runToolsExecute = (params: RunToolsExecuteParams) =>
   Effect.gen(function* () {
     if (params.getSchema) {
-      const context = yield* resolveSchemaContext(params);
+      const resolvedProject = yield* resolveExecuteSchemaProject(params);
+      const ui = yield* TerminalUI;
       const definition = yield* getOrFetchToolInputDefinition(params.slug, {
-        orgId: context.resolvedProject.orgId,
-        projectId: context.resolvedProject.projectId,
+        orgId: resolvedProject.orgId,
+        projectId: resolvedProject.projectId,
       }).pipe(
         Effect.tapError(error =>
           emitExecuteFailureTelemetry({
@@ -372,52 +293,32 @@ const runToolsExecute = (params: RunToolsExecuteParams) =>
             surface: params.surface,
             projectMode: params.projectMode,
             stage: 'schema_fetch',
-            projectScope: toolkitProjectScope(context.resolvedProject),
+            projectScope: toolkitProjectScope(resolvedProject),
           })
         )
       );
-      yield* emitCachedSchema(context.ui, params.slug, definition);
+      yield* emitCachedSchema(ui, params.slug, definition);
       return;
     }
 
-    const context = yield* resolveExecuteContext(params);
+    const ui = yield* TerminalUI;
+    const call = yield* prepareExecuteCall(params);
 
-    yield* runConnectedToolkitFailFast({
-      slug: params.slug,
-      surface: params.surface,
-      ui: context.ui,
-      resolvedProject: context.resolvedProject,
-      resolvedUserId: context.resolvedUserId,
-      skipConnectionCheck: params.skipConnectionCheck,
-      skipChecks: params.skipChecks,
-    });
+    yield* runConnectedToolkitFailFast(call, params, ui);
     yield* logToolDebug('execute_params', {
       slug: params.slug,
-      userId: context.resolvedUserId,
-      connectedAccountId: context.selectedConnectedAccountId,
-      arguments: context.args,
-      projectId: context.resolvedProject.projectId,
-      orgId: context.resolvedProject.orgId,
+      userId: call.resolvedUserId,
+      connectedAccountId: call.selectedConnectedAccountId,
+      arguments: call.args,
+      projectId: call.resolvedProject.projectId,
+      orgId: call.resolvedProject.orgId,
     });
     yield* perfDebugLog('execute.prepare', {
       slug: params.slug,
       surface: params.surface,
       projectMode: params.projectMode,
     });
-    yield* runExecuteWithSpinner({
-      slug: params.slug,
-      surface: params.surface,
-      projectMode: params.projectMode,
-      dryRun: params.dryRun,
-      ui: context.ui,
-      executor: context.executor,
-      resolvedProject: context.resolvedProject,
-      args: context.args,
-      resolvedUserId: context.resolvedUserId,
-      executeParams: context.executeParams,
-      skipToolParamsCheck: params.skipToolParamsCheck,
-      skipChecks: params.skipChecks,
-    });
+    yield* runExecuteWithSpinner(call, params, ui);
   });
 
 export type ToolsExecuteParams = {
@@ -455,7 +356,9 @@ export const runToolsExecuteCommand = ({
     const { tree, projectName } = yield* CommandSurface;
     const projectMode = tree === 'root' ? 'consumer' : 'developer';
     if (parallel) {
-      return yield* runParallelFromCommand({
+      const batch = yield* readParallelExecuteArgv(tree);
+      return yield* runParallelToolsExecute({
+        ...batch,
         surface: tree,
         projectMode,
         getSchema,

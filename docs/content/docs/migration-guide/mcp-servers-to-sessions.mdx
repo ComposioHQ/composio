@@ -17,12 +17,12 @@ client connects to — but instead of standing up and managing a separate server
 you create a session that handles tool discovery, authentication, context, and versioning for you.
 
 <Callout type="info">
-Starting fresh? Skip this guide and read [Configuring Sessions](/docs/configuring-sessions).
+Starting fresh? Skip this guide and read [Restrict tool access](/docs/sessions/tool-access).
 </Callout>
 
 <Callout type="info">
 Just connecting apps to your own agent for personal use — not building an app? You don't need the
-SDK. Use **Composio For You** to connect across 1000+ apps in a few clicks — switch to it from the
+SDK. Use **Composio For You** to connect across %TOOLKIT_COUNT% apps in a few clicks — switch to it from the
 product switcher in the top-left of the dashboard. Reserve `session.mcp.url` for programmatic,
 in-app use.
 </Callout>
@@ -283,7 +283,7 @@ For a deterministic, non-agent path, call a tool directly on the session.
 <Tab value="Python">
 ```python
 result = session.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     arguments={"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"},
 )
 ```
@@ -294,7 +294,7 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 const session = await composio.create("user-123");
 // ---cut---
-const result = await session.execute("GITHUB_CREATE_ISSUE", {
+const result = await session.execute("GITHUB_CREATE_AN_ISSUE", {
   owner: "my-org",
   repo: "my-repo",
   title: "Fix login bug",
@@ -308,7 +308,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_
   -H "x-api-key: $COMPOSIO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "tool_slug": "GITHUB_CREATE_ISSUE",
+    "tool_slug": "GITHUB_CREATE_AN_ISSUE",
     "arguments": {"owner": "my-org", "repo": "my-repo", "title": "Fix login bug"}
   }'
 ```
@@ -320,7 +320,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_
 - **Multiple toolkits on one endpoint** — where you ran several single-toolkit servers, one session
   spans them all (`toolkits=["gmail", "slack", "github"]`). Fewer moving parts.
 - **Reuse one session — don't create one per request** — sessions persist and are reusable. Create a
-  session once and keep using it across calls; see [Configuring Sessions](/docs/configuring-sessions).
+  session once and keep using it across calls; see [Create and reuse](/docs/sessions/create-and-reuse#how-sessions-behave).
 - **Sharing one account across users** — sessions support **shared connections**
   (`account_type:"SHARED"` + an allow/deny ACL), pinned per session. See
   [Shared connections](/docs/extending-sessions/shared-connections).
@@ -335,4 +335,4 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session/$SESSION_
 
 ## Next
 
-<Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Toolkits, auth configs, account selection, presets, and session methods" />
+<Card title="Restrict tool access" href="/docs/sessions/tool-access" description="Choose allowed toolkits, filter tools and tags, and require approval" />

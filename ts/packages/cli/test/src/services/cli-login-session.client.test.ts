@@ -227,7 +227,7 @@ describe('CLI login session on the wire', () => {
         expect(createBody.source).toMatch(/^composio-cli \S+ \(\w+\/\w+\)$/);
 
         const poll = yield* Effect.forkChild(
-          Effect.flip(handlePollLogin({ noSkillInstall: true }))
+          Effect.flip(handlePollLogin({ noSkillInstall: true, timeout: Option.none() }))
         );
         yield* Effect.yieldNow.pipe(
           Effect.andThen(TestClock.adjust('5 seconds')),

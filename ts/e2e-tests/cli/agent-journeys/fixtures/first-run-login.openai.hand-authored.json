@@ -1,0 +1,84 @@
+{
+  "$comment": "Hand-authored: no model produced this file. It scripts the path the composio-cli skill teaches, one fixture per model turn. After the first turn each fixture is gated on the id of the previous shell call and on a substring of what that command printed, so a CLI that answers differently leaves the next turn without a match and the strict replay fails.",
+  "fixtures": [
+    {
+      "match": {
+        "userMessage": "Check whether the Composio CLI on this machine is logged in",
+        "hasToolResult": false,
+        "turnIndex": 0
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_whoami_1",
+            "name": "shell",
+            "arguments": {
+              "command": "composio whoami"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_whoami_1",
+        "toolResultContains": "You are not logged in yet. Please run `composio login`."
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_login",
+            "name": "shell",
+            "arguments": {
+              "command": "composio login"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_login",
+        "toolResultContains": "cliKey=00000000-0000-4000-8000-000000050001"
+      },
+      "response": {
+        "content": "Open this URL in your browser to log in, and I will wait for it: https://dashboard.composio.test?cliKey=00000000-0000-4000-8000-000000050001",
+        "toolCalls": [
+          {
+            "id": "call_poll",
+            "name": "shell",
+            "arguments": {
+              "command": "composio login --poll"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_poll",
+        "toolResultContains": "current_org"
+      },
+      "response": {
+        "toolCalls": [
+          {
+            "id": "call_whoami_2",
+            "name": "shell",
+            "arguments": {
+              "command": "composio whoami"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "toolCallId": "call_whoami_2",
+        "toolResultContains": "dev@acme-e2e.test"
+      },
+      "response": {
+        "content": "The CLI is now logged in as dev@acme-e2e.test."
+      }
+    }
+  ]
+}

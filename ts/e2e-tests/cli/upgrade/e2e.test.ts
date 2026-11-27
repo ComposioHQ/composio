@@ -8,8 +8,9 @@ import { e2e, type E2ETestResult } from '@e2e-tests/utils';
 import { TIMEOUTS } from '@e2e-tests/utils/const';
 import { beforeAll, describe, expect, it } from 'bun:test';
 
-// The "downloaded" bundle is laid out like a release archive: the live companions
-// with their real contents, plus the legacy paths as empty placeholders.
+// The "downloaded" bundle is laid out like a release archive from before release
+// manifests: the live companions with their real contents, plus the legacy paths
+// as empty placeholders.
 
 // RUN_COMPANION_MODULE_FILENAMES
 const liveCompanionFileNames = ['run-helpers-runtime.mjs', 'generation-runtime.mjs'] as const;
@@ -30,7 +31,7 @@ const legacyPlaceholderRelativePaths = [
   'acp-adapters/codex/linux-x64/codex-acp',
 ] as const;
 
-const sourceBundleSetup = [
+const legacyBundleSetup = [
   'mkdir -p "$source_dir/services"',
   ...liveCompanionFileNames.flatMap(fileName => [
     `cp "/usr/local/bin/${fileName}" "$source_dir/${fileName}"`,
@@ -42,12 +43,40 @@ const sourceBundleSetup = [
   ),
 ].join('\n');
 
+// RELEASE_MANIFEST_FILENAME
+const manifestFileName = 'release-manifest.json';
+
+const manifestCompanions = ['run-helpers-runtime.mjs', 'services/run-helpers-runtime.mjs'];
+
+const releaseManifest = (minimumUpgradeFrom: string) => ({
+  schemaVersion: 1,
+  minimumUpgradeFrom,
+  companions: manifestCompanions,
+});
+
+/**
+ * A bundle from a release that dropped the generation runtime and the legacy
+ * placeholders: its manifest lists only what it ships.
+ */
+const manifestBundleSetup = (minimumUpgradeFrom: string) =>
+  [
+    'mkdir -p "$source_dir/services"',
+    ...manifestCompanions.map(
+      relativePath => `cp "/usr/local/bin/${relativePath}" "$source_dir/${relativePath}"`
+    ),
+    `cat > "$source_dir/${manifestFileName}" <<'EOF'`,
+    JSON.stringify(releaseManifest(minimumUpgradeFrom), null, 2),
+    'EOF',
+  ].join('\n');
+
 const upgradeCommand = ({
   executablePath,
   copyExecutable,
+  bundleSetup = legacyBundleSetup,
 }: {
   executablePath: string;
   copyExecutable: boolean;
+  bundleSetup?: string;
 }) => `
 set -u
 executable_path=${executablePath}
@@ -55,7 +84,7 @@ source_dir=/tmp/composio-upgrade-source
 mkdir -p "$source_dir"
 ${copyExecutable ? 'mkdir -p "$(dirname "$executable_path")"\ncp /usr/local/bin/composio "$executable_path"' : ''}
 cp /usr/local/bin/composio "$source_dir/composio"
-${sourceBundleSetup}
+${bundleSetup}
 
 before_inode=$(stat -c '%i' "$executable_path")
 upgrade_status=0
@@ -72,8 +101,9 @@ version_output=$("$executable_path" version)
 version_status=$?
 run_output=$("$executable_path" run 'console.log(z.string().parse("${runOutputMarker}"))')
 run_status=$?
-printf 'before_inode=%s\nafter_inode=%s\nupgrade_status=%s\nexecutable_status=%s\nversion_status=%s\nversion=%s\nrun_status=%s\nrun_output=%s\n' \
-  "$before_inode" "$after_inode" "$upgrade_status" "$executable_status" "$version_status" "$version_output" "$run_status" "$run_output"
+installed_manifest=$(cat "$(dirname "$executable_path")/${manifestFileName}" 2>/dev/null | tr -d '\n ')
+printf 'before_inode=%s\nafter_inode=%s\nupgrade_status=%s\nexecutable_status=%s\nversion_status=%s\nversion=%s\nrun_status=%s\nrun_output=%s\ninstalled_manifest=%s\n' \
+  "$before_inode" "$after_inode" "$upgrade_status" "$executable_status" "$version_status" "$version_output" "$run_status" "$run_output" "$installed_manifest"
 
 if [ "$upgrade_status" -eq 0 ] &&
   [ "$executable_status" -eq 0 ] &&
@@ -86,6 +116,53 @@ if [ "$upgrade_status" -eq 0 ] &&
   exit 0
 fi
 exit 1
+`;
+
+/**
+ * An upgrade the process is not allowed to perform: the install directory is
+ * read-only and the CLI runs as an ordinary user (root would ignore the mode).
+ */
+const readOnlyInstallCommand = `
+set -u
+install_dir=/opt/composio-readonly
+source_dir=/tmp/composio-upgrade-source
+mkdir -p "$install_dir" "$source_dir"
+cp -r /usr/local/bin/. "$install_dir/"
+cp /usr/local/bin/composio "$source_dir/composio"
+${legacyBundleSetup}
+chmod -R a+rX "$source_dir"
+chmod -R a-w "$install_dir"
+
+before=$(stat -c '%i %s' "$install_dir/composio")
+upgrade_status=0
+HOME=/tmp/unprivileged-home DEBUG_OVERRIDE_UPGRADE_TARGET="$source_dir/composio" \
+  setpriv --reuid=1000 --regid=1000 --clear-groups "$install_dir/composio" upgrade || upgrade_status=$?
+after=$(stat -c '%i %s' "$install_dir/composio")
+version_output=$("$install_dir/composio" version)
+version_status=$?
+leftovers=$(find "$install_dir" -name '.composio-atomic-replace-*' | wc -l)
+printf 'upgrade_status=%s\nbefore=%s\nafter=%s\nversion_status=%s\nversion=%s\nleftovers=%s\n' \
+  "$upgrade_status" "$before" "$after" "$version_status" "$version_output" "$leftovers"
+`;
+
+const belowMinimumCommand = `
+set -u
+install_dir=/opt/composio-below-minimum
+source_dir=/tmp/composio-upgrade-source
+mkdir -p "$install_dir" "$source_dir"
+cp -r /usr/local/bin/. "$install_dir/"
+printf '%s\\n' '@composio/cli@0.5.0' > "$install_dir/release-tag.txt"
+cp /usr/local/bin/composio "$source_dir/composio"
+${manifestBundleSetup('99.0.0')}
+
+before=$(stat -c '%i %s' "$install_dir/composio")
+upgrade_status=0
+DEBUG_OVERRIDE_UPGRADE_TARGET="$source_dir/composio" "$install_dir/composio" upgrade || upgrade_status=$?
+after=$(stat -c '%i %s' "$install_dir/composio")
+if [ -e "$install_dir/${manifestFileName}" ]; then manifest_installed=1; else manifest_installed=0; fi
+release_tag=$(cat "$install_dir/release-tag.txt")
+printf 'upgrade_status=%s\\nbefore=%s\\nafter=%s\\nmanifest_installed=%s\\nrelease_tag=%s\\n' \\
+  "$upgrade_status" "$before" "$after" "$manifest_installed" "$release_tag"
 `;
 
 const outputField = (result: E2ETestResult, name: string): string => {
@@ -113,6 +190,9 @@ e2e(import.meta.url, {
   defineTests: ({ runCmd }) => {
     let installedResult: E2ETestResult;
     let copiedResult: E2ETestResult;
+    let readOnlyResult: E2ETestResult;
+    let manifestResult: E2ETestResult;
+    let belowMinimumResult: E2ETestResult;
 
     beforeAll(async () => {
       installedResult = await runCmd(
@@ -121,6 +201,15 @@ e2e(import.meta.url, {
       copiedResult = await runCmd(
         upgradeCommand({ executablePath: '/tmp/composio-copy/composio', copyExecutable: true })
       );
+      readOnlyResult = await runCmd(readOnlyInstallCommand);
+      manifestResult = await runCmd(
+        upgradeCommand({
+          executablePath: '/usr/local/bin/composio',
+          copyExecutable: false,
+          bundleSetup: manifestBundleSetup('0.1.26'),
+        })
+      );
+      belowMinimumResult = await runCmd(belowMinimumCommand);
     }, TIMEOUTS.FIXTURE);
 
     describe('composio upgrade', () => {
@@ -130,6 +219,52 @@ e2e(import.meta.url, {
 
       it('replaces an executable running from a copied path', () => {
         expectAtomicUpgrade(copiedResult);
+      });
+    });
+
+    describe('composio upgrade to a bundle with a release manifest', () => {
+      it('installs a bundle that omits the generation runtime and every placeholder', () => {
+        expectAtomicUpgrade(manifestResult);
+      });
+
+      it('installs the manifest next to the executable', () => {
+        expect(outputField(manifestResult, 'installed_manifest')).toBe(
+          JSON.stringify(releaseManifest('0.1.26'))
+        );
+      });
+    });
+
+    describe('composio upgrade to a bundle that requires a newer CLI', () => {
+      it('refuses and names the reinstall path', () => {
+        expect(outputField(belowMinimumResult, 'upgrade_status')).toBe('1');
+        expect(belowMinimumResult.stderr).toContain('99.0.0');
+        expect(belowMinimumResult.stderr).toContain('curl -fsSL https://composio.dev/install | sh');
+      });
+
+      it('leaves the install untouched', () => {
+        expect(outputField(belowMinimumResult, 'after')).toBe(
+          outputField(belowMinimumResult, 'before')
+        );
+        expect(outputField(belowMinimumResult, 'manifest_installed')).toBe('0');
+        expect(outputField(belowMinimumResult, 'release_tag')).toBe('@composio/cli@0.5.0');
+      });
+    });
+
+    describe('composio upgrade without write permission on the install directory', () => {
+      it('fails and says which file it could not replace', () => {
+        expect(outputField(readOnlyResult, 'upgrade_status')).toBe('1');
+        expect(readOnlyResult.stderr).toContain('permission denied');
+        expect(readOnlyResult.stderr).toContain('/opt/composio-readonly/');
+      });
+
+      it('leaves the installed executable untouched and runnable', () => {
+        expect(outputField(readOnlyResult, 'after')).toBe(outputField(readOnlyResult, 'before'));
+        expect(outputField(readOnlyResult, 'version_status')).toBe('0');
+        expect(outputField(readOnlyResult, 'version')).toMatch(/\d+\.\d+\.\d+/);
+      });
+
+      it('leaves no temporary files behind', () => {
+        expect(outputField(readOnlyResult, 'leftovers')).toBe('0');
       });
     });
   },

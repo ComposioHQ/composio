@@ -10,6 +10,8 @@
     "esModuleInterop": true
   },
   "include": [
+    "scripts/update-composio-client.ts",
+    "test/composio-client-update.test.ts",
     "scripts/agent-task.ts",
     "ts/scripts/check-cli-skills.ts",
     "test/cli-skills.test.ts",

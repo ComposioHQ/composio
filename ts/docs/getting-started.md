@@ -4,6 +4,10 @@ This guide will help you get started with the Composio SDK. You'll learn how to 
 
 ## Installation
 
+The TypeScript SDK requires **Node.js 22.22.3 or newer** and is **ESM-only**. Use `import` syntax rather than CommonJS `require()`, and set `"type": "module"` in your project's `package.json`.
+
+For the current session-based examples and framework setup, see the [SDK quickstart](https://docs.composio.dev/docs/quickstart).
+
 Install the Composio SDK using npm, yarn, or pnpm:
 
 ```bash
@@ -306,7 +310,7 @@ const customTool = experimental_createTool('WEATHER_FORECAST', {
 });
 
 const session = await composio.create('default', {
-  experimental: { customTools: [customTool] },
+  experimental: { localTools: [customTool] },
 });
 
 const result = await session.execute('WEATHER_FORECAST', {

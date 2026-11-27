@@ -1,6 +1,6 @@
 import { Effect, Result, Option } from 'effect';
 import type { SessionProxyExecuteParams } from '@composio/client/resources/tool-router/session';
-import { resolveOptionalTextInput } from 'src/effects/resolve-optional-text-input';
+import { resolveExplicitTextInput } from 'src/effects/resolve-optional-text-input';
 import { resolveToolRouterSession } from 'src/effects/create-tool-router-session';
 import { gateToolExecution } from 'src/services/tool-permissions';
 import {
@@ -8,8 +8,10 @@ import {
   refreshConsumerConnectedToolkitsCache,
 } from 'src/services/consumer-short-term-cache';
 import { TerminalUI } from 'src/services/terminal-ui';
+import { escapeTerminalLines, escapeTerminalText } from 'src/ui/escape-terminal-text';
 import { ComposioClientSingleton } from 'src/services/composio-clients';
-import { actingUser } from 'src/commands/surface';
+import { actingUser, warnOnStderr } from 'src/commands/surface';
+import { Stdin } from 'src/services/stdin';
 import {
   ComposioNoActiveConnectionError,
   mapComposioError,
@@ -71,8 +73,6 @@ export const parseProxyHeader = (value: string): { name: string; value: string }
   return { name, value: headerValue };
 };
 
-const resolveBodyInput = (input: Option.Option<string>) => resolveOptionalTextInput(input);
-
 export const parseProxyBody = (raw: string): unknown =>
   Result.getOrElse(parseJsonRecord(raw), (): unknown => raw);
 
@@ -88,8 +88,10 @@ const handleProxyExecutionError = (params: {
       toolkit: params.toolkit,
     });
 
+    // The message can quote the upstream API; the stdout result keeps it as it is.
+    const displayMessage = escapeTerminalText(mapped.message);
     if (mapped.normalized instanceof ComposioNoActiveConnectionError) {
-      yield* params.ui.log.error(mapped.message);
+      yield* params.ui.log.error(displayMessage);
       yield* params.ui.note(
         [
           `Link the toolkit first: composio link ${params.toolkit}`,
@@ -98,7 +100,7 @@ const handleProxyExecutionError = (params: {
         'Tips'
       );
     } else {
-      yield* params.ui.log.error(mapped.message);
+      yield* params.ui.log.error(displayMessage);
     }
     const output = formatProxyErrorOutput({
       error: mapped.message,
@@ -192,7 +194,17 @@ export const runProxy = (params: ProxyParams) =>
         };
       }
     );
-    const rawBody = yield* resolveBodyInput(data);
+    // Only `-d -` reads stdin: reading a pipe the caller left open would hang the request before
+    // it is sent, and agents run with such pipes.
+    const rawBody = yield* resolveExplicitTextInput(data, { command: 'proxy', flag: '--data' });
+    if (rawBody === undefined && normalizedMethod !== 'GET' && !(yield* Stdin).isTTY()) {
+      // A body piped in without `-d` used to be sent; say why it no longer is, without reading
+      // stdin, which an agent harness may hold open. A GET stays quiet: it is the bodiless read
+      // agents run with such a pipe, and a warning on every one would be noise.
+      yield* warnOnStderr(
+        'Sending the request without a body: composio proxy reads stdin only with -d -. Pass -d - to send piped input as the body.'
+      );
+    }
     const parsedBody = rawBody === undefined ? undefined : parseProxyBody(rawBody);
 
     const result = yield* ui.withSpinner(
@@ -295,9 +307,10 @@ export const runProxy = (params: ProxyParams) =>
     );
 
     const output = formatProxyOutput(result);
-    yield* ui.log.info(`Status: ${String(result.status ?? 'unknown')}`);
+    yield* ui.log.info(`Status: ${escapeTerminalText(String(result.status ?? 'unknown'))}`);
     if (output) {
-      yield* ui.note(output, 'Proxy Response');
+      // The note shows the response on the terminal; redirected stdout gets the body as it is.
+      yield* ui.note(escapeTerminalLines(output), 'Proxy Response');
       yield* ui.output(output);
     }
   });

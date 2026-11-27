@@ -2,9 +2,206 @@
 
 ## Unreleased
 
+## 0.6.4
+
+- `composio dev init` creates and updates `.env.local` with owner-only permissions (mode `0600`) and tightens existing regular files even when their contents stay the same. It stops with instructions if the path is a symbolic link, is another non-regular entry, or cannot be made private.
+
+- `composio execute` and `composio dev playground-execute` accept local uploads and `-d @file` arguments under the current working directory. The same scope applies to `composio proxy -d @file` and `composio listen --params @file`. Symlinks must resolve within that directory and sensitive paths remain blocked. Copy files into the working directory or run the command from a directory that contains them. `composio run` stages script-provided Files, Blobs, and argument files in a private temporary directory for each execute call and removes it when the call finishes.
+
+- CLI telemetry events now carry `agent_session_host` (`claude` or `codex`)
+  and `agent_session_id` when the CLI can identify the Claude Code or Codex
+  chat it runs in, so the commands one chat ran can be grouped. The ID is a
+  UUID v5 the CLI derives from the host name and the host's session ID. The
+  host's own session ID is never sent. When the CLI cannot identify the chat,
+  neither property is sent, and `COMPOSIO_CLI_TELEMETRY_DISABLED`,
+  `COMPOSIO_DISABLE_TELEMETRY`, `TELEMETRY_DISABLED` and `CI` turn both off
+  with the rest of telemetry.
+
+- Requests the CLI sends to Composio from inside a Claude Code or Codex chat
+  now carry the same agent session as two headers, `x-cli-agent-session-host`
+  and `x-cli-agent-session-id`. Three kinds of request carry them: requests
+  made through the Composio API client, consumer `composio execute` calls sent
+  to the Composio Dashboard, and `proxy()` calls made by a `composio run`
+  script. The API client and proxy helper keep the session headers on the
+  configured backend origin, including when a request redirects. Builds
+  without a PostHog project key also send these headers. The telemetry
+  switches above remove both headers.
+
+- The CLI now reports how many times the Claude Code or Codex chat it runs in
+  was compacted: as `agent_compaction_count` on telemetry events, and as the
+  `x-cli-agent-compaction-count` header on the three kinds of request that
+  carry the agent session. The count is the number of lines in a file the
+  Composio agent plugin's hook keeps for the chat,
+  `~/.composio/agent-compactions/<host>/<host session ID>`, which the CLI only
+  reads. The README describes the file under "Agent compaction state". No
+  plugin writes it yet, so the count stays absent until one does. A missing,
+  unreadable, or oversized file changes nothing about a command, and the
+  telemetry switches above turn off both the read and the value.
+
+[Compare with 0.6.3](https://github.com/ComposioHQ/composio/compare/%40composio%2Fcli%400.6.3...%40composio%2Fcli%400.6.4)
+
+## 0.6.3
+
 ### Patch Changes
 
+- Keep compiler-host callbacks bound during TypeScript generation and format structured errors in CLI output.
+
+- Update @composio/client to 2.1.36 to include the latest API changes.
+
+- Release archives now include a `release-manifest.json` that lists the support files they ship. `composio upgrade` installs exactly what the manifest lists, so later releases can drop a support file without breaking upgrades. Files a release no longer lists stay in place. A release can name the oldest CLI version that may upgrade to it; an older CLI refuses it before changing anything and prints the install command to run instead.
+
+- Agents calling `composio proxy` or `composio execute` without `-d` no longer hang for minutes with no output. Agent harnesses often run commands with a stdin pipe they never write to or close, and both commands waited for that pipe to end before sending anything.
+  - `composio proxy` reads a request body from stdin only with `-d -` (or `-d @-`). Without `-d` it sends the request without touching stdin, so a proxied GET returns at once. Any method but `GET` without `-d` from a non-terminal stdin warns on stderr that it is sent without a body, since piped input is no longer used as one.
+  - `composio execute` still reads piped JSON arguments without `-d`. A pipe that sends nothing within 1 second now fails with `No input arrived on stdin within 1 second` and exit code 1, without running the tool, rather than running it with `{}` while the arguments may still be on their way. Pass the arguments with `-d '{...}'`, or `-d -` to wait for stdin as long as it takes.
+
+- Update @composio/client to 2.1.35 to include the latest API changes.
+
+- `composio listen --stream` shows control characters, including embedded tabs and line breaks,
+  as visible escapes in each output record. Read the saved event JSON for the original value.
+  `composio dev listen`, `composio execute`, `composio proxy` and error messages also show
+  control characters from events, responses and API errors as escapes on the terminal. Printed
+  JSON decodes to the same values, and redirected `proxy` output stays unchanged.
+
+- `composio upgrade` on Windows now retries a busy executable rename for up to two seconds, allowing a brief file lock after a previous upgrade to clear before replacing the binary.
+
+- `composio login --poll` accepts `--timeout <seconds>` to bound how long it waits. If the login is still pending when the wait ends, the CLI prints the authorization URL and the command to resume polling. [#5431](https://github.com/ComposioHQ/composio/pull/5431)
+
+- Update @composio/client to 2.1.33 to include the latest API changes.
+
+[Compare with 0.6.2](https://github.com/ComposioHQ/composio/compare/%40composio%2Fcli%400.6.2...%40composio%2Fcli%400.6.3)
+
+## 0.6.2
+
+### Patch Changes
+
+- A failed request that is safe to send again now exits 75 (`EX_TEMPFAIL`) instead of 1 and says so on stderr: one the API refused with a 429, or a read that timed out, lost its connection, or got a 408 or 5xx. Scripts and agents can retry on 75 without guessing. A failed `composio execute` adds `"retry": "safe"`, or `"retry": "check-first"` when the tool may have run before the request failed, to its `{ "successful": false }` result, and the `composio-cli` skill tells agents what both mean. Every other failed request still exits 1.
+
+- `composio dev toolkits list` and `info` now read a user's connection status in the resolved developer project. When no directory project applies, `--user-id` or the global test user can use the default developer project. A failed project lookup leaves the catalog available and warns when `--connected` cannot be applied.
+
+- A directory developer project must belong to the stored login's org, checked before any request. With no stored org, the CLI checks every page of the active key's org list. Resource commands refuse a project outside that boundary and name why they use the default developer project instead.
+
+- `composio dev` resource commands now act on the directory's developer project or `--project-name`, rather than leaving the backend to choose. Without a directory project they keep working by resolving the default developer project once from session info and naming it on stderr, including in scripts. Project lookup failures preserve their cause and recovery advice.
+
+- A command whose stdout reader stops reading early, as in
+  `composio search "send a slack message" | head -1`, now drops the rest of
+  its output and exits as it would have. It printed an `EPIPE: broken pipe`
+  stack trace on stderr and exited 1, so a pipeline that only wanted the first
+  lines looked like a failure. `composio listen` and `composio dev listen`
+  stop listening at their next write once that reader is gone and exit 0,
+  where they would keep running with nobody reading. Other stdout write
+  failures still fail the command.
+
+- `composio search` now fails with "The API response for
+  'toolRouter.session.search' is not in the shape this version of the CLI
+  expects" and `composio upgrade` as the way out when the API answers 200 with
+  JSON it cannot read or with an empty body. It crashed with a raw `TypeError`
+  naming a minified variable, which told an agent nothing it could act on.
+
+- `composio whoami` now exits 1 when it cannot read the account (the backend
+  rejects the stored key, cannot be reached, or fails), with nothing on stdout
+  and the reason on stderr; a rejected key also names `composio login`. It
+  exited 0 and printed a JSON object of nulls, so checking a login with
+  `composio whoami` passed on a key that no longer worked. A session it reads
+  only in part still prints, with the missing fields as `null`.
+
+- A command the Composio API answers with 401 now prints the API's message
+  and how to recover: `composio logout && composio login` when the stored
+  login's key may have expired, `composio agent login <composio_agent_key>`
+  with the key from `~/.composio/agent.json` when that login is the saved
+  Composio agent identity's, or replacing `COMPOSIO_USER_API_KEY` when the key
+  came from there. Agent recovery reuses the identity without signing up a
+  replacement or printing its key. `composio search` and other commands printed only the
+  API's `Invalid API key` (inside a defect report), so an agent had no command
+  to get unstuck. The hint was shown only when the API said the user API key
+  itself was rejected; any other 401 now names the login as the likely cause.
+
+- The `composio-cli` skill now says how to run a tool inside a developer
+  project: `composio dev playground-execute`, with
+  `composio dev connected-accounts link <toolkit>` for a missing connection.
+  Agents on developer tasks used to fall back to `composio execute`, which acts
+  on the consumer project; in live runs with `claude-haiku-5-5` that happened
+  on every developer run, and no longer does.
+
+- `composio dev playground-execute` without a connection now names
+  `composio dev connected-accounts link <toolkit>` as the fix. It used to name
+  `composio link <toolkit>`, which connects the consumer user and leaves the
+  developer project's test user unconnected, so the retry failed the same way.
+  The `composio-cli` skill's developer reference now lists `composio orgs list`
+  in place of `composio dev orgs list`, which does not exist.
+
+### Minor Changes
+
+- `composio dev logs tools` now searches and retrieves logs through the public
+  tool execution logs API. Pages are capped at 100. Piped JSON uses the public
+  `logs` / `next_cursor` envelope and unified log detail fields. The public API
+  does not support `--case-sensitive` or the legacy `--session-id` filter;
+  these now fail with an explanation. `--tool-router-session-id` remains supported.
+  Each filter flag takes one value; a comma-separated list now fails instead of
+  matching nothing.
+
+[Compare with 0.6.1](https://github.com/ComposioHQ/composio/compare/%40composio%2Fcli%400.6.1...%40composio%2Fcli%400.6.2)
+
+## 0.6.1
+
+### Patch Changes
+
+- Update @composio/client to 2.1.32 to include the latest API changes.
+
+- `composio dev connected-accounts link --help` now shows
+  `composio dev connected-accounts link …` examples. It showed root
+  `composio link …` examples, which link the consumer user, not a user of the
+  developer project. The description of both pages now says which user each
+  command acts as.
+
+- `composio link` and `composio dev connected-accounts link` now print the
+  authorization URL when stderr is not a terminal, as under a script, CI or a
+  coding agent, before they wait for the authorization. The URL used to go
+  through terminal decoration that is dropped off a terminal, so a run with
+  `--no-browser` printed nothing until it timed out and an agent had no URL to
+  show the person. The instructions name `--no-wait`, which returns the URL as
+  JSON at once, and the `composio-cli` skill now teaches it.
+
+- `composio login` and `composio link` stop waiting for an authorization after
+  10 minutes, checking every 5 seconds once a short ramp is over. The wait used
+  to double after every check, so it took about 2 hours 44 minutes to give up,
+  although `composio login`'s hint promised 10 minutes.
+
+- Update @composio/client to 2.1.17 to include the latest API changes.
+
+- Update @composio/client to 2.1.16 to include the latest API changes.
+
+- Update @composio/client to 2.1.13 to include the latest API changes.
+
+- Update @composio/client to 2.1.6 to include the latest API changes.
+
+- Update @composio/client to 2.1.0 to include the latest API changes.
+
 - Update Effect and its Bun and Vitest integrations to `^4.1.0`.
+
+### Minor Changes
+
+- Add experimental native Windows x64 CLI binaries, installed from PowerShell
+  with a checksum-verified one-liner. Installation, `composio run`, and
+  `composio upgrade` are checked on Windows in the beta and stable release
+  workflows; other commands may not work yet. Windows requires Windows 10 1809
+  or newer and an SSE4.2-capable x64 CPU.
+
+### Patch Changes
+
+- `composio connections list` now prints every connection. The server serves
+  at most 50 connected accounts per request and the CLI read only the first
+  page, so a user with more than 50 saw a partial list with no sign it was cut
+  off, and a connected toolkit (such as an active Slack account) looked
+  disconnected. `composio connections remove` could not find an account past
+  the first 50, and `composio execute` sessions left out toolkits whose
+  accounts were past the first 50 active ones. All three now follow
+  `next_cursor` through every page.
+  `composio link --list` and alias-conflict checks when linking also read
+  every page, including accounts filtered by an auth config.
+
+[Compare with 0.6.0](https://github.com/ComposioHQ/composio/compare/%40composio%2Fcli%400.6.0...%40composio%2Fcli%400.6.1)
+
+## 0.6.0
 
 ### Minor Changes
 
@@ -58,17 +255,6 @@
   shared root and `dev` definitions reuse that selection. Help and parse failures
   omit command input properties instead of reporting synthetic defaults, false
   booleans, or zero counts for input that was never parsed.
-
-- `composio connections list` now prints every connection. The server serves
-  at most 50 connected accounts per request and the CLI read only the first
-  page, so a user with more than 50 saw a partial list with no sign it was cut
-  off, and a connected toolkit (such as an active Slack account) looked
-  disconnected. `composio connections remove` could not find an account past
-  the first 50, and `composio execute` sessions left out toolkits whose
-  accounts were past the first 50 active ones. All three now follow
-  `next_cursor` through every page.
-  `composio link --list` and alias-conflict checks when linking also read
-  every page, including accounts filtered by an auth config.
 
 - `composio dev triggers listen --toolkits` now matches toolkits whose slug
   contains an underscore, such as `one_drive`, `launch_darkly` and
@@ -290,6 +476,7 @@
   `--auth-config`. They used to exit 0, and printed the message only when
   stderr was a terminal, so scripts, CI and agents saw no output and a
   successful exit. The messages are unchanged.
+
 - These commands now exit 1 and print their message on stderr. They used to
   exit 0, and printed the message only when stderr was a terminal, so scripts,
   CI and agents saw no output and a successful exit. The messages are
@@ -312,6 +499,7 @@
     `composio link` and `composio dev connected-accounts link` when the link
     request fails, the link response is incomplete, the `--alias` is already
     taken, or an account already exists and no `--alias` was passed.
+
 - These commands already exited 1 but printed their message only when stderr
   was a terminal; they now print it on stderr either way:
   `composio dev toolkits list` and `composio dev toolkits search` when the
@@ -319,6 +507,7 @@
   `composio dev triggers listen` when the realtime subscription fails, and
   the `composio agent` commands, `composio signup` and `composio login` when
   the stored agent identity can't be used.
+
 - `composio connections remove` gains `--yes` (`-y`) to remove without the
   confirmation prompt, and `composio logout` accepts `--yes` (`-y`) next to
   `--force` (`-f`). When not running interactively, both used to answer their
@@ -326,13 +515,17 @@
   exit 1 with "needs --yes when not running interactively" on stderr, before
   any request (for `logout`, only when logged in as an agent, the case that
   asks). Declining the prompt on a terminal still removes nothing and exits 0.
+
 - `composio listen`, `composio dev listen` and `composio dev triggers listen`
   now print how many events they failed to save, forward, or append to `--out`
   on stderr when they stop, including on Ctrl+C. The per-event warnings were
   shown only when stderr was a terminal. One failed event still does not stop
   the listener, and the exit code is unchanged.
+
 - `composio listen --max-events N` now stops after N matching events even when
   saving one of them fails. It used to keep listening until interrupted.
+
+[Compare with 0.5.0](https://github.com/ComposioHQ/composio/compare/%40composio%2Fcli%400.5.0...%40composio%2Fcli%400.6.0)
 
 ## 0.5.0
 

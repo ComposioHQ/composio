@@ -3,7 +3,10 @@
   "defaultOpen": false,
   "pages": [
     "overview",
+    "vendor-security-review",
+    "audit-logs",
     "token-custody",
+    "outbound-ips",
     "data-retention",
     "zero-data-retention"
   ]

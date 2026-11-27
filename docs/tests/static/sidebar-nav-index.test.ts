@@ -48,7 +48,7 @@ describe('buildSidebarNavIndex', () => {
       group: 'Guides',
       folder: 'Extend sessions',
       depth: 2,
-      position: index['/docs/extending-sessions/custom-tools-and-toolkits'].position + 1,
+      position: index['/docs/extending-sessions/local-tools-and-toolkits'].position + 1,
     });
   });
 
@@ -61,12 +61,33 @@ describe('buildSidebarNavIndex', () => {
     });
   });
 
+  test('governance guides stay top-level within the Governance section', () => {
+    expect(index['/docs/governance/action-permissions']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 1,
+    });
+    expect(index['/docs/governance/tool-hints']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 2,
+    });
+    expect(index['/docs/governance/approvals']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 3,
+    });
+  });
+
   test('folder index pages resolve to the folder row', () => {
     expect(index['/docs/authentication']).toEqual({
       group: 'Core concepts',
       folder: 'Authentication',
       depth: 1,
-      position: index['/docs/tool-tags'].position + 1,
+      position: index['/docs/toolkits'].position + 1,
     });
   });
 
@@ -74,7 +95,7 @@ describe('buildSidebarNavIndex', () => {
     // Core concepts opens a new group, so its first entry restarts at 1 rather
     // than continuing Get Started's numbering.
     expect(index['/docs'].position).toBe(1);
-    expect(index['/docs/how-composio-works'].position).toBe(1);
+    expect(index['/docs/sessions'].position).toBe(1);
   });
 
   test('a folder counts as one entry for its siblings', () => {

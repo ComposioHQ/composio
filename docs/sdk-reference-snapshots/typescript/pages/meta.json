@@ -1,0 +1,25 @@
+{
+  "title": "TypeScript SDK",
+  "pages": [
+    "composio",
+    "auth-configs",
+    "connected-accounts",
+    "custom-toolkits",
+    "keyring",
+    "logs",
+    "session-configs",
+    "experimental",
+    "mcp",
+    "remote-file",
+    "sessions",
+    "toolkits",
+    "session",
+    "session-files",
+    "tools",
+    "triggers",
+    "usage",
+    "webhook-endpoints",
+    "webhooks",
+    "webhook-subscriptions"
+  ]
+}

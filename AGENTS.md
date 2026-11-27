@@ -34,6 +34,7 @@ Use the smallest relevant skill:
 - `bug-fixing`: fixing a defect and choosing regression tests.
 - `cross-sdk-parity`: aligning TypeScript and Python behavior, generated client bumps, or API contract drift.
 - `docs-decisions`: docs site work, changelogs, docs decisions, or docs automation.
+- `docs-page-rewrite`: restructuring docs pages, pacing sections, and placing diagrams/examples while preserving contracts.
 - `good-docs-writing`: drafting or revising docs prose in the house writing voice.
 - `good-docs-audit`: reviewing existing docs or prose against that voice and reporting violations.
 - `eve`: durable backend AI agents built with the eve framework.
@@ -101,7 +102,7 @@ make build
 
 ## Release And Package Notes
 
-- TypeScript package releases use Changesets. Add a changeset only when published TypeScript packages change.
+- Stable Python and TypeScript SDK releases share Changesets. Public SDK behavior changes need a note for each affected package/language; Python uses the private `@composio/python-sdk` marker. See `ts/docs/internal/release.md` for the shared request/approval/retry process.
 - `@composio/cli` is excluded from Changesets; use `cli-release` for CLI binaries and never target that package in a changeset while it remains ignored.
 - Documentation-only and agent-guidance-only changes do not need a changeset.
 - Python release metadata lives in `python/pyproject.toml`, `python/setup.py`, and `uv.lock`.

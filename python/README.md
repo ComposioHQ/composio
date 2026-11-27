@@ -14,7 +14,7 @@ Composio gives your AI agents 1000+ pre-authenticated toolkits, per-user session
 - [Documentation](https://docs.composio.dev)
 - [Quickstart](https://docs.composio.dev/docs/quickstart)
 - [Changelog](https://docs.composio.dev/reference/changelog)
-- [Dashboard](https://dashboard.composio.dev) (grab your `COMPOSIO_API_KEY` from [Settings](https://dashboard.composio.dev/settings))
+- [Dashboard](https://dashboard.composio.dev) (project keys: Settings > API Keys)
 
 ## Install
 
@@ -23,6 +23,22 @@ Requires Python 3.11 through 3.15.
 ```bash
 pip install composio
 ```
+
+## Configure your API key
+
+Get a project API key from your project's **Settings > API Keys** in the dashboard. The [quickstart](https://docs.composio.dev/docs/quickstart) shows the setup.
+
+Set the key in the shell that starts your application:
+
+```bash
+export COMPOSIO_API_KEY="your_composio_api_key"
+```
+
+`Composio()` reads `COMPOSIO_API_KEY`. You can instead load the key from your secret store and pass it with `Composio(api_key=project_api_key)`. Keep keys out of source control and logs.
+
+Without a project key, `Composio()` raises `ApiKeyNotProvidedError` before making API requests. Passing `api_key=None` or `api_key=""` explicitly does not fall back to the environment.
+
+The CLI is optional and installed separately. `pip install composio` provides neither a `composio` executable nor a `python -m composio` entry point. If you want to use `composio login`, follow the [CLI installation instructions](https://docs.composio.dev/docs/cli#install). CLI login alone does not configure your application's API key; you still need to set `COMPOSIO_API_KEY` or pass `api_key`.
 
 ## Quickstart
 
@@ -44,6 +60,54 @@ session = composio.use(session_id)
 ```
 
 See [how Composio works](https://docs.composio.dev/docs/how-composio-works) for sessions and meta tools, and [configuring sessions](https://docs.composio.dev/docs/configuring-sessions) for restricting `toolkits`, `tools`, `auth_configs`, and `connected_accounts` on `composio.create()`.
+
+## Execution results
+
+Python session execution takes `tool_slug`, not the direct Tools API's `slug`:
+
+```python
+result = session.execute(
+    tool_slug="COMPOSIO_SEARCH_TOOLS",
+    arguments={"queries": [{"use_case": "find recent emails"}]},
+)
+if result.result_type == "completed":
+    print(result.data)
+else:  # "failed" or "blocked", even if error is empty
+    print(result.result_type, result.error)
+```
+
+`session.execute` returns a Pydantic `ToolRouterSessionExecuteResponse` with `data`, `error`, `log_id`, and `result_type` attributes. Serialize it with `result.model_dump(mode="json")` or `result.model_dump_json()`. It has no `successful` key or model tool-call ID.
+
+In contrast, `composio.tools.execute(slug=..., arguments=..., user_id=...)` and `after_execute` modifiers use `ToolExecutionResponse` dictionaries: check `response["successful"]` and serialize with `json.dumps(response)`. Provider adapters for session execution derive that flag from `result_type == "completed"` and retain `result_type`, `log_id`, and any returned `instant_charge`. Modifiers receive `(tool, toolkit, response)` and must return the dictionary. Calling `session.execute` directly doesn't invoke callbacks supplied to `session.tools(modifiers=...)`.
+
+Provider helpers have provider-specific return contracts. The [Python Anthropic helper](providers/anthropic) returns execution dictionaries with `tool_use_id`; you still build and serialize Anthropic `tool_result` blocks yourself. Don't assume Python returns TypeScript-native message blocks.
+
+Transport/authentication errors and requests for user input can raise instead of returning a result. Keep authentication recovery separate from returned tool failures. A non-throwing call, empty `error`, or execution-log ID isn't proof of a provider-side action. Check the explicit outcome and tool-specific `data`; your application owns retry and idempotency decisions.
+
+## Error handling
+
+API rejections raise a `composio_client` status error, which is also a `ComposioError`. The message carries the server's explanation, and the error exposes the HTTP status, request id, numeric API error code, and a suggested fix:
+
+```python
+from composio import api_error_details
+from composio_client import APIStatusError
+
+try:
+    composio.tools.execute(
+        slug="GMAIL_SEND_EMAIL",
+        arguments={"to": "user@example.com", "subject": "Hi", "body": "Hello"},
+        user_id="user_123",
+    )
+except APIStatusError as error:
+    details = api_error_details(error)
+    print(details.message)          # 410 toolkit GMAIL version 20250114_00 is retired ...
+    print(details.status_code)      # 410
+    print(details.api_error_code)   # 1410
+    print(details.request_id)       # req_...
+    print(details.possible_fixes)   # ["Pin 20261101_00"] or status-specific guidance
+```
+
+`api_error_details()` returns the typed view of the same exception, so type checkers see these fields. `details.possible_fixes` uses the server's `suggested_fix` when present. Without one, it returns a fix chosen for the HTTP status, so a 401, 402, 403, 410, or 5xx doesn't tell you to check the tool slug and arguments. `details.details` still exposes the validated error envelope.
 
 ## Use with an agent framework
 

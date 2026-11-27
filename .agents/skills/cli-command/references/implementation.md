@@ -6,7 +6,7 @@ The [contributor guide](../../../../ts/packages/cli/CONTRIBUTING.md) traces one 
 
 - Groups register children through `withRegisteredSubcommands`, which supplies parsed identity and inherited policy. Direct `Command.withSubcommands` bypasses it.
 - `withCommandMeta` declares login, hooks, telemetry family, and unsupported shared flags. Handlers do not repeat login gates or lifecycle reporting.
-- `CommandSurface` supplies root/dev context and dev shared flags. `actingUser()` or `actingUserOption()` resolves the acting user and project. A user filter does not use a test-user fallback.
+- `CommandSurface` supplies root/dev context and dev shared flags. `actingUser()` resolves the acting user and project; `devActingUserOption(project)` finds an optional one for a developer project the command resolved. A user filter does not use a test-user fallback.
 - The same command definition can have multiple registrations. Root shortcuts do not need copied handlers or descriptions.
 - Changes to command paths or help summaries regenerate `COMMANDS.md` with `pnpm --filter @composio/cli run commands:map`.
 
@@ -112,7 +112,19 @@ Never add an `eslint-disable`: `pnpm run validate:boundaries` (CI-blocking via `
 Event names and builders live in `src/analytics/events.ts`; `buildEvent` stamps every event with
 `journey_stage` and `cli_channel`, and `trackCliEventEffect` (`src/analytics/dispatch.ts`) adds
 `agent_host_env` (`claude`, `codex`, or `none`, from `src/services/agent-host-env.ts`) to every
-enqueued envelope. Setup-related events and their extra properties:
+enqueued envelope. When the CLI can identify the chat it runs in, it also adds
+`agent_session_host` (`claude` or `codex`) and `agent_session_id`, both from `resolveAgentSession`
+(`src/services/agent-session.ts`), which reads the hosts' session variables and not the host
+markers: session variables from both hosts with no plugin hook export send neither property, and
+a Codex marked only by `CODEX_SANDBOX` gets `agent_host_env: 'codex'` and neither property. The
+ID is a UUID v5 derived from the host and the host's session ID using a fixed public namespace.
+The CLI sends only the derived ID. Anyone with the original host and session ID can compute the
+same value and match it to the analytics events. When the host's plugin hook keeps a compaction
+file for the chat, the session also carries the nonblank line count as `agent_compaction_count`.
+The file contract is under "Agent compaction state" in the CLI README. The host property is named
+`agent_session_host`
+because common properties are spread last and `agent_host` would overwrite the setup target on
+setup and plugin lifecycle events. Setup-related events and their extra properties:
 
 - `CLI_SETUP_HOST_DETECTED`: `host_config_dir_present` and `host_binary_in_known_paths` only when
   `available` is `false` (probed by `src/services/agent-host-env.ts`).

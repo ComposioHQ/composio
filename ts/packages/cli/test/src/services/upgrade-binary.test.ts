@@ -14,12 +14,14 @@ import { getTerminalCapabilities, TerminalUI } from 'src/services/terminal-ui';
 import {
   formatDownloadProgress,
   formatMegabytes,
+  UpgradeBelowMinimumError,
   UpgradeBinary,
   UpgradeBinaryError,
 } from 'src/services/upgrade-binary';
 import { NodeOs } from 'src/services/node-os';
 import {
   collectExpectedRunCompanionAssetRelativePaths,
+  RELEASE_MANIFEST_FILENAME,
   RUN_COMPANION_RELEASE_TAG_FILENAME,
 } from 'src/services/run-companion-modules';
 
@@ -34,6 +36,7 @@ const TerminalUINoop = Layer.succeed(
       })
     ),
     output: () => Effect.void,
+    stdoutClosed: Effect.never,
     error: () => Effect.void,
     intro: () => Effect.void,
     outro: () => Effect.void,
@@ -85,7 +88,8 @@ type UpgradeOptions = {
 const makeUpgradeEffect = (
   configEntries: ReadonlyArray<[string, string]>,
   options?: UpgradeOptions,
-  fileSystemLayer: Layer.Layer<FileSystem.FileSystem> = BunFileSystem.layer
+  fileSystemLayer: Layer.Layer<FileSystem.FileSystem> = BunFileSystem.layer,
+  nodeOsLayer: Layer.Layer<NodeOs> = NodeOsTest
 ) =>
   Effect.gen(function* () {
     const service = yield* UpgradeBinary;
@@ -95,7 +99,7 @@ const makeUpgradeEffect = (
     Effect.provide(FetchHttpClient.layer),
     Effect.provide(fileSystemLayer),
     Effect.provide(TerminalUINoop),
-    Effect.provide(NodeOsTest),
+    Effect.provide(nodeOsLayer),
     Effect.provideService(
       ConfigProvider.ConfigProvider,
       ConfigProvider.fromEnv({ env: Object.fromEntries(configEntries) })
@@ -508,6 +512,68 @@ describe('UpgradeBinary', () => {
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 
+  // Live clock: the upgrade waits out a briefly locked backup before giving up.
+  it.live('preserves the Windows bundle when a previous executable backup is locked', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped();
+      const sourceDir = yield* fs.makeTempDirectoryScoped();
+      const fakeExecPath = path.join(installDir, 'composio.exe');
+      const sourceBinaryPath = path.join(sourceDir, 'composio.exe');
+      const backupPath = `${fakeExecPath}.old`;
+      const releaseTagPath = path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME);
+      yield* fs.writeFileString(fakeExecPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.writeFileString(backupPath, 'locked-previous-binary');
+      yield* fs.writeFileString(releaseTagPath, '@composio/cli@0.2.31\n');
+      const companions = yield* collectExpectedRunCompanionAssetRelativePaths(sourceDir);
+      yield* writeCompanionFiles(sourceDir, companions, 'new-support');
+      yield* writeCompanionFiles(installDir, companions, 'old-support');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(fakeExecPath);
+      const lockedFileSystem = Layer.succeed(
+        FileSystem.FileSystem,
+        FileSystem.make({
+          ...fs,
+          remove: (target, options) =>
+            target === backupPath
+              ? Effect.fail(
+                  PlatformError.systemError({
+                    _tag: 'Busy',
+                    module: 'FileSystem',
+                    method: 'remove',
+                    pathOrDescriptor: target,
+                  })
+                )
+              : fs.remove(target, options),
+        })
+      );
+      const windowsOs = Layer.succeed(
+        NodeOs,
+        NodeOs.of({
+          homedir: testHomedir,
+          tmpdir: '/tmp',
+          platform: 'win32',
+          arch: 'x64',
+        })
+      );
+      const error = yield* makeUpgradeEffect(
+        [['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath]],
+        { tag: '@composio/cli@0.3.0' },
+        lockedFileSystem,
+        windowsOs
+      ).pipe(Effect.flip);
+
+      expect(yield* fs.readFileString(fakeExecPath)).toBe('old-binary');
+      expect(yield* fs.readFileString(releaseTagPath)).toBe('@composio/cli@0.2.31\n');
+      expect(yield* fs.readFileString(path.join(installDir, companions[0]!))).toBe('old-support');
+      expect(error).toBeInstanceOf(UpgradeBinaryError);
+      expect(error.message).toContain('Close other Composio processes');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
   it.effect('commits companions and release metadata before replacing the binary', () => {
     vi.stubGlobal('Bun', { which: vi.fn(() => null) });
 
@@ -694,6 +760,200 @@ describe('UpgradeBinary', () => {
       expect(error).toBeInstanceOf(UpgradeBinaryError);
       expect(error.message).toBe('Failed to download binary: composio-darwin-aarch64.zip');
       expect(String(error.cause)).toContain('beta-3.zip');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+});
+
+describe('UpgradeBinary with a release manifest', () => {
+  const LIVE_COMPANIONS = [
+    'generation-runtime.mjs',
+    'run-helpers-runtime.mjs',
+    'services/generation-runtime.mjs',
+    'services/run-helpers-runtime.mjs',
+  ];
+  // An archive from a release that dropped the generation runtime.
+  const RUN_HELPERS_ONLY = ['run-helpers-runtime.mjs', 'services/run-helpers-runtime.mjs'];
+
+  const manifestJson = (fields: Record<string, unknown> = {}) =>
+    `${JSON.stringify(
+      { schemaVersion: 1, minimumUpgradeFrom: '0.1.26', companions: RUN_HELPERS_ONLY, ...fields },
+      null,
+      2
+    )}\n`;
+
+  const setUpLocalUpgrade = (installedTag: string, archiveFiles: ReadonlyArray<string>) =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const installDir = yield* fs.makeTempDirectoryScoped({
+        prefix: 'composio-manifest-install-',
+      });
+      const sourceDir = yield* fs.makeTempDirectoryScoped({ prefix: 'composio-manifest-source-' });
+      const execPath = path.join(installDir, 'composio');
+      const sourceBinaryPath = path.join(sourceDir, 'composio');
+      yield* fs.writeFileString(execPath, 'old-binary');
+      yield* fs.writeFileString(sourceBinaryPath, 'new-binary');
+      yield* fs.writeFileString(
+        path.join(installDir, RUN_COMPANION_RELEASE_TAG_FILENAME),
+        `${installedTag}\n`
+      );
+      yield* writeCompanionFiles(installDir, LIVE_COMPANIONS, 'old-support');
+      yield* writeCompanionFiles(sourceDir, archiveFiles, 'new-support');
+      vi.spyOn(process, 'execPath', 'get').mockReturnValue(execPath);
+
+      const installedFiles = Effect.gen(function* () {
+        const entries = yield* fs.readDirectory(installDir, { recursive: true });
+        const files = yield* Effect.filter(entries, entry =>
+          Effect.map(fs.stat(path.join(installDir, entry)), info => info.type === 'File')
+        );
+        return files.map(entry => entry.replaceAll(path.sep, '/')).sort();
+      });
+      const readInstalled = (relativePath: string) =>
+        fs.readFileString(path.join(installDir, relativePath));
+      const writeSourceManifest = (contents: string) =>
+        fs.writeFileString(path.join(sourceDir, RELEASE_MANIFEST_FILENAME), contents);
+      const upgradeConfig: Array<[string, string]> = [
+        ['DEBUG_OVERRIDE_UPGRADE_TARGET', sourceBinaryPath],
+      ];
+
+      return {
+        installDir,
+        upgradeConfig,
+        installedFiles,
+        readInstalled,
+        writeSourceManifest,
+      };
+    });
+
+  const UNCHANGED_INSTALL = [
+    RUN_COMPANION_RELEASE_TAG_FILENAME,
+    'composio',
+    ...LIVE_COMPANIONS,
+  ].sort();
+
+  it.effect('leaves companions the archive does not list in place when it downgrades', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const install = yield* setUpLocalUpgrade('@composio/cli@0.6.0', RUN_HELPERS_ONLY);
+      yield* install.writeSourceManifest(manifestJson());
+
+      yield* runUpgradeSuccess(install.upgradeConfig, { tag: '@composio/cli@0.5.0' });
+
+      expect(yield* install.installedFiles).toEqual(
+        [...UNCHANGED_INSTALL, RELEASE_MANIFEST_FILENAME].sort()
+      );
+      expect(yield* install.readInstalled('composio')).toBe('new-binary');
+      expect(yield* install.readInstalled('services/run-helpers-runtime.mjs')).toBe('new-support');
+      expect(yield* install.readInstalled('services/generation-runtime.mjs')).toBe('old-support');
+      expect(yield* install.readInstalled(RELEASE_MANIFEST_FILENAME)).toBe(manifestJson());
+      expect(yield* install.readInstalled(RUN_COMPANION_RELEASE_TAG_FILENAME)).toBe(
+        '@composio/cli@0.5.0\n'
+      );
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect('refuses an archive whose minimum version is above the running one', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const install = yield* setUpLocalUpgrade('@composio/cli@0.4.0', LIVE_COMPANIONS);
+      yield* install.writeSourceManifest(
+        manifestJson({ minimumUpgradeFrom: '0.5.0', companions: LIVE_COMPANIONS })
+      );
+
+      const error = yield* runUpgrade(install.upgradeConfig, { tag: '@composio/cli@0.9.0' });
+
+      expect(error).toBeInstanceOf(UpgradeBelowMinimumError);
+      expect(error).toMatchObject({ currentVersion: '0.4.0', minimumUpgradeFrom: '0.5.0' });
+      expect(error.message).toContain('curl -fsSL https://composio.dev/install | sh');
+      expect(yield* install.installedFiles).toEqual(UNCHANGED_INSTALL);
+      expect(yield* install.readInstalled('composio')).toBe('old-binary');
+      expect(yield* install.readInstalled('run-helpers-runtime.mjs')).toBe('old-support');
+      expect(yield* install.readInstalled(RUN_COMPANION_RELEASE_TAG_FILENAME)).toBe(
+        '@composio/cli@0.4.0\n'
+      );
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect('does not check the minimum version from a source build with no release tag', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const install = yield* setUpLocalUpgrade('@composio/cli@0.4.0', RUN_HELPERS_ONLY);
+      yield* fs.remove(path.join(install.installDir, RUN_COMPANION_RELEASE_TAG_FILENAME));
+      yield* install.writeSourceManifest(manifestJson({ minimumUpgradeFrom: '99.0.0' }));
+
+      yield* runUpgradeSuccess(install.upgradeConfig);
+
+      expect(yield* install.readInstalled('composio')).toBe('new-binary');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect('fails without touching the install when a listed companion is missing', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const install = yield* setUpLocalUpgrade('@composio/cli@0.5.0', ['run-helpers-runtime.mjs']);
+      yield* install.writeSourceManifest(manifestJson());
+
+      const error = yield* runUpgrade(install.upgradeConfig, { tag: '@composio/cli@0.6.0' });
+
+      expect(error).toBeInstanceOf(UpgradeBinaryError);
+      expect(error.message).toBe('Downloaded binary package is incomplete');
+      expect(String((error as UpgradeBinaryError).cause)).toContain(
+        'services/run-helpers-runtime.mjs'
+      );
+      expect(yield* install.installedFiles).toEqual(UNCHANGED_INSTALL);
+      expect(yield* install.readInstalled('composio')).toBe('old-binary');
+      expect(yield* install.readInstalled('run-helpers-runtime.mjs')).toBe('old-support');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect.each([
+    { problem: 'a path that leaves the package', fields: { companions: ['../x'] } },
+    { problem: 'an absolute path', fields: { companions: ['/etc/passwd'] } },
+    { problem: 'an unknown schema version', fields: { schemaVersion: 2 } },
+    { problem: 'a minimum that is not a version', fields: { minimumUpgradeFrom: 'latest' } },
+    { problem: 'no companions', fields: { companions: [] } },
+  ])('fails without touching the install when the manifest has $problem', ({ fields }) => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const install = yield* setUpLocalUpgrade('@composio/cli@0.5.0', LIVE_COMPANIONS);
+      yield* install.writeSourceManifest(manifestJson(fields));
+
+      const error = yield* runUpgrade(install.upgradeConfig, { tag: '@composio/cli@0.6.0' });
+
+      expect(error).toBeInstanceOf(UpgradeBinaryError);
+      expect(error.message).toContain('Downloaded binary package is invalid');
+      expect(yield* install.installedFiles).toEqual(UNCHANGED_INSTALL);
+      expect(yield* install.readInstalled('composio')).toBe('old-binary');
+    }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
+  });
+
+  it.effect('removes the installed manifest when the archive has none', () => {
+    vi.stubGlobal('Bun', { which: vi.fn(() => null) });
+
+    return Effect.gen(function* () {
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const install = yield* setUpLocalUpgrade('@composio/cli@0.6.0', LIVE_COMPANIONS);
+      yield* fs.writeFileString(
+        path.join(install.installDir, RELEASE_MANIFEST_FILENAME),
+        manifestJson()
+      );
+      yield* fs.writeFileString(path.join(install.installDir, 'run-subagent-shared.mjs'), '');
+
+      yield* runUpgradeSuccess(install.upgradeConfig, { tag: '@composio/cli@0.4.2' });
+
+      expect(yield* install.installedFiles).toEqual(
+        [...UNCHANGED_INSTALL, 'run-subagent-shared.mjs'].sort()
+      );
+      expect(yield* install.readInstalled('composio')).toBe('new-binary');
+      expect(yield* install.readInstalled('generation-runtime.mjs')).toBe('new-support');
     }).pipe(Effect.provide(TestPlatform), Effect.ensuring(restoreStubsAndMocks));
   });
 });

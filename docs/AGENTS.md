@@ -9,6 +9,7 @@ Documentation-site guidance for AI agents working under `docs/`.
 ## Read Next
 
 - Use the `docs-decisions` skill for docs content, changelogs, decisions, docs automation, or docs review.
+- Use `docs-page-rewrite` to restructure a page: `Use docs-page-rewrite to rewrite <page>`. It owns layout and progression; `good-docs-writing` owns prose style.
 - Context references live under `docs/agent-guidance/context/`; use `docs/agent-guidance/context/twoslash.md` before editing typed MDX examples.
 - Read `docs/agent-guidance/context/code-examples.md` before editing code examples.
 - Agent workflow prompts live under `docs/agent-guidance/agents/`.
@@ -40,6 +41,8 @@ bun run inventory:code-examples
 ```
 
 ## Rules
+
+- Catalog-size copy uses "apps" in marketing text, including site descriptions, "toolkits" in technical documentation about toolkits, and "tools" only for an individual toolkit's actions. Use `TOOLKIT_COUNT_LABEL` from `lib/toolkit-count.ts` or `%TOOLKIT_COUNT%` in Markdown/MDX for the shared count.
 
 - Production Twoslash and `check:typescript-snippets` cover different maintained TypeScript surfaces. Read `docs/agent-guidance/context/twoslash.md` for coverage, installed-version boundaries, and annotation rules.
 - Maintained operation examples offer Python, TypeScript, and API options, or a specific justified exception. Read `docs/agent-guidance/context/code-examples.md` for the full inventory, generated/historical limits, check commands, and scoped markers. Passing checks do not establish semantic equivalence or justify an exemption.

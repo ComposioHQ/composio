@@ -12,7 +12,7 @@ Remove the deprecated/invalid Xero scopes `accounting.journals.read`, `accountin
 
 ## Connect MCP discovers Xero tools through meta-tools instead of preloading every tool
 
-Connect MCP uses meta-tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL` to discover and execute toolkit-specific tools dynamically. For Xero, the expected flow is: ask/search for the task such as `get Xero contacts`, let the agent discover the relevant Xero tool, then execute it through the multi-execute tool. This avoids loading 1000+ tools into context up front.
+Connect MCP uses meta-tools such as `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL` to discover and execute toolkit-specific tools dynamically. For Xero, the expected flow is: ask/search for the task such as `get Xero contacts`, let the agent discover the relevant Xero tool, then execute it through the multi-execute tool. This avoids loading schemas from every toolkit into context up front.
 
 ## Connect MCP and Platform MCP Xero connections are independent
 

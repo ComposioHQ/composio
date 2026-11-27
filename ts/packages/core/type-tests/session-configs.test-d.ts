@@ -64,8 +64,8 @@ function summaryMatchesClient(
 
 // A saved Session config replaces the inline access fields on create. Each
 // forbidden field is rejected on every create entry point.
-declare const customTool: ReturnType<typeof experimental_createTool>;
-declare const customToolkit: ReturnType<typeof experimental_createToolkit>;
+declare const localTool: ReturnType<typeof experimental_createTool>;
+declare const localToolkit: ReturnType<typeof experimental_createToolkit>;
 
 async function createRejectsMixedInputs(): Promise<void> {
   const experimental = { sessionConfigId: 'sc_1' };
@@ -77,12 +77,20 @@ async function createRejectsMixedInputs(): Promise<void> {
   // @ts-expect-error tags cannot be combined with sessionConfigId
   await composio.create('u', { tags: ['readOnlyHint'], experimental });
   await composio.create('u', {
+    // @ts-expect-error localTools cannot be combined with sessionConfigId
+    experimental: { sessionConfigId: 'sc_1', localTools: [localTool] },
+  });
+  await composio.create('u', {
     // @ts-expect-error customTools cannot be combined with sessionConfigId
-    experimental: { sessionConfigId: 'sc_1', customTools: [customTool] },
+    experimental: { sessionConfigId: 'sc_1', customTools: [localTool] },
+  });
+  await composio.create('u', {
+    // @ts-expect-error localToolkits cannot be combined with sessionConfigId
+    experimental: { sessionConfigId: 'sc_1', localToolkits: [localToolkit] },
   });
   await composio.create('u', {
     // @ts-expect-error customToolkits cannot be combined with sessionConfigId
-    experimental: { sessionConfigId: 'sc_1', customToolkits: [customToolkit] },
+    experimental: { sessionConfigId: 'sc_1', customToolkits: [localToolkit] },
   });
 
   // @ts-expect-error toolkits cannot be combined with sessionConfigId
@@ -92,12 +100,20 @@ async function createRejectsMixedInputs(): Promise<void> {
   // @ts-expect-error tags cannot be combined with sessionConfigId
   await composio.sessions.create('u', { tags: ['readOnlyHint'], experimental });
   await composio.sessions.create('u', {
+    // @ts-expect-error localTools cannot be combined with sessionConfigId
+    experimental: { sessionConfigId: 'sc_1', localTools: [localTool] },
+  });
+  await composio.sessions.create('u', {
     // @ts-expect-error customTools cannot be combined with sessionConfigId
-    experimental: { sessionConfigId: 'sc_1', customTools: [customTool] },
+    experimental: { sessionConfigId: 'sc_1', customTools: [localTool] },
+  });
+  await composio.sessions.create('u', {
+    // @ts-expect-error localToolkits cannot be combined with sessionConfigId
+    experimental: { sessionConfigId: 'sc_1', localToolkits: [localToolkit] },
   });
   await composio.sessions.create('u', {
     // @ts-expect-error customToolkits cannot be combined with sessionConfigId
-    experimental: { sessionConfigId: 'sc_1', customToolkits: [customToolkit] },
+    experimental: { sessionConfigId: 'sc_1', customToolkits: [localToolkit] },
   });
 
   // @ts-expect-error toolkits cannot be combined with sessionConfigId
@@ -108,13 +124,23 @@ async function createRejectsMixedInputs(): Promise<void> {
   await composio.create('u', { mcp: true, tags: ['readOnlyHint'], experimental });
   await composio.create('u', {
     mcp: true,
+    // @ts-expect-error localTools cannot be combined with sessionConfigId
+    experimental: { sessionConfigId: 'sc_1', localTools: [localTool] },
+  });
+  await composio.create('u', {
+    mcp: true,
     // @ts-expect-error customTools cannot be combined with sessionConfigId
-    experimental: { sessionConfigId: 'sc_1', customTools: [customTool] },
+    experimental: { sessionConfigId: 'sc_1', customTools: [localTool] },
+  });
+  await composio.create('u', {
+    mcp: true,
+    // @ts-expect-error localToolkits cannot be combined with sessionConfigId
+    experimental: { sessionConfigId: 'sc_1', localToolkits: [localToolkit] },
   });
   await composio.create('u', {
     mcp: true,
     // @ts-expect-error customToolkits cannot be combined with sessionConfigId
-    experimental: { sessionConfigId: 'sc_1', customToolkits: [customToolkit] },
+    experimental: { sessionConfigId: 'sc_1', customToolkits: [localToolkit] },
   });
 }
 
@@ -163,7 +189,11 @@ async function createInline(): Promise<void> {
     toolkits: ['github'],
     tools: { github: ['GITHUB_GET_REPO'] },
     tags: ['readOnlyHint'],
-    experimental: { customTools: [customTool], customToolkits: [customToolkit] },
+    experimental: { localTools: [localTool], localToolkits: [localToolkit] },
+  });
+  // Deprecated aliases still compile.
+  await composio.create('u', {
+    experimental: { customTools: [localTool], customToolkits: [localToolkit] },
   });
   await composio.create('u', { mcp: true, toolkits: { disable: ['gmail'] } });
 }
