@@ -260,7 +260,15 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
       firstSlug && searchResponse.tool_schemas[firstSlug]
         ? searchResponse.tool_schemas[firstSlug]
         : undefined;
-    const firstToolkit = firstSchema?.toolkit;
+    const firstToolkit = firstSchema?.toolkit.toLowerCase();
+    const showLinkHint =
+      firstSlug !== undefined &&
+      !firstSlug.startsWith('LOCAL_') &&
+      !searchResponse.toolkit_connection_statuses.some(
+        status =>
+          status.toolkit.toLowerCase() === firstToolkit &&
+          status.instant_account?.allowed_tool_slugs.includes(firstSlug)
+      );
     const firstPayload = buildMinimalPayloadFromSchema(firstSchema?.input_schema ?? {});
     const firstPayloadJson = JSON.stringify(firstPayload);
     const firstDataArg =
@@ -269,6 +277,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
     const nextSteps = buildSearchNextSteps({
       firstSlug,
       firstToolkit,
+      showLinkHint,
       firstDataArg,
       tree,
     });
@@ -305,6 +314,7 @@ export const runToolsSearch = (params: ToolsSearchParams) =>
         resultsWithTools,
         nextStepsGuidance: searchResponse.next_steps_guidance ?? [],
         firstSlug,
+        showLinkHint,
         firstDataArg,
         tree,
         error: searchResponse.error ?? null,
