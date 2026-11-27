@@ -90,9 +90,9 @@ You can add several hooks to a session, and replace them later with `session.upd
 
 There are three types of handlers:
 
-- **Custom prompt checks** (`condition_check`): Block unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. See [Custom prompt checks](/docs/hooks/custom-prompt-checks).
-- **Prompt injection detection** (`prompt_injection_check`): Scans tool results for prompt injection before they reach your agent. See [Prompt injection detection](/docs/hooks/prompt-injection-detection).
-- **Webhooks** (`webhook`): Send an HTTP request to an endpoint you host, and use your response to allow, block, or modify the tool call. Use them to observe and control tool calls programmatically. See [Webhooks](/docs/hooks/webhooks).
+- **Custom prompt checks** (`condition_check`): Block unwanted tool calls. You describe a condition in natural language, and any tool call your agent makes that matches it gets blocked. For example, you can stop your agent from emailing internal pricing to anyone outside your company. See [Custom prompt checks](/docs/sessions/hooks/custom-prompt-checks).
+- **Prompt injection detection** (`prompt_injection_check`): Scans tool results for prompt injection before they reach your agent. See [Prompt injection detection](/docs/sessions/hooks/prompt-injection-detection).
+- **Webhooks** (`webhook`): Send an HTTP request to an endpoint you host, and use your response to allow, block, or modify the tool call. Use them to observe and control tool calls programmatically. See [Webhooks](/docs/sessions/hooks/webhooks).
 
 
 ## Which tool calls hooks run on

@@ -14,7 +14,7 @@ Sessions now support tool execution webhooks. A webhook sends each tool call to 
 - **Signed requests.** Every request is signed with a secret from your project settings, so your endpoint can verify it came from Composio.
 - **Fallback behavior.** Set `fallback_action` to `block` or `continue` to choose what happens when your endpoint times out, can't be reached, or returns an invalid response.
 
-You add a webhook to a session as a hook with a handler `type` of `webhook`. See [Webhooks](/docs/hooks/webhooks) for setup, request and response payloads, and timeouts.
+You add a webhook to a session as a hook with a handler `type` of `webhook`. See [Webhooks](/docs/sessions/hooks/webhooks) for setup, request and response payloads, and timeouts.
 
 ### Availability
 

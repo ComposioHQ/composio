@@ -27,7 +27,7 @@ The dashboard shows the secret only once, either when you first save the URL or 
 
 ## Add a webhook to a session
 
-Once you've configured the URL, you can add webhooks to your sessions. Add a [hook](/docs/hooks) and set its handler `type` to `webhook`:
+Once you've configured the URL, you can add webhooks to your sessions. Add a [hook](/docs/sessions/hooks) and set its handler `type` to `webhook`:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -98,14 +98,14 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 
 Set `fallback_action` to choose what happens to a tool call if there's no valid response from your endpoint, and `timeout_ms` to choose how long to wait for one. See [Timeouts](#timeouts) and [Fallback](#fallback).
 
-## Guardrails
+## Scoping webhooks to toolkits
 
 A hook's `applies_to` (`appliesTo` in TypeScript) field, shown as `{"toolkits": ["gmail"]}` in the `check_gmail_calls` example above, scopes it to specific toolkits. With that scope, only Gmail tool calls go to your endpoint; every other toolkit's calls go through unchanged. Set `applies_to` to `"all"` instead to send every tool call, across every toolkit, to your endpoint.
 
-The team calls this toolkit-level scoping **Guardrails**: a way to guard which tool calls a given webhook hook can see and act on, instead of routing a session's entire tool traffic to one endpoint. `applies_to` scopes every hook type this way, not only webhooks; see [Which tool calls hooks run on](/docs/hooks#which-tool-calls-hooks-run-on) for how it applies to custom prompt checks and prompt injection detection too.
+This is the mechanism behind restricting which tool calls a given webhook hook can see and act on, instead of routing a session's entire tool traffic to one endpoint. `applies_to` scopes every hook type this way, not only webhooks; see [Which tool calls hooks run on](/docs/sessions/hooks#which-tool-calls-hooks-run-on) for how it applies to custom prompt checks and prompt injection detection too. For the policy framing — where this sits alongside the rest of Composio's permission model — see [Guardrails](/docs/guardrails).
 
 <Callout type="info">
-Guardrails names the scoping `applies_to` already does, not a new field or behavior. The name is still settling internally, so expect this section's wording, not the underlying behavior, to change.
+This section documents the `applies_to` field's existing behavior. How it's named and framed at the policy level is still settling internally.
 </Callout>
 
 ## Request and response payloads
@@ -205,7 +205,7 @@ Respond with HTTP `200` and a JSON body. There are three ways to respond:
 | `{ "action": "block", "message": "..." }` | The tool call is blocked. |
 | `{ "action": "continue", "override": { ... } }` | The tool call goes ahead with your changes. |
 
-When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why you blocked the tool call. This works the same way from `before_execute` and `after_execute`. See [Blocked tool calls](/docs/hooks#blocked-tool-calls) for what's returned.
+When you block a tool call, your agent sees it fail, with your `message` as the error. Use the message to explain why you blocked the tool call. This works the same way from `before_execute` and `after_execute`. See [Blocked tool calls](/docs/sessions/hooks#blocked-tool-calls) for what's returned.
 
 What goes in `override` also depends on the kind of call and on when the webhook runs:
 

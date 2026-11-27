@@ -4,7 +4,7 @@ description: Restrict which tools an agent can run in each session, and see wher
 keywords: [per-action permissions, action-level authorization, least privilege, restrict tools per session, tool allowlist, tool denylist, permissions, governance, authorization]
 ---
 
-A connected account holds a user's credentials for an app. A session decides which actions an agent can take with those credentials. You set the session's policy with toolkit, tool, and [hint](/docs/governance/tool-hints) filters, and the Composio backend checks it on every Composio tool call made through the session. A tool the policy blocks never reaches the app's API. [Local tools](/docs/extending-sessions/local-tools-and-toolkits) run in your own process and need their own checks.
+A connected account holds a user's credentials for an app. A session decides which actions an agent can take with those credentials. You set the session's policy with toolkit, tool, and [hint](/docs/guardrails/tool-hints) filters, and the Composio backend checks it on every Composio tool call made through the session. A tool the policy blocks never reaches the app's API. [Local tools](/docs/extending-sessions/local-tools-and-toolkits) run in your own process and need their own checks.
 
 Permissions in Composio sit at four layers. Each one answers a different question:
 
@@ -13,11 +13,11 @@ Permissions in Composio sit at four layers. Each one answers a different questio
 | [OAuth scopes](/docs/authentication/controlling-scopes) | What the app's API lets the credentials do | Auth config |
 | Connected account ownership | Whose credentials a call uses | `user_id` on the session or execution |
 | Session tool policy | Which toolkits and tools the agent can run | `toolkits`, `tools`, and `tags` on the session |
-| [Approvals](/docs/governance/approvals) and [Firewall](/docs/firewall) | Whether a person or a check signs off on a specific call (both experimental) | `require_approval` and `hooks` on the session |
+| [Approvals](/docs/guardrails/approvals) and the rest of [Guardrails](/docs/guardrails) | Whether a person or a check signs off on a specific call (both experimental) | `require_approval` and `hooks` on the session |
 
 Scopes are the only layer the app itself enforces. The other three run in Composio before the request goes out.
 
-To restrict which toolkits' calls reach a webhook hook, see [Guardrails](/docs/hooks/webhooks#guardrails).
+To restrict which toolkits' calls reach a webhook hook, see [Scoping webhooks to toolkits](/docs/sessions/hooks/webhooks#scoping-webhooks-to-toolkits).
 
 ## Allow one tool, deny the rest
 
@@ -122,7 +122,7 @@ We checked each path below against a test project with an allowed and a blocked 
 | Session MCP URL | Not listed in `tools/list`, so a direct `tools/call` returns `Tool ... not found`. Through `COMPOSIO_MULTI_EXECUTE_TOOL`, it returns the session restriction error |
 | `COMPOSIO_SEARCH_TOOLS` | Left out of results. The response tells the agent the tool is restricted |
 | `session.proxyExecute()` and `COMPOSIO_PROXY_EXECUTE` | Refused with `403` for any toolkit that has a tool allowlist, denylist, or applicable hint filter, so the proxy can't be used to reach an endpoint whose tool you blocked |
-| Tools that need approval | Return `input_required` and don't run until the person answers. Two exceptions: over MCP, a client without elicitation support runs them without asking if you set `no_elicitation_support_fallback` to `"allow"`, and a sandbox script can call a tool the approval check misses. If approval must never be skipped, [disable the sandbox](/docs/sessions/sandbox-settings#disabling-the-sandbox). See [Approvals](/docs/governance/approvals) |
+| Tools that need approval | Return `input_required` and don't run until the person answers. Two exceptions: over MCP, a client without elicitation support runs them without asking if you set `no_elicitation_support_fallback` to `"allow"`, and a sandbox script can call a tool the approval check misses. If approval must never be skipped, [disable the sandbox](/docs/sessions/sandbox-settings#disabling-the-sandbox). See [Approvals](/docs/guardrails/approvals) |
 
 Ownership is checked on both session and direct execution. A session can't be pinned to another user's connected account (`4306`), and a direct execution with a `connected_account_id` that belongs to a different `user_id` fails (`1812`). Which Composio `user_id` a request maps to is still your application's decision. See [Building B2B agents](/docs/b2b-agents) for shared and workspace-owned connections.
 

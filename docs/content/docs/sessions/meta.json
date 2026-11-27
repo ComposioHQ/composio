@@ -9,6 +9,7 @@
     "connections",
     "sandbox-settings",
     "updating-sessions",
-    "executing-tools"
+    "executing-tools",
+    "hooks"
   ]
 }

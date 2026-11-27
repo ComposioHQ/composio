@@ -61,24 +61,30 @@ describe('buildSidebarNavIndex', () => {
     });
   });
 
-  test('governance guides stay top-level within the Governance section', () => {
-    expect(index['/docs/governance/action-permissions']).toEqual({
-      group: 'Governance',
+  test('guardrails guides stay top-level within the Guardrails section', () => {
+    expect(index['/docs/guardrails']).toEqual({
+      group: 'Guardrails',
       folder: null,
       depth: 1,
       position: 1,
     });
-    expect(index['/docs/governance/tool-hints']).toEqual({
-      group: 'Governance',
+    expect(index['/docs/guardrails/action-permissions']).toEqual({
+      group: 'Guardrails',
       folder: null,
       depth: 1,
       position: 2,
     });
-    expect(index['/docs/governance/approvals']).toEqual({
-      group: 'Governance',
+    expect(index['/docs/guardrails/tool-hints']).toEqual({
+      group: 'Guardrails',
       folder: null,
       depth: 1,
       position: 3,
+    });
+    expect(index['/docs/guardrails/approvals']).toEqual({
+      group: 'Guardrails',
+      folder: null,
+      depth: 1,
+      position: 4,
     });
   });
 
