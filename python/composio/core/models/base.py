@@ -29,6 +29,21 @@ PayloadT = t.TypeVar("PayloadT", bound=dict)
 allow_tracking = contextvars.ContextVar[bool]("allow_tracking", default=True)
 _environment = os.getenv("ENVIRONMENT", "development")
 
+ENV_DISABLE_TELEMETRY = "COMPOSIO_DISABLE_TELEMETRY"
+_ENV_FLAG_OFF_SPELLINGS = frozenset({"0", "false", "no", "off"})
+
+
+def is_telemetry_disabled_by_env() -> bool:
+    """Whether ``COMPOSIO_DISABLE_TELEMETRY`` opts out of telemetry.
+
+    Parsed like the Composio CLI: unset or blank leaves telemetry on, ``0`` /
+    ``false`` / ``no`` / ``off`` (any casing) leave it on, and any other value
+    (``1``, ``true``, ``yes``, ...) turns it off. The variable is read on every
+    call and wins over ``allow_tracking=True``.
+    """
+    value = os.environ.get(ENV_DISABLE_TELEMETRY, "").strip().lower()
+    return bool(value) and value not in _ENV_FLAG_OFF_SPELLINGS
+
 
 def trace_method(method: t.Callable, name: str) -> t.Callable:
     """Wrap a method to log the call."""
@@ -39,7 +54,7 @@ def trace_method(method: t.Callable, name: str) -> t.Callable:
 
     @functools.wraps(method)
     def trace_wrapper(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
-        if not allow_tracking.get():
+        if not allow_tracking.get() or is_telemetry_disabled_by_env():
             return method(self, *args, **kwargs)
 
         event: t.Optional[Event] = None

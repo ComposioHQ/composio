@@ -7,7 +7,7 @@ declare global {
 
 import { ComposioError as ComposioClientError } from '@composio/client';
 import { TELEMETRY_EVENTS, TelemetryMetadata } from '../types/telemetry.types';
-import { getEnvVariable } from '../utils/env';
+import { getEnvVariable, isEnvFlagEnabled } from '../utils/env';
 import { BatchProcessor } from './BatchProcessor';
 import { ComposioError } from '../errors/ComposioError';
 import { getRandomUUID } from '../utils/uuid';
@@ -176,7 +176,11 @@ export class TelemetryTransport {
     const telemetryDisabledEnvironments = ['test', 'ci'];
     const nodeEnv = (getEnvVariable('NODE_ENV', 'development') || '').toLowerCase();
     const isDisabledEnvironment = telemetryDisabledEnvironments.includes(nodeEnv);
-    const isTelemetryDisabledByEnv = getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
+    // `COMPOSIO_DISABLE_TELEMETRY` is the documented opt-out and wins over `allowTracking: true`,
+    // matching the CLI. `TELEMETRY_DISABLED=true` keeps working as before.
+    const isTelemetryDisabledByEnv =
+      isEnvFlagEnabled('COMPOSIO_DISABLE_TELEMETRY') ||
+      getEnvVariable('TELEMETRY_DISABLED', 'false') === 'true';
 
     return !this.isTelemetryDisabled && !isTelemetryDisabledByEnv && !isDisabledEnvironment;
   }
