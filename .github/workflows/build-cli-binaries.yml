@@ -295,6 +295,14 @@ jobs:
       - name: Publish release (flip draft → published)
         run: gh release edit "$RELEASE_TAG" --draft=false --latest="$MAKE_LATEST"
 
+      # Point the orphan `cli-release-metadata` branch at the newly published stable tag so
+      # installers can resolve it via raw.githubusercontent.com without consuming GitHub API quota.
+      - name: Update CLI release metadata branch
+        if: needs.prepare.outputs.prerelease == 'false' && needs.prepare.outputs.make_latest == 'true'
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: bash "$RELEASE_HELPERS_DIR/update-release-metadata.sh"
+
   test-installation:
     name: Test Installation
     needs: [prepare, windows, release]

@@ -11,6 +11,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import semver from 'semver';
 import {
@@ -732,6 +733,24 @@ if (!(
 )) {
   throw new Error(
     'build-cli-binaries.yml must order steps helper checkout → draft → verify → publish'
+  );
+}
+
+const metadataStepIdx = buildCliWorkflow.indexOf(
+  'bash "$RELEASE_HELPERS_DIR/update-release-metadata.sh"'
+);
+if (metadataStepIdx === -1 || metadataStepIdx < publishIdx) {
+  throw new Error(
+    'build-cli-binaries.yml must update the release metadata branch via update-release-metadata.sh after publishing'
+  );
+}
+if (
+  !buildCliWorkflow.includes(
+    "if: needs.prepare.outputs.prerelease == 'false' && needs.prepare.outputs.make_latest == 'true'"
+  )
+) {
+  throw new Error(
+    'build-cli-binaries.yml must gate update-release-metadata.sh to stable latest releases only'
   );
 }
 
@@ -1886,6 +1905,84 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   });
   if (r.status === 0 || !r.stderr.includes('but its release targets')) {
     throw new Error('promote-stable must reject a beta tag/release commit mismatch');
+  }
+}
+
+// Hermetic test of update-release-metadata.sh against a local bare git remote.
+{
+  const metadataScriptPath = fileURLToPath(
+    new URL('../.github/scripts/cli-release/update-release-metadata.sh', import.meta.url)
+  );
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-release-metadata-'));
+  try {
+    const bareRemote = join(fixtureDir, 'remote.git');
+    const initResult = spawnSync('git', ['init', '--bare', '-q', bareRemote], { encoding: 'utf8' });
+    if (initResult.status !== 0) {
+      throw new Error(`git init --bare failed: ${initResult.stderr}`);
+    }
+
+    const runMetadataUpdate = (releaseTag: string) =>
+      spawnSync('bash', [metadataScriptPath], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          RELEASE_TAG: releaseTag,
+          METADATA_REMOTE_URL: bareRemote,
+          METADATA_BRANCH: 'cli-release-metadata',
+        },
+      });
+
+    const readRemoteLatest = () => {
+      const res = spawnSync(
+        'git',
+        ['--git-dir', bareRemote, 'show', 'cli-release-metadata:latest.txt'],
+        { encoding: 'utf8' }
+      );
+      if (res.status !== 0) {
+        throw new Error(`failed to read cli-release-metadata:latest.txt: ${res.stderr}`);
+      }
+      return res.stdout;
+    };
+
+    const countRemoteCommits = () => {
+      const res = spawnSync(
+        'git',
+        ['--git-dir', bareRemote, 'rev-list', '--count', 'cli-release-metadata'],
+        { encoding: 'utf8' }
+      );
+      if (res.status !== 0) {
+        throw new Error(`failed to count cli-release-metadata commits: ${res.stderr}`);
+      }
+      return Number(res.stdout.trim());
+    };
+
+    const first = runMetadataUpdate('@composio/cli@0.6.4');
+    if (first.status !== 0) {
+      throw new Error(`first metadata update failed:\n${first.stderr}`);
+    }
+    if (readRemoteLatest() !== '@composio/cli@0.6.4\n' || countRemoteCommits() !== 1) {
+      throw new Error('first metadata update must create orphan branch with latest.txt');
+    }
+
+    const idempotent = runMetadataUpdate('@composio/cli@0.6.4');
+    if (idempotent.status !== 0 || countRemoteCommits() !== 1) {
+      throw new Error('re-running metadata update with the same tag must be idempotent');
+    }
+
+    const second = runMetadataUpdate('@composio/cli@0.6.5');
+    if (second.status !== 0) {
+      throw new Error(`second metadata update failed:\n${second.stderr}`);
+    }
+    if (readRemoteLatest() !== '@composio/cli@0.6.5\n' || countRemoteCommits() !== 2) {
+      throw new Error('second metadata update must advance cli-release-metadata/latest.txt');
+    }
+
+    const betaRejected = runMetadataUpdate('@composio/cli@0.6.6-beta.1');
+    if (betaRejected.status === 0 || readRemoteLatest() !== '@composio/cli@0.6.5\n') {
+      throw new Error('update-release-metadata.sh must reject beta tags');
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
   }
 }
 

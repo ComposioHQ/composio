@@ -152,6 +152,27 @@ normalize_version() {
     printf '@composio/cli@%s\n' "$normalize_version_bare"
 }
 
+CLI_RELEASE_METADATA_URL='https://raw.githubusercontent.com/ComposioHQ/composio/cli-release-metadata/latest.txt'
+
+resolve_latest_cli_release_from_metadata() {
+    metadata_body=$(curl_fetch "$CLI_RELEASE_METADATA_URL") || return 1
+    metadata_version=$(printf '%s' "$metadata_body" | tr -d '\r')
+    case $metadata_version in
+        *'
+'*) return 1 ;;
+    esac
+    printf '%s\n' "$metadata_version" | grep -Eq '^@composio/cli@[0-9]+\.[0-9]+\.[0-9]+$' || return 1
+
+    metadata_archive_url=$github_repo/releases/download/$metadata_version/$archive_name
+    debug "curl HEAD $metadata_archive_url"
+    metadata_archive_status=$(curl --fail --silent --location --head --proto '=https' \
+        --proto-redir '=https' --output /dev/null --write-out '%{http_code}' "$metadata_archive_url") || return 1
+    case $metadata_archive_status in
+        2[0-9][0-9]) printf '%s\n' "$metadata_version" "$metadata_archive_url" ;;
+        *) return 1 ;;
+    esac
+}
+
 resolve_latest_cli_release() {
     resolve_page=1
     while [ "$resolve_page" -le 5 ]; do
@@ -889,8 +910,10 @@ main() {
         archive_url=$github_repo/releases/download/$version/$archive_name
     else
         info 'Finding latest stable CLI release...'
-        latest_release=$(resolve_latest_cli_release) ||
-            error "Failed to determine the latest CLI release with a $archive_name asset. Specify a version manually."
+        if [ "$official_release_source" != 1 ] || ! latest_release=$(resolve_latest_cli_release_from_metadata); then
+            latest_release=$(resolve_latest_cli_release) ||
+                error "Failed to determine the latest CLI release with a $archive_name asset. Specify a version manually."
+        fi
         version=$(printf '%s\n' "$latest_release" | sed -n '1p')
         archive_url=$(printf '%s\n' "$latest_release" | sed -n '2p')
         if [ -z "$version" ] || [ -z "$archive_url" ]; then

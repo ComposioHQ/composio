@@ -43,6 +43,9 @@
         $apiRequest.MaximumRedirection = 0
     }
     $releasesUrl = "$api/repos/ComposioHQ/composio/releases"
+    $tag = $null
+    $archiveUrl = $null
+    $checksumsUrl = $null
     $release = $null
     if ($env:COMPOSIO_INSTALL_VERSION) {
         $version = $env:COMPOSIO_INSTALL_VERSION -replace '^@composio/cli@', ''
@@ -52,20 +55,47 @@
         $release = Invoke-RestMethod "$releasesUrl/tags/$([uri]::EscapeDataString("@composio/cli@$version"))" @apiRequest
     } else {
         Write-Host 'Finding latest stable CLI release...'
-        for ($page = 1; $page -le 5 -and -not $release; $page++) {
-            # Assign before piping: Windows PowerShell emits the JSON array as a single object.
-            $candidates = Invoke-RestMethod "${releasesUrl}?per_page=100&page=$page" @apiRequest
-            if (-not $candidates) { break }
-            $release = $candidates | Where-Object {
-                $_.tag_name -match '^@composio/cli@\d+\.\d+\.\d+$' -and -not $_.draft -and -not $_.prerelease -and
-                $_.assets.name -contains $archiveName
-            } | Select-Object -First 1
+        if ($api -ceq 'https://api.github.com') {
+            try {
+                $metadataResponse = Invoke-WebRequest 'https://raw.githubusercontent.com/ComposioHQ/composio/cli-release-metadata/latest.txt' -UseBasicParsing
+                $metadataContent = if ($metadataResponse.Content -is [byte[]]) {
+                    [Text.Encoding]::UTF8.GetString($metadataResponse.Content)
+                } else {
+                    [string]$metadataResponse.Content
+                }
+                $candidateTag = $metadataContent.Trim()
+                if ($candidateTag -cmatch '^@composio/cli@\d+\.\d+\.\d+\z') {
+                    $candidateBase = "https://github.com/ComposioHQ/composio/releases/download/$candidateTag"
+                    $candidateArchiveUrl = "$candidateBase/$archiveName"
+                    $headResponse = Invoke-WebRequest $candidateArchiveUrl -Method Head -UseBasicParsing
+                    if ($headResponse.StatusCode -ge 200 -and $headResponse.StatusCode -lt 300) {
+                        $tag = $candidateTag
+                        $archiveUrl = $candidateArchiveUrl
+                        $checksumsUrl = "$candidateBase/checksums.txt"
+                    }
+                }
+            } catch {
+                # Fall back to the release API when metadata is unavailable or lacks a Windows archive.
+            }
         }
-        if (-not $release) { throw 'No stable CLI release with a Windows x64 archive was found. Set COMPOSIO_INSTALL_VERSION to choose one.' }
+        if (-not $tag) {
+            for ($page = 1; $page -le 5 -and -not $release; $page++) {
+                # Assign before piping: Windows PowerShell emits the JSON array as a single object.
+                $candidates = Invoke-RestMethod "${releasesUrl}?per_page=100&page=$page" @apiRequest
+                if (-not $candidates) { break }
+                $release = $candidates | Where-Object {
+                    $_.tag_name -match '^@composio/cli@\d+\.\d+\.\d+$' -and -not $_.draft -and -not $_.prerelease -and
+                    $_.assets.name -contains $archiveName
+                } | Select-Object -First 1
+            }
+            if (-not $release) { throw 'No stable CLI release with a Windows x64 archive was found. Set COMPOSIO_INSTALL_VERSION to choose one.' }
+        }
     }
-    $tag = $release.tag_name
-    $archiveUrl = ($release.assets | Where-Object { $_.name -eq $archiveName }).browser_download_url
-    $checksumsUrl = ($release.assets | Where-Object { $_.name -eq 'checksums.txt' }).browser_download_url
+    if ($release) {
+        $tag = $release.tag_name
+        $archiveUrl = ($release.assets | Where-Object { $_.name -eq $archiveName }).browser_download_url
+        $checksumsUrl = ($release.assets | Where-Object { $_.name -eq 'checksums.txt' }).browser_download_url
+    }
     if (-not $archiveUrl) { throw "Release $tag has no Windows x64 archive." }
     if (-not $checksumsUrl) { throw "Release $tag has no checksums.txt, so it cannot be verified. Refusing to install." }
     Assert-TrustedUrl $archiveUrl

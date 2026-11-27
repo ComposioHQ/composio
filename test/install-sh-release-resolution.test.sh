@@ -243,6 +243,9 @@ for interpreter in "${interpreters[@]}"; do
   fake_bin="$case_root/bin"
   curl_log="$case_root/curl.log"
   composio_log="$case_root/composio.log"
+  metadata_url='https://raw.githubusercontent.com/ComposioHQ/composio/cli-release-metadata/latest.txt'
+  metadata_latest_tag='@composio/cli@100.12.10'
+  metadata_latest_url="https://github.com/ComposioHQ/composio/releases/download/$metadata_latest_tag/$archive_name"
   mkdir -p "$fake_bin"
   : >"$curl_log"
   : >"$composio_log"
@@ -255,14 +258,19 @@ printf '%s\n' "$*" >>"$TEST_CURL_LOG"
 all_args=$*
 output=
 url=
+head=0
 while (($# > 0)); do
   case $1 in
   --output|-o)
     output=$2
     shift 2
     ;;
-  --proto|--proto-redir)
+  --proto|--proto-redir|--write-out)
     shift 2
+    ;;
+  --head)
+    head=1
+    shift
     ;;
   --fail|--silent|--show-error|--location|--progress-bar)
     shift
@@ -286,6 +294,43 @@ http://*)
   ;;
 esac
 
+if [[ $head == 1 ]]; then
+  [[ $url == "$TEST_METADATA_LATEST_URL" ]] || exit 94
+  if [[ ${TEST_RELEASE_CASE:-} == head-404 ]]; then
+    printf 404
+    exit 22
+  fi
+  printf 200
+  exit 0
+fi
+
+if [[ $url == "$TEST_METADATA_URL" ]]; then
+  case ${TEST_RELEASE_CASE:-metadata-success} in
+  metadata-success|head-404)
+    printf '%s\n' "$TEST_METADATA_LATEST_TAG"
+    exit 0
+    ;;
+  metadata-404)
+    exit 22
+    ;;
+  metadata-beta)
+    printf '%s\n' '@composio/cli@101.0.0-beta.1'
+    exit 0
+    ;;
+  metadata-multiline)
+    printf '%s\n%s\n' "$TEST_METADATA_LATEST_TAG" 'extra-line'
+    exit 0
+    ;;
+  metadata-html)
+    printf '<html><body>%s</body></html>\n' "$TEST_METADATA_LATEST_TAG"
+    exit 0
+    ;;
+  *)
+    exit 22
+    ;;
+  esac
+fi
+
 if [[ -n ${TEST_CURL_DELAY_URL:-} && $url == "$TEST_CURL_DELAY_URL" ]]; then
   printf '%s\n' "$PPID" >"$TEST_CURL_PARENT_PID_FILE"
   sleep "${TEST_CURL_DELAY_SECONDS:-1}"
@@ -301,7 +346,8 @@ if [[ $url == "$TEST_SCRIPT_URL" ]]; then
 fi
 
 case $url in
-"$TEST_API_BASE/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO/releases?per_page=100&page=1")
+"$TEST_API_BASE/repos/$COMPOSIO_GITHUB_OWNER/$COMPOSIO_GITHUB_REPO/releases?per_page=100&page=1"|\
+'https://api.github.com/repos/ComposioHQ/composio/releases?per_page=100&page=1')
   asset_url=${TEST_API_ASSET_URL:-$TEST_ARCHIVE_URL}
   cat <<JSON
 [
@@ -442,6 +488,9 @@ EOF
   export TEST_API_BASE="$api_base"
   export TEST_SCRIPT_URL="$script_url"
   export TEST_CURL_LOG="$curl_log"
+  export TEST_METADATA_URL="$metadata_url"
+  export TEST_METADATA_LATEST_TAG="$metadata_latest_tag"
+  export TEST_METADATA_LATEST_URL="$metadata_latest_url"
   export TEST_COMPOSIO_LOG="$composio_log"
 
   reset_case() {
@@ -662,6 +711,54 @@ EOF
     CASE_GITHUB_REPO=composio
     CASE_API_BASE=
   }
+
+  # Custom/mirror sources must not query the official ComposioHQ release metadata branch.
+  reset_case
+  CASE_INSTALL_SHELL=none
+  custom_output=$(run_installer "$case_root/custom-source-home" "$case_root/custom-source-install" "$case_root/custom-source-bin" 2>&1) ||
+    fail "$interpreter_name custom source install failed: $custom_output"
+  ! grep -Fq "$metadata_url" "$curl_log" ||
+    fail "$interpreter_name custom source must not fetch official release metadata"
+
+  while read -r release_case expected_metadata expected_head expected_api; do
+    reset_case
+    official_env
+    CASE_CHECKSUM_MODE=valid
+    CASE_INSTALL_SHELL=none
+    expected_tag=$stable_tag
+    [[ $release_case != metadata-success ]] || expected_tag=$metadata_latest_tag
+    release_install="$case_root/$release_case-install"
+    release_output=$(TEST_RELEASE_CASE="$release_case" run_installer \
+      "$case_root/$release_case-home" "$release_install" "$case_root/$release_case-bin" 2>&1) ||
+      fail "$interpreter_name $release_case install failed: $release_output"
+    [[ -x "$release_install/composio" ]] ||
+      fail "$interpreter_name $release_case must install composio"
+    assert_contains "$release_output" "Found latest version: $expected_tag" \
+      "$interpreter_name $release_case resolved tag"
+    metadata_calls=$(grep -Fc -- " $metadata_url" "$curl_log" || :)
+    curl_calls=$(wc -l <"$curl_log")
+    head_calls=$(grep -Ec '(^| )--head( |$)' "$curl_log" || :)
+    api_calls=$(grep -Fc 'releases?per_page=' "$curl_log" || :)
+    [[ $metadata_calls -eq $expected_metadata && $head_calls -eq $expected_head && $api_calls -eq $expected_api &&
+      $curl_calls -eq $((2 + expected_metadata + expected_head + expected_api)) ]] ||
+      fail "$interpreter_name $release_case unexpected requests: $(cat "$curl_log")"
+    if [[ $release_case == metadata-success ]]; then
+      [[ $(grep -Fc -- " $metadata_latest_url" "$curl_log") -eq 2 ]] ||
+        fail "$interpreter_name $release_case must probe and download the archive from metadata"
+    else
+      grep -Fq -- " $archive_url" "$curl_log" ||
+        fail "$interpreter_name $release_case must download the archive selected by the API"
+    fi
+    printf '%s %s: metadata=%d curl=%d HEAD=%d API=%d\n' \
+      "$interpreter_name" "$release_case" "$metadata_calls" "$curl_calls" "$head_calls" "$api_calls"
+  done <<'EOF'
+metadata-success 1 1 0
+metadata-404 1 0 1
+metadata-beta 1 0 1
+metadata-multiline 1 0 1
+metadata-html 1 0 1
+head-404 1 1 1
+EOF
 
   reset_case
   official_env
