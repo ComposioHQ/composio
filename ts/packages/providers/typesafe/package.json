@@ -56,7 +56,7 @@
     "@composio/google": "workspace:*",
     "@types/node": "^26.6.6",
     "@typesafe-ai/sdk": "0.6.0",
-    "fast-check": "^4.10.2",
+    "fast-check": "^4.11.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

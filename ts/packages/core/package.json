@@ -120,10 +120,10 @@
   ],
   "license": "ISC",
   "devDependencies": {
-    "@hono/node-server": "^2.1.8",
+    "@hono/node-server": "^2.1.11",
     "@types/semver": "^7.8.0",
     "ajv": "^8.20.0",
-    "fast-check": "^4.10.2",
+    "fast-check": "^4.11.0",
     "hono": "catalog:",
     "mime": "^4.1.2",
     "tsdown": "catalog:",
