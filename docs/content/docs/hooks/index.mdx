@@ -101,6 +101,20 @@ A hook runs on tool calls to the toolkits in its `applies_to`. This includes [pr
 
 Hooks don't run on Composio's meta tools themselves. For example, a hook can't stop your agent from running a workbench script, but it does run on the tool calls that script makes.
 
+## Files aren't checked yet
+
+<Callout type="warn">
+Hooks don't check the contents of files yet, whether your agent uploads them or downloads them.
+</Callout>
+
+A hook sees how a file is referenced, but not what's in it:
+
+- **A file passed to a tool:** The hook sees the file's `name`, `mimetype`, and `s3key`. Composio downloads the file only when the tool runs, after `before_execute` hooks.
+- **A file a tool returns:** The hook sees the file's `name`, `mimetype`, and a download URL in `s3url`.
+- **A proxy call that uploads or downloads a file:** A webhook gets the file's URL, or the base64 content your agent sent. Custom prompt checks and prompt injection detection don't read the file itself.
+
+Session file mounts don't run hooks at all, so uploading or downloading a mount file isn't checked.
+
 ## Blocked tool calls
 
 When a hook blocks a tool call, the tool call fails, and your agent sees an error message.

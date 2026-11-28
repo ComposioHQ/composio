@@ -11,6 +11,10 @@ Prompt injection detection screens each tool result, and blocks it if it contain
 Prompt injection detection is available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
 </Callout>
 
+<Callout type="warn">
+The check doesn't scan the contents of files yet, like a PDF attachment or a downloaded document. See [Files aren't checked yet](/docs/hooks#files-arent-checked-yet).
+</Callout>
+
 To turn it on, add a [hook](/docs/hooks) with the `prompt_injection_check` handler:
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>

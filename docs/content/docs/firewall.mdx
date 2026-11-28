@@ -15,6 +15,10 @@ Your agent can still use the same tools for everything else.
 
 Firewall is built on [hooks](/docs/hooks), which run before or after each tool call your agent makes. There are three kinds of checks you can add.
 
+<Callout type="warn">
+Firewall doesn't check the contents of files yet. See [Files aren't checked yet](/docs/hooks#files-arent-checked-yet).
+</Callout>
+
 ## Custom prompt checks
 
 You write a condition that describes what you want blocked, in natural language. For example, "Sharing internal pricing with anyone outside acme.com".
