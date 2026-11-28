@@ -140,6 +140,18 @@ describe('generateTypeScriptSources with transpiled output', () => {
       })
   );
 
+  it.effect(
+    '[Given] one file per toolkit [Then] each toolkit declaration file ends with export {}',
+    () =>
+      Effect.gen(function* () {
+        const files = byBasename(yield* generate(false));
+        const declarations = ['./github.d.ts', './gmail.d.ts'].map(name => files[name]);
+        expect(declarations.filter(content => !(content ?? '').endsWith('\nexport {};\n'))).toEqual(
+          []
+        );
+      })
+  );
+
   it.effect('[Given] a single file [Then] it emits index.ts, index.js and index.d.ts', () =>
     Effect.gen(function* () {
       const sources = yield* generate(true);

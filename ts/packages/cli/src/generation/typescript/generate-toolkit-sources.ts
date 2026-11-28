@@ -33,6 +33,7 @@ import {
   generateTypeFromJsonSchema,
   GenerateTypeFromJsonSchemaError,
 } from './generate-type-from-json-schema';
+import type { PrintTypeOptions } from './json-schema-type';
 
 function toolkitToolInputsTypeMap(
   toolkitName: ToolkitName,
@@ -151,17 +152,18 @@ function _generateTriggerTypeObjectValue(triggerType: TriggerType): ts.ValueBuil
     .add(ts.propertyValue('type', ts.stringLiteral(triggerType.type).asValue()));
 }
 
+/** The three files a generated module can be written as. */
+export type Flavor = 'typescript' | 'javascript' | 'declarations';
+
 /**
- * One toolkit's generated module, as the three files it can be written as. Each
- * body leaves out the module's imports, which `imports` lists, so a single-file
- * output can write them once at the top.
+ * One toolkit's generated module. `body` renders one flavor, without the module's
+ * imports, which `imports` lists, so a single-file output can write them once at
+ * the top; only the flavors a caller asks for are rendered.
  */
 export type ToolkitModule = {
   readonly filename: string;
   readonly imports: ReadonlyArray<ts.Import>;
-  readonly typescript: string;
-  readonly javascript: string;
-  readonly declarations: string;
+  readonly body: (flavor: Flavor) => string;
 };
 
 /** A module's imports followed by its body, laid out as `ts.file()` lays them out. */
@@ -171,25 +173,33 @@ export const withImports = (imports: ReadonlyArray<ts.Import>, body: string): st
 /**
  * Generates a list of TypeScript source files that should be written to disk by the caller.
  */
-export function generateTypeScriptToolkitSources(banner: string) {
+export function generateTypeScriptToolkitSources(
+  banner: string,
+  options: PrintTypeOptions = { comments: true }
+) {
   return (index: ToolkitIndex) =>
-    generateToolkitModules(banner)(index).pipe(
+    generateToolkitModules(
+      banner,
+      options
+    )(index).pipe(
       Effect.map(modules =>
         modules.map((module): SourceFile => [
           module.filename,
-          withImports(module.imports, module.typescript),
+          withImports(module.imports, module.body('typescript')),
         ])
       )
     );
 }
 
 /** Every toolkit's module: TypeScript source, JavaScript, and declaration file. */
-export function generateToolkitModules(banner: string) {
+export function generateToolkitModules(banner: string, options: PrintTypeOptions) {
   return (
     index: ToolkitIndex
   ): Effect.Effect<Array<ToolkitModule>, GenerateTypeFromJsonSchemaError, never> =>
     Effect.all(
-      Record.toEntries(index).map(([key, value]) => generateToolkitModule(banner)(key, value))
+      Record.toEntries(index).map(([key, value]) =>
+        generateToolkitModule(banner, options)(key, value)
+      )
     );
 }
 
@@ -224,7 +234,7 @@ const toolkitMapEntries = (
   })),
 });
 
-function generateToolkitModule(_banner: string) {
+function generateToolkitModule(_banner: string, options: PrintTypeOptions) {
   return (
     toolkitName: ToolkitName,
     { slug, version, typeableTools, triggerTypes }: ToolkitIndexData
@@ -269,13 +279,15 @@ function generateToolkitModule(_banner: string) {
           // e.g., `type GMAIL_SEND_EMAIL_INPUT = { .. }`
           const toolInputType = yield* generateTypeFromJsonSchema(
             `${toolkitName}_${toolName}_INPUT`,
-            tool.input_parameters
+            tool.input_parameters,
+            options
           );
 
           // e.g., `type GMAIL_SEND_EMAIL_OUTPUT = { .. }`
           const toolOutputType = yield* generateTypeFromJsonSchema(
             `${toolkitName}_${toolName}_OUTPUT`,
-            tool.output_parameters
+            tool.output_parameters,
+            options
           );
 
           addTypes(
@@ -320,7 +332,8 @@ function generateToolkitModule(_banner: string) {
         // e.g., `type GMAIL_NEW_GMAIL_MESSAGE_PAYLOAD = { .. }`
         const triggerPayloadType = yield* generateTypeFromJsonSchema(
           `${toolkitName}_${triggerTypeSlug}_PAYLOAD`,
-          triggerType.payload
+          triggerType.payload,
+          options
         );
         addTypes(
           ts
@@ -337,8 +350,7 @@ function generateToolkitModule(_banner: string) {
         const entry = ts.propertyValue(name, ts.stringLiteral(value).asValue());
         return doc ? entry.setDocComment(doc) : entry;
       };
-      // The declaration file widens each string to `string`, as the compiler's declaration
-      // emit did for the same object literal.
+      // The declaration file widens each string to `string`.
       const entryType = ({ name, doc }: MapEntry) => {
         const entry = ts.property(name, ts.stringType);
         return doc ? entry.setDocComment(doc) : entry;
@@ -441,13 +453,8 @@ function generateToolkitModule(_banner: string) {
         );
       }
 
-      return {
-        filename,
-        imports,
-        typescript: ts.stringify(typescript),
-        javascript: ts.stringify(javascript),
-        declarations: ts.stringify(declarations),
-      };
+      const files = { typescript, javascript, declarations };
+      return { filename, imports, body: flavor => ts.stringify(files[flavor]) };
     });
   };
 }

@@ -1,12 +1,7 @@
-/**
- * The schema printer `composio generate ts` used before it dropped the TypeScript
- * compiler: openapi-typescript's AST, printed by the compiler's printer. Tests
- * compare `printTypeFromJsonSchema` against it.
- */
 import ts from 'typescript';
 import openapiTS, { type OpenAPI3, astToString } from 'openapi-typescript';
 
-/** `type <name> = …;` as the old pipeline printed it, or why openapi-typescript refused the schema. */
+/** `type <name> = …;` as openapi-typescript and the compiler's printer print it, or why openapi-typescript refused the schema. */
 export const printWithOpenApiTypeScript = async (
   name: string,
   properties: unknown

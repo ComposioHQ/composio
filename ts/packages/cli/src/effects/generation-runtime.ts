@@ -4,10 +4,7 @@ import { loadInstalledCompanionModule } from 'src/services/run-companion-modules
 // the executable. The module itself is loaded from disk on first use.
 export type GenerationRuntime = typeof import('src/services/generation-runtime');
 
-/**
- * The `generation-runtime` companion module (the TypeScript compiler and the
- * `composio run` source rewrites), loaded on demand.
- */
+/** The `generation-runtime` companion module (`composio run`'s source rewrites), loaded on demand. */
 export const loadGenerationRuntime = loadInstalledCompanionModule<GenerationRuntime>(
   'generation-runtime',
   ['extractInlineExecuteToolSlugs', 'wrapFileSourceForRun', 'wrapInlineCodeForRun']

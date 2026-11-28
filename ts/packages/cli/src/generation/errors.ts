@@ -11,5 +11,3 @@ export class GenerateTypeFromJsonSchemaError extends Data.TaggedError('json-pars
   cause?: unknown;
   message?: string;
 }> {}
-
-export type GenerationError = SafeOutputPathError | GenerateTypeFromJsonSchemaError;

@@ -1,6 +1,7 @@
+import { dereferenceJsonSchema } from '@composio/core/utils/json-schema';
 import { Effect } from 'effect';
 import { GenerateTypeFromJsonSchemaError } from 'src/generation/errors';
-import { printTypeFromJsonSchema } from './json-schema-type';
+import { printTypeFromJsonSchema, type PrintTypeOptions } from './json-schema-type';
 
 export { GenerateTypeFromJsonSchemaError };
 
@@ -11,15 +12,23 @@ export { GenerateTypeFromJsonSchemaError };
  */
 export function generateTypeFromJsonSchema(
   name: string,
-  schema: { readonly [x: string]: unknown }
+  schema: { readonly [x: string]: unknown },
+  options: PrintTypeOptions = { comments: true }
 ) {
-  // The Composio API returns schemas whose discriminator.mapping points to #/$defs/... paths
-  // while the variants are inlined in oneOf/anyOf arrays. A union needs no discriminator, so
-  // it is removed.
-  const processedProperties = removeDiscriminators(schema['properties']);
-
   return Effect.try({
-    try: () => printTypeFromJsonSchema(name, processedProperties),
+    // Local `$ref` pointers (into the schema's `$defs`) are inlined the way the SDK inlines
+    // them at runtime; a missing target or a cycle becomes a permissive object.
+    // The Composio API returns schemas whose discriminator.mapping points to #/$defs/... paths
+    // while the variants are inlined in oneOf/anyOf arrays. A union needs no discriminator, so
+    // it is removed.
+    try: () =>
+      printTypeFromJsonSchema(
+        name,
+        removeDiscriminators(
+          dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' })['properties']
+        ),
+        options
+      ),
     catch: cause =>
       new GenerateTypeFromJsonSchemaError({
         cause,

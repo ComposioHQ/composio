@@ -35,7 +35,6 @@ export type GenerateTypeScriptIndexMapSourceParams = {
   importExtension: 'ts' | 'js';
 };
 
-/** The index module, as the three files it can be written as. */
 export type IndexModule = {
   readonly typescript: string;
   readonly javascript: string;
@@ -57,9 +56,11 @@ ${source}`;
 ${generateToolkitUnionType(index)}
 ${generateToolsByToolkitType()}
 `;
+    const indexMap = withBanner(generateTypeScriptIndexMapSource(params)(index));
     return {
-      typescript: generateIndexSourceTypeScript(params)(index),
-      javascript: `${withBanner(generateTypeScriptIndexMapSource(params)(index))}
+      typescript: `${indexMap}
+${types}`,
+      javascript: `${indexMap}
 `,
       declarations: `${withBanner(generateIndexMapDeclaration(params)(index))}
 ${types}`,
@@ -67,27 +68,17 @@ ${types}`,
   };
 }
 
-function generateIndexSourceTypeScript(params: GenerateTypeScriptIndexMapSourceParams) {
-  return (index: ToolkitIndex) => {
-    const indexMap = generateTypeScriptIndexMapSource(params)(index);
-    const toolkitUnionType = generateToolkitUnionType(index);
-    const toolsByToolkitType = generateToolsByToolkitType();
-
-    const indexMapWithBanner = params.emitSingleFile
-      ? indexMap
-      : `${ts.stringify(ts.docComment(params.banner))}
-${indexMap}`;
-
-    // Add the Toolkit type to the generated code
-    const code = `${indexMapWithBanner}
-${ts.stringify(ts.docComment('Type declarations'))}
-${toolkitUnionType}
-${toolsByToolkitType}
-`;
-
-    return code;
-  };
-}
+/** Imports each toolkit's module, unless every toolkit is written into the same file. */
+const addToolkitImports = (
+  file: ReturnType<typeof ts.file>,
+  params: GenerateTypeScriptIndexMapSourceParams,
+  index: ToolkitIndex
+) => {
+  if (params.emitSingleFile) return;
+  for (const [toolkitName, value] of Record.toEntries(index)) {
+    file.addImport(ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName));
+  }
+};
 
 /**
  * Generates a list of Python source files that should be written to disk by the caller.
@@ -102,17 +93,7 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
     );
 
     const indexMapFile = ts.file();
-
-    for (const [toolkitName, value] of Record.toEntries(index)) {
-      // Note: imports needd to be skipped when generating a single file
-      if (params.emitSingleFile) {
-        break;
-      }
-
-      indexMapFile.addImport(
-        ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName)
-      );
-    }
+    addToolkitImports(indexMapFile, params, index);
 
     indexMapFile.add(
       ts
@@ -130,20 +111,10 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
   };
 }
 
-/**
- * The declaration of the index map: `Toolkits` holds each toolkit's map, so its
- * type names each one with `typeof`.
- */
 function generateIndexMapDeclaration(params: GenerateTypeScriptIndexMapSourceParams) {
   return (index: ToolkitIndex): string => {
     const file = ts.file();
-    if (!params.emitSingleFile) {
-      for (const [toolkitName, value] of Record.toEntries(index)) {
-        file.addImport(
-          ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName)
-        );
-      }
-    }
+    addToolkitImports(file, params, index);
     const entries = Record.keys(index).map(key =>
       ts.property(key, ts.typeOfType(ts.namedType(key)))
     );

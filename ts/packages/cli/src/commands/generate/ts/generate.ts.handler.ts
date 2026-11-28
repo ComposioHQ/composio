@@ -4,6 +4,7 @@
  * - `--transpiled`: Emit not just the TypeScript files, but also the transpiled JavaScript files
  * - `--output-dir`: Output directory for the generated TypeScript type stubs.
  * - `--toolkits`: Filter output to only include the specified toolkits. Can be specified multiple times (e.g., --toolkits gmail --toolkits slack)
+ * - `--no-comments`: Leave out the doc comments printed from tool and trigger schemas (titles, descriptions, examples)
  *
  * Environment variables:
  * - `COMPOSIO_TOOLKIT_VERSION_<TOOLKIT>`: Override a toolkit version (e.g., COMPOSIO_TOOLKIT_VERSION_GMAIL=20250901_00).
@@ -49,6 +50,7 @@ export type GenerateTsParams = {
   readonly compact: boolean;
   readonly transpiled: boolean;
   readonly typeTools: boolean;
+  readonly comments: boolean;
   readonly toolkits: ReadonlyArray<string>;
 };
 
@@ -320,7 +322,7 @@ export function generateTypescriptTypeStubs(params: GenerateTsParams) {
     const process = yield* NodeProcess;
     const cwd = process.cwd;
     const client = yield* ComposioToolkitsRepository;
-    const { compact, typeTools, transpiled } = params;
+    const { compact, typeTools, transpiled, comments } = params;
 
     yield* ui.intro('composio generate ts');
 
@@ -379,6 +381,7 @@ export function generateTypescriptTypeStubs(params: GenerateTsParams) {
           banner: generation.BANNER,
           importExtension: 'js',
           transpiled,
+          comments,
         })(index);
 
         yield* spinner.message('Writing files to disk...');

@@ -5,6 +5,7 @@ import type { SourceFile } from 'src/generation/types';
 import {
   generateToolkitModules,
   withImports,
+  type Flavor,
   type ToolkitModule,
 } from './generate-toolkit-sources';
 import { generateIndexModule } from './generate-index-source';
@@ -23,9 +24,9 @@ type GenerateTypeScriptSourcesParams = {
    * its TypeScript source.
    */
   transpiled?: boolean;
+  /** Write the doc comments printed from tool and trigger schemas; on unless `false`. */
+  comments?: boolean;
 };
-
-type Flavor = 'typescript' | 'javascript' | 'declarations';
 
 const EXTENSIONS: Readonly<Record<Flavor, string>> = {
   typescript: '.ts',
@@ -34,7 +35,7 @@ const EXTENSIONS: Readonly<Record<Flavor, string>> = {
 };
 
 // A declaration file that is a module exports every top-level declaration unless it says
-// otherwise: `export {}` keeps the per-tool types private, as the compiler's declaration emit did.
+// otherwise: `export {}` keeps the per-tool types private.
 const KEEP_PRIVATE = '\nexport {};\n';
 
 const withExtension = (filename: string, flavor: Flavor) =>
@@ -52,13 +53,28 @@ const uniqueImports = (modules: ReadonlyArray<ToolkitModule>) => {
     });
 };
 
+/** A toolkit's file in one flavor, with the imports that flavor needs. */
+const moduleSource = (module: ToolkitModule, flavor: Flavor): string => {
+  switch (flavor) {
+    case 'typescript':
+      return withImports(module.imports, module.body('typescript'));
+    case 'javascript':
+      // JavaScript keeps no import: the only one a toolkit needs is a type.
+      return `${module.body('javascript')}\n`;
+    case 'declarations':
+      return `${withImports(module.imports, module.body('declarations'))}${KEEP_PRIVATE}`;
+  }
+};
+
 export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParams) {
   return (
     index: ToolkitIndex
   ): Effect.Effect<Array<SourceFile>, GenerateTypeScriptSourcesError, Path.Path> =>
     Effect.gen(function* () {
       const path = yield* Path.Path;
-      const modules = yield* generateToolkitModules(params.banner)(index);
+      const modules = yield* generateToolkitModules(params.banner, {
+        comments: params.comments ?? true,
+      })(index);
       const indexModule = generateIndexModule(params)(index);
       const indexFilename = path.join(params.outputDir, 'index.ts');
       const flavors: ReadonlyArray<Flavor> = params.transpiled
@@ -77,37 +93,31 @@ export function generateTypeScriptSources(params: GenerateTypeScriptSourcesParam
         return flavors.flatMap(flavor => [
           ...safeModules.map(({ filePath, module }): SourceFile => [
             withExtension(filePath, flavor),
-            // JavaScript keeps no import: the only one a toolkit needs is a type.
-            flavor === 'javascript'
-              ? `${module.javascript}\n`
-              : flavor === 'declarations'
-                ? `${withImports(module.imports, module.declarations)}${KEEP_PRIVATE}`
-                : withImports(module.imports, module.typescript),
+            moduleSource(module, flavor),
           ]),
           [withExtension(indexFilename, flavor), indexModule[flavor]] as const,
         ]);
       }
 
-      // One file: the imports every toolkit needs, written once, then each toolkit's body.
       const imports = uniqueImports(modules);
       const banner = ts.stringify(ts.docComment(params.banner));
       const importBlock = withImports(imports, '');
-      const bodies = (flavor: Flavor) => modules.map(module => module[flavor]).join('\n');
-      const singleFile: Record<Flavor, string> = {
-        typescript: `${banner}
+      const bodies = (flavor: Flavor) => modules.map(module => module.body(flavor)).join('\n');
+      const singleFile: Record<Flavor, () => string> = {
+        typescript: () => `${banner}
 ${importBlock}  ${bodies('typescript')}
   ${indexModule.typescript}
   `,
-        javascript: `${banner}
+        javascript: () => `${banner}
 ${bodies('javascript')}
 ${indexModule.javascript}`,
-        declarations: `${banner}
+        declarations: () => `${banner}
 ${importBlock}${bodies('declarations')}
 ${indexModule.declarations}${KEEP_PRIVATE}`,
       };
       return flavors.map((flavor): SourceFile => [
         withExtension(indexFilename, flavor),
-        singleFile[flavor],
+        singleFile[flavor](),
       ]);
     });
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
+import { dereferenceJsonSchema } from '@composio/core/utils/json-schema';
 import { printTypeFromJsonSchema } from 'src/generation/typescript/json-schema-type';
 import { removeDiscriminators } from 'src/generation/typescript/generate-type-from-json-schema';
 import { printWithOpenApiTypeScript } from 'test/__utils__/openapi-typescript-oracle';
@@ -29,17 +30,28 @@ const recorded: ReadonlyArray<readonly [string, unknown]> = (
     ...[...TOOLS_TYPES_GITHUB, ...TOOLS_TYPES_GMAIL, ...TOOLS_TYPES_GOOGLEDRIVE].flatMap(
       tool =>
         [
-          [`${tool.slug}_INPUT`, tool.input_parameters['properties']],
-          [`${tool.slug}_OUTPUT`, tool.output_parameters['properties']],
+          [`${tool.slug}_INPUT`, tool.input_parameters],
+          [`${tool.slug}_OUTPUT`, tool.output_parameters],
         ] as const
     ),
     ...[...TRIGGER_TYPES_GITHUB, ...TRIGGER_TYPES_GMAIL, ...TRIGGER_TYPES_GOOGLEDRIVE].map(
-      trigger => [`${trigger.slug}_PAYLOAD`, trigger.payload['properties']] as const
+      trigger => [`${trigger.slug}_PAYLOAD`, trigger.payload] as const
     ),
-    ['NOTION_APPEND_TEXT_BLOCKS_INPUT', notionAppendTextBlocks.input_parameters.properties],
-    ['NOTION_CREATE_COMMENT_INPUT', notionCreateComment.input_parameters.properties],
+    ['NOTION_APPEND_TEXT_BLOCKS_INPUT', notionAppendTextBlocks.input_parameters],
+    ['NOTION_CREATE_COMMENT_INPUT', notionCreateComment.input_parameters],
   ] satisfies ReadonlyArray<readonly [string, unknown]>
-).map(([name, properties]) => [name, removeDiscriminators(properties)] as const);
+).map(
+  // Prepared as `generateTypeFromJsonSchema` prepares them: local `$ref` pointers
+  // inlined (openapi-typescript cannot resolve them), discriminators removed.
+  ([name, schema]) =>
+    [
+      name,
+      removeDiscriminators(
+        (dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' }) as { properties?: unknown })
+          .properties
+      ),
+    ] as const
+);
 
 // Text that exercises the comment and string-literal printers: line breaks the
 // compiler counts (CR, LF, CRLF, U+2028), indentation, comment terminators,

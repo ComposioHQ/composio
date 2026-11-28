@@ -151,6 +151,35 @@ describe('CLI: composio generate', () => {
           expect(fileNames).not.toContain('slack.ts');
         })
     );
+
+    it.effect(
+      '[Given] TypeScript project with --no-comments [Then] it passes the option to the TypeScript generator',
+      () =>
+        Effect.gen(function* () {
+          const process = yield* NodeProcess;
+          const fs = yield* FileSystem.FileSystem;
+          const withComments = path.join(process.cwd, '.generated', 'composio-comments');
+          const withoutComments = path.join(process.cwd, '.generated', 'composio-no-comments');
+
+          yield* cli(['generate', '--toolkits', 'gmail', '--output-dir', withComments]);
+          yield* cli([
+            'generate',
+            '--toolkits',
+            'gmail',
+            '--no-comments',
+            '--output-dir',
+            withoutComments,
+          ]);
+
+          // Trigger payload types are printed from schemas even without --type-tools.
+          const gmail = yield* fs.readFileString(path.join(withComments, 'gmail.ts'));
+          const gmailWithoutComments = yield* fs.readFileString(
+            path.join(withoutComments, 'gmail.ts')
+          );
+          expect(gmail).toContain('@description');
+          expect(gmailWithoutComments).not.toContain('@description');
+        })
+    );
   });
 
   layer(

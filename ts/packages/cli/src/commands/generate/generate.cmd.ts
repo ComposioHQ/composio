@@ -16,6 +16,13 @@ const typeTools = Flag.Boolean('type-tools').pipe(
   )
 );
 
+const comments = Flag.Boolean('comments').pipe(
+  Flag.withDefault(true),
+  Flag.withDescription(
+    'Write the doc comments from tool and trigger schemas into the generated types; --no-comments leaves them out for smaller files (TypeScript only)'
+  )
+);
+
 const toolkits = Flag.String('toolkits').pipe(
   Flag.atLeast(0),
   Flag.withDescription(
@@ -35,11 +42,12 @@ const toolkits = Flag.String('toolkits').pipe(
  * composio generate py
  * composio generate ts
  * composio generate ts --type-tools
+ * composio generate ts --type-tools --no-comments
  * ```
  */
 export const generateCmd = Command.make(
   'generate',
-  { outputDir, typeTools, toolkits },
+  { outputDir, typeTools, comments, toolkits },
   runGenerate
 ).pipe(
   Command.withDescription(

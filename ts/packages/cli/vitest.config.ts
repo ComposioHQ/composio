@@ -14,6 +14,7 @@ export default defineConfig({
       src: path.resolve(__dirname, './src'),
       test: path.resolve(__dirname, './test'),
       '@composio/core/utils/ssrf-guard': path.join(coreDir, 'src/utils/ssrfGuard.node.ts'),
+      '@composio/core/utils/json-schema': path.join(coreDir, 'src/utils/json-schema.ts'),
       '@composio/core/experimental': path.join(coreDir, 'src/experimental/index.ts'),
       '@composio/core': path.join(coreDir, 'src/index.ts'),
       '@composio/ts-builders': path.join(tsBuildersDir, 'src/index.ts'),

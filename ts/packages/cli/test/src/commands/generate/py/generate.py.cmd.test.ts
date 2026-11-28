@@ -129,15 +129,18 @@ describe('CLI: composio generate py', () => {
                 slug: str = "gmail"
 
                 class tools:
-                    pass
+                    ADD_LABEL_TO_EMAIL = "GMAIL_ADD_LABEL_TO_EMAIL"
+                    BATCH_DELETE_MESSAGES = "GMAIL_BATCH_DELETE_MESSAGES"
+                    BATCH_MODIFY_MESSAGES = "GMAIL_BATCH_MODIFY_MESSAGES"
 
                 class triggers:
                     NEW_GMAIL_MESSAGE = {
                       "config": {
                         "properties": {
                           "interval": {
-                            "default": 1,
-                            "description": "Periodic Interval to Check for Updates & Send a Trigger in Minutes",
+                            "default": 2,
+                            "deprecated": True,
+                            "description": "Deprecated: use \`polling_interval\` on the trigger instance instead. Minutes between checks for new events.",
                             "title": "Interval",
                             "type": "number"
                           },
@@ -145,7 +148,7 @@ describe('CLI: composio generate py', () => {
                             "default": "INBOX",
                             "description": "Filter messages by a single label ID. Labels identify the status or category of messages. Supported labels include 'INBOX', 'SPAM', 'TRASH', 'UNREAD', 'STARRED', 'IMPORTANT', 'CATEGORY_PERSONAL', 'CATEGORY_SOCIAL', 'CATEGORY_PROMOTIONS', 'CATEGORY_UPDATES', and 'CATEGORY_FORUMS'. For complex label filtering, use the 'query' parameter instead.",
                             "examples": ["INBOX", "UNREAD", "STARRED"],
-                            "title": "Labelids",
+                            "title": "Label Ids",
                             "type": "string"
                           },
                           "query": {
@@ -159,7 +162,7 @@ describe('CLI: composio generate py', () => {
                             "default": "me",
                             "description": "The user's email address or 'me' for the authenticated user.",
                             "examples": ["me"],
-                            "title": "Userid",
+                            "title": "User Id",
                             "type": "string"
                           }
                         },
@@ -167,106 +170,85 @@ describe('CLI: composio generate py', () => {
                         "type": "object"
                       },
                       "description": "Triggers when a new message is received in Gmail.",
-                      "instructions": "\\n    **Instructions for Setting Up the Trigger:**\\n\\n    - Ensure that the Gmail API is enabled for your Google account.\\n    - Provide the user ID (usually 'me' for the authenticated user).\\n    - Optionally, provide label IDs to filter messages.\\n    ",
+                      "instructions": "\\n    **Instructions for Setting Up the Trigger:**\\n\\n    - Ensure that the Gmail API is enabled for your Google account.\\n    - Provide the user ID (usually 'me' for the authenticated user).\\n    - Optionally, provide label IDs to filter messages.\\n    \\n    **Using the Trigger as a Webhook (Gmail Push Notifications)**\\n\\n    By default the trigger polls Gmail on its interval and needs no setup. To\\n    use it as a webhook trigger, so Gmail notifies Composio as soon as the\\n    mailbox changes, set up push notifications on your own Google OAuth app,\\n    the one your Gmail auth config uses. Do this once per OAuth app. With the\\n    Composio Gmail app, the trigger keeps polling.\\n\\n    1. In the Google Cloud project that owns the OAuth client, enable the\\n       Gmail API and the Cloud Pub/Sub API.\\n    2. Create a Pub/Sub topic in that project. Its full name is\\n       \`projects/<project-id>/topics/<topic-id>\`.\\n    3. On the topic, grant \`gmail-api-push@system.gserviceaccount.com\` the\\n       Pub/Sub Publisher role (\`roles/pubsub.publisher\`).\\n    4. Create a service account in that project only for push deliveries,\\n       for example \`composio-gmail-push\`. Give it no roles and create no\\n       keys for it: Pub/Sub uses it only to sign each push.\\n    5. Register a webhook endpoint for Gmail with the OAuth client ID. On it,\\n       set \`topic_name\` (Pub/Sub Topic Name) to the topic's full name,\\n       \`push_service_account_email\` (Push Service Account) to the service\\n       account's email, and \`push_audience\` (Push Audience) to the\\n       \`webhook_url\` the endpoint returns.\\n    6. Create a push subscription on the topic. Set its endpoint URL to that\\n       \`webhook_url\`. Turn on authentication, choose the service account,\\n       and set the audience to the same \`webhook_url\`. Leave payload\\n       unwrapping off, and set the expiration period to never expire.\\n       Composio rejects any push whose Google-signed token names another\\n       service account or audience.\\n\\n    Whoever creates the subscription needs the Service Account User role on\\n    the service account; project Owners and Editors already have it. If\\n    pushes don't arrive, check that Pub/Sub's service agent,\\n    \`service-<project-number>@gcp-sa-pubsub.iam.gserviceaccount.com\`, can\\n    sign tokens for the account, and if not, grant it the Service Account\\n    Token Creator role on the account.\\n\\n    Google documents its side of this setup in\\n    https://developers.google.com/workspace/gmail/api/guides/push and\\n    https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions.\\n",
                       "name": "New Gmail Message Received Trigger",
                       "payload": {
                         "properties": {
                           "attachment_list": {
-                            "anyOf": [{
-                                "items": {},
-                                "type": "array"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The list of attachments in the message",
-                            "title": "Attachment List"
+                            "items": {},
+                            "title": "Attachment List",
+                            "type": "array"
+                          },
+                          "id": {
+                            "description": "The raw Gmail message ID",
+                            "title": "Id",
+                            "type": "string"
+                          },
+                          "label_ids": {
+                            "description": "The Gmail label IDs applied to the message",
+                            "items": {
+                              "type": "string"
+                            },
+                            "title": "Label Ids",
+                            "type": "array"
                           },
                           "message_id": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The message ID of the message",
-                            "title": "Message ID"
+                            "title": "Message Id",
+                            "type": "string"
                           },
                           "message_text": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The text of the message",
-                            "title": "Message Text"
+                            "title": "Message Text",
+                            "type": "string"
                           },
                           "message_timestamp": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The timestamp of the message",
-                            "title": "Message Timestamp"
+                            "title": "Message Timestamp",
+                            "type": "string"
                           },
                           "payload": {
-                            "anyOf": [{
-                                "type": "object"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
+                            "additionalProperties": True,
                             "description": "The payload of the message",
-                            "title": "Payload"
+                            "title": "Payload",
+                            "type": "object"
+                          },
+                          "preview": {
+                            "additionalProperties": True,
+                            "description": "The preview payload of the message",
+                            "title": "Preview",
+                            "type": "object"
                           },
                           "sender": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The sender of the message",
-                            "title": "Sender"
+                            "title": "Sender",
+                            "type": "string"
                           },
                           "subject": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The subject of the message",
-                            "title": "Subject"
+                            "title": "Subject",
+                            "type": "string"
                           },
                           "thread_id": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The thread ID of the message",
-                            "title": "Thread ID"
+                            "title": "Thread Id",
+                            "type": "string"
                           },
                           "to": {
-                            "anyOf": [{
-                                "type": "string"
-                              }, {
-                                "type": "null"
-                              }],
-                            "default": None,
                             "description": "The recipient of the message",
-                            "title": "To"
+                            "title": "To",
+                            "type": "string"
                           }
                         },
                         "title": "NewMessagePayload",
                         "type": "object"
                       },
                       "slug": "GMAIL_NEW_GMAIL_MESSAGE",
+                      "toolkit": {
+                        "name": "gmail",
+                        "slug": "gmail"
+                      },
                       "type": "poll"
                     }
             "
