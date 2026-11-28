@@ -1189,44 +1189,15 @@ EOF
   assert_contains "$plugin_order_output" 'Installing plugins for detected agent hosts...' "$interpreter_name plugin status printed"
   assert_tail "$plugin_order_output" "$case_b_tail" "$interpreter_name plugin output precedes the final block"
 
-  # --agent, setup succeeds, command not yet resolvable: completed state plus
-  # only the new-terminal notice; never a second login command.
   reset_case
-  agent_home="$case_root/agent-home"
-  agent_output=$(run_installer "$agent_home" "$case_root/agent-install" "$case_root/agent-bin" "$stable_tag" --agent 2>&1)
-  grep -Fq 'login --agent --no-skill-install' "$composio_log" || fail "$interpreter_name agent login invocation"
-  assert_not_contains "$agent_output" 'composio login' "$interpreter_name agent flow must not print a generic login command"
-  assert_tail "$agent_output" $'Composio agent login complete.\nOpen a new terminal to use the composio command.' "$interpreter_name agent Case B tail"
-
-  # --agent with the installed command already resolvable: completed state only.
-  reset_case
-  agent_ready_bin="$case_root/agent-ready-bin"
-  CASE_PATH_PREFIX="$agent_ready_bin:"
-  agent_ready_output=$(run_installer "$case_root/agent-ready-home" "$case_root/agent-ready-install" "$agent_ready_bin" "$stable_tag" --agent 2>&1)
-  assert_not_contains "$agent_ready_output" 'Open a new terminal' "$interpreter_name agent ready flow needs no terminal notice"
-  assert_tail "$agent_ready_output" 'Composio agent login complete.' "$interpreter_name agent Case A tail"
-
-  # --agent with setup failure: completed state plus warning and trusted
-  # installed-path guidance; still no generic login command.
-  reset_case
-  CASE_SHELL_CAPABILITY=unsupported
-  agent_fail_home="$case_root/agent-fail-home"
-  agent_fail_install="$case_root/agent-fail-install"
-  mkdir -p "$agent_fail_home/.bashrc"
-  agent_fail_output=$(run_installer "$agent_fail_home" "$agent_fail_install" "$case_root/agent-fail-bin" "$stable_tag" --agent 2>&1) ||
-    fail "$interpreter_name agent setup failure must keep the install successful"
-  assert_contains "$agent_fail_output" 'Composio agent login complete.' "$interpreter_name agent completion survives setup failure"
-  assert_contains "$agent_fail_output" 'warning: Automatic PATH setup for bash failed' "$interpreter_name agent setup failure warning"
-  assert_not_contains "$agent_fail_output" 'composio login' "$interpreter_name agent setup failure must not print a login command"
-  assert_tail "$agent_fail_output" $'Run composio from its installed location:\n\n  '"$agent_fail_install/composio --help" "$interpreter_name agent setup failure recovery tail"
-
-  # --agent with setup skipped (none): completed state plus installed-path guidance.
-  reset_case
-  CASE_INSTALL_SHELL=none
-  agent_none_install="$case_root/agent-none-install"
-  agent_none_output=$(run_installer "$case_root/agent-none-home" "$agent_none_install" "$case_root/agent-none-bin" "$stable_tag" --agent 2>&1)
-  assert_not_contains "$agent_none_output" 'composio login' "$interpreter_name agent none flow must not print a login command"
-  assert_tail "$agent_none_output" $'Composio agent login complete.\nRun composio from its installed location:\n\n  '"$agent_none_install/composio --help" "$interpreter_name agent none tail"
+  agent_status=0
+  agent_output=$(run_installer "$case_root/agent-home" "$case_root/agent-install" "$case_root/agent-bin" "$stable_tag" --agent 2>&1) ||
+    agent_status=$?
+  [ "$agent_status" -eq 1 ] || fail "$interpreter_name --agent should exit 1"
+  [ "$agent_output" = 'error: Agent signup is unavailable right now. Install without `--agent`, then ask a human to run `composio login`.' ] ||
+    fail "$interpreter_name unexpected --agent output: $agent_output"
+  [ ! -s "$curl_log" ] || fail "$interpreter_name --agent should skip downloads"
+  [ ! -s "$composio_log" ] || fail "$interpreter_name --agent should skip CLI calls"
 
   printf 'install scripts passed under %s\n' "$interpreter_name"
 done

@@ -54,7 +54,7 @@ print_usage() {
         'Usage: install.sh [--agent] [--no-plugins] [version-tag]' \
         '' \
         'Options:' \
-        '  --agent       Sign up or log in as a Composio agent after installation.' \
+        '  --agent       Agent signup is currently unavailable. Install without this flag.' \
         '  --no-plugins  Skip agent plugin installation.' \
         '  -h, --help    Show this help.' \
         '' \
@@ -511,18 +511,6 @@ print_post_install_help() {
     compute_inherited_resolution
     printf '\n'
 
-    if [ "$install_agent" = 1 ]; then
-        printf 'Composio agent login complete.\n'
-        if [ "$inherited_resolution" != installed ]; then
-            if [ "$shell_setup_outcome" = success ]; then
-                printf 'Open a new terminal to use the composio command.\n'
-            else
-                printf 'Run composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")"
-            fi
-        fi
-        return 0
-    fi
-
     # Case A: the invoking terminal already resolves the installed executable.
     if [ "$inherited_resolution" = installed ]; then
         if [ "$shell_setup_outcome" = success ] || [ "$shell_setup_mode" = none ]; then
@@ -564,21 +552,13 @@ print_post_install_help() {
 # channel so quiet mode and COMPOSIO_INSTALL_HELP=0 cannot suppress it, and the
 # trusted --version-verified installed executable is always the last output.
 print_setup_failure_ending() {
-    if [ "$install_agent" = 1 ] &&
-        [ "${COMPOSIO_INSTALL_HELP:-1}" != 0 ] && ! is_true "${COMPOSIO_QUIET:-}"; then
-        printf '\nComposio agent login complete.\n'
-    fi
     warn "Automatic PATH setup for $requested_shell failed. The Composio CLI is installed and unaffected."
     # The delegated CLI's own output is captured, so point at the channel that
     # replays it instead of leaving the failure undiagnosable.
     if ! is_true "${COMPOSIO_DEBUG:-}"; then
         warn 'Re-run with COMPOSIO_DEBUG=1 for details.'
     fi
-    if [ "$install_agent" = 1 ]; then
-        printf '\nRun composio from its installed location:\n\n  %s --help\n' "$(shell_quote "$exe")" >&2
-    else
-        printf '\nTo get started, run:\n\n  %s login\n' "$(shell_quote "$exe")" >&2
-    fi
+    printf '\nTo get started, run:\n\n  %s login\n' "$(shell_quote "$exe")" >&2
 }
 
 cleanup() {
@@ -633,6 +613,10 @@ main() {
         esac
         shift
     done
+
+    if [ "$install_agent" = 1 ]; then
+        error "Agent signup is unavailable right now. Install without \`--agent\`, then ask a human to run \`composio login\`."
+    fi
 
     # Resolve the setup mode right after argument parsing: auto (the default)
     # infers the login shell from $SHELL and degrades to install-only when it
@@ -763,12 +747,6 @@ main() {
         info 'Installing plugins for detected agent hosts...'
         COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" setup --target auto --yes --if-present ||
             error "Composio CLI was installed, but agent plugin setup failed. Retry with \`composio setup --target auto --yes\`."
-    fi
-
-    if [ "$install_agent" = 1 ]; then
-        info 'Setting up Composio agent login...'
-        COMPOSIO_CLI_INVOCATION_ORIGIN=installer "$exe" login --agent --no-skill-install ||
-            error 'Failed to sign up or log in as a Composio agent.'
     fi
 
     shell_setup_outcome=skipped

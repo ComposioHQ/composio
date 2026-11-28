@@ -96,6 +96,22 @@ describe('runAgentWhoami', () => {
     }).pipe(Effect.provide(layer));
   });
 
+  it.effect('[Given] a gateway outage [Then] reports the failed identity lookup', () => {
+    const { layer } = AgentHandlerTest();
+    return Effect.gen(function* () {
+      yield* writeStoredAgentIdentity(makeAgentIdentity());
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async () => agentsJsonResponse({}, 503));
+
+      const exit = yield* Effect.exit(runAgentWhoami());
+
+      expect(exitCodeOf(exit)).toBe(1);
+      expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
+        'The agent identity service is unavailable right now (HTTP 503 for /api/whoami).',
+        'Ask a human to run `composio login` for regular CLI access.',
+      ]);
+    }).pipe(Effect.provide(layer));
+  });
+
   it.effect.each([
     {
       name: 'no stored identity',

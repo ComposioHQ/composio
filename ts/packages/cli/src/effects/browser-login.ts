@@ -60,7 +60,14 @@ const AGENT_POLL_TIMEOUT_SECONDS = 120;
 const formatNonInteractiveLoginInstructions = (params: {
   readonly loginUrl: string;
   readonly pollCommand: string;
-}) => `Open this URL in your browser to log in:
+  readonly scope: 'user' | 'project';
+}) => {
+  const unattendedHint =
+    params.scope === 'user'
+      ? '\n\nhint: For unattended agents: Use an existing user API key via `COMPOSIO_USER_API_KEY`. If you have no credential, wait for a human to log in.'
+      : '';
+
+  return `Open this URL in your browser to log in:
 
   ${params.loginUrl}
 
@@ -68,9 +75,8 @@ Then run this command to complete login:
 
   ${params.pollCommand}
 
-hint: For agents: Show the URL above to the user to click, then run \`${params.pollCommand} --timeout ${AGENT_POLL_TIMEOUT_SECONDS}\`. It waits at most that long and exits once credentials are saved; the pending login lives ${AUTHORIZATION_TIMEOUT_MINUTES} minutes. If it exits with the login still pending, it prints the URL again — wait for the user to click, then run the same command again. Do not ask the user whether to poll — they already requested login.
-
-hint: For unattended agents: If no human is available to open the URL, run \`composio login --agent\` instead — it signs the CLI in with a Composio agent account (creating one if needed) without a browser. Never use it when a human is present to log in with their own account.`;
+hint: For agents: Show the URL above to the user to click, then run \`${params.pollCommand} --timeout ${AGENT_POLL_TIMEOUT_SECONDS}\`. It waits at most that long and exits once credentials are saved; the pending login lives ${AUTHORIZATION_TIMEOUT_MINUTES} minutes. If it exits with the login still pending, it prints the URL again — wait for the user to click, then run the same command again. Do not ask the user whether to poll — they already requested login.${unattendedHint}`;
+};
 
 const formatLoginSuccessMessage = (params: {
   readonly email?: string;
@@ -391,6 +397,7 @@ export const browserLogin = (params: {
       const loginInstructions = formatNonInteractiveLoginInstructions({
         loginUrl: url,
         pollCommand: POLL_COMMAND,
+        scope: params.scope,
       });
       if (canDecorate) {
         yield* ui.log.info('Please login using the following URL:');

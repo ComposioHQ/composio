@@ -1,16 +1,28 @@
 import { Effect } from 'effect';
 import { reportFailure } from 'src/effects/report-failure';
-import { AgentAuthError } from 'src/services/agents';
+import { AgentAuthError, AgentRequestError, isAgentGatewayError } from 'src/services/agents';
 import { TerminalUI } from 'src/services/terminal-ui';
 
-/** Reports an `AgentAuthError` and its next steps on stderr and exits 1. */
-export const handleAgentAuthError = <E, R>(effect: Effect.Effect<void, E | AgentAuthError, R>) =>
+export const handleAgentAuthError = <E, R>(
+  effect: Effect.Effect<void, E | AgentAuthError | AgentRequestError, R>
+) =>
   effect.pipe(
     Effect.catchIf(
-      (error): error is AgentAuthError => error instanceof AgentAuthError,
+      error => error instanceof AgentAuthError || isAgentGatewayError(error),
       error =>
         Effect.gen(function* () {
           const ui = yield* TerminalUI;
+          if (error instanceof AgentRequestError) {
+            const message = error.pathname.startsWith('/api/signup')
+              ? 'Agent signup is unavailable right now.'
+              : `The agent identity service is unavailable right now (HTTP ${error.status} for ${error.pathname}).`;
+            return yield* reportFailure(
+              ui,
+              message,
+              'Ask a human to run `composio login` for regular CLI access.'
+            );
+          }
+
           return yield* reportFailure(
             ui,
             error.message,

@@ -189,7 +189,8 @@ describe('CLI: composio login', () => {
         expect(output).not.toContain('Expires at:');
         expect(output).toContain('Do not ask the user whether to poll');
         expect(output).toContain('hint: For unattended agents:');
-        expect(output).toContain('composio login --agent');
+        expect(output).toContain('COMPOSIO_USER_API_KEY');
+        expect(output).not.toContain('composio login --agent');
 
         const fs = yield* FileSystem.FileSystem;
         const cacheDir = yield* setupCacheDir;
@@ -208,6 +209,58 @@ describe('CLI: composio login', () => {
         expect(output).not.toContain('Login URL');
         expect(output).not.toContain('Login instructions');
         expect(output).not.toContain('Installed composio-cli skill');
+      })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.effect.each([502, 503, 504])(
+      'login --agent reports an HTTP %s gateway outage and exits 1',
+      status =>
+        Effect.gen(function* () {
+          const stderr = { stream: 'stderr', stripAnsi: true } as const;
+          const previousLines = (yield* MockConsole.getLines(stderr)).length;
+          stubFetch([
+            {
+              method: 'POST',
+              path: '/api/signup',
+              respond: () => new Response('<h1>Service unavailable</h1>', { status }),
+            },
+          ]);
+
+          const { exitCode } = yield* cliExit(['login', '--agent']);
+
+          expect(exitCode).toBe(1);
+          expect((yield* MockConsole.getLines(stderr)).slice(previousLines)).toEqual([
+            'Agent signup is unavailable right now.',
+            'Ask a human to run `composio login` for regular CLI access.',
+          ]);
+        })
+    );
+  });
+
+  layer(TestLive({ terminalUI: headlessStdinUI }))(it => {
+    it.effect('login --agent reports a stored identity refresh outage without signing up', () =>
+      Effect.gen(function* () {
+        yield* writeStoredAgentIdentity(storedAgentIdentity);
+        const fetchSpy = stubFetch([
+          {
+            method: 'GET',
+            path: WHOAMI,
+            respond: () => mockFetchResponse({}, 503),
+          },
+        ]);
+
+        const { exitCode } = yield* cliExit(['login', '--agent']);
+
+        expect(exitCode).toBe(1);
+        expect(yield* MockConsole.getLines({ stream: 'stderr', stripAnsi: true })).toEqual([
+          'The agent identity service is unavailable right now (HTTP 503 for /api/whoami).',
+          'Ask a human to run `composio login` for regular CLI access.',
+        ]);
+        expect(
+          fetchSpy.mock.calls.map(([input]) => new URL(requestUrl(input)).pathname)
+        ).not.toContain('/api/signup');
       })
     );
   });
@@ -313,7 +366,6 @@ describe('CLI: composio login', () => {
 
           const output = (yield* MockConsole.getLines({ stripAnsi: true })).join('\n');
           expect(output).toContain('Open this URL in your browser to log in:');
-          expect(output).toContain('composio login --agent');
         })
     );
   });

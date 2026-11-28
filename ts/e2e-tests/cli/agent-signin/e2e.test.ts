@@ -95,9 +95,10 @@ e2e(import.meta.url, {
         expect(headlessHumanLogin.stdout).toContain('composio login --poll');
       });
 
-      it('offers the unattended agent path', () => {
+      it('points unattended agents to an existing user API key', () => {
         expect(headlessHumanLogin.stdout).toContain('For unattended agents');
-        expect(headlessHumanLogin.stdout).toContain('composio login --agent');
+        expect(headlessHumanLogin.stdout).toContain('COMPOSIO_USER_API_KEY');
+        expect(headlessHumanLogin.stdout).not.toContain('composio login --agent');
       });
 
       it('never auto-signs-up an account', () => {
