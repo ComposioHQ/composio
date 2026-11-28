@@ -20,3 +20,9 @@ test('with doc comment', () => {
     const B: A"
   `);
 });
+
+test('declared', () => {
+  expect(stringify(constDeclaration('B', A).declare())).toMatchInlineSnapshot(
+    `"declare const B: A"`
+  );
+});

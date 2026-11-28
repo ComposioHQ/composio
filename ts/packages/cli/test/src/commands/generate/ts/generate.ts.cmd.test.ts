@@ -150,57 +150,67 @@ describe('CLI: composio generate ts', () => {
                   /**
                    * Attachment List
                    * @description The list of attachments in the message
-                   * @default null
                    */
-                  attachment_list: unknown[] | null;
+                  attachment_list?: unknown[];
                   /**
-                   * Message ID
-                   * @description The message ID of the message
-                   * @default null
+                   * Id
+                   * @description The raw Gmail message ID
                    */
-                  message_id: string | null;
+                  id?: string;
+                  /**
+                   * Label Ids
+                   * @description The Gmail label IDs applied to the message
+                   */
+                  label_ids?: string[];
+                  /**
+                   * Message Id
+                   * @description The message ID of the message
+                   */
+                  message_id?: string;
                   /**
                    * Message Text
                    * @description The text of the message
-                   * @default null
                    */
-                  message_text: string | null;
+                  message_text?: string;
                   /**
                    * Message Timestamp
                    * @description The timestamp of the message
-                   * @default null
                    */
-                  message_timestamp: string | null;
+                  message_timestamp?: string;
                   /**
                    * Payload
                    * @description The payload of the message
-                   * @default null
                    */
-                  payload: Record<string, never> | null;
+                  payload?: {
+                      [key: string]: unknown;
+                  };
+                  /**
+                   * Preview
+                   * @description The preview payload of the message
+                   */
+                  preview?: {
+                      [key: string]: unknown;
+                  };
                   /**
                    * Sender
                    * @description The sender of the message
-                   * @default null
                    */
-                  sender: string | null;
+                  sender?: string;
                   /**
                    * Subject
                    * @description The subject of the message
-                   * @default null
                    */
-                  subject: string | null;
+                  subject?: string;
                   /**
-                   * Thread ID
+                   * Thread Id
                    * @description The thread ID of the message
-                   * @default null
                    */
-                  thread_id: string | null;
+                  thread_id?: string;
                   /**
                    * To
                    * @description The recipient of the message
-                   * @default null
                    */
-                  to: string | null;
+                  to?: string;
                 };
 
                 /**
@@ -208,7 +218,11 @@ describe('CLI: composio generate ts', () => {
                  */
                 export const GMAIL = {
                   slug: "gmail",
-                  tools: {},
+                  tools: {
+                    ADD_LABEL_TO_EMAIL: "GMAIL_ADD_LABEL_TO_EMAIL",
+                    BATCH_DELETE_MESSAGES: "GMAIL_BATCH_DELETE_MESSAGES",
+                    BATCH_MODIFY_MESSAGES: "GMAIL_BATCH_MODIFY_MESSAGES",
+                  },
                   triggerTypes: {
                     /**
                      * Triggers when a new message is received in Gmail.
@@ -349,14 +363,295 @@ describe('CLI: composio generate ts', () => {
 
 
               /**
-               * Type map of all available tool input types for toolkit "GMAIL".
+               * Type of GMAIL's GMAIL_ADD_LABEL_TO_EMAIL tool input.
                */
-              export type GMAIL_TOOL_INPUTS = {}
+              type GMAIL_ADD_LABEL_TO_EMAIL_INPUT = {
+                /**
+                 * User Id
+                 * @description User's email address or 'me' for the authenticated user.
+                 * @default me
+                 * @example me
+                 * @example user@example.com
+                 */
+                user_id: string;
+                /**
+                 * Message Id
+                 * @description Immutable ID of the message to modify. Gmail message IDs are hexadecimal strings (e.g., '1a2b3c4d5e6f7890'). IMPORTANT: Do NOT use UUIDs (32-character strings like '093ca4662b214d5eba8f4ceeaad63433'), thread IDs, or internal system IDs - these will cause 'Invalid id value' errors. Obtain valid message IDs from: (1) 'GMAIL_FETCH_EMAILS' response 'messageId' field, (2) 'GMAIL_FETCH_MESSAGE_BY_THREAD_ID' response, or (3) 'GMAIL_LIST_THREADS' and then fetching thread messages.
+                 * @example 1a2b3c4d5e6f7890
+                 * @example abcd1234efab5678
+                 */
+                message_id?: string;
+                /**
+                 * Add Label Ids
+                 * @description Label IDs to add (IDs, not display names). System labels: INBOX, SPAM, TRASH, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS. Use full CATEGORY_ prefix (e.g., 'CATEGORY_UPDATES' not 'UPDATES'). Custom labels: call 'listLabels' first to get the ID (format: 'Label_<number>'). Do NOT use the label display name; the API requires the ID. SENT, DRAFT, CHAT are immutable and cannot be added or removed. A label cannot appear in both add_label_ids and remove_label_ids.
+                 * @default []
+                 * @example STARRED
+                 * @example IMPORTANT
+                 * @example CATEGORY_UPDATES
+                 * @example Label_1
+                 */
+                add_label_ids: string[];
+                /**
+                 * Remove Label Ids
+                 * @description Label IDs to remove (IDs, not display names). System labels: INBOX, SPAM, TRASH, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS. Use full CATEGORY_ prefix (e.g., 'CATEGORY_UPDATES' not 'UPDATES'). Custom labels: call 'listLabels' first to get the ID (format: 'Label_<number>'). SENT, DRAFT, CHAT are immutable and cannot be removed. Common operations: to mark as read, remove 'UNREAD'; to archive, remove 'INBOX'. A label cannot appear in both add_label_ids and remove_label_ids.
+                 * @default []
+                 * @example UNREAD
+                 * @example INBOX
+                 * @example CATEGORY_UPDATES
+                 * @example Label_1
+                 */
+                remove_label_ids: string[];
+              };
+
+              /**
+               * Type of GMAIL's GMAIL_ADD_LABEL_TO_EMAIL tool output.
+               */
+              type GMAIL_ADD_LABEL_TO_EMAIL_OUTPUT = {
+                /**
+                 * Data
+                 * @description Data from the action execution
+                 */
+                data?: {
+                    /**
+                     * Id
+                     * @description The immutable ID of the sent message.
+                     */
+                    id?: string;
+                    /**
+                     * Raw
+                     * @description The entire email message in RFC 2822 format, base64url-encoded.
+                     */
+                    raw?: string;
+                    /**
+                     * Payload
+                     * @description The parsed email structure, including headers and body parts.
+                     */
+                    payload?: {
+                        [key: string]: unknown;
+                    };
+                    /**
+                     * Snippet
+                     * @description A short extract of the message text.
+                     */
+                    snippet?: string;
+                    /**
+                     * Label Ids
+                     * @description List of IDs of labels applied to this message.
+                     */
+                    labelIds?: string[];
+                    /**
+                     * Thread Id
+                     * @description The ID of the thread the message belongs to.
+                     */
+                    threadId?: string;
+                    /**
+                     * History Id
+                     * @description The ID of the last history record that modified this message.
+                     */
+                    historyId?: string;
+                    /**
+                     * Display Url
+                     * @description Web UI link for this resource - set by each action's execute().
+                     */
+                    display_url?: string;
+                    /**
+                     * Internal Date
+                     * @description The internal timestamp of the message in milliseconds since epoch.
+                     */
+                    internalDate?: string;
+                    /**
+                     * Size Estimate
+                     * @description Estimated size of the message in bytes.
+                     */
+                    sizeEstimate?: number;
+                };
+                /**
+                 * Error
+                 * @description Error if any occurred during the execution of the action
+                 */
+                error?: string;
+                /**
+                 * Successful
+                 * @description Whether or not the action execution was successful or not
+                 */
+                successful?: boolean;
+              };
+
+              /**
+               * Type of GMAIL's GMAIL_BATCH_DELETE_MESSAGES tool input.
+               */
+              type GMAIL_BATCH_DELETE_MESSAGES_INPUT = {
+                /**
+                 * User Id
+                 * @description User's email address or 'me' for the authenticated user.
+                 * @default me
+                 * @example me
+                 * @example user@example.com
+                 */
+                userId: string;
+                /**
+                 * Message Ids
+                 * @description List of Gmail message IDs to delete. Each ID must be a hexadecimal string (e.g., '18c5f5d1a2b3c4d5'). Obtain IDs from actions like GMAIL_FETCH_EMAILS or GMAIL_LIST_THREADS - do not use human-readable descriptions.
+                 * @example [
+                 *       "18c5f5d1a2b3c4d5",
+                 *       "18c5f5d1a2b3c4d6"
+                 *     ]
+                 */
+                messageIds?: string[];
+              };
+
+              /**
+               * Type of GMAIL's GMAIL_BATCH_DELETE_MESSAGES tool output.
+               */
+              type GMAIL_BATCH_DELETE_MESSAGES_OUTPUT = {
+                /**
+                 * Data
+                 * @description Data from the action execution
+                 */
+                data?: {
+                    /**
+                     * Message
+                     * @description Details about the deletion operation
+                     */
+                    message: string;
+                    /**
+                     * Success
+                     * @description Whether the bulk deletion was successful
+                     */
+                    success: boolean;
+                    /**
+                     * Display Url
+                     * @description Web UI link for this resource - clickable URL pointing to the Gmail web interface
+                     */
+                    display_url?: string;
+                };
+                /**
+                 * Error
+                 * @description Error if any occurred during the execution of the action
+                 */
+                error?: string;
+                /**
+                 * Successful
+                 * @description Whether or not the action execution was successful or not
+                 */
+                successful?: boolean;
+              };
+
+              /**
+               * Type of GMAIL's GMAIL_BATCH_MODIFY_MESSAGES tool input.
+               */
+              type GMAIL_BATCH_MODIFY_MESSAGES_INPUT = {
+                /**
+                 * User Id
+                 * @description User's email address or 'me' for the authenticated user.
+                 * @default me
+                 * @example me
+                 * @example user@example.com
+                 */
+                userId: string;
+                /**
+                 * Message Ids
+                 * @description List of message IDs to modify. Maximum 1,000 message IDs per request. Get message IDs from GMAIL_FETCH_EMAILS or GMAIL_LIST_THREADS actions. Accepts 'messageIds', 'ids', or 'message_ids' as the parameter name.
+                 * @example [
+                 *       "18c5f5d1a2b3c4d5",
+                 *       "18c5f5d1a2b3c4d6"
+                 *     ]
+                 * @example [
+                 *       "msg_id_1",
+                 *       "msg_id_2",
+                 *       "msg_id_3"
+                 *     ]
+                 */
+                messageIds?: string[];
+                /**
+                 * Add Label Ids
+                 * @description List of label IDs to add to the messages. IMPORTANT: Use label IDs, NOT label display names. System labels use their name as ID: INBOX, STARRED, IMPORTANT, SENT, DRAFT, SPAM, TRASH, UNREAD, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS. Custom labels MUST use their ID (format: 'Label_XXX', e.g., 'Label_1', 'Label_25'), NOT the display name (e.g., do NOT use 'Work' or 'Projects'). Call GMAIL_LIST_LABELS first to get the 'id' field for custom labels. At least one of add_label_ids or remove_label_ids must be provided. CONSTRAINT: Label IDs must NOT overlap with remove_label_ids - cannot add and remove the same label.
+                 * @example [
+                 *       "INBOX",
+                 *       "STARRED"
+                 *     ]
+                 * @example [
+                 *       "Label_1",
+                 *       "Label_25"
+                 *     ]
+                 * @example [
+                 *       "IMPORTANT",
+                 *       "Label_10"
+                 *     ]
+                 */
+                addLabelIds?: string[];
+                /**
+                 * Remove Label Ids
+                 * @description List of label IDs to remove from the messages. IMPORTANT: Use label IDs, NOT label display names. System labels use their name as ID: INBOX, STARRED, IMPORTANT, SENT, SPAM, TRASH, UNREAD. Custom labels MUST use their ID (format: 'Label_XXX', e.g., 'Label_1', 'Label_25'), NOT the display name (e.g., do NOT use 'Work' or 'Projects'). Call GMAIL_LIST_LABELS first to get the 'id' field for custom labels. Common use cases: Remove 'UNREAD' to mark as read, remove 'INBOX' to archive. Note: 'DRAFT' cannot be removed - use GMAIL_DELETE_DRAFT instead. At least one of add_label_ids or remove_label_ids must be provided. CONSTRAINT: Label IDs must NOT overlap with add_label_ids - cannot add and remove the same label.
+                 * @example [
+                 *       "UNREAD"
+                 *     ]
+                 * @example [
+                 *       "INBOX",
+                 *       "UNREAD"
+                 *     ]
+                 * @example [
+                 *       "Label_1",
+                 *       "SPAM"
+                 *     ]
+                 */
+                removeLabelIds?: string[];
+              };
+
+              /**
+               * Type of GMAIL's GMAIL_BATCH_MODIFY_MESSAGES tool output.
+               */
+              type GMAIL_BATCH_MODIFY_MESSAGES_OUTPUT = {
+                /**
+                 * Data
+                 * @description Data from the action execution
+                 */
+                data?: {
+                    /**
+                     * Message
+                     * @description Status message
+                     */
+                    message: string;
+                    /**
+                     * Success
+                     * @description Whether the batch modification was successful
+                     */
+                    success: boolean;
+                    /**
+                     * Display Url
+                     * @description Web UI link for this resource - set by each action's execute().
+                     */
+                    display_url?: string;
+                };
+                /**
+                 * Error
+                 * @description Error if any occurred during the execution of the action
+                 */
+                error?: string;
+                /**
+                 * Successful
+                 * @description Whether or not the action execution was successful or not
+                 */
+                successful?: boolean;
+              };
 
               /**
                * Type map of all available tool input types for toolkit "GMAIL".
                */
-              export type GMAIL_TOOL_OUTPUTS = {}
+              export type GMAIL_TOOL_INPUTS = {
+                ADD_LABEL_TO_EMAIL: GMAIL_ADD_LABEL_TO_EMAIL_INPUT
+                BATCH_DELETE_MESSAGES: GMAIL_BATCH_DELETE_MESSAGES_INPUT
+                BATCH_MODIFY_MESSAGES: GMAIL_BATCH_MODIFY_MESSAGES_INPUT
+              }
+
+              /**
+               * Type map of all available tool input types for toolkit "GMAIL".
+               */
+              export type GMAIL_TOOL_OUTPUTS = {
+                ADD_LABEL_TO_EMAIL: GMAIL_ADD_LABEL_TO_EMAIL_OUTPUT
+                BATCH_DELETE_MESSAGES: GMAIL_BATCH_DELETE_MESSAGES_OUTPUT
+                BATCH_MODIFY_MESSAGES: GMAIL_BATCH_MODIFY_MESSAGES_OUTPUT
+              }
 
               // ------------------- //
               //    Trigger types    //
@@ -371,57 +666,67 @@ describe('CLI: composio generate ts', () => {
                 /**
                  * Attachment List
                  * @description The list of attachments in the message
-                 * @default null
                  */
-                attachment_list: unknown[] | null;
+                attachment_list?: unknown[];
                 /**
-                 * Message ID
-                 * @description The message ID of the message
-                 * @default null
+                 * Id
+                 * @description The raw Gmail message ID
                  */
-                message_id: string | null;
+                id?: string;
+                /**
+                 * Label Ids
+                 * @description The Gmail label IDs applied to the message
+                 */
+                label_ids?: string[];
+                /**
+                 * Message Id
+                 * @description The message ID of the message
+                 */
+                message_id?: string;
                 /**
                  * Message Text
                  * @description The text of the message
-                 * @default null
                  */
-                message_text: string | null;
+                message_text?: string;
                 /**
                  * Message Timestamp
                  * @description The timestamp of the message
-                 * @default null
                  */
-                message_timestamp: string | null;
+                message_timestamp?: string;
                 /**
                  * Payload
                  * @description The payload of the message
-                 * @default null
                  */
-                payload: Record<string, never> | null;
+                payload?: {
+                    [key: string]: unknown;
+                };
+                /**
+                 * Preview
+                 * @description The preview payload of the message
+                 */
+                preview?: {
+                    [key: string]: unknown;
+                };
                 /**
                  * Sender
                  * @description The sender of the message
-                 * @default null
                  */
-                sender: string | null;
+                sender?: string;
                 /**
                  * Subject
                  * @description The subject of the message
-                 * @default null
                  */
-                subject: string | null;
+                subject?: string;
                 /**
-                 * Thread ID
+                 * Thread Id
                  * @description The thread ID of the message
-                 * @default null
                  */
-                thread_id: string | null;
+                thread_id?: string;
                 /**
                  * To
                  * @description The recipient of the message
-                 * @default null
                  */
-                to: string | null;
+                to?: string;
               };
 
               /**
@@ -429,7 +734,20 @@ describe('CLI: composio generate ts', () => {
                */
               export const GMAIL = {
                 slug: "gmail",
-                tools: {},
+                tools: {
+                  /**
+                   * Adds and/or removes specified Gmail labels for a message; ensure \`message_id\` and all \`label_ids\` are valid (use 'listLabels' for custom label IDs).
+                   */
+                  ADD_LABEL_TO_EMAIL: "GMAIL_ADD_LABEL_TO_EMAIL",
+                  /**
+                   * Permanently deletes multiple Gmail messages by ID, bypassing Trash. A successful request does not confirm individual messages existed or were deleted.
+                   */
+                  BATCH_DELETE_MESSAGES: "GMAIL_BATCH_DELETE_MESSAGES",
+                  /**
+                   * Adds or removes labels on up to 1,000 Gmail messages in one request, supporting operations such as archiving and marking messages read or unread. A successful response confirms request acceptance, not individual message status.
+                   */
+                  BATCH_MODIFY_MESSAGES: "GMAIL_BATCH_MODIFY_MESSAGES",
+                },
                 triggerTypes: {
                   /**
                    * Triggers when a new message is received in Gmail.
@@ -593,57 +911,67 @@ describe('CLI: composio generate ts', () => {
                   /**
                    * Attachment List
                    * @description The list of attachments in the message
-                   * @default null
                    */
-                  attachment_list: unknown[] | null;
+                  attachment_list?: unknown[];
                   /**
-                   * Message ID
-                   * @description The message ID of the message
-                   * @default null
+                   * Id
+                   * @description The raw Gmail message ID
                    */
-                  message_id: string | null;
+                  id?: string;
+                  /**
+                   * Label Ids
+                   * @description The Gmail label IDs applied to the message
+                   */
+                  label_ids?: string[];
+                  /**
+                   * Message Id
+                   * @description The message ID of the message
+                   */
+                  message_id?: string;
                   /**
                    * Message Text
                    * @description The text of the message
-                   * @default null
                    */
-                  message_text: string | null;
+                  message_text?: string;
                   /**
                    * Message Timestamp
                    * @description The timestamp of the message
-                   * @default null
                    */
-                  message_timestamp: string | null;
+                  message_timestamp?: string;
                   /**
                    * Payload
                    * @description The payload of the message
-                   * @default null
                    */
-                  payload: Record<string, never> | null;
+                  payload?: {
+                      [key: string]: unknown;
+                  };
+                  /**
+                   * Preview
+                   * @description The preview payload of the message
+                   */
+                  preview?: {
+                      [key: string]: unknown;
+                  };
                   /**
                    * Sender
                    * @description The sender of the message
-                   * @default null
                    */
-                  sender: string | null;
+                  sender?: string;
                   /**
                    * Subject
                    * @description The subject of the message
-                   * @default null
                    */
-                  subject: string | null;
+                  subject?: string;
                   /**
-                   * Thread ID
+                   * Thread Id
                    * @description The thread ID of the message
-                   * @default null
                    */
-                  thread_id: string | null;
+                  thread_id?: string;
                   /**
                    * To
                    * @description The recipient of the message
-                   * @default null
                    */
-                  to: string | null;
+                  to?: string;
                 };
 
                 /**
@@ -651,7 +979,11 @@ describe('CLI: composio generate ts', () => {
                  */
                 export const GMAIL = {
                   slug: "gmail",
-                  tools: {},
+                  tools: {
+                    ADD_LABEL_TO_EMAIL: "GMAIL_ADD_LABEL_TO_EMAIL",
+                    BATCH_DELETE_MESSAGES: "GMAIL_BATCH_DELETE_MESSAGES",
+                    BATCH_MODIFY_MESSAGES: "GMAIL_BATCH_MODIFY_MESSAGES",
+                  },
                   triggerTypes: {
                     /**
                      * Triggers when a new message is received in Gmail.
@@ -917,6 +1249,50 @@ describe('CLI: composio generate ts', () => {
             const generatedFiles = yield* readGeneratedTypeScriptFiles({ fs, outputDir });
             assertTypeScriptIsValid({ files: generatedFiles });
           })
+        );
+
+        it.effect(
+          '[Given] --type-tools [Then] the generated types carry the schema doc comments',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(process.cwd, 'generated-with-comments');
+
+              yield* cli(['generate', 'ts', '--type-tools', '--output-dir', outputDir]);
+
+              const gmail = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmail).toContain('* @description');
+            })
+        );
+
+        it.effect(
+          '[Given] --type-tools --no-comments [Then] it leaves out the schema doc comments only',
+          () =>
+            Effect.gen(function* () {
+              const process = yield* NodeProcess;
+              const fs = yield* FileSystem.FileSystem;
+              const outputDir = path.join(process.cwd, 'generated-no-comments');
+
+              yield* cli([
+                'generate',
+                'ts',
+                '--type-tools',
+                '--no-comments',
+                '--output-dir',
+                outputDir,
+              ]);
+
+              const gmail = yield* fs.readFileString(path.join(outputDir, 'gmail.ts'));
+              expect(gmail).not.toContain('@description');
+              expect(gmail).not.toContain('@example');
+              // The toolkit's own docs stay: they do not come from a schema.
+              expect(gmail).toContain(`Type of GMAIL's ${TOOLS_TYPES_GMAIL[0]!.slug} tool input.`);
+              expect(gmail).toContain("Map of Composio's GMAIL toolkit.");
+
+              const generatedFiles = yield* readGeneratedTypeScriptFiles({ fs, outputDir });
+              assertTypeScriptIsValid({ files: generatedFiles });
+            })
         );
 
         it.effect(

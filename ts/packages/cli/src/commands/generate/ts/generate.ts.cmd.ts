@@ -23,6 +23,13 @@ const typeTools = Flag.Boolean('type-tools').pipe(
   )
 );
 
+const comments = Flag.Boolean('comments').pipe(
+  Flag.withDefault(true),
+  Flag.withDescription(
+    'Write the doc comments from tool and trigger schemas into the generated types; --no-comments leaves them out for smaller files'
+  )
+);
+
 const toolkits = Flag.String('toolkits').pipe(
   Flag.atLeast(0),
   Flag.withDescription(
@@ -35,7 +42,7 @@ const toolkits = Flag.String('toolkits').pipe(
  */
 export const generateCmd$Ts = Command.make(
   'ts',
-  { outputDir, compact, transpiled, typeTools, toolkits },
+  { outputDir, compact, transpiled, typeTools, comments, toolkits },
   runGenerateTs
 ).pipe(
   Command.withDescription('Generate TypeScript type stubs for toolkits, tools, and triggers.')

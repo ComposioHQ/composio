@@ -35,27 +35,50 @@ export type GenerateTypeScriptIndexMapSourceParams = {
   importExtension: 'ts' | 'js';
 };
 
+export type IndexModule = {
+  readonly typescript: string;
+  readonly javascript: string;
+  readonly declarations: string;
+};
+
 export function generateIndexSource(params: GenerateTypeScriptIndexMapSourceParams) {
-  return (index: ToolkitIndex) => {
-    const indexMap = generateTypeScriptIndexMapSource(params)(index);
-    const toolkitUnionType = generateToolkitUnionType(index);
-    const toolsByToolkitType = generateToolsByToolkitType();
+  return (index: ToolkitIndex) => generateIndexModule(params)(index).typescript;
+}
 
-    const indexMapWithBanner = params.emitSingleFile
-      ? indexMap
-      : `${ts.stringify(ts.docComment(params.banner))}
-${indexMap}`;
-
-    // Add the Toolkit type to the generated code
-    const code = `${indexMapWithBanner}
-${ts.stringify(ts.docComment('Type declarations'))}
-${toolkitUnionType}
-${toolsByToolkitType}
+export function generateIndexModule(params: GenerateTypeScriptIndexMapSourceParams) {
+  return (index: ToolkitIndex): IndexModule => {
+    const withBanner = (source: string) =>
+      params.emitSingleFile
+        ? source
+        : `${ts.stringify(ts.docComment(params.banner))}
+${source}`;
+    const types = `${ts.stringify(ts.docComment('Type declarations'))}
+${generateToolkitUnionType(index)}
+${generateToolsByToolkitType()}
 `;
-
-    return code;
+    const indexMap = withBanner(generateTypeScriptIndexMapSource(params)(index));
+    return {
+      typescript: `${indexMap}
+${types}`,
+      javascript: `${indexMap}
+`,
+      declarations: `${withBanner(generateIndexMapDeclaration(params)(index))}
+${types}`,
+    };
   };
 }
+
+/** Imports each toolkit's module, unless every toolkit is written into the same file. */
+const addToolkitImports = (
+  file: ReturnType<typeof ts.file>,
+  params: GenerateTypeScriptIndexMapSourceParams,
+  index: ToolkitIndex
+) => {
+  if (params.emitSingleFile) return;
+  for (const [toolkitName, value] of Record.toEntries(index)) {
+    file.addImport(ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName));
+  }
+};
 
 /**
  * Generates a list of Python source files that should be written to disk by the caller.
@@ -70,17 +93,7 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
     );
 
     const indexMapFile = ts.file();
-
-    for (const [toolkitName, value] of Record.toEntries(index)) {
-      // Note: imports needd to be skipped when generating a single file
-      if (params.emitSingleFile) {
-        break;
-      }
-
-      indexMapFile.addImport(
-        ts.moduleImport(`./${value.slug}.${params.importExtension}`).named(toolkitName)
-      );
-    }
+    addToolkitImports(indexMapFile, params, index);
 
     indexMapFile.add(
       ts
@@ -95,6 +108,24 @@ export function generateTypeScriptIndexMapSource(params: GenerateTypeScriptIndex
     const indexMapFileSource = ts.stringify(indexMapFile);
 
     return indexMapFileSource;
+  };
+}
+
+function generateIndexMapDeclaration(params: GenerateTypeScriptIndexMapSourceParams) {
+  return (index: ToolkitIndex): string => {
+    const file = ts.file();
+    addToolkitImports(file, params, index);
+    const entries = Record.keys(index).map(key =>
+      ts.property(key, ts.typeOfType(ts.namedType(key)))
+    );
+    file.add(
+      ts
+        .moduleExport(
+          ts.constDeclaration(BARREL_OBJECT_NAME, ts.objectType().addMultiple(entries)).declare()
+        )
+        .setDocComment(ts.docComment('Map of Composio toolkits to actions.'))
+    );
+    return ts.stringify(file);
   };
 }
 

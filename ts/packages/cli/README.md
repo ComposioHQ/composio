@@ -52,9 +52,9 @@ composio [--log-level All|Trace|Debug|Info|Warn|Error|Fatal|None]
 - `composio connections remove <account>`: Remove a toolkit connection after confirmation; pass `--yes` to skip the prompt, which is required when not running interactively.
 - `composio artifacts cwd`: Print the cwd-scoped CLI session artifacts directory.
 - `composio dev <subcommand>`: Developer workflows for init, playground execution, logs, toolkits, auth configs, accounts, triggers, orgs, and projects.
-- `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
+- `composio generate [-o, --output-dir <directory>] [--toolkits <toolkit>] [--type-tools] [--no-comments]`: Auto-detect the project language (Python or TypeScript) and generate type stubs for toolkits, tools, and triggers.
 - `composio generate py [-o, --output-dir <directory>] [--toolkits <toolkit>]`: Generate Python type stubs for toolkits, tools, and triggers from the Composio API.
-- `composio generate ts [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--toolkits <toolkit>]`: Generate TypeScript types for toolkits, tools, and triggers from the Composio API.
+- `composio generate ts [-o, --output-dir <directory>] [--compact] [--transpiled] [--type-tools] [--no-comments] [--toolkits <toolkit>]`: Generate TypeScript types for toolkits, tools, and triggers from the Composio API. `--no-comments` leaves out the doc comments printed from tool and trigger schemas.
 - `composio upgrade [--beta]`: Self-update the Composio CLI from the stable channel, or from the beta channel with `--beta`.
 - `composio setup skill <claude|codex|openclaw> [--name skill-name]`: Manually install the composio skill for Claude, Codex, or OpenClaw.
 

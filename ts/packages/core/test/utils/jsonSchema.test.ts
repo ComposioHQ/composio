@@ -198,6 +198,25 @@ describe('dereferenceJsonSchema', () => {
     expect(() => dereferenceJsonSchema(leaf)).toThrow(JsonSchemaRefResolutionError);
   });
 
+  it('throws JsonSchemaRefResolutionError when $ref expansion grows exponentially', () => {
+    // Each definition references the next one twice, so inlining copies x40 2^40
+    // times while the chain stays 40 refs deep, under both depth caps.
+    const $defs = Object.fromEntries(
+      Array.from({ length: 40 }, (_, i) => [
+        `x${i}`,
+        {
+          type: 'object',
+          properties: { a: { $ref: `#/$defs/x${i + 1}` }, b: { $ref: `#/$defs/x${i + 1}` } },
+        },
+      ])
+    );
+    const schema = { $defs: { ...$defs, x40: { type: 'string' } }, $ref: '#/$defs/x0' };
+    expect(() => dereferenceJsonSchema(schema)).toThrow(/node cap/);
+    expect(() => dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' })).toThrow(
+      JsonSchemaRefResolutionError
+    );
+  });
+
   it('breaks JS object cycles that do not flow through a $ref', () => {
     // Composio ingests schemas as live JS objects (custom tools, telemetry, …),
     // so a non-$ref cycle is plausible. Without object-identity cycle detection

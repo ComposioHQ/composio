@@ -6,6 +6,11 @@ import { isPlainObject } from './modifiers/FileToolModifier.utils.neutral';
 
 const MAX_REF_CHAIN_DEPTH = 100;
 const MAX_NODE_DEPTH = 512;
+// Bounds the nodes one `dereferenceJsonSchema` call visits. Inlining copies a
+// target once per `$ref` to it, so `$defs` whose entries each reference the next
+// one twice expand exponentially while staying under both depth caps. The
+// largest recorded Composio schemas visit about 2,600 nodes.
+const MAX_DEREFERENCED_NODES = 100_000;
 // Bounds on one null-acceptance check; past either, null is not proven accepted.
 const MAX_NULL_CHECK_DEPTH = 64;
 const MAX_NULL_CHECK_NODES = 2_000;
@@ -66,9 +71,9 @@ const UNRESOLVED_REF_DESCRIPTION =
  *   API-provided tool definition that emits `$ref` without a `$defs`
  *   block — see https://github.com/ComposioHQ/composio/issues/3307).
  *
- * Safety caps (`MAX_REF_CHAIN_DEPTH`, `MAX_NODE_DEPTH`) still throw in both
- * modes; cycle handling (already permissive via `CYCLE_BREAK_SENTINEL`) is
- * unaffected.
+ * Safety caps (`MAX_REF_CHAIN_DEPTH`, `MAX_NODE_DEPTH`,
+ * `MAX_DEREFERENCED_NODES`) still throw in both modes; cycle handling (already
+ * permissive via `CYCLE_BREAK_SENTINEL`) is unaffected.
  */
 export type UnresolvedRefStrategy = 'throw' | 'sentinel';
 
@@ -174,7 +179,8 @@ const throwResolutionError = (
  * `$defs`; see https://github.com/ComposioHQ/composio/issues/3307).
  *
  * @throws {JsonSchemaRefResolutionError} on malformed pointers, missing
- * targets (strict mode only), or chains past the depth cap (both modes).
+ * targets (strict mode only), or chains past the depth cap or an expansion
+ * past the node cap (both modes).
  */
 export function dereferenceJsonSchema<T = unknown>(
   schema: T,
@@ -187,6 +193,7 @@ export function dereferenceJsonSchema<T = unknown>(
 
   const root = schema as Record<string, unknown>;
   const visiting = new WeakSet<object>();
+  let visited = 0;
 
   // POLLUTING_KEYS filter prevents an attacker-shaped $defs entry from altering
   // the cloned node's prototype.
@@ -212,6 +219,12 @@ export function dereferenceJsonSchema<T = unknown>(
     if (nodeDepth >= MAX_NODE_DEPTH) {
       throw new JsonSchemaRefResolutionError(
         `JSON Schema node depth exceeded cap (${MAX_NODE_DEPTH})`,
+        { possibleFixes: REF_RESOLUTION_FIXES }
+      );
+    }
+    if (++visited > MAX_DEREFERENCED_NODES) {
+      throw new JsonSchemaRefResolutionError(
+        `JSON Schema $ref expansion exceeded node cap (${MAX_DEREFERENCED_NODES})`,
         { possibleFixes: REF_RESOLUTION_FIXES }
       );
     }

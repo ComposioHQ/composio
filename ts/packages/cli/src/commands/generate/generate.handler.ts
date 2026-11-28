@@ -8,13 +8,14 @@ import { runGeneratePy } from './py/generate.py.handler';
 export type GenerateParams = {
   readonly outputDir: Option.Option<string>;
   readonly typeTools: boolean;
+  readonly comments: boolean;
   readonly toolkits: ReadonlyArray<string>;
 };
 
 /**
  * Detects the project language in the current directory and runs the matching generator.
  */
-export const runGenerate = ({ outputDir, typeTools, toolkits }: GenerateParams) =>
+export const runGenerate = ({ outputDir, typeTools, comments, toolkits }: GenerateParams) =>
   Effect.gen(function* () {
     const ui = yield* TerminalUI;
     const process = yield* NodeProcess;
@@ -34,6 +35,7 @@ export const runGenerate = ({ outputDir, typeTools, toolkits }: GenerateParams) 
           // `generate` has no --transpiled flag, so the `generate ts` default rule applies.
           transpiled: resolveTranspiled({ transpiled: false, outputDir }),
           typeTools,
+          comments,
           toolkits,
         })
       ),

@@ -32,6 +32,11 @@ logger = get_logger()
 # refs, not to runaway expansion.
 MAX_REF_CHAIN_DEPTH = 100
 MAX_NODE_DEPTH = 512
+# Bounds the nodes one ``dereference_json_schema`` call visits. Inlining copies
+# a target once per ``$ref`` to it, so ``$defs`` whose entries each reference
+# the next one twice expand exponentially while staying under both depth caps.
+# The largest recorded Composio schemas visit about 2,600 nodes.
+MAX_DEREFERENCED_NODES = 100_000
 
 # In-band hint attached to the sentinel when lenient mode stands in for an
 # unresolvable ``$ref``. Makes the degradation visible to an LLM reading the
@@ -143,8 +148,8 @@ def dereference_json_schema(
     :param on_replace: invoked once per replaced node in ``"sentinel"`` mode,
         with the original pointer and the reason it could not be resolved.
     :raises JSONSchemaRefResolutionError: on malformed pointers or missing
-        targets (strict mode only), or chains/nesting past the safety caps
-        (both modes).
+        targets (strict mode only), or chains, nesting, or expansion past the
+        safety caps (both modes).
     """
     if not _is_mapping(schema):
         return schema
@@ -154,6 +159,7 @@ def dereference_json_schema(
     # suffer JS-style prototype pollution, so unlike the TS port there's no
     # need to filter ``__proto__``/``constructor`` keys while cloning.
     visiting: t.Set[int] = set()
+    visited = 0
 
     # ``walk`` uses explicit loops (not comprehensions) so each level of schema
     # nesting costs exactly one Python stack frame. That keeps ``MAX_NODE_DEPTH``
@@ -166,9 +172,15 @@ def dereference_json_schema(
         chain_depth: int,
         node_depth: int,
     ) -> t.Any:
+        nonlocal visited
         if node_depth >= MAX_NODE_DEPTH:
             raise JSONSchemaRefResolutionError(
                 f"JSON Schema node depth exceeded cap ({MAX_NODE_DEPTH})"
+            )
+        visited += 1
+        if visited > MAX_DEREFERENCED_NODES:
+            raise JSONSchemaRefResolutionError(
+                f"JSON Schema $ref expansion exceeded node cap ({MAX_DEREFERENCED_NODES})"
             )
 
         if isinstance(node, list):
