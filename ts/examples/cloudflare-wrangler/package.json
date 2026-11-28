@@ -12,7 +12,7 @@
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "catalog:",
-		"@types/node": "^26.6.6",
+		"@types/node": "^26.6.10",
 		"@vitest/ui": "catalog:vitest4",
 		"typescript": "catalog:",
 		"vitest": "catalog:vitest4",

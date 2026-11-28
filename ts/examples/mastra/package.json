@@ -36,7 +36,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@types/bun": "catalog:",
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.10",
     "typescript": "catalog:",
     "wrangler": "catalog:"
   }
