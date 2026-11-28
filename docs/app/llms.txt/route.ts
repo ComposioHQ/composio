@@ -16,6 +16,15 @@ export function GET() {
 
 Use Composio Platform when users or tenants connect accounts to your application. Use Composio For You for personal automation with your own accounts. Use the current session SDK. REST v3.1 is current; REST v3.0 is legacy.
 
+## Search documentation via MCP
+
+- [Documentation search MCP](https://mcp.docs.composio.dev/mcp): Prefer this for SDK signatures, REST APIs, sessions, and authentication implementation.
+- [Website search MCP](https://mcp.composio.dev/mcp): Search product pages and articles.
+
+Both servers use Streamable HTTP and expose a \`search\` tool with a \`query\` string. They provide public, read-only search without a Composio login or connected-app access. Use search to discover sources, then fetch the cited canonical Markdown pages for exact code and parameters.
+
+For connected-app execution, [Composio Connect](https://connect.composio.dev/mcp) requires authentication and consent. Applications can instead create a [per-user session MCP endpoint](https://docs.composio.dev/docs/sessions-via-mcp.md) with their configured authentication and tool permissions.
+
 ## Before you implement
 
 Inspect the project's framework, agent architecture, authentication, and user or tenant identity model. Explain where Composio fits. If the intended workflow is unclear, ask what the user wants their application or agent to accomplish with connected apps before making changes.
