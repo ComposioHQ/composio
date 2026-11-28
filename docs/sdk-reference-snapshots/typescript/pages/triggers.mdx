@@ -3,7 +3,7 @@ title: "Triggers"
 description: "Trigger (Instance) class"
 ---
 
-> SDK version `0.31.0`. Install with `npm install @composio/core@0.31.0`.
+> SDK version `0.32.0`. Install with `npm install @composio/core@0.32.0`.
 
 ## Usage
 
@@ -218,6 +218,9 @@ Remix) or a plain `{ body, headers }` object (Express with `express.raw`,
 Next.js Pages Router `req`). The signature headers (`webhook-id`,
 `webhook-timestamp`, `webhook-signature`) are read case-insensitively.
 
+Configure a request body limit in your server or framework as well,
+especially if it buffers the body before calling this method.
+
 ```typescript signature
 async parse(request: WebhookRequestLike, options?: ParseWebhookOptions): Promise<VerifyWebhookResult>
 ```
@@ -408,6 +411,9 @@ This method validates that the webhook request is authentic by:
 
 The signature is computed as: `HMAC-SHA256(${webhookId}.${webhookTimestamp}.${payload}, secret)`
 and is expected in the format: `v1,base64EncodedSignature`
+
+For a Fetch API `Request`, use parse to enforce a limit while reading
+the body. Set a server request limit if you buffer the payload yourself.
 
 ```typescript signature
 async verifyWebhook(params: VerifyWebhookParams): Promise<VerifyWebhookResult>

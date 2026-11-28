@@ -3,7 +3,7 @@ title: "MCP"
 description: "MCP (Model Control Protocol) class. Provides enhanced MCP server operations  This matches the TypeScript ExperimentalMCP class functionality."
 ---
 
-> SDK version `0.34.0`. Install with `pip install composio==0.34.0`.
+> SDK version `0.35.0`. Install with `pip install composio==0.35.0`.
 
 <Callout type="warn" title="Deprecated">
 Use a session's MCP endpoint instead: `composio.create(user_id, mcp=True)` returns a session that exposes `session.mcp.url` / `session.mcp.headers`. MCP is now opt-in per session; this standalone `composio.mcp` server-management API is kept only for backwards compatibility. Prefer the session MCP endpoint; do not generate new code against `composio.mcp`. See https://docs.composio.dev/docs/sessions-via-mcp
@@ -253,4 +253,4 @@ print(mcp['allowed_tools'])  # Available tools
 
 ---
 
-[View source](https://github.com/composiohq/composio/blob/5e2a3ca401e76105e7580655d68eef1741956df6/python/composio/core/models/mcp.py#L122)
+[View source](https://github.com/composiohq/composio/blob/d9f536d195625d9346efeca05771253038036ccc/python/composio/core/models/mcp.py#L122)

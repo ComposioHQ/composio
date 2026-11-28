@@ -3,7 +3,7 @@ title: "Sessions"
 description: "First-class API for creating and reusing Composio sessions.  `composio.sessions.create(...)` is the canonical session creation entrypoint. The top-level `composio.create(...)` method remains as a backwards-compatible alias for `composio.sessions.create(...)`."
 ---
 
-> SDK version `0.31.0`. Install with `npm install @composio/core@0.31.0`.
+> SDK version `0.32.0`. Install with `npm install @composio/core@0.32.0`.
 
 ## Usage
 
@@ -15,6 +15,12 @@ import { Composio } from '@composio/core';
 const composio = new Composio({ apiKey: 'your-api-key' });
 const sessions = composio.sessions;
 ```
+
+## Properties
+
+| Name | Type | Description |
+|------|------|-------------|
+| `webhooks` | `SessionWebhooks` | Read the events Composio sends to the project's session webhook URL, for session hooks with a `webhook` handler. |
 
 ## Methods
 
