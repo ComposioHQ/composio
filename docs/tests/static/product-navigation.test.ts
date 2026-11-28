@@ -14,21 +14,17 @@ import { buildProductPageTree, pageTreeUrls } from '../../lib/product-page-tree'
 import { knowledgeBaseSource, referenceSource, source } from '../../lib/source';
 
 describe('Docs product navigation', () => {
-  test('defines the product labels, descriptions, landings, and themes once', () => {
+  test('defines the product labels, descriptions, and landings once', () => {
     expect(DEFAULT_DOCS_PRODUCT).toBe('platform');
     expect(DOCS_PRODUCTS['for-you']).toMatchObject({
       product: 'For You',
       switcherDescription: 'Connect your apps to AI clients.',
       landingRoute: '/docs/agent-plugins',
-      theme: 'light',
-      themeColor: '#ffffff',
     });
     expect(DOCS_PRODUCTS.platform).toMatchObject({
       product: 'Platform',
       switcherDescription: 'Build agents with the Composio SDK.',
       landingRoute: '/docs/quickstart',
-      theme: 'dark',
-      themeColor: '#131211',
     });
   });
 
@@ -288,16 +284,14 @@ describe('Docs product navigation', () => {
     expect(switcherSource).toContain('aria-label="Composio home"');
     expect(switcherSource).toContain('href="/"');
     expect(sharedLayoutSource).toContain('slots: { navTitle: ProductNavTitle }');
-    expect(sharedLayoutSource).toContain('themeSwitch: { enabled: false }');
-    expect(contextSource).toContain('applyProductTheme(product)');
-    expect(contextSource).toContain('.querySelector(\'meta[name="theme-color"]\')');
-    expect(contextSource).toContain("?.setAttribute('content', themeColor)");
+    expect(sharedLayoutSource).toContain('themeSwitch: { component: <ThemeToggle /> }');
+    expect(contextSource).not.toContain('applyProductTheme');
     expect(contextSource).toContain('window.setTimeout(finish, 1500)');
-    expect(rootLayoutSource).toContain('forcedTheme: initialTheme');
+    expect(rootLayoutSource).not.toContain('forcedTheme');
+    expect(rootLayoutSource).toContain("defaultTheme: 'light'");
+    expect(rootLayoutSource).toContain('enableSystem: true');
     expect(rootLayoutSource).toContain("storageKey: 'composio-docs-theme'");
-    expect(rootLayoutSource).toContain(
-      'content={DOCS_PRODUCTS[initialProduct].themeColor}',
-    );
+    expect(rootLayoutSource).toContain('<ThemeColorSync />');
     expect(contextSource).not.toContain("localStorage.setItem('theme'");
     expect(rootLayoutSource).not.toContain("localStorage.setItem('theme'");
     expect(rootLayoutSource).toContain('hotKey: false');

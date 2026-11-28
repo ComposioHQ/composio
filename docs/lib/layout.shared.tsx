@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import { SearchAndAskAI, SearchAndAskAIMobile } from '@/components/ask-ai-button';
 import { NavVersionSelector } from '@/components/version-selector';
 import { ProductNavTitle } from '@/components/product-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -11,7 +12,7 @@ export function baseOptions(): BaseLayoutProps {
       transparentMode: 'top',
     },
     slots: { navTitle: ProductNavTitle },
-    themeSwitch: { enabled: false },
+    themeSwitch: { component: <ThemeToggle /> },
     searchToggle: {
       components: {
         lg: <SearchAndAskAI />,
@@ -75,7 +76,8 @@ export function baseOptions(): BaseLayoutProps {
         text: (
           <span className="inline-flex items-center gap-1.5">
             <Play className="size-4" style={{ color: 'var(--composio-orange)' }} />
-            Playground
+            {/* Icon-only in the crowded lg-to-1360px desktop header; labelled in the mobile menu. */}
+            <span className="lg:max-[1360px]:sr-only">Playground</span>
           </span>
         ),
         url: 'https://dashboard.composio.dev/~/project/playground?utm_source=docs&utm_medium=navbar&utm_campaign=playground',

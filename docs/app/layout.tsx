@@ -12,9 +12,9 @@ import { source, referenceSource, getOgImageUrl } from '@/lib/source';
 import { TOOLKIT_COUNT_LABEL, HOME_OG_DESCRIPTION } from '@/lib/toolkit-count';
 import { ProductTransitionLoader } from '@/components/product-transition-loader';
 import { DocsProductProvider } from '@/components/docs-product-context';
+import { ThemeColorSync } from '@/components/theme-color-sync';
 import {
   DEFAULT_DOCS_PRODUCT,
-  DOCS_PRODUCTS,
   DOCS_PRODUCT_HEADER,
   parseDocsProduct,
 } from '@/lib/home-navigation';
@@ -78,7 +78,6 @@ const jetbrainsMono = JetBrains_Mono({
 export default async function Layout({ children }: LayoutProps<'/'>) {
   const initialProduct =
     parseDocsProduct((await headers()).get(DOCS_PRODUCT_HEADER)) ?? DEFAULT_DOCS_PRODUCT;
-  const initialTheme = DOCS_PRODUCTS[initialProduct].theme;
 
   return (
     <html
@@ -87,12 +86,13 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
     >
       <head>
+        <meta name="theme-color" content="#ffffff" />
+        {/* Match the browser chrome to a stored dark/system-dark choice before first paint; ThemeColorSync keeps it in step afterwards. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{document.documentElement.classList.remove('light','dark');document.documentElement.classList.add('${initialTheme}');document.documentElement.style.colorScheme='${initialTheme}'}catch{}`,
+            __html: `try{var t=localStorage.getItem('composio-docs-theme');if(t==='system')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t==='dark')document.querySelector('meta[name="theme-color"]').setAttribute('content','#131211')}catch(e){}`,
           }}
         />
-        <meta name="theme-color" content={DOCS_PRODUCTS[initialProduct].themeColor} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -132,11 +132,10 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
         <ProductTransitionLoader />
         <Analytics />
         <PostHogProvider>
-          {/* DocsProductProvider owns the rendered theme; useTheme().resolvedTheme is not a product-theme signal. */}
+          {/* Light by default; the header toggle stores light, dark, or system in localStorage. */}
           <RootProvider
             theme={{
-              defaultTheme: 'system',
-              forcedTheme: initialTheme,
+              defaultTheme: 'light',
               storageKey: 'composio-docs-theme',
               attribute: 'class',
               enableSystem: true,
@@ -150,6 +149,7 @@ export default async function Layout({ children }: LayoutProps<'/'>) {
               } as Record<string, unknown>,
             }}
           >
+            <ThemeColorSync />
             <DocsProductProvider initialProduct={initialProduct}>{children}</DocsProductProvider>
           </RootProvider>
         </PostHogProvider>
