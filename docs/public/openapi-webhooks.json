@@ -18611,7 +18611,7 @@
         "tags": [
           "Session Webhooks"
         ],
-        "summary": "Session hook: before execute",
+        "summary": "Before execute",
         "description": "Sent before a tool or proxy call runs, when the session has a `before_execute` hook with a `webhook` handler. Composio waits for your answer, then runs the call, blocks it, or runs it with your changes.",
         "parameters": [
           {
@@ -18686,13 +18686,18 @@
                       "hook_id": {
                         "type": "string",
                         "description": "ID of the hook that sent this request, as set on the session."
+                      },
+                      "tool_call_id": {
+                        "type": "string",
+                        "description": "ID of the call. The `before_execute` and `after_execute` requests for one call carry the same ID."
                       }
                     },
                     "required": [
                       "project_id",
                       "session_id",
                       "user_id",
-                      "hook_id"
+                      "hook_id",
+                      "tool_call_id"
                     ]
                   },
                   "data": {
@@ -18813,7 +18818,46 @@
                                 "description": "Headers and query parameters the agent added. The credentials Composio adds are not included."
                               },
                               "body": {
-                                "description": "The request body. Omitted when there is none or when it is binary."
+                                "description": "The request body. Omitted when there is none or when the request uploads a file."
+                              },
+                              "binary_body": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "description": "URL to fetch binary content from"
+                                      },
+                                      "content_type": {
+                                        "type": "string",
+                                        "description": "Content-Type header to use for the request"
+                                      }
+                                    },
+                                    "required": [
+                                      "url"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "base64": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "description": "Base64-encoded binary data"
+                                      },
+                                      "content_type": {
+                                        "type": "string",
+                                        "description": "Content-Type header to use for the request"
+                                      }
+                                    },
+                                    "required": [
+                                      "base64"
+                                    ]
+                                  }
+                                ],
+                                "description": "The file the request uploads, as the agent sent it: `{ url, content_type }`, a URL Composio downloads the file from, or `{ base64, content_type }`, the file itself. Omitted when the request uploads no file."
                               }
                             },
                             "required": [
@@ -18849,7 +18893,8 @@
                   "project_id": "proj_abc123",
                   "session_id": "trs_abc123",
                   "user_id": "user_123",
-                  "hook_id": "email_policy"
+                  "hook_id": "email_policy",
+                  "tool_call_id": "tc_V1StGXR8_Z5jdHi6"
                 },
                 "data": {
                   "type": "tool_execute",
@@ -18971,10 +19016,51 @@
                                         ]
                                       }
                                     },
-                                    "body": {}
+                                    "body": {},
+                                    "binary_body": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "url": {
+                                              "type": "string",
+                                              "format": "uri",
+                                              "description": "URL to fetch binary content from"
+                                            },
+                                            "content_type": {
+                                              "type": "string",
+                                              "description": "Content-Type header to use for the request"
+                                            }
+                                          },
+                                          "required": [
+                                            "url"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "base64": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "description": "Base64-encoded binary data"
+                                            },
+                                            "content_type": {
+                                              "type": "string",
+                                              "description": "Content-Type header to use for the request"
+                                            }
+                                          },
+                                          "required": [
+                                            "base64"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ],
+                                      "description": "File to upload in place of the original body or file, in the same shape as the request."
+                                    }
                                   },
                                   "additionalProperties": false,
-                                  "description": "Fields of the request to replace. Fields left out keep their original value. The toolkit cannot be changed."
+                                  "description": "Fields of the request to replace. Fields left out keep their original value. `body` and `binary_body` each replace whichever of the two the call had; set at most one. The toolkit cannot be changed."
                                 },
                                 "tool_call": {
                                   "type": "null",
@@ -19037,7 +19123,7 @@
         "tags": [
           "Session Webhooks"
         ],
-        "summary": "Session hook: after execute",
+        "summary": "After execute",
         "description": "Sent after a tool or proxy call runs, when the session has an `after_execute` hook with a `webhook` handler. Composio waits for your answer before the agent sees the result, and can withhold it or pass on your changes.",
         "parameters": [
           {
@@ -19112,13 +19198,18 @@
                       "hook_id": {
                         "type": "string",
                         "description": "ID of the hook that sent this request, as set on the session."
+                      },
+                      "tool_call_id": {
+                        "type": "string",
+                        "description": "ID of the call. The `before_execute` and `after_execute` requests for one call carry the same ID."
                       }
                     },
                     "required": [
                       "project_id",
                       "session_id",
                       "user_id",
-                      "hook_id"
+                      "hook_id",
+                      "tool_call_id"
                     ]
                   },
                   "data": {
@@ -19261,7 +19352,46 @@
                                 "description": "Headers and query parameters the agent added. The credentials Composio adds are not included."
                               },
                               "body": {
-                                "description": "The request body. Omitted when there is none or when it is binary."
+                                "description": "The request body. Omitted when there is none or when the request uploads a file."
+                              },
+                              "binary_body": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "url": {
+                                        "type": "string",
+                                        "format": "uri",
+                                        "description": "URL to fetch binary content from"
+                                      },
+                                      "content_type": {
+                                        "type": "string",
+                                        "description": "Content-Type header to use for the request"
+                                      }
+                                    },
+                                    "required": [
+                                      "url"
+                                    ]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "base64": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "description": "Base64-encoded binary data"
+                                      },
+                                      "content_type": {
+                                        "type": "string",
+                                        "description": "Content-Type header to use for the request"
+                                      }
+                                    },
+                                    "required": [
+                                      "base64"
+                                    ]
+                                  }
+                                ],
+                                "description": "The file the request uploads, as the agent sent it: `{ url, content_type }`, a URL Composio downloads the file from, or `{ base64, content_type }`, the file itself. Omitted when the request uploads no file."
                               }
                             },
                             "required": [
@@ -19348,7 +19478,8 @@
                   "project_id": "proj_abc123",
                   "session_id": "trs_abc123",
                   "user_id": "user_123",
-                  "hook_id": "redact_cards"
+                  "hook_id": "redact_cards",
+                  "tool_call_id": "tc_Uakgb_J5m9g-0JDM"
                 },
                 "data": {
                   "type": "tool_execute",
