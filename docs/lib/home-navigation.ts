@@ -48,11 +48,16 @@ type SharedSidebarItem = Extract<ProductSidebarItem, { type: 'page' | 'folder' }
 
 const SHARED_SIDEBAR_ITEMS: readonly SharedSidebarItem[] = [
   { type: 'page', url: '/docs/using-composio-skill' },
+  { type: 'folder', path: 'troubleshooting' },
 ];
 
-const SHARED_ROUTE_PREFIXES = SHARED_SIDEBAR_ITEMS.map(item =>
-  item.type === 'page' ? item.url : `/docs/${item.path}`
-);
+const SHARED_ROUTE_PREFIXES = [
+  // This page is listed in the Troubleshooting folder but keeps its original URL.
+  '/docs/oauth-mcp-troubleshooting',
+  ...SHARED_SIDEBAR_ITEMS.map(item =>
+    item.type === 'page' ? item.url : `/docs/${item.path}`
+  ),
+];
 
 /**
  * Canonical product model for the docs shell and homepage.

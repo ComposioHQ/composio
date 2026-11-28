@@ -1,0 +1,55 @@
+---
+title: OAuth and MCP connection troubleshooting
+description: Diagnose connection failures, MCP authentication, and approval support
+keywords: [oauth, mcp, troubleshooting, enhanced controls, origin not allowed]
+---
+
+Find the step that fails before changing credentials: opening provider consent, returning to Composio, exchanging a code for a token, or connecting your MCP client.
+
+For app-specific setup and troubleshooting, open the FAQ on its toolkit page:
+
+- [TikTok](/toolkits/tiktok)
+- [HighLevel Location](/toolkits/highlevel_location)
+- [HighLevel Agency](/toolkits/highlevel_agency)
+- [Reddit](/toolkits/reddit)
+
+## Check the OAuth flow
+
+For a custom auth config, verify the developer app's credentials, granted scopes, and registered redirect URI against the config you're using. The provider callback and your application's final return URL serve different steps; don't substitute one for the other.
+
+For Composio-managed OAuth, use [hosted authentication](/docs/authentication/manually-authenticating) through Connect Link or session authorization. The managed OAuth path of `initiate()` has been retired. See [Migrating from initiate to link](/docs/auth-configuration/migrating-initiate-to-link).
+
+After correcting settings, start a fresh authorization flow. Preserve the error response from the failing step. A consent screen followed by a failure doesn't prove that the token exchange succeeded, and a missing-token error doesn't prove that your credentials are wrong.
+
+## Choose the MCP endpoint and authentication together
+
+Use the [Composio Connect setup guide](/docs/composio-connect) for hosted client setup. These clients use `https://connect.composio.dev/mcp` for Connect:
+
+| Client | Connect authentication and setup |
+| --- | --- |
+| Claude Desktop | Add a remote custom connector with the Connect URL and complete browser authorization. |
+| Claude Web | Add the same remote custom connector and complete browser authorization. Follow [Claude's connector instructions](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp) for workspace permissions. |
+| Claude Code | If you explicitly want MCP, add the Connect URL as a remote HTTP server, then use `/mcp` to authenticate. See [Claude Code's MCP instructions](https://code.claude.com/docs/en/mcp). The [native Composio plugin](/docs/agent-plugins) is also available. |
+| ChatGPT | Add the Connect URL as a custom MCP server, complete browser authorization, and enable Composio in the conversation. See the [ChatGPT setup steps](/docs/composio-connect) and [OpenAI's MCP authentication guidance](https://developers.openai.com/plugins/build/auth). |
+
+For these browser authorization flows, leave custom request headers and provider OAuth credentials unset. Fixed headers are appropriate only when you deliberately choose a header-authenticated setup. Connect's generic header setup uses `x-consumer-api-key` with the consumer key from AI Clients setup, not a project `x-api-key`.
+
+If your application creates a [session MCP endpoint](/docs/sessions-via-mcp), use the exact returned `session.mcp.url` and `session.mcp.headers`. Those headers carry your SDK credential, such as `x-api-key` or `x-user-api-key`. They aren't interchangeable with Connect's consumer key. For legacy server URLs, follow the [migration guide](/docs/migration-guide/mcp-servers-to-sessions); a server ID in a URL isn't an authentication credential. Use HTTP transport rather than the retired legacy SSE route.
+
+## Origin not allowed, 401, or "couldn't sign in"
+
+Confirm the endpoint type first. Remove a copied legacy URL or headers and re-add the Connect connector using its browser authorization flow. A session endpoint instead needs its returned SDK headers.
+
+If `Origin not allowed` persists, record which request failed, the client version, and the origin shown in the error, then escalate. Don't forge an `Origin` header or disable browser security. A valid credential rejected by the server, or a `tools/list` server error, needs investigation beyond repeating sign-in.
+
+## Approval fails or changed controls don't take effect
+
+Enhanced Controls rely on MCP elicitation, which lets the server ask for approval through the client. Connecting successfully doesn't establish elicitation support. [Claude Code documents elicitation support](https://code.claude.com/docs/en/mcp#respond-to-mcp-elicitation-requests); for other clients, include the exact version and advertised capabilities when reporting an approval failure. A client's own tool-confirmation dialog doesn't establish that it supports Composio's elicitation flow.
+
+For Connect, after changing Enhanced Controls under **For You > Settings > General**, reconnect the client and start a new conversation with Composio enabled. If the old behavior persists there, send support the setting, timestamp, client version, and new session details.
+
+For SDK-created sessions, use the [approval fallback configuration](/docs/sessions-via-mcp#approval-without-elicitation-support). `deny` blocks calls when the client can't request approval; `allow` runs them without approval. Choosing `allow`, an Always Allow policy, or disabling Enhanced Controls changes your approval policy. It isn't a connection repair.
+
+## Escalate an unresolved failure
+
+Contact [support@composio.dev](mailto:support@composio.dev) with the toolkit, UTC timestamp, exact error, auth config ID, connected account ID, and request or tool log ID. For MCP, include the client version, endpoint type, and session ID. Redact secrets, tokens, authorization codes, and OAuth `state` values from URLs and logs. A failure after these checks can require a Composio or provider fix.
