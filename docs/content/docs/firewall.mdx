@@ -15,6 +15,8 @@ Your agent can still use the same tools for everything else.
 
 Firewall is built on [hooks](/docs/hooks), which run before or after each tool call your agent makes. There are three kinds of checks you can add.
 
+Custom prompt checks and prompt injection detection are experimental. These built-in checks block whole tool calls or results. They do not redact or mask PII, and natural-language classification is not deterministic DLP. The built-in injection check runs on tool results after execution. It does not screen LLM input or output, and it cannot undo a tool call. See [which tool calls hooks run on](/docs/hooks#which-tool-calls-hooks-run-on) for coverage.
+
 ## Custom prompt checks
 
 You write a condition that describes what you want blocked, in natural language. For example, "Sharing internal pricing with anyone outside acme.com".
@@ -31,7 +33,7 @@ Tool results are where outside content reaches your agent: emails, web pages, ti
 
 When this check is on, a decision model screens every tool result before your agent reads it. If a result contains a prompt injection, it's blocked, and your agent gets an error instead of the content. There's no condition to write. You turn the check on and choose which toolkits it covers.
 
-See [Prompt injection detection](/docs/hooks/prompt-injection-detection) for how to turn it on.
+See [Prompt injection detection](/docs/hooks/prompt-injection-detection) for how to turn it on, including an [example combining PII blocking and injection detection](/docs/hooks/prompt-injection-detection#combine-pii-blocking-and-injection-detection).
 
 ## Webhooks
 

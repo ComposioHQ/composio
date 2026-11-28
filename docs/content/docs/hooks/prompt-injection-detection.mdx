@@ -8,17 +8,34 @@ keywords: [prompt injection, prompt_injection_check, hooks, firewall, guardrails
 Prompt injection detection screens each tool result, and blocks it if it contains a prompt injection.
 
 <Callout type="info">
-Prompt injection detection is available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
+Prompt injection detection is experimental and available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
 </Callout>
 
-To turn it on, add a [hook](/docs/hooks) with the `prompt_injection_check` handler:
+To turn it on, add a [hook](/docs/hooks) with the `prompt_injection_check` handler.
+
+## Combine PII blocking and injection detection
+
+This example combines that check with a natural-language `condition_check` rule that blocks Gmail calls that send customer PII outside `acme.com`. Both hooks belong to the same session. Set `COMPOSIO_API_KEY` in your environment before creating it.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
+from composio import Composio
+
+composio = Composio()
 session = composio.create(
     user_id="user_123",
     hooks=[
+        {
+            "id": "no_pii_outside_company",
+            "type": "before_execute",
+            "applies_to": {"toolkits": ["gmail"]},
+            "handler": {
+                "type": "condition_check",
+                "condition": "Sending customer personal information to anyone outside acme.com",
+                "action": "block",
+            },
+        },
         {
             "id": "block_injection",
             "type": "after_execute",
@@ -31,12 +48,21 @@ session = composio.create(
 </Tab>
 <Tab value="TypeScript">
 ```typescript
-// @noErrors
 import { Composio } from '@composio/core';
-const composio = new Composio({ apiKey: 'your_api_key' });
+const composio = new Composio();
 // ---cut---
 const session = await composio.create('user_123', {
   hooks: [
+    {
+      id: 'no_pii_outside_company',
+      type: 'before_execute',
+      appliesTo: { toolkits: ['gmail'] },
+      handler: {
+        type: 'condition_check',
+        condition: 'Sending customer personal information to anyone outside acme.com',
+        action: 'block',
+      },
+    },
     {
       id: 'block_injection',
       type: 'after_execute',
@@ -56,6 +82,16 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
     "user_id": "user_123",
     "hooks": [
       {
+        "id": "no_pii_outside_company",
+        "type": "before_execute",
+        "applies_to": {"toolkits": ["gmail"]},
+        "handler": {
+          "type": "condition_check",
+          "condition": "Sending customer personal information to anyone outside acme.com",
+          "action": "block"
+        }
+      },
+      {
         "id": "block_injection",
         "type": "after_execute",
         "applies_to": "all",
@@ -66,6 +102,8 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 ```
 </Tab>
 </Tabs>
+
+The PII rule evaluates Gmail calls before execution. The injection check evaluates results from all toolkits before your agent receives them. A blocked result does not undo the call.
 
 When a result is blocked, your agent gets an error instead of the content. See [Blocked tool calls](/docs/hooks#blocked-tool-calls) for what's returned.
 
