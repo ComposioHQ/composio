@@ -86,8 +86,8 @@
     "picocolors": "catalog:",
     "pusher-js": "^8.6.0",
     "semver": "^7.8.6",
-    "source-map-js": "^1.2.2",
-    "uniku": "^0.7.0",
+    "source-map-js": "^1.2.4",
+    "uniku": "^0.9.0",
     "zod": "catalog:"
   },
   "gitHead": "4fae6e54d5c150fba955cc5fa314281da5a1e064",
