@@ -7,9 +7,16 @@
 import { describe, test, expect } from "bun:test";
 import { readdir, readFile, stat } from "fs/promises";
 import { join, basename, dirname, relative } from "path";
+import { activeDocsSection, DOCS_NAVIGATION } from "../../lib/docs-navigation";
+import {
+  examplesSource,
+  toolkitsSource,
+  knowledgeBaseSource,
+  referenceSource,
+  source,
+} from "../../lib/source";
 
 const CONTENT_DIR = join(import.meta.dir, "../../content/docs");
-const LAYOUT_OPTIONS = join(import.meta.dir, "../../lib/layout.shared.tsx");
 const GLOBAL_SEARCH = join(import.meta.dir, "../../components/custom-search-dialog.tsx");
 
 /** Separator entries in meta.json start with --- */
@@ -100,15 +107,40 @@ describe("Navigation - meta.json validity", () => {
     ]);
   });
 
-  test("Knowledge Base appears between Docs and Examples", async () => {
-    const source = await readFile(LAYOUT_OPTIONS, "utf-8");
-    const docsIndex = source.indexOf("text: 'Docs'");
-    const kbIndex = source.indexOf("text: 'Knowledge Base'");
-    const examplesIndex = source.indexOf("text: 'Examples'");
+  test("header links point to existing destinations", async () => {
+    const destinations = DOCS_NAVIGATION.flatMap(section =>
+      section.type === "link" ? [section] : [...section.links, ...(section.footerLinks ?? [])],
+    );
+    const knownUrls = new Set(
+      [source, referenceSource, examplesSource, knowledgeBaseSource, toolkitsSource].flatMap(
+        collection => collection.getPages().map(page => page.url),
+      ),
+    );
+    // Changelog is an app route, rather than a page in an MDX collection.
+    expect(
+      await exists(join(import.meta.dir, "../../app/(home)/docs/changelog/page.tsx")),
+    ).toBe(true);
+    knownUrls.add("/docs/changelog");
 
-    expect(docsIndex).toBeGreaterThan(-1);
-    expect(kbIndex).toBeGreaterThan(docsIndex);
-    expect(examplesIndex).toBeGreaterThan(kbIndex);
+    for (const link of destinations) {
+      if (!link.url.startsWith("/")) continue;
+      expect(knownUrls.has(link.url), `Header destination does not exist: ${link.url}`).toBe(true);
+    }
+  });
+
+  test("active section follows the guide, including routes inside another capability", () => {
+    expect(activeDocsSection("/docs/providers/openai")).toBe("start");
+    expect(activeDocsSection("/docs/quickstart")).toBe("build");
+    expect(activeDocsSection("/docs/sessions/tool-access")).toBe("learn");
+    expect(activeDocsSection("/docs/authentication/white-labeling-authentication")).toBe("ship");
+    expect(activeDocsSection("/docs/authentication")).toBe("learn");
+    expect(activeDocsSection("/docs/security/overview")).toBe("ship");
+    expect(activeDocsSection("/docs/security-not-a-section")).toBe("learn");
+    expect(activeDocsSection("/reference/v3/api-reference/tools")).toBe("reference");
+    expect(activeDocsSection("/docs/tools-direct/executing-tools")).toBe("reference");
+    expect(activeDocsSection("/docs/changelog/2026/11/20")).toBe("resources");
+    expect(activeDocsSection("/kb/guide/platform-routing")).toBe("resources");
+    expect(activeDocsSection("/toolkits/gmail")).toBe("learn");
   });
 
   test("global search uses canonical knowledge URLs and shared source labels", async () => {
