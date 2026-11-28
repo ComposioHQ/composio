@@ -205,6 +205,7 @@ export const DOCS_PRODUCTS = {
             label: 'Authentication',
             links: [
               { url: '/docs/authentication', label: 'Authentication with Composio' },
+              { url: '/docs/authentication/managed-apps' },
               { url: '/docs/authentication/managed-auth-for-custom-tools' },
               {
                 url: '/docs/authentication/managing-multiple-connected-accounts',
