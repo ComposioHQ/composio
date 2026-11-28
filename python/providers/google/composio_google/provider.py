@@ -4,6 +4,7 @@ Google AI Python Gemini tool spec.
 
 import json
 import typing as t
+import warnings
 
 from proto.marshal.collections.maps import MapComposite
 from vertexai.generative_models import (
@@ -152,7 +153,21 @@ class GoogleProvider(
 ):
     """
     Composio toolset for Google AI Python Gemini framework.
+
+    .. deprecated::
+        Targets ``vertexai.generative_models``, which Google is removing from
+        the Vertex AI SDK. Use ``composio-gemini`` (``google-genai``) instead.
     """
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        warnings.warn(
+            "composio-google is deprecated: it targets vertexai.generative_models, "
+            "which Google is removing from the Vertex AI SDK. "
+            "Migrate to composio-gemini (google-genai).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
     def wrap_tool(self, tool: Tool) -> FunctionDeclaration:
         """Wraps composio tool as Google AI Python Gemini FunctionDeclaration object."""

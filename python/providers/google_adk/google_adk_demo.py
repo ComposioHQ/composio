@@ -7,7 +7,7 @@ from google.genai import types
 from composio import Composio
 
 # ADK config
-model = "gemini-2.0-flash"
+model = "gemini-4-neon"
 app_name = "weather_sentiment_agent"
 session_id = "1234"
 user_id = "user1234"

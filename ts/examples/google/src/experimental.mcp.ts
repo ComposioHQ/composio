@@ -51,7 +51,7 @@ const gemini = new GoogleGenAI({
 
 // 6. Pass tools to Google Gemini-specific Agent.
 const stream = await gemini.models.generateContentStream({
-  model: 'gemini-2.5-flash',
+  model: 'gemini-4-neon',
   contents: `Fetch the latest 2 emails and provide a detailed summary with sender, subject, date, and brief content overview for each email.`,
   config: {
     tools,

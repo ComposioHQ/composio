@@ -1,5 +1,6 @@
 """Exercise item schemas through the real optional Google ADK provider."""
 
+import asyncio
 import socket
 
 import pytest
@@ -7,6 +8,33 @@ import pytest
 from composio.client.types import Tool
 
 google_adk = pytest.importorskip("composio_google_adk")
+
+
+@pytest.mark.unit
+def test_wrap_tool_executes_through_the_composio_callback():
+    tool = Tool.model_construct(
+        slug="GET_WEATHER",
+        description="Get the weather",
+        input_parameters={
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"],
+        },
+    )
+    calls = []
+
+    def execute_tool(slug, arguments):
+        calls.append((slug, arguments))
+        return {"data": {"temp": 21}, "error": None, "successful": True}
+
+    wrapped = google_adk.GoogleAdkProvider().wrap_tool(tool, execute_tool=execute_tool)
+    declaration = wrapped._get_declaration()
+    assert declaration.name == "GET_WEATHER"
+    assert declaration.parameters_json_schema["required"] == ["city"]
+
+    result = asyncio.run(wrapped.run_async(args={"city": "Rome"}, tool_context=None))
+    assert result == {"data": {"temp": 21}, "error": None, "successful": True}
+    assert calls == [("GET_WEATHER", {"city": "Rome"})]
 
 
 @pytest.mark.unit

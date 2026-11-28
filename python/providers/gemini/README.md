@@ -28,7 +28,7 @@ session = composio.create(user_id="user_123")
 tools = session.tools()
 
 config = types.GenerateContentConfig(tools=tools)
-chat = client.chats.create(model="gemini-3-pro-preview", config=config)
+chat = client.chats.create(model="gemini-4-neon", config=config)
 
 response = chat.send_message(
     "Send an email to john@example.com with the subject 'Hello' and body 'Hello from Composio!'"

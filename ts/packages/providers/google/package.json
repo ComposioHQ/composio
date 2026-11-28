@@ -34,7 +34,8 @@
   "scripts": {
     "clean": "git clean -xdf node_modules",
     "build": "tsdown",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit"
   },
   "keywords": [
     "composio",
@@ -47,10 +48,11 @@
   "license": "ISC",
   "peerDependencies": {
     "@composio/core": ">=0.16.0 <1.0.0 || >=1.0.0-beta.0 <1.0.0",
-    "@google/genai": "^1.6.0"
+    "@google/genai": "^1.6.0 || ^2.0.0 || ^3.0.0"
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
+    "@google/genai": "^3.6.1",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   }

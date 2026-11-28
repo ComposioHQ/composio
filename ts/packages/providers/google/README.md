@@ -29,7 +29,7 @@ const session = await composio.create('user_123');
 const tools = await session.tools();
 
 const chat = ai.chats.create({
-  model: 'gemini-3-pro-preview',
+  model: 'gemini-4-neon',
   config: {
     tools: [{ functionDeclarations: tools }],
   },

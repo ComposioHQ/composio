@@ -1,5 +1,7 @@
 # composio-google
 
+> **Deprecated.** This package targets `vertexai.generative_models`, which Google is removing from the Vertex AI SDK. Use [`composio-gemini`](../gemini) instead. It receives security fixes only.
+
 Adapts Composio tools to the Vertex AI SDK (`vertexai.generative_models`) as `FunctionDeclaration` objects for Gemini function calling.
 
 ## Installation
@@ -30,7 +32,7 @@ session = composio.create(user_id="user_123")
 tools = session.tools()
 
 model = GenerativeModel(
-    "gemini-3.7-flash",
+    "gemini-4-neon",
     tools=[Tool(function_declarations=tools)],
 )
 chat = model.start_chat()

@@ -175,7 +175,10 @@ class TestWrapTool:
         assert "title" in sig.parameters
         assert "body" in sig.parameters
         assert sig.parameters["title"].annotation is str
+        # Optional properties keep their non-nullable type with default=None so
+        # Gemini omits them from ``required`` without advertising ``null``.
         assert sig.parameters["body"].annotation is str
+        assert sig.parameters["body"].default is None
 
     def test_callable_has_typed_free_form_object_argument(self):
         from composio_gemini import GeminiProvider
@@ -535,6 +538,87 @@ class TestWrapTools:
         provider = GeminiProvider()
         result = provider.wrap_tools([], create_mock_execute_tool())
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Optional parameters stay optional in the declaration
+# ---------------------------------------------------------------------------
+
+
+def _declare_like_the_sdk(func):
+    """The declaration google-genai sends for a callable passed as a tool."""
+    from google import genai
+    from google.genai import _transformers
+
+    client = genai.Client(api_key="test")._api_client
+    tool = _transformers.t_tool(client, func)
+    return tool.function_declarations[0].parameters_json_schema
+
+
+@pytest.mark.skipif(not HAS_GENAI, reason="google-genai package not installed")
+def test_declaration_keeps_schema_metadata_and_optional_params():
+    from composio_gemini import GeminiProvider
+    from google.genai import _extra_utils
+
+    tool = Tool.model_construct(
+        slug="GET_WEATHER",
+        description="Get weather",
+        input_parameters={
+            "type": "object",
+            "properties": {
+                "city": {"type": "string", "description": "City name"},
+                "units": {"type": "string", "enum": ["c", "f"]},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 50},
+                "mode": {"const": "fast"},
+                "note": {"type": "string"},
+                "nullable_note": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                "filters": {
+                    "type": "object",
+                    "description": "Filter criteria",
+                    "properties": {"tag": {"type": "string"}},
+                    "required": ["tag"],
+                },
+            },
+            "required": ["city"],
+        },
+    )
+    fn = GeminiProvider().wrap_tool(tool, lambda slug, arguments: {"data": arguments})
+
+    declared = _declare_like_the_sdk(fn)
+    properties = declared["properties"]
+    assert declared["required"] == ["city"]
+    assert properties["city"]["description"] == "City name"
+    assert properties["units"]["enum"] == ["c", "f"]
+    assert properties["units"]["type"] == "string"
+    assert properties["limit"]["type"] == "integer"
+    assert (properties["limit"]["minimum"], properties["limit"]["maximum"]) == (1, 50)
+    assert properties["mode"]["enum"] == ["fast"]
+    # Non-nullable optional properties must not advertise ``null``.
+    assert properties["note"]["type"] == "string"
+    assert "anyOf" not in properties["note"]
+    assert "enum" not in properties["note"]
+    # Explicitly nullable properties stay nullable.
+    assert any(
+        variant.get("type") == "null"
+        for variant in properties["nullable_note"]["anyOf"]
+    )
+    # Nested object models with descriptions must not fail TypeAdapter config checks.
+    assert properties["filters"]["type"] == "object"
+    assert properties["filters"]["description"] == "Filter criteria"
+    # The model's arguments still convert and invoke cleanly.
+    arguments = {
+        "city": "Rome",
+        "units": "c",
+        "limit": 3,
+        "mode": "fast",
+        "filters": {"tag": "rain"},
+    }
+    converted = _extra_utils.convert_argument_from_function(arguments, fn)
+    assert {k: v for k, v in converted.items() if k != "filters"} == {
+        k: v for k, v in arguments.items() if k != "filters"
+    }
+    assert converted["filters"].model_dump() == {"tag": "rain"}
+    assert _extra_utils.invoke_function_from_dict_args(arguments, fn) == arguments
 
 
 # ---------------------------------------------------------------------------

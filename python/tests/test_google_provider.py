@@ -8,10 +8,21 @@ import pytest
 
 from composio.client.types import Tool
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:composio-google is deprecated:DeprecationWarning"
+)
+
 GoogleProvider = pytest.importorskip("composio_google").GoogleProvider
 GenerationResponse = pytest.importorskip(
     "vertexai.generative_models"
 ).GenerationResponse
+
+
+@pytest.mark.filterwarnings("default")
+def test_provider_emits_deprecation_warning() -> None:
+    """The Vertex provider points users to composio-gemini."""
+    with pytest.warns(DeprecationWarning, match="composio-gemini"):
+        GoogleProvider()
 
 
 def test_wrap_tool_dereferences_internal_refs() -> None:

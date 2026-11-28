@@ -8,6 +8,7 @@ authors = [
     { name = "Composio", email = "tech@composio.dev" }
 ]
 classifiers = [
+    "Development Status :: 7 - Inactive",
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",

@@ -39,7 +39,7 @@ type_stubs = [
     "langgraph==1.2.9",
     "llama-index==0.14.23",
     "openai-agents==0.18.3",
-    "google-cloud-aiplatform==1.162.0",
+    "google-cloud-aiplatform==2.10.0",
     # Keep this inside the TypeSafe provider's `>=0.6.0,<0.7.0` range.
     "typesafe-sdk==0.6.0",
 ]
