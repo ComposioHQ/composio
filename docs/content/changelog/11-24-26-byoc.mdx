@@ -1,0 +1,46 @@
+---
+title: 'Composio BYOC: run Composio in your own cloud account'
+description: 'Composio now runs in your own AWS, Google Cloud, or Azure account, with Composio operating the deployment and your team approving every release.'
+date: '2026-11-24'
+---
+
+Composio now offers bring your own cloud (BYOC) for Enterprise customers. Composio deploys and operates the platform in a cloud account you own, and your team approves every release. Tool calls run in your account, your account stores the credentials and logs, and requests to provider APIs leave from your network. Applications call a BYOC deployment the same way they call Composio Cloud.
+
+### What's new
+
+- **Your cloud account.** BYOC is available on AWS, Google Cloud, and Azure. Composio publishes a reference architecture for AWS.
+- **Approved releases.** Composio requests a release, a pipeline in your account builds a preview of the changes, and your approver approves or declines it. If you decline, the installed release keeps running.
+- **Support access you control.** Composio holds no standing credentials for your account. Every support session needs your approval, and you can turn support access off when you install.
+- **Private connectivity.** Choose a connectivity mode before you install: `disabled` (the default), `privatelink-api`, `privatelink`, or `private-alb`.
+- **Your own keys.** Your deployment generates its own encryption keys on first install, and you can supply your own KMS keys for every data store.
+
+### Point your client at your deployment
+
+Set the base URL to your deployment's API hostname. Both SDKs and the Composio CLI also read the `COMPOSIO_BASE_URL` environment variable.
+
+```python
+from composio import Composio
+
+composio = Composio(
+    api_key="your-project-api-key",
+    base_url="https://composio.internal.example.com",
+)
+```
+
+```typescript
+import { Composio } from '@composio/core';
+
+const composio = new Composio({
+  apiKey: 'your-project-api-key',
+  baseURL: 'https://composio.internal.example.com',
+});
+```
+
+### What works differently
+
+- BYOC doesn't deploy the Composio dashboard. You manage projects, API keys, and auth configs through the API.
+- Composio-managed OAuth apps aren't available. You use your own OAuth app for each provider, and register your deployment's redirect URI with it.
+- Requests to providers come from your deployment's NAT gateways or your own egress, not from Composio Cloud's IP addresses. Add your addresses to any provider allowlists.
+- BYOC isn't an air-gapped deployment. Provider APIs, Composio's release registry, and Temporal Cloud for background jobs are reached over outbound connections.
+
+BYOC is an Enterprise offering, so [contact Composio](https://composio.dev/contact) to plan a deployment. Read the [BYOC overview](/docs/deployment/byoc), the [AWS reference architecture](/docs/deployment/byoc-architecture), and [Deployment options](/docs/deployment). For the launch announcement, see [Introducing Composio BYOC](https://composio.dev/blog/introducing-composio-byoc).
