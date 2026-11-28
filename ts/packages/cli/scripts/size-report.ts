@@ -26,7 +26,18 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { $ } from 'bun';
-import { Config, ConfigProvider, Console, Effect, Logger, Layer, References } from 'effect';
+import {
+  Config,
+  ConfigProvider,
+  Console,
+  Effect,
+  Logger,
+  Layer,
+  Match,
+  Option,
+  References,
+} from 'effect';
+import { FetchHttpClient } from 'effect/http';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
 import { fetchReleaseByTag, findLatestStableCliRelease } from './_github-releases';
@@ -119,22 +130,25 @@ const sizeOf = async (target: string): Promise<number> => {
   return sizes.reduce((total, size) => total + size, 0);
 };
 
-const releaseAssets = async (
-  release: Options['release']
-): Promise<{ readonly tag: string; readonly sizes: ReadonlyMap<string, number> } | undefined> => {
-  if (release.kind === 'none') return undefined;
-  const chosen =
-    release.kind === 'tag'
-      ? await fetchReleaseByTag(release.tag)
-      : await findLatestStableCliRelease();
-  if (chosen === undefined) return undefined;
-  return {
-    tag: chosen.tag_name,
-    sizes: new Map(
-      chosen.assets.flatMap(({ name, size }) => (size === undefined ? [] : [[name, size] as const]))
+const releaseAssets = (release: Options['release']) =>
+  Match.value(release).pipe(
+    Match.discriminatorsExhaustive('kind')({
+      none: () => Effect.succeedNone,
+      tag: ({ tag }) => Effect.map(fetchReleaseByTag(tag), Option.some),
+      latest: () => findLatestStableCliRelease,
+    }),
+    Effect.map(
+      Option.map(chosen => ({
+        tag: chosen.tag_name,
+        sizes: new Map(
+          chosen.assets.flatMap(({ name, size }) =>
+            size === undefined ? [] : [[name, size] as const]
+          )
+        ),
+      }))
     ),
-  };
-};
+    Effect.map(Option.getOrUndefined)
+  );
 
 /** Lay out an archive's files the way `package-binaries.ts` does, without the manifest and placeholders. */
 const archiveSizes = async (
@@ -204,7 +218,7 @@ export function sizeReport(options: Options) {
     yield* buildCompanionModules(companionsDir);
     const companionBytes = yield* Effect.promise(() => sizeOf(companionsDir));
 
-    const release = yield* Effect.tryPromise(() => releaseAssets(options.release));
+    const release = yield* releaseAssets(options.release);
 
     const reports: TargetReport[] = [];
     for (const { bunTarget, artifact } of options.targets) {
@@ -255,7 +269,7 @@ if (require.main === module) {
     Effect.provide(
       Layer.merge(Logger.layer([Logger.consolePretty()]), Layer.succeed(Logger.LogToStderr, true))
     ),
-    Effect.provide(BunServices.layer),
+    Effect.provide(Layer.merge(BunServices.layer, FetchHttpClient.layer)),
     Effect.scoped,
     Effect.map(() => ({ message: 'Process completed successfully.' })),
     BunRuntime.runMain({

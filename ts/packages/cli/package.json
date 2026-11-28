@@ -28,6 +28,7 @@
     "build:binary:package": "bun run ./scripts/package-binaries.ts",
     "build:binary:checksums": "bun run ./scripts/generate-checksums.ts",
     "size:report": "bun run ./scripts/size-report.ts",
+    "test:upgrade-from-release": "bun run ./scripts/upgrade-from-release.ts",
     "build:skills": "tsx ./scripts/build-skills.ts",
     "validate:skills": "tsx ./scripts/validate-skills.ts",
     "validate:boundaries": "tsx ./scripts/validate-lint-boundaries.ts",

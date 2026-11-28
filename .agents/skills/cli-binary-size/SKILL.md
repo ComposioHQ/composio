@@ -29,7 +29,7 @@ Bun's `--explain=trim` (with `--aot --trim`) names only the first site its analy
 
 ## Shipping changes
 
-- Changing what a release archive contains affects `composio upgrade` on released clients: keep placeholders for paths they check, as `ts/packages/cli/AGENTS.md` describes, and use `cli-release` for the release itself.
+- Changing what a release archive contains affects `composio upgrade` on released clients: keep placeholders for paths they check, as `ts/packages/cli/AGENTS.md` describes, and prove it with `pnpm run test:upgrade-from-release --archive <zip> --to <tag>`, which upgrades the latest stable release to the archive. Use `cli-release` for the release itself.
 - A build mode without the Bun command line (`--trim`, `--aot`) breaks anything that re-executes the CLI as Bun (`BUN_BE_BUN`).
 - Startup time is part of the trade: `--bytecode` adds about 10.5 MiB and cuts `--version` from 119 ms to 47 ms.
 
