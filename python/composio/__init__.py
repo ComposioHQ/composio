@@ -5,6 +5,14 @@ from .core.models.custom_tool_types import (
     LocalTool,
     SessionContext,
 )
+from .core.models.session_webhooks import (
+    SessionWebhookAfterExecuteEvent,
+    SessionWebhookAfterExecuteResponse,
+    SessionWebhookBeforeExecuteEvent,
+    SessionWebhookBeforeExecuteResponse,
+    SessionWebhookEvent,
+    SessionWebhookEventType,
+)
 from .core.models.tool_router_constants import SESSION_PRESET_DIRECT_TOOLS
 from .core.models.tool_router_session_files import RemoteFile
 from .core.models.tools import (
@@ -23,7 +31,7 @@ from .core.models.webhook_events import (
     WebhookEventType,
     is_connection_expired_event,
 )
-from .exceptions import ComposioDeprecationWarning
+from .exceptions import APIErrorDetails, ComposioDeprecationWarning, api_error_details
 from .core.types import (
     ToolkitLatestVersion,
     ToolkitVersion,
@@ -33,6 +41,7 @@ from .core.types import (
 from .sdk import Composio
 
 __all__ = (
+    "APIErrorDetails",
     "Composio",
     "ComposioDeprecationWarning",
     "CustomTool",
@@ -42,6 +51,12 @@ __all__ = (
     "RemoteFile",
     "SessionContext",
     "SESSION_PRESET_DIRECT_TOOLS",
+    "SessionWebhookAfterExecuteEvent",
+    "SessionWebhookAfterExecuteResponse",
+    "SessionWebhookBeforeExecuteEvent",
+    "SessionWebhookBeforeExecuteResponse",
+    "SessionWebhookEvent",
+    "SessionWebhookEventType",
     "ConnectionExpiredEvent",
     "ConnectionState",
     "ConnectionStatusEnum",
@@ -50,6 +65,7 @@ __all__ = (
     "WebhookEvent",
     "WebhookEventType",
     "after_execute",
+    "api_error_details",
     "before_execute",
     "before_file_upload",
     "is_connection_expired_event",

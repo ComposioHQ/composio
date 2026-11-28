@@ -168,7 +168,9 @@ const devActingUser = (candidates: {
   readonly globalTestUserId: Option.Option<string>;
 }): Option.Option<Omit<ActingUser, 'project'>> =>
   Option.firstSomeOf([
-    Option.map(candidates.flag, userId => ({ userId, source: 'flag' as const })),
+    Option.filter(candidates.flag, userId => userId.length > 0).pipe(
+      Option.map(userId => ({ userId, source: 'flag' as const }))
+    ),
     Option.map(candidates.directoryTestUserId, userId => ({
       userId,
       source: 'directory-test-user' as const,

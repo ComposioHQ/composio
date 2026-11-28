@@ -1,0 +1,43 @@
+{
+  "slug": "platform-routing",
+  "title": "Support Routing",
+  "description": "Public routing for hiring, compliance, and toolkit feature requests.",
+  "articlePath": "platform-routing.md",
+  "sources": [
+    {
+      "sourcePath": "platform/routing/public.md",
+      "sourceHeading": "Hiring"
+    },
+    {
+      "sourcePath": "platform/routing/public.md",
+      "sourceHeading": "DPA, enterprise data handling, and compliance"
+    },
+    {
+      "sourcePath": "platform/routing/public.md",
+      "sourceHeading": "Tool or toolkit feature requests"
+    }
+  ],
+  "topics": [
+    "getting-started",
+    "security-and-trust",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "compliance",
+    "platform",
+    "requests",
+    "routing"
+  ],
+  "aliases": [
+    "/kb/sdk-and-api/dpa-enterprise-data-handling-and-compliance",
+    "dpa-enterprise-data-handling-and-compliance"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-07-24",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -84,7 +84,7 @@ export const DOCS_PRODUCTS = {
         label: 'Get started',
         items: [
           { type: 'page', url: '/docs/agent-plugins' },
-          { type: 'page', url: '/docs/cli' },
+          { type: 'folder', path: 'cli' },
           { type: 'page', url: '/docs/composio-connect', label: 'Connect with MCP' },
         ],
       },
@@ -127,9 +127,13 @@ export const DOCS_PRODUCTS = {
       '/docs/b2b-agents',
       '/docs/production-readiness',
       '/docs/providers',
+      '/docs/sessions',
+      '/docs/hooks',
       '/docs/how-composio-works',
+      '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
       '/docs/session-configs',
+      '/docs/governance/action-permissions',
       '/docs/governance/approvals',
       '/docs/firewall',
       '/docs/instant-tools',
@@ -143,6 +147,7 @@ export const DOCS_PRODUCTS = {
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
       '/docs/poc-to-prod',
+      '/docs/deployment',
       '/docs/security',
       '/docs/sessions-vs-direct-execution',
       '/docs/tools-direct',
@@ -162,21 +167,14 @@ export const DOCS_PRODUCTS = {
       {
         label: 'Build',
         items: [
-          {
-            type: 'group',
-            label: 'Sessions',
-            links: [
-              { url: '/docs/how-composio-works', label: 'What is a Session?' },
-              { url: '/docs/configuring-sessions' },
-              { url: '/docs/session-configs' },
-              { url: '/docs/sessions-via-mcp' },
-            ],
-          },
+          { type: 'folder', path: 'sessions' },
+          { type: 'page', url: '/docs/sessions-via-mcp' },
           {
             type: 'group',
             label: 'Toolkits & Tools',
             links: [
               { url: '/docs/toolkits' },
+              { type: 'folder', path: 'apps-and-toolkits' },
               { url: '/docs/instant-tools' },
               { url: '/docs/extending-sessions/local-tools-and-toolkits' },
               { url: '/docs/extending-sessions/custom-mcp' },
@@ -184,8 +182,19 @@ export const DOCS_PRODUCTS = {
           },
           {
             type: 'group',
+            label: 'Hooks',
+            links: [
+              { url: '/docs/hooks' },
+              { url: '/docs/hooks/custom-prompt-checks' },
+              { url: '/docs/hooks/prompt-injection-detection' },
+              { url: '/docs/hooks/webhooks' },
+            ],
+          },
+          {
+            type: 'group',
             label: 'Governance',
             links: [
+              { url: '/docs/governance/action-permissions' },
               { url: '/docs/governance/tool-hints' },
               { url: '/docs/governance/approvals' },
               { url: '/docs/firewall' },
@@ -244,8 +253,44 @@ export const DOCS_PRODUCTS = {
         items: [
           { type: 'page', url: '/docs/production-readiness' },
           { type: 'page', url: '/docs/authentication/white-labeling-authentication' },
+          { type: 'folder', path: 'deployment' },
           { type: 'folder', path: 'poc-to-prod' },
-          { type: 'folder', path: 'security', label: 'Security and data' },
+        ],
+      },
+      {
+        label: 'Security and Compliance',
+        items: [
+          { type: 'page', url: '/docs/security/overview' },
+          {
+            type: 'group',
+            label: 'Compliance',
+            links: [
+              {
+                type: 'page',
+                url: '/docs/security/vendor-security-review',
+                label: 'Vendor security review',
+              },
+              { type: 'link', url: 'https://trust.composio.dev', label: 'Trust Center', external: true },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Data privacy',
+            links: [
+              { url: '/docs/security/data-retention' },
+              { url: '/docs/security/zero-data-retention' },
+            ],
+          },
+          {
+            type: 'group',
+            label: 'Security controls',
+            links: [
+              { url: '/docs/security/token-custody' },
+              { url: '/docs/deployment/byoc' },
+              { url: '/docs/security/audit-logs' },
+              { url: '/docs/security/outbound-ips' },
+            ],
+          },
         ],
       },
       {

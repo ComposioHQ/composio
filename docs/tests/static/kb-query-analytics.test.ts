@@ -197,7 +197,7 @@ describe('knowledge search analytics', () => {
 
   test('builds an anonymous PostHog event with a lightly redacted query', () => {
     const capture = buildKnowledgeSearchCapture({
-      query: 'GITHUB_CREATE_ISSUE failed token=sk-secretvalue123456',
+      query: 'GITHUB_CREATE_AN_ISSUE failed token=sk-secretvalue123456',
       filter: 'kb',
       retrievalMode: 'keyword',
       resultCount: 2,
@@ -222,7 +222,7 @@ describe('knowledge search analytics', () => {
         properties: {
           distinct_id: 'public-kb-search',
           '$process_person_profile': false,
-          query: 'GITHUB_CREATE_ISSUE failed token=[REDACTED]',
+          query: 'GITHUB_CREATE_AN_ISSUE failed token=[REDACTED]',
           filter: 'kb',
           retrieval_mode: 'keyword',
           result_count: 2,

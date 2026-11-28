@@ -193,6 +193,8 @@ export class WebhookSubscriptions {
    *
    * @example
    * ```typescript
+   * const APP_URL = 'https://your-app.com';
+   *
    * const subscription = await composio.webhooks.subscriptions.set({
    *   webhookUrl: `${APP_URL}/webhooks/composio`,
    *   enabledEvents: ['composio.trigger.message', 'composio.connected_account.expired'],

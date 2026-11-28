@@ -416,56 +416,18 @@ ${loginShell('composio --version')}
 if (config.mode === 'prod' && config.version !== 'latest') {
   describe(`production ${config.version} compatibility installation`, () => {
     it(
-      'configures the login shell inline when the pinned CLI lacks install --shell',
+      'installs cleanly and prints recovery guidance when the pinned CLI lacks install --shell',
       async () => {
         const result = await run(`
 set -eu
-curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/${config.shell} sh -s -- "$E2E_VERSION"
+combined=$(curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/${config.shell} sh -s -- "$E2E_VERSION" 2>&1)
 if "$HOME/.composio/composio" install --help | grep -q -- '--shell'; then
   echo 'expected the pinned CLI to predate install --shell' >&2
   exit 1
 fi
-test "$(grep -Fc '# Composio CLI' "$HOME/.${config.shell}rc")" = 1
-curl -fsSL "$INSTALL_BASE_URL/install" | COMPOSIO_INSTALL_SHELL=${config.shell} sh -s -- "$E2E_VERSION"
-test "$(grep -Fc '# Composio CLI' "$HOME/.${config.shell}rc")" = 1
-test "$(${config.shell} -ilc 'command -v composio')" = "$HOME/.local/bin/composio"
-${config.shell} -ilc 'composio --version'
-`);
-        assertSuccess(result);
-      },
-      timeout
-    );
-
-    it(
-      'persists the resolved absolute bin directory through inline setup',
-      async () => {
-        // A relative COMPOSIO_BIN_DIR must never be persisted raw: the login
-        // shell check runs from / so only an absolute PATH entry can resolve.
-        const result = await run(`
-set -eu
-curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/${config.shell} COMPOSIO_BIN_DIR=.composio-bin sh -s -- "$E2E_VERSION"
-test -x "$HOME/.composio/composio"
-test -x "$HOME/.composio-bin/composio"
-test "$(grep -Fc '# Composio CLI' "$HOME/.${config.shell}rc")" = 1
-test "$(cd / && ${config.shell} -ilc 'command -v composio')" = "$HOME/.composio-bin/composio"
-(cd / && ${config.shell} -ilc 'composio --version')
-`);
-        assertSuccess(result);
-      },
-      timeout
-    );
-
-    it(
-      'keeps the pinned install successful when inline setup cannot write the startup file',
-      async () => {
-        // Contract: binary installed, exit 0, warning, trusted absolute
-        // recovery command on the verified installed executable.
-        const result = await run(`
-set -eu
-mkdir "$HOME/.${config.shell}rc"
-combined=$(curl -fsSL "$INSTALL_BASE_URL/install" | SHELL=/bin/${config.shell} sh -s -- "$E2E_VERSION" 2>&1)
 test -x "$HOME/.composio/composio"
 test -L "$HOME/.local/bin/composio"
+"$HOME/.composio/composio" --version
 printf '%s\n' "$combined" | grep -i 'warning'
 printf '%s\n' "$combined" | grep -F "$HOME/.composio/composio login"
 `);

@@ -364,6 +364,28 @@ export type ToolRouterHookPromptInjectionCheckHandler = z.infer<
   typeof ToolRouterHookPromptInjectionCheckHandlerSchema
 >;
 
+/**
+ * Sends the call to the project's session webhook URL and waits for your
+ * endpoint's answer: let it run, block it, or change it. Read the request in
+ * your endpoint with `composio.sessions.webhooks.parse()`.
+ */
+export const ToolRouterHookWebhookHandlerSchema = z
+  .object({
+    type: z.literal('webhook'),
+    fallbackAction: z
+      .enum(['block', 'continue'])
+      .describe(
+        "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+      ),
+    timeoutMs: z
+      .number()
+      .int()
+      .optional()
+      .describe('How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000.'),
+  })
+  .strict();
+export type ToolRouterHookWebhookHandler = z.infer<typeof ToolRouterHookWebhookHandlerSchema>;
+
 const toolRouterHookIdentityFields = {
   id: z.string().describe('Unique within the session. Shows up in results and logs.'),
   name: z
@@ -376,14 +398,18 @@ const toolRouterHookIdentityFields = {
 /**
  * A hook on a session's tool calls. A `before_execute` hook can block a call
  * before it runs; an `after_execute` hook can block its result before the
- * agent sees it.
+ * agent sees it. A hook with a `webhook` handler can also change the call or
+ * its result.
  */
 export const ToolRouterHookSchema = z.discriminatedUnion('type', [
   z
     .object({
       type: z.literal('before_execute'),
       ...toolRouterHookIdentityFields,
-      handler: ToolRouterHookConditionCheckHandlerSchema,
+      handler: z.discriminatedUnion('type', [
+        ToolRouterHookConditionCheckHandlerSchema,
+        ToolRouterHookWebhookHandlerSchema,
+      ]),
     })
     .strict(),
   z
@@ -393,6 +419,7 @@ export const ToolRouterHookSchema = z.discriminatedUnion('type', [
       handler: z.discriminatedUnion('type', [
         ToolRouterHookConditionCheckHandlerSchema,
         ToolRouterHookPromptInjectionCheckHandlerSchema,
+        ToolRouterHookWebhookHandlerSchema,
       ]),
     })
     .strict(),
@@ -847,8 +874,9 @@ export type ToolRouterSessionSearchResponse = z.infer<typeof ToolRouterSessionSe
 
 /**
  * What one session hook decided about a call. `unavailable` means the hook
- * could not be evaluated (for example it timed out); it does not block the
- * call.
+ * could not be evaluated (for example it timed out), and `detail` says why
+ * when the API gives a reason. An unavailable hook does not block the call,
+ * unless it has a `webhook` handler with `fallbackAction: 'block'`.
  */
 export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
   z.object({
@@ -859,6 +887,7 @@ export const ToolRouterHookResultSchema = z.discriminatedUnion('status', [
   z.object({
     id: z.string().describe('The hook id'),
     status: z.literal('unavailable'),
+    detail: z.string().optional().describe('Why the hook could not be evaluated'),
   }),
 ]);
 export type ToolRouterHookResult = z.infer<typeof ToolRouterHookResultSchema>;

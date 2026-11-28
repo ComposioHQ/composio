@@ -8,6 +8,7 @@
 # assets are attached and verified. The release is only flipped to published by a later step.
 #
 # Inputs (env): RELEASE_TAG, RELEASE_NAME, CHECKOUT_REF, PRERELEASE, GH_TOKEN
+#               PREVIOUS_STABLE_TAG (optional, for stable release notes)
 #               BINARIES_DIR (optional, defaults to the CLI dist dir)
 set -euo pipefail
 
@@ -22,6 +23,8 @@ flags=(
 # Preserve prerelease status on the draft so betas stay prereleases once published.
 if [[ "$PRERELEASE" == "true" ]]; then
   flags+=(--prerelease)
+elif [[ -n "${PREVIOUS_STABLE_TAG:-}" ]]; then
+  flags+=(--notes-start-tag "$PREVIOUS_STABLE_TAG")
 fi
 
 # Idempotent for re-runs of a not-yet-published release: reuse an existing draft and clobber

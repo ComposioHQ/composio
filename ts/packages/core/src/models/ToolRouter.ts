@@ -56,12 +56,14 @@ import {
   resolveToolRouterSandboxConfig,
   resolveLocalToolsOptions,
   type LocalToolsOptions,
+  type SessionCreateBody,
 } from '../lib/toolRouterParams';
 import { PRELOAD_TOOLS_ALL } from '../lib/toolRouterConstants';
 import { buildMCPServerConfig } from '../lib/toolRouterMcp';
 import { parseSessionConfigInput } from '../lib/sessionConfigConflict';
 import { getSourceSessionConfig } from '../lib/toolRouterSourceSessionConfig';
 import { ToolRouterSession } from './ToolRouterSession';
+import { SessionWebhooks } from './SessionWebhooks';
 import { ComposioRequestOptions } from '../types/requestOptions.types';
 import { withCancellation } from '../utils/cancellation';
 import { deleteToolRouterSession } from '../lib/toolRouterSessionDelete';
@@ -132,10 +134,17 @@ export class ToolRouter<
   TTool,
   TProvider extends BaseComposioProvider<TToolCollection, TTool, unknown>,
 > {
+  /**
+   * Read the events Composio sends to the project's session webhook URL, for
+   * session hooks with a `webhook` handler.
+   */
+  webhooks: SessionWebhooks;
+
   constructor(
     private client: ComposioClient,
     private config?: ComposioConfig<TProvider>
   ) {
+    this.webhooks = new SessionWebhooks();
     telemetry.instrument(this, 'ToolRouter');
   }
 
@@ -187,9 +196,29 @@ export class ToolRouter<
    *
    * @example
    * ```typescript
-   * import { Composio } from '@composio/core';
+   * import { Composio, experimental_createTool, experimental_createToolkit } from '@composio/core';
+   * import { z } from 'zod';
    *
    * const composio = new Composio();
+   *
+   * const myLocalTool = experimental_createTool('GET_WEATHER', {
+   *   name: 'Get Weather',
+   *   description: 'Get the weather for a city',
+   *   inputParams: z.object({ city: z.string() }),
+   *   execute: async ({ city }) => ({ city, forecast: 'sunny' }),
+   * });
+   * const myLocalToolkit = experimental_createToolkit('DEV_TOOLS', {
+   *   name: 'Dev Tools',
+   *   description: 'Local developer utilities',
+   *   tools: [
+   *     experimental_createTool('ECHO', {
+   *       name: 'Echo',
+   *       description: 'Return the input text',
+   *       inputParams: z.object({ text: z.string() }),
+   *       execute: async ({ text }) => ({ text }),
+   *     }),
+   *   ],
+   * });
    *
    * const session = await composio.sessions.create('user_123', {
    *   toolkits: ['gmail'],
@@ -280,7 +309,7 @@ export class ToolRouter<
             ])
           );
 
-    const payload: SessionCreateParams = {
+    const payload: SessionCreateBody = {
       user_id: userId,
       auth_configs: routerConfig.authConfigs,
       connected_accounts: connectedAccountsPayload,
@@ -310,7 +339,13 @@ export class ToolRouter<
     };
 
     const session = await withCancellation(
-      () => this.client.toolRouter.session.create(payload, requestOptions),
+      () =>
+        this.client.toolRouter.session.create(
+          // The `webhook` hook handler is not in `@composio/client` until it
+          // picks up ComposioHQ/platform#15328; the body is serialized as-is.
+          payload as SessionCreateParams,
+          requestOptions
+        ),
       requestOptions?.signal
     );
 
@@ -368,7 +403,7 @@ export class ToolRouter<
    *
    * const composio = new Composio();
    * const id = 'session_123';
-   * const session = await composio.sessions.use(id);
+   * const session = await composio.sessions.use(id, { mcp: true });
    *
    * console.log(session.mcp.url);
    * console.log(session.mcp.headers);

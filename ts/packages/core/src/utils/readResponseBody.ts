@@ -4,35 +4,40 @@ export const MAX_URL_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 const sizeLimitError = (actualSize: number, maxBytes: number): Error =>
   new Error(`File size (${actualSize} bytes) exceeds maximum allowed size (${maxBytes} bytes)`);
 
+export const assertValidBodyLimit = (maxBytes: number): void => {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+    throw new RangeError('maxBytes must be a non-negative safe integer');
+  }
+};
+
 /**
- * Read a fetch response without allowing an untrusted server to exhaust memory.
+ * Read a Fetch request or response within a byte limit.
  *
  * `Content-Length` is checked as an early rejection, but the streamed byte
  * count is authoritative because the header can be absent or dishonest.
  */
-export const readResponseBodyWithLimit = async (
-  response: Response,
-  maxBytes: number = MAX_URL_UPLOAD_SIZE_BYTES
+export const readBodyWithLimit = async (
+  { body, headers }: Pick<Response, 'body' | 'headers'>,
+  maxBytes: number,
+  makeSizeLimitError: (actualSize: number, maxBytes: number) => Error
 ): Promise<Uint8Array> => {
-  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
-    throw new RangeError('maxBytes must be a non-negative safe integer');
-  }
+  assertValidBodyLimit(maxBytes);
 
-  const contentLength = response.headers.get('content-length')?.trim();
+  const contentLength = headers.get('content-length')?.trim();
   if (contentLength && /^\d+$/.test(contentLength)) {
     const declaredSize = Number(contentLength);
     if (!Number.isSafeInteger(declaredSize) || declaredSize > maxBytes) {
-      const error = sizeLimitError(declaredSize, maxBytes);
-      await response.body?.cancel(error).catch(() => undefined);
+      const error = makeSizeLimitError(declaredSize, maxBytes);
+      void body?.cancel(error).catch(() => undefined);
       throw error;
     }
   }
 
-  if (!response.body) {
+  if (!body) {
     return new Uint8Array();
   }
 
-  const reader = response.body.getReader();
+  const reader = body.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
 
@@ -44,8 +49,10 @@ export const readResponseBodyWithLimit = async (
 
       totalBytes += value.byteLength;
       if (totalBytes > maxBytes) {
-        await reader.cancel(sizeLimitError(totalBytes, maxBytes));
-        throw sizeLimitError(totalBytes, maxBytes);
+        const error = makeSizeLimitError(totalBytes, maxBytes);
+        // A cloned request can keep the cancellation pending on its other branch.
+        void reader.cancel(error).catch(() => undefined);
+        throw error;
       }
       chunks.push(value);
     }
@@ -53,11 +60,17 @@ export const readResponseBodyWithLimit = async (
     reader.releaseLock();
   }
 
-  const body = new Uint8Array(totalBytes);
+  const bytes = new Uint8Array(totalBytes);
   let offset = 0;
   for (const chunk of chunks) {
-    body.set(chunk, offset);
+    bytes.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return body;
+  return bytes;
 };
+
+/** Read a Fetch response within the file size limit. */
+export const readResponseBodyWithLimit = (
+  response: Response,
+  maxBytes: number = MAX_URL_UPLOAD_SIZE_BYTES
+): Promise<Uint8Array> => readBodyWithLimit(response, maxBytes, sizeLimitError);

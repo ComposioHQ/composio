@@ -1,6 +1,6 @@
 {
   "name": "@composio/experimental",
-  "version": "0.2.8",
+  "version": "0.2.10",
   "description": "Experimental Composio integrations and helpers",
   "main": "src/index.ts",
   "type": "module",
@@ -81,7 +81,7 @@
   },
   "devDependencies": {
     "@composio/core": "workspace:*",
-    "@earendil-works/pi-coding-agent": "^1.5.1",
+    "@earendil-works/pi-coding-agent": "^1.5.2",
     "eve": "^0.81.1",
     "tsdown": "catalog:",
     "tsx": "catalog:",

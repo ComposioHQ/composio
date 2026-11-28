@@ -437,7 +437,7 @@ describe('Cancellation — composite operation forwarding', () => {
       connected_account_id: 'ca_new',
       redirect_url: 'https://example.test/cb',
     });
-    const extendedClient = { ...mockClient, link: { create: linkCreate } };
+    const extendedClient = Object.assign({}, mockClient, { link: { create: linkCreate } });
     const connectedAccounts = new ConnectedAccounts(extendedClient as unknown as ComposioClient);
 
     mockClient.connectedAccounts.list.mockResolvedValueOnce({

@@ -3,7 +3,7 @@ import { commandInputError } from 'src/commands/errors';
 import { ExpectedFailure } from 'src/effects/expected-failure';
 import { TEMPORARY_FAILURE_EXIT_CODE } from 'src/effects/retry-advice';
 
-// Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` in `tools.execute.parallel.ts`).
+// Also raised by the hand-rolled `--parallel` mini-parser (`parseParallelExecuteArgs` in `tools.execute.parallel-argv.ts`).
 export const invalidArguments = commandInputError('execute');
 
 // The reasons below are the ones this command constructs each error with; TypeScript cannot infer a

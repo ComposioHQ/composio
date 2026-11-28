@@ -1,0 +1,36 @@
+---
+title: CLI configuration and execution behavior
+description: Backend routing, execution errors, timeouts, and telemetry in the Composio CLI.
+---
+
+This reference describes routing and execution behavior for the [CLI workflows](/docs/cli/workflows).
+
+## Backend and Dashboard configuration
+
+The CLI uses the backend recorded by `composio login`. `COMPOSIO_BASE_URL` and `COMPOSIO_ENVIRONMENT` override that backend. If an override sends your stored key to a different backend, the CLI warns on stderr. If your key is rejected, follow the printed command to log in again.
+
+`composio execute` sends single executions, `--parallel` executions, and meta tool calls through the Dashboard recorded with your login. For the default deployment, allow outbound requests to both `dashboard.composio.dev` and `backend.composio.dev`. Other commands, including `composio dev playground-execute`, use the backend API.
+
+For a custom deployment, setting `COMPOSIO_BASE_URL` without `COMPOSIO_WEB_URL` keeps executions on that backend. Set both variables to route executions through your deployment's Dashboard. `COMPOSIO_WEB_URL` must use HTTPS and contain no credentials, query string, or fragment. HTTP is accepted only for `localhost`. An invalid URL causes `composio execute` to fail before sending a request.
+
+## Execution failures and exit codes
+
+Check the exit code in scripts and agents, even when stdout contains JSON. A failed tool result includes `{"successful": false, ...}` on stdout. With `--parallel`, a failed call makes the command exit nonzero.
+
+The CLI exits `75` (`EX_TEMPFAIL`) when you can safely rerun the same command. This applies to HTTP `429` and to timeouts, connection failures, HTTP `408`, and HTTP `5xx` on idempotent requests. Other execution failures exit `1`. The CLI sends execution requests once, follows no redirects, and stops waiting after 15 minutes.
+
+A failed `composio execute` result may include a `retry` field. The value `"safe"` means you can repeat the request. The value `"check-first"` means the tool may already have run. Check the outcome in the connected app before repeating the request. A missing `retry` field gives you no retry guidance.
+
+Interrupted commands exit `130` for `SIGINT`, `143` for `SIGTERM`, and `129` for `SIGHUP`. Subscribed listeners stop cleanly and exit `0` on `SIGINT` or `SIGTERM`. On interruption, `composio run` forwards the signal to its child process group.
+
+Missing required IDs or names for `composio dev auth-configs info`, `composio tools info`, and `composio dev triggers create` or `enable` cause exit `1`. The `--custom-credentials` option for auth config creation and `--trigger-config` option for trigger creation must contain JSON objects. Invalid input prints a message on stderr, leaves stdout empty, and sends no request.
+
+When a toolkit has several connected accounts, pass `--account <id|alias>` or assign one account the `default` alias. If `--account` matches no connected account, `composio execute` and `composio proxy` print a usage error on stderr and exit `1`. If `composio orgs switch` has no usable stored API key, it exits `1` and asks you to run `composio login`.
+
+## Execution telemetry
+
+When telemetry is enabled, `composio execute` sends the anonymous install ID from `~/.composio/analytics.json` only to the Dashboard, in the `x-cli-install-id` header.
+
+When the CLI runs inside a Claude Code or Codex chat, telemetry events include `agent_session_host` (`claude` or `codex`) and a derived `agent_session_id` to group commands from that chat. The original host session ID stays local. The CLI sends the same values in the `x-cli-agent-session-host` and `x-cli-agent-session-id` headers only on requests to the Composio backend, Dashboard execution requests, and `proxy()` calls from `composio run` to Composio.
+
+Set `COMPOSIO_CLI_TELEMETRY_DISABLED`, `TELEMETRY_DISABLED`, `COMPOSIO_DISABLE_TELEMETRY`, or `CI` to omit the install ID header and disable agent session metadata in telemetry and request headers.

@@ -5,14 +5,15 @@ import ComposioClient, {
   PermissionDeniedError,
 } from '@composio/client';
 import { SessionConfigs } from '../../src/models/SessionConfigs';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import { ComposioRequestCancelledError } from '../../src/errors/SDKErrors';
 import logger from '../../src/utils/logger';
 
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -51,7 +52,7 @@ describe('SessionConfigs', () => {
   });
 
   it('instruments the class with telemetry', () => {
-    expect(telemetry.instrument).toHaveBeenCalledWith(sessionConfigs, 'SessionConfigs');
+    expect(instrument).toHaveBeenCalledWith(sessionConfigs, 'SessionConfigs');
   });
 
   describe('list', () => {

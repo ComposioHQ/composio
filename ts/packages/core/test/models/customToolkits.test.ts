@@ -3,13 +3,14 @@ import ComposioClient from '@composio/client';
 import { Composio } from '../../src/composio';
 import { CustomToolkits } from '../../src/models/CustomToolkits';
 import { Experimental } from '../../src/models/Experimental';
-import { telemetry } from '../../src/telemetry/Telemetry';
 import { ValidationError } from '../../src/errors/ValidationErrors';
 import { MockProvider } from '../utils/mocks/provider.mock';
 
+const { instrument } = vi.hoisted(() => ({ instrument: vi.fn() }));
+
 vi.mock('../../src/telemetry/Telemetry', () => ({
   telemetry: {
-    instrument: vi.fn(),
+    instrument,
   },
 }));
 
@@ -50,7 +51,7 @@ describe('Experimental.customToolkits', () => {
 
   it('mounts on the experimental namespace and instruments it', () => {
     expect(customToolkits).toBeInstanceOf(CustomToolkits);
-    expect(telemetry.instrument).toHaveBeenCalledWith(customToolkits, 'CustomToolkits');
+    expect(instrument).toHaveBeenCalledWith(customToolkits, 'CustomToolkits');
   });
 
   describe('create', () => {

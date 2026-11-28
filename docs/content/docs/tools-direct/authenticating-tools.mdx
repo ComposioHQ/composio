@@ -7,7 +7,7 @@ legacy: true
 ---
 
 <Callout type="info" title="Legacy API: prefer sessions">
-This guide covers legacy direct-authentication methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/configuring-sessions) with [in-chat authentication](/docs/authentication#in-chat-authentication) or [manual authentication](/docs/authentication/manually-authenticating). If you use direct authentication today, consider [migrating to sessions](/docs/migration-guide/direct-to-sessions).
+This guide covers legacy direct-authentication methods, which remain supported for existing integrations. For new integrations, use [sessions](/docs/sessions/tool-access) with [in-chat authentication](/docs/authentication#in-chat-authentication) or [manual authentication](/docs/authentication/manually-authenticating). If you use direct authentication today, consider [migrating to sessions](/docs/migration-guide/direct-to-sessions).
 </Callout>
 
 The first step in authenticating your users is to create an **Auth Config**. Every toolkit has its own authentication method such as `OAuth`, `API key`, `Basic Auth`, or custom schemes.
@@ -51,8 +51,8 @@ Depending on your authentication method, you may need to configure scopes:
 <StepTitle>Authentication Management</StepTitle>
 
 **For OAuth toolkits:**
-- **Development/Testing**: Use Composio's managed authentication (no setup required)
-- **Production**: Generate your own OAuth credentials from the toolkit's developer portal
+- **Getting started**: Use Composio's managed authentication. It needs no setup and works in production.
+- **Higher volume or your own branding**: We recommend your own OAuth credentials from the toolkit's developer portal. They give you dedicated rate limits and your own name on the consent screen.
 
 **For custom authentication schemes:**
 
@@ -99,7 +99,7 @@ With an auth config created, you're ready to authenticate your users!
 You can either use [**Connect Link**](#hosted-authentication-connect-link) for a hosted authentication flow, or use [**Direct SDK Setup**](#direct-sdk-setup).
 
 <Callout>
-User authentication requires a userID - a unique identifier that groups connected accounts together. Learn more about [User scoping](/docs/how-composio-works) to understand how to structure userIDs for your application.
+User authentication requires a userID - a unique identifier that groups connected accounts together. Learn more about [User scoping](/docs/sessions) to understand how to structure userIDs for your application.
 </Callout>
 
 **Choose the section below that matches your toolkit's authentication method:**

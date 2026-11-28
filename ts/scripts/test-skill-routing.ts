@@ -54,6 +54,11 @@ const probes = [
     terms: ['effect/cli', 'command wiring', 'CLI command UX', 'CLI source edits'],
   },
   {
+    task: 'find out why the composio executable is so large and shrink its download',
+    expect: 'cli-binary-size',
+    terms: ['runtime floor', 'release downloads weigh', '--trim and --aot', 'runtime swap'],
+  },
+  {
     task: 'write a Docker-based end-to-end test for the composio CLI binary',
     expect: 'cli-e2e',
     terms: ['Docker-based', 'end-to-end tests', 'binary invocation', 'fixture isolation'],
@@ -79,6 +84,11 @@ const probes = [
     terms: ['Fumadocs', 'ADR-style records', 'docs decisions', 'docs review guidance'],
   },
   {
+    task: "rewrite a docs page around the reader's primary purpose and improve its section pacing",
+    expect: 'docs-page-rewrite',
+    terms: ["reader's primary purpose", 'page rewrites', 'section pacing', 'diagram placement'],
+  },
+  {
     task: 'define a new Context.Service with an explicit layer and a Schema.TaggedErrorClass, and bump the Effect beta pins',
     expect: 'effect-v4',
     terms: [
@@ -96,12 +106,12 @@ const probes = [
   {
     task: 'draft a new guide in the house documentation voice',
     expect: 'good-docs-writing',
-    terms: ['writing style guide', "modal's documentation voice", 'second-person', 'example-first'],
+    terms: ['writing style guide', 'house documentation voice', 'second-person', "page's purpose"],
   },
   {
-    task: 'review a README for voice and tone violations and report suggested rewrites',
+    task: 'review a README for sentence clarity and voice violations and report suggested rewrites',
     expect: 'good-docs-audit',
-    terms: ['report violations', 'critique', 'suggested rewrite', 'rule violated'],
+    terms: ['report violations', 'sentence clarity', 'suggested rewrite', 'rule violated'],
   },
   {
     task: 'create a Python provider adapter under python/providers with metadata',

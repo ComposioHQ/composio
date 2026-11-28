@@ -21,6 +21,10 @@ const EVIDENCED_REDIRECTS = [
 /** Sample of important redirects to test (from next.config.mjs) */
 const REDIRECTS = [
   ...EVIDENCED_REDIRECTS,
+  { from: '/docs/session-configs', to: '/docs/sessions/saved-session-policies' },
+  { from: '/docs/session-configs.md', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/docs/session-configs.mdx', to: '/docs/sessions/saved-session-policies.md' },
+  { from: '/llms.mdx/docs/session-configs', to: '/docs/sessions/saved-session-policies.md' },
   { from: "/", to: "/docs" },
   { from: "/cookbooks", to: "/examples" },
   { from: "/api-reference", to: "/reference" },
@@ -58,12 +62,59 @@ const REDIRECTS = [
   { from: "/docs/shared-connections", to: "/docs/extending-sessions/shared-connections" },
   { from: "/docs/manually-authenticating", to: "/docs/authentication/manually-authenticating" },
   { from: "/docs/security", to: "/docs/security/overview" },
-  { from: "/docs/self-hosting", to: "/docs/security/token-custody#deployment-options" },
+  { from: "/docs/self-hosting", to: "/docs/deployment" },
+  { from: "/docs/byoc", to: "/docs/deployment/byoc" },
+  { from: "/docs/security/byoc", to: "/docs/deployment/byoc" },
+  { from: "/docs/hosting/aws", to: "/docs/deployment/byoc-architecture" },
+  { from: "/docs/hosting/gcp", to: "/docs/deployment" },
   { from: "/docs/auth", to: "/docs/authentication" },
   { from: "/docs/auth-management/overview", to: "/docs/authentication" },
   { from: "/docs/managed-auth", to: "/docs/authentication/custom-app-vs-managed-app" },
   { from: "/docs/authentication/overview", to: "/docs/authentication" },
+  // URL guesses from DEVREL-330 (Gauge agent sessions hit every 404 below).
+  { from: "/docs/mastra", to: "/docs/providers/mastra" },
+  { from: "/docs/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/docs/integrations/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/docs/langchain", to: "/docs/providers/langchain" },
+  { from: "/docs/langgraph", to: "/docs/providers/langchain" },
+  { from: "/docs/providers/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/providers/vercel-ai-sdk", to: "/docs/providers/vercel" },
+  { from: "/docs/connect-links", to: "/docs/authentication" },
+  { from: "/docs/mcp-auth", to: "/docs/authentication/managed-auth-for-custom-tools" },
+  { from: "/docs/auth-tools/auth-on-mcp", to: "/docs/authentication/managed-auth-for-custom-tools" },
+  { from: "/providers/mcp", to: "/docs/single-toolkit-mcp" },
+  { from: "/docs/providers/mcp", to: "/docs/single-toolkit-mcp" },
+  { from: "/auth/token-custody", to: "/docs/security/token-custody" },
+  { from: "/auth/proxy-execute", to: "/docs/extending-sessions/proxy-execute" },
 ];
+
+describe('Vendor security review - retired KB routes', () => {
+  const retiredPaths = [
+    '/kb/guide/platform-compliance-data-handling',
+    '/kb/security-and-trust/platform-compliance-data-handling',
+    '/kb/sdk-and-api/platform-compliance-data-handling',
+    '/kb/guide/canonical-public-sources',
+    '/kb/guide/model-training',
+    '/kb/guide/third-party-providers',
+    '/kb/guide/zero-data-retention-and-no-training-requirements',
+  ];
+  for (const path of retiredPaths) {
+    for (const from of [path, `${path}.md`, `${path}.mdx`, `/llms.mdx${path}`]) {
+      test(`${from} permanently redirects into docs`, async () => {
+        const markdown = from !== path;
+        const to = `/docs/security/vendor-security-review${markdown ? '.md' : ''}`;
+        const redirect = await fetchNoRedirect(from);
+        expect(redirect.status).toBe(308);
+        expect(new URL(redirect.headers.get('location')!, BASE_URL).pathname).toBe(to);
+        const response = await fetchPage(from);
+        expect(response.status).toBe(200);
+        expect(new URL(response.url).pathname).toBe(to);
+        expect(response.headers.get('content-type')).toContain(markdown ? 'text/markdown' : 'text/html');
+        expect(await response.text()).toContain('Zero data retention and no-training requirements');
+      });
+    }
+  }
+});
 
 describe("Redirects - key patterns", () => {
   for (const { from, to } of REDIRECTS) {

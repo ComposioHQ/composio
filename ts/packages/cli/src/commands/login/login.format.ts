@@ -11,6 +11,11 @@ export const AGENT_WITH_OTHER_FLAGS_MESSAGE =
 export const ORG_WITHOUT_USER_API_KEY_MESSAGE = '`--org` requires `--user-api-key`.';
 export const USER_API_KEY_WITH_SESSION_FLAGS_MESSAGE =
   '`--user-api-key` is a direct login path and cannot be combined with browser or session flags.';
+export const TIMEOUT_WITHOUT_POLL_MESSAGE = '`--timeout` requires `--poll`.';
+
+/** `--timeout` names something other than a whole number of seconds a pending login can last. */
+export const invalidTimeoutMessage = (maxSeconds: number) =>
+  `Invalid --timeout value. Use a whole number of seconds from 1 to ${maxSeconds}.`;
 
 // --- stderr -----------------------------------------------------------------------------------
 
@@ -24,6 +29,26 @@ export const SESSION_NOT_FOUND_MESSAGE =
 export const SESSION_NOT_LINKED_MESSAGE =
   'Login not complete. Open the URL and finish authentication.';
 export const SESSION_NOT_LINKED_HINT = 'Then run `composio login --key <key>` again.';
+
+/**
+ * What a bounded wait answers when it runs out on a session that is still pending: the URL that
+ * finishes the login, and the command that picks the same login up again. The URL and the
+ * command are part of the message because a caller reading stderr through a pipe gets no
+ * decoration and no spinner — this text is the whole answer.
+ */
+export const formatLoginStillPending = (params: {
+  readonly status: string;
+  readonly loginUrl: string;
+  readonly resumeCommand: string;
+}) => `Login still pending: session status is '${params.status}', waiting for 'linked'.
+
+Open this URL and finish authenticating:
+
+  ${params.loginUrl}
+
+Then run this again to complete the login:
+
+  ${params.resumeCommand}`;
 
 export const organizationNotFoundMessage = (requestedOrg: string) =>
   `Organization "${requestedOrg}" was not found for this API key.`;

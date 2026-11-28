@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { Effect, Option } from 'effect';
+import { z } from 'zod';
 import { showStatus, stageOutcome } from '../scripts/sdk-release/report';
 import {
   DISPLAY,
@@ -11,6 +12,8 @@ import {
 } from '../scripts/sdk-release/state';
 import { spawn } from '../scripts/sdk-release/runtime';
 import {
+  readJsonRequestBody,
+  fetchInputUrl,
   readText,
   resolvePath,
   runRelease,
@@ -132,10 +135,10 @@ function requestIssue(comments: { id: number; login: string; body: string }[] = 
   const writes: string[] = [];
   let state = 'open';
   const fetcher: Fetch = async (input, init) => {
-    const url = new URL(String(input));
+    const url = new URL(fetchInputUrl(input));
     const path = url.pathname.replace('/repos/ComposioHQ/composio', '');
     const method = init?.method ?? 'GET';
-    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    const body = init?.body ? await readJsonRequestBody(init.body) : undefined;
     const respond = (data: unknown) => new Response(JSON.stringify(data));
     if (method !== 'GET') writes.push(`${method} ${path}`);
     if (method === 'GET' && path === '/issues/8/comments')
@@ -143,13 +146,17 @@ function requestIssue(comments: { id: number; login: string; body: string }[] = 
     if (method === 'GET' && path === '/issues/8/labels')
       return respond([...labels].map(name => ({ name })));
     if (method === 'POST' && path === '/issues/8/comments') {
-      comments.push({ id: comments.length + 1, login: 'github-actions[bot]', body: body.body });
+      comments.push({
+        id: comments.length + 1,
+        login: 'github-actions[bot]',
+        body: z.object({ body: z.string() }).parse(body).body,
+      });
       return respond({ id: comments.length });
     }
     const edited = /^\/issues\/comments\/(\d+)$/.exec(path);
     if (method === 'PATCH' && edited) {
       const comment = comments.find(comment => comment.id === Number(edited[1]));
-      if (comment) comment.body = body.body;
+      if (comment) comment.body = z.object({ body: z.string() }).parse(body).body;
       return respond({});
     }
     if (method === 'DELETE' && path.startsWith('/issues/8/labels/')) {
@@ -157,12 +164,13 @@ function requestIssue(comments: { id: number; login: string; body: string }[] = 
       return respond([]);
     }
     if (method === 'POST' && path === '/issues/8/labels') {
-      for (const label of body.labels) labels.add(label);
+      for (const label of z.object({ labels: z.array(z.string()) }).parse(body).labels)
+        labels.add(label);
       return respond([]);
     }
     if (method === 'GET' && path === '/issues/8') return respond({ state });
     if (method === 'PATCH' && path === '/issues/8') {
-      state = body.state;
+      state = z.object({ state: z.string() }).parse(body).state;
       return respond({});
     }
     throw new Error(`Unexpected request: ${method} ${path}`);

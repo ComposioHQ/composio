@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import base64
 import functools
-import hashlib
-import hmac
 import inspect
 import json
 import logging
@@ -38,6 +35,13 @@ from composio.core.types import ToolkitVersionParam
 from composio.exceptions import ComposioSDKTimeoutError
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import none_to_omit
+from composio.utils.webhook_verification import (
+    body_to_str,
+    extract_request_body,
+    get_header,
+    validate_webhook_timestamp,
+    verify_webhook_signature,
+)
 
 PUSHER_AUTH_URL = "{base_url}/api/v3/internal/sdk/realtime/auth?source=python"
 
@@ -1257,7 +1261,7 @@ class Triggers(Resource):
 
         Example:
             composio.triggers.set_webhook_subscription(
-                webhook_url=f"{APP_URL}/webhooks/composio",
+                webhook_url="https://example.com/webhooks/composio",
             )
         """
         return WebhookSubscriptions(client=self._client).set(
@@ -1478,31 +1482,25 @@ class Triggers(Resource):
         :raises WebhookPayloadError: If the payload cannot be parsed or is invalid
 
         Example:
-            # In a Flask webhook handler
-            @app.route('/webhook', methods=['POST'])
-            def webhook():
-                try:
-                    result = composio.triggers.verify_webhook(
-                        id=request.headers.get('webhook-id', ''),
-                        payload=request.get_data(as_text=True),
-                        signature=request.headers.get('webhook-signature', ''),
-                        timestamp=request.headers.get('webhook-timestamp', ''),
-                        secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
-                    )
+            from collections.abc import Mapping
 
-                    # Process the verified payload
-                    print(f"Version: {result['version']}")
-                    print(f"Received trigger: {result['payload']['trigger_slug']}")
-                    return 'OK', 200
-                except WebhookSignatureVerificationError:
-                    return 'Unauthorized', 401
+            def verify_trigger(body: str, headers: Mapping[str, str], secret: str):
+                # Pass the raw body and headers from your HTTP handler.
+                result = composio.triggers.verify_webhook(
+                    id=headers["webhook-id"],
+                    payload=body,
+                    signature=headers["webhook-signature"],
+                    timestamp=headers["webhook-timestamp"],
+                    secret=secret,
+                )
+                return result["payload"]
         """
         # Validate timestamp if tolerance is set
         if tolerance > 0:
-            self._validate_webhook_timestamp_header(timestamp, tolerance)
+            validate_webhook_timestamp(timestamp, tolerance)
 
         # Verify signature using the correct algorithm
-        self._verify_webhook_signature(
+        verify_webhook_signature(
             webhook_id=id,
             webhook_timestamp=timestamp,
             payload=payload,
@@ -1556,33 +1554,23 @@ class Triggers(Resource):
         :raises WebhookPayloadError: If the payload cannot be parsed
 
         Example:
-            # Flask: verify the signature
-            @app.route('/webhooks/composio', methods=['POST'])
-            def webhook():
-                try:
-                    result = composio.triggers.parse(
-                        request,
-                        verify_secret=os.environ['COMPOSIO_WEBHOOK_SECRET'],
-                    )
-                    print(f"Trigger: {result['payload']['trigger_slug']}")
-                    print(f"Event data: {result['payload']['payload']}")
-                    return 'OK', 200
-                except exceptions.WebhookSignatureVerificationError:
-                    return 'Unauthorized', 401
+            from collections.abc import Mapping
 
-            # FastAPI: parse without verifying after reading the async body
-            @app.post('/webhooks/composio')
-            async def webhook(request: Request):
-                raw = await request.body()
-                result = composio.triggers.parse(body=raw, headers=request.headers)
-                return {'trigger': result['payload']['trigger_slug']}
+            def parse_trigger(body: bytes, headers: Mapping[str, str], secret: str):
+                # Pass the raw body and headers from your HTTP handler.
+                result = composio.triggers.parse(
+                    body=body,
+                    headers=headers,
+                    verify_secret=secret,
+                )
+                return result["payload"]
         """
-        raw_body = body if body is not None else self._extract_request_body(request)
+        raw_body = body if body is not None else extract_request_body(request)
         raw_headers = (
             headers if headers is not None else getattr(request, "headers", None)
         )
 
-        payload = self._body_to_str(raw_body)
+        payload = body_to_str(raw_body)
 
         # Distinguish "caller omitted verify_secret" (explicit opt-out) from
         # "caller passed verify_secret but it resolved to empty" (almost always
@@ -1606,9 +1594,9 @@ class Triggers(Resource):
             )
 
         # Secret provided: signature headers are required to verify.
-        webhook_id = self._get_header(raw_headers, "webhook-id")
-        timestamp = self._get_header(raw_headers, "webhook-timestamp")
-        signature = self._get_header(raw_headers, "webhook-signature")
+        webhook_id = get_header(raw_headers, "webhook-id")
+        timestamp = get_header(raw_headers, "webhook-timestamp")
+        signature = get_header(raw_headers, "webhook-signature")
 
         missing = [
             name
@@ -1637,192 +1625,6 @@ class Triggers(Resource):
             timestamp=t.cast(str, timestamp),
             tolerance=tolerance,
         )
-
-    @staticmethod
-    def _extract_request_body(request: t.Any) -> t.Union[str, bytes, None]:
-        """Read the raw body from a framework request object.
-
-        Tries the common attributes used by Flask (``get_data``/``data``),
-        Django (``body``) and similar. Returns ``None`` when nothing usable is
-        found so the caller surfaces a clear parse error.
-        """
-        if request is None:
-            return None
-
-        # Flask: request.get_data() returns the raw body bytes.
-        get_data = getattr(request, "get_data", None)
-        if callable(get_data):
-            return get_data()
-
-        for attr in ("body", "data"):
-            value = getattr(request, attr, None)
-            if value is not None and not callable(value):
-                return value
-
-        return None
-
-    @staticmethod
-    def _body_to_str(body: t.Union[str, bytes, t.Mapping[str, t.Any], None]) -> str:
-        """Coerce a body (str, bytes, parsed mapping, or None) into a raw string."""
-        if body is None:
-            return ""
-        if isinstance(body, str):
-            return body
-        if isinstance(body, (bytes, bytearray)):
-            return bytes(body).decode("utf-8")
-        # Already-parsed mapping (e.g. a framework that pre-parsed JSON). Note:
-        # re-serializing cannot reproduce the exact signed bytes, so signature
-        # verification on a pre-parsed body is best-effort only.
-        return json.dumps(body)
-
-    @staticmethod
-    def _get_header(headers: t.Any, name: str) -> t.Optional[str]:
-        """Read a header value case-insensitively from a headers mapping.
-
-        Supports both plain ``dict`` headers and framework header objects
-        (Werkzeug/Django ``HttpHeaders``) that expose a ``get`` method, which is
-        already case-insensitive.
-        """
-        if headers is None:
-            return None
-
-        get = getattr(headers, "get", None)
-        if callable(get):
-            value = get(name)
-            if value is not None:
-                return str(value)
-
-        # Fall back to a manual case-insensitive scan for plain mappings.
-        try:
-            items = headers.items()
-        except AttributeError:
-            return None
-
-        target = name.lower()
-        for key, value in items:
-            if isinstance(key, str) and key.lower() == target:
-                return str(value) if value is not None else None
-        return None
-
-    def _verify_webhook_signature(
-        self,
-        *,
-        webhook_id: str,
-        webhook_timestamp: str,
-        payload: str,
-        signature: str,
-        secret: str,
-    ) -> None:
-        """
-        Verify the HMAC-SHA256 signature of a webhook payload.
-
-        The signature is computed as: HMAC-SHA256(webhookId.webhookTimestamp.payload, secret)
-        and then base64 encoded with a 'v1,' prefix.
-
-        :param webhook_id: The webhook message ID from header
-        :param webhook_timestamp: The webhook timestamp from header
-        :param payload: The raw webhook payload
-        :param signature: The signature to verify (format: 'v1,base64EncodedSignature')
-        :param secret: The webhook secret
-        :raises WebhookSignatureVerificationError: If verification fails
-        """
-        if not payload:
-            raise exceptions.WebhookSignatureVerificationError(
-                "No webhook payload was provided."
-            )
-
-        if not signature:
-            raise exceptions.WebhookSignatureVerificationError(
-                "No signature header value was provided. "
-                "Please pass the value of the webhook signature header."
-            )
-
-        if not secret:
-            raise exceptions.WebhookSignatureVerificationError(
-                "No webhook secret was provided. "
-                "You can find your webhook secret in your Composio dashboard."
-            )
-
-        if not webhook_id:
-            raise exceptions.WebhookSignatureVerificationError(
-                "No webhook ID was provided. "
-                "Please pass the value of the 'webhook-id' header."
-            )
-
-        if not webhook_timestamp:
-            raise exceptions.WebhookSignatureVerificationError(
-                "No webhook timestamp was provided. "
-                "Please pass the value of the 'webhook-timestamp' header."
-            )
-
-        # Parse signature header - format is "v1,base64Sig" or "v1,sig1 v1,sig2"
-        # Split by space to handle multiple signatures
-        signature_parts = signature.split(" ")
-        v1_signatures: t.List[str] = []
-
-        for part in signature_parts:
-            if part.startswith("v1,"):
-                v1_signatures.append(part[3:])  # Remove "v1," prefix
-
-        if not v1_signatures:
-            raise exceptions.WebhookSignatureVerificationError(
-                "No valid v1 signature found in the signature header. "
-                "Expected format: 'v1,base64EncodedSignature'"
-            )
-
-        # Construct the string to sign: webhookId.webhookTimestamp.payload
-        to_sign = f"{webhook_id}.{webhook_timestamp}.{payload}"
-
-        # Compute expected signature
-        expected_signature_bytes = hmac.new(
-            key=secret.encode("utf-8"),
-            msg=to_sign.encode("utf-8"),
-            digestmod=hashlib.sha256,
-        ).digest()
-        expected_signature_b64 = base64.b64encode(expected_signature_bytes).decode(
-            "utf-8"
-        )
-
-        # Check if any of the provided signatures match (timing-safe)
-        for provided_sig in v1_signatures:
-            try:
-                if hmac.compare_digest(provided_sig, expected_signature_b64):
-                    return  # Signature is valid
-            except Exception:
-                continue  # Invalid signature format, try next
-
-        raise exceptions.WebhookSignatureVerificationError(
-            "The signature provided is invalid."
-        )
-
-    def _validate_webhook_timestamp_header(
-        self, timestamp: str, tolerance: int
-    ) -> None:
-        """
-        Validate that the webhook timestamp header is within the allowed tolerance.
-
-        :param timestamp: The webhook timestamp from header (Unix seconds)
-        :param tolerance: Maximum allowed age in seconds
-        :raises WebhookSignatureVerificationError: If timestamp is outside tolerance
-        :raises WebhookPayloadError: If timestamp format is invalid
-        """
-        try:
-            timestamp_seconds = int(timestamp)
-        except (ValueError, TypeError) as e:
-            raise exceptions.WebhookPayloadError(
-                f"Invalid webhook timestamp: {timestamp}. "
-                "Expected Unix timestamp in seconds."
-            ) from e
-
-        current_time = int(time.time())
-        time_difference = abs(current_time - timestamp_seconds)
-
-        if time_difference > tolerance:
-            raise exceptions.WebhookSignatureVerificationError(
-                f"The webhook timestamp is outside the allowed tolerance. "
-                f"The webhook was sent {time_difference} seconds ago, "
-                f"but the maximum allowed age is {tolerance} seconds."
-            )
 
     def _parse_webhook_payload(
         self, payload: str

@@ -63,12 +63,12 @@ Resuming a stored session? Pass the same flag, `composio.use(sessionId, { mcp: t
 </Callout>
 
 <Callout type="info">
-The MCP endpoint and `session.tools()` are backed by the same session. Toolkits, auth configs, and connected accounts you set when [configuring the session](/docs/configuring-sessions) apply to both.
+The MCP endpoint and `session.tools()` are backed by the same session. Toolkits, auth configs, and connected accounts you set when [configuring the session](/docs/sessions/tool-access) apply to both.
 </Callout>
 
 ## Approval without elicitation support
 
-You can [require approval for session tools](/docs/configuring-sessions#requiring-tool-approval). If your MCP client cannot ask for approval through elicitation, set `experimental.noElicitationSupportFallback` in TypeScript or `experimental.no_elicitation_support_fallback` in Python when creating the session:
+You can [require approval for session tools](/docs/sessions/tool-access#requiring-tool-approval). If your MCP client cannot ask for approval through elicitation, set `experimental.noElicitationSupportFallback` in TypeScript or `experimental.no_elicitation_support_fallback` in Python when creating the session:
 
 - `"deny"` blocks the call when the client cannot ask for approval.
 - `"allow"` lets the call run without asking for approval.
@@ -94,7 +94,7 @@ Requires `@composio/core` ≥ `0.19.1` (TypeScript) or `composio` ≥ `0.22.1` (
 
 ## A single URL for a fixed set of tools
 
-Combine `mcp: true` with the [direct-tools preset](/docs/configuring-sessions) to get one MCP URL that serves exactly the tools you list, with no search or meta tools in front of them. This is the closest equivalent to a classic hosted MCP server scoped to a handful of tools.
+Combine `mcp: true` with the [direct-tools preset](/docs/sessions/loading-tools#direct-tools-preset) to get one MCP URL that serves exactly the tools you list, with no search or meta tools in front of them. This is the closest equivalent to a classic hosted MCP server scoped to a handful of tools.
 
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
@@ -152,7 +152,7 @@ curl -s -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-Any MCP client pointed at that URL sees only `GMAIL_FETCH_EMAILS` and `GMAIL_CREATE_EMAIL_DRAFT`. See [Configuring Sessions](/docs/configuring-sessions) for the full set of toolkit, tool, and auth filters.
+Any MCP client pointed at that URL sees only `GMAIL_FETCH_EMAILS` and `GMAIL_CREATE_EMAIL_DRAFT`. See [Restrict tool access](/docs/sessions/tool-access) for toolkit and tool filters, and [Select connections](/docs/sessions/connections) for auth and account selection.
 
 ## Wire it into your framework
 
@@ -284,4 +284,4 @@ If you need any of those, call tools directly through a [provider](/docs/provide
 
 ## Next
 
-<Card icon={<Wrench />} title="Configuring Sessions" href="/docs/configuring-sessions" description="Restrict toolkits, set custom auth configs, and select connected accounts" />
+<Card icon={<Wrench />} title="Restrict tool access" href="/docs/sessions/tool-access" description="Restrict toolkits, set custom auth configs, and select connected accounts" />

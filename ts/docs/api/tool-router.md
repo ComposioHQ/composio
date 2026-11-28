@@ -290,7 +290,7 @@ Define your own tools that run in-process alongside Composio's remote tools. Cus
 
 There are three ways to define custom tools:
 
-**1. Standalone tool** — no auth needed, passed in `customTools`:
+**1. Standalone tool** — no auth needed, passed in `localTools`:
 
 ```typescript
 import { experimental_createTool } from '@composio/core';
@@ -304,7 +304,7 @@ const grep = experimental_createTool('GREP', {
 });
 ```
 
-**2. Extension tool** — extends a Composio toolkit, inherits its auth. Passed in `customTools` with `extendsToolkit`:
+**2. Extension tool** — extends a Composio toolkit, inherits its auth. Passed in `localTools` with `extendsToolkit`:
 
 ```typescript
 const getImportant = experimental_createTool('GET_IMPORTANT_EMAILS', {
@@ -320,7 +320,7 @@ const getImportant = experimental_createTool('GET_IMPORTANT_EMAILS', {
 });
 ```
 
-**3. Custom toolkit** — groups related no-auth tools. Passed in `customToolkits`:
+**3. Custom toolkit** — groups related no-auth tools. Passed in `localToolkits`:
 
 ```typescript
 import { experimental_createToolkit } from '@composio/core';
@@ -345,8 +345,8 @@ const devTools = experimental_createToolkit('DEV_TOOLS', {
 const session = await composio.create('user_123', {
   toolkits: ['gmail'],
   experimental: {
-    customTools: [grep, getImportant],
-    customToolkits: [devTools],
+    localTools: [grep, getImportant],
+    localToolkits: [devTools],
   },
 });
 ```
@@ -955,8 +955,8 @@ interface ToolRouterCreateSessionConfig {
     assistivePrompt?: {
       userTimezone?: string; // IANA timezone identifier for timezone-aware assistive prompts
     };
-    customTools?: CustomTool[]; // Standalone or extension tools (from experimental_createTool)
-    customToolkits?: CustomToolkit[]; // Grouped no-auth tools (from experimental_createToolkit)
+    localTools?: LocalTool[]; // Standalone or extension tools (from experimental_createTool)
+    localToolkits?: LocalToolkit[]; // Grouped no-auth tools (from experimental_createToolkit)
   };
 }
 ```

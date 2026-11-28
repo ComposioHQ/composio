@@ -2094,6 +2094,11 @@
             "maxLength": 255,
             "description": "The name of the integration"
           },
+          "managed_app_id": {
+            "type": "string",
+            "format": "managedAppId",
+            "description": "The Composio-managed app to use, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Omit to use the toolkit's default app."
+          },
           "credentials": {
             "type": "object",
             "properties": {
@@ -2959,7 +2964,7 @@
     "/api/v3.1/session_configs": {
       "get": {
         "summary": "List Session configs",
-        "description": "List Session configs in your project, newest updated first. Returns active configs by default; set archived=true to list archived configs. Retrieve a config by ID for its description and toolkit, tool, and tag policy. Experimental. Create and manage configs in Dashboard.",
+        "description": "List Session configs in your project, newest updated first. Returns active configs by default; set archived=true to list archived configs, or include_archived=true for both. Set include_summary=true for each config's description and access summary. Retrieve a config by ID for its full toolkit, tool, and tag policy. Experimental. Create and manage configs in Dashboard.",
         "tags": [
           "Tool Router"
         ],
@@ -3005,6 +3010,30 @@
             "description": "Return archived configs when true. Defaults to active configs only.",
             "name": "archived",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "List active and archived configs together when true. Cannot be combined with archived=true."
+            },
+            "required": false,
+            "description": "List active and archived configs together when true. Cannot be combined with archived=true.",
+            "name": "include_archived",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "boolean",
+              "nullable": true,
+              "default": false,
+              "description": "Add each config's description and access summary when true."
+            },
+            "required": false,
+            "description": "Add each config's description and access summary when true.",
+            "name": "include_summary",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3042,6 +3071,52 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "Last update time in ISO 8601."
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "Optional description of when the config should be used."
+                          },
+                          "toolkit_scope": {
+                            "type": "object",
+                            "properties": {
+                              "mode": {
+                                "type": "string",
+                                "enum": [
+                                  "all",
+                                  "selected",
+                                  "all_except"
+                                ],
+                                "description": "How the toolkit list defines the effective scope."
+                              },
+                              "toolkits": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Selected or excluded toolkit slugs for this scope."
+                              }
+                            },
+                            "required": [
+                              "mode",
+                              "toolkits"
+                            ],
+                            "description": "Compact toolkit scope for list rendering."
+                          },
+                          "default_access": {
+                            "type": "string",
+                            "enum": [
+                              "full",
+                              "read_only",
+                              "non_destructive",
+                              "custom"
+                            ],
+                            "description": "Default access level applied across the toolkit scope."
+                          },
+                          "exception_count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Number of toolkit-specific access overrides."
                           }
                         },
                         "required": [
@@ -3052,7 +3127,7 @@
                           "updated_at"
                         ]
                       },
-                      "description": "Config summaries. Retrieve a config by ID for its description and access policy."
+                      "description": "Configs, newest updated first. Set include_summary=true for descriptions and access summaries, or retrieve a config by ID for its full access policy."
                     },
                     "next_cursor": {
                       "type": "string",
@@ -4379,6 +4454,19 @@
                 "value": null
               }
             }
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Include the tools of the custom toolkits this user can use. Without it, only tools of custom toolkits with access \"all\" are listed.",
+              "example": "user_123"
+            },
+            "required": false,
+            "description": "Include the tools of the custom toolkits this user can use. Without it, only tools of custom toolkits with access \"all\" are listed.",
+            "name": "user_id",
+            "in": "query"
           },
           {
             "schema": {
@@ -5982,6 +6070,16 @@
               }
             }
           },
+          "410": {
+            "description": "Gone - The toolkit is retired and can no longer be proxied to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable entity - Invalid state of the connected account",
             "content": {
@@ -7013,7 +7111,7 @@
       },
       "patch": {
         "summary": "Update a custom toolkit",
-        "description": "Updates a custom toolkit's name, logo, or API key field text. Omitted fields keep their current value. To change mcp_url, auth_schemes, or user_id, delete and re-create the toolkit. On a project with 2FA enabled, updating a private toolkit requires the user_id it is private to.",
+        "description": "Updates a custom toolkit's name, logo, or API key field text. Omitted fields keep their current value. To change mcp_url, auth_schemes, or user_id, delete and re-create the toolkit. On a project with 2FA enabled, an API-key caller updating a private toolkit must pass the user_id it is private to.",
         "tags": [
           "Toolkits"
         ],
@@ -7105,7 +7203,7 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "description": "The user the toolkit is private to. Required to update a private toolkit when the project has 2FA enabled; optional for a toolkit shared with all users. Ignored when 2FA is disabled."
+                    "description": "The user the toolkit is private to. Required for API-key callers updating a private toolkit when the project has 2FA enabled; optional for a toolkit shared with all users. Ignored when 2FA is disabled."
                   }
                 },
                 "additionalProperties": false
@@ -7137,7 +7235,7 @@
             }
           },
           "400": {
-            "description": "Bad request - Invalid parameters, or user_id missing for a private toolkit on a project with 2FA enabled",
+            "description": "Bad request - Invalid parameters, or an API-key caller omitted user_id for a private toolkit on a project with 2FA enabled",
             "content": {
               "application/json": {
                 "schema": {
@@ -15699,11 +15797,11 @@
             "schema": {
               "type": "string",
               "format": "toolRouterSessionId",
-              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "description": "The unique identifier of the tool router session.",
               "example": "trs_LX9uJKBinWWr"
             },
             "required": false,
-            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "description": "Tool router session ID",
             "name": "session_id",
             "in": "path"
           }
@@ -16114,11 +16212,11 @@
             "schema": {
               "type": "string",
               "format": "toolRouterSessionId",
-              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "description": "The unique identifier of the tool router session.",
               "example": "trs_LX9uJKBinWWr"
             },
             "required": false,
-            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "description": "Tool router session ID",
             "name": "session_id",
             "in": "path"
           }
@@ -17745,6 +17843,11 @@
                           "type": "boolean",
                           "description": "Whether the auth config is managed by Composio"
                         },
+                        "managed_app_id": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "The Composio-managed app this auth config uses, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Null when the auth config is not linked to a managed app. Use is_composio_managed to tell managed from custom."
+                        },
                         "restrict_to_following_tools": {
                           "type": "array",
                           "items": {
@@ -17758,7 +17861,8 @@
                       "required": [
                         "id",
                         "auth_scheme",
-                        "is_composio_managed"
+                        "is_composio_managed",
+                        "managed_app_id"
                       ]
                     }
                   },
@@ -17782,6 +17886,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying auth configs",
             "content": {
               "application/json": {
                 "schema": {
@@ -18006,6 +18120,11 @@
                             "type": "boolean",
                             "description": "Whether this authentication configuration is managed by Composio or the user"
                           },
+                          "managed_app_id": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The Composio-managed app this auth config uses, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Null when the auth config is not linked to a managed app. Use is_composio_managed to tell managed from custom."
+                          },
                           "credentials": {
                             "type": "object",
                             "additionalProperties": {},
@@ -18158,6 +18277,7 @@
                           "type",
                           "toolkit",
                           "name",
+                          "managed_app_id",
                           "status",
                           "no_of_connections",
                           "tool_access_config"
@@ -18344,6 +18464,11 @@
                       "type": "boolean",
                       "description": "Whether this authentication configuration is managed by Composio or the user"
                     },
+                    "managed_app_id": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The Composio-managed app this auth config uses, as composio_managed_auth[].managed_app_id from GET /api/v3/toolkits/{toolkit_slug}. Null when the auth config is not linked to a managed app. Use is_composio_managed to tell managed from custom."
+                    },
                     "credentials": {
                       "type": "object",
                       "additionalProperties": {},
@@ -18488,6 +18613,11 @@
                     "is_enabled_for_tool_router": {
                       "type": "boolean",
                       "description": "Whether this auth config is enabled for tool router"
+                    },
+                    "keyring_routed": {
+                      "type": "boolean",
+                      "description": "[EXPERIMENTAL] Whether the auth config is bound to a keyring encryption key, customer-hosted or Composio-operated.",
+                      "x-experimental": true
                     }
                   },
                   "required": [
@@ -18496,9 +18626,11 @@
                     "type",
                     "toolkit",
                     "name",
+                    "managed_app_id",
                     "status",
                     "no_of_connections",
-                    "tool_access_config"
+                    "tool_access_config",
+                    "keyring_routed"
                   ]
                 }
               }
@@ -20096,6 +20228,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not found",
             "content": {
@@ -21654,6 +21796,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying connected accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Auth config not found",
             "content": {
@@ -22299,7 +22451,7 @@
             }
           },
           "403": {
-            "description": "Zero Data Retention requires a paid plan.",
+            "description": "Forbidden. The org API key's owner is not an org admin, or Zero Data Retention requires a paid plan.",
             "content": {
               "application/json": {
                 "schema": {
@@ -22986,7 +23138,7 @@
             }
           },
           "403": {
-            "description": "Forbidden. API key regeneration is not enabled for this organization.",
+            "description": "Forbidden. API key regeneration is not enabled for this organization, or the org API key's owner is not an org admin.",
             "content": {
               "application/json": {
                 "schema": {
@@ -23185,7 +23337,7 @@
       },
       "get": {
         "summary": "List webhook subscriptions",
-        "description": "Lists all webhook subscriptions for the authenticated project with pagination. Currently limited to one subscription per project.",
+        "description": "Lists all webhook subscriptions for the authenticated project with pagination. Currently limited to one subscription per project. Viewers get a 403.",
         "tags": [
           "Webhook Subscriptions"
         ],
@@ -23322,6 +23474,16 @@
               }
             }
           },
+          "403": {
+            "description": "Your role does not allow viewing webhook subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -23339,7 +23501,7 @@
     "/api/v3.1/webhook_subscriptions/{id}": {
       "get": {
         "summary": "Get webhook subscription",
-        "description": "Retrieves a webhook subscription by ID.",
+        "description": "Retrieves a webhook subscription by ID. Viewers get a 403.",
         "tags": [
           "Webhook Subscriptions"
         ],
@@ -23423,6 +23585,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Your role does not allow viewing webhook subscriptions",
             "content": {
               "application/json": {
                 "schema": {
@@ -25623,6 +25795,30 @@
                       "description": "Toolkit provenance: \"native\" for Composio-managed toolkits, \"custom\" for a project-registered custom (MCP) toolkit",
                       "example": "native"
                     },
+                    "toolkit_type": {
+                      "type": "string",
+                      "enum": [
+                        "api",
+                        "mcp"
+                      ],
+                      "description": "How the toolkit is implemented: \"api\" for an API integration, \"mcp\" for an MCP server",
+                      "example": "api"
+                    },
+                    "instant": {
+                      "type": "object",
+                      "properties": {
+                        "supported": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "supported"
+                      ],
+                      "description": "Present when the latest version of this toolkit supports Instant accounts. See the tools endpoint for support on individual tools."
+                    },
                     "enabled": {
                       "type": "boolean",
                       "description": "Indicates if this toolkit is currently enabled and available for use",
@@ -26004,6 +26200,10 @@
                             "description": "URL to a page where users can obtain or configure credentials for this authentication method",
                             "example": "https://github.com/settings/tokens"
                           },
+                          "is_connection_revoke_supported": {
+                            "type": "boolean",
+                            "description": "Whether a connection made with this authentication method can be revoked at the provider"
+                          },
                           "deprecated_auth_provider_details": {
                             "type": "object",
                             "properties": {
@@ -26022,7 +26222,8 @@
                           "mode",
                           "required_scopes",
                           "fields",
-                          "name"
+                          "name",
+                          "is_connection_revoke_supported"
                         ],
                         "description": "Detailed configuration for an authentication method"
                       },
@@ -26033,6 +26234,11 @@
                       "nullable": true,
                       "description": "URL to a guide page with authentication setup instructions for this toolkit",
                       "example": "https://composio.dev/auth/github"
+                    },
+                    "docs_url": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The provider's own documentation URL for this toolkit, or null when it has none"
                     },
                     "base_url": {
                       "type": "string",
@@ -26177,9 +26383,11 @@
                     "slug",
                     "name",
                     "type",
+                    "toolkit_type",
                     "enabled",
                     "composio_managed_auth",
                     "is_local_toolkit",
+                    "docs_url",
                     "meta",
                     "deprecated"
                   ],
@@ -30926,6 +31134,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden - Your role does not allow modifying connected accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "404": {
             "description": "MCP server or instance not found.",
             "content": {
@@ -31671,11 +31889,11 @@
             "schema": {
               "type": "string",
               "format": "toolRouterSessionId",
-              "description": "The unique identifier of the tool router session. Required for public API endpoints, optional for internal endpoints where it is injected by middleware.",
+              "description": "The unique identifier of the tool router session.",
               "example": "trs_LX9uJKBinWWr"
             },
             "required": false,
-            "description": "Tool router session ID (required for public API, optional for internal - injected by middleware)",
+            "description": "Tool router session ID",
             "name": "session_id",
             "in": "path"
           }

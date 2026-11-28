@@ -1,5 +1,18 @@
 # @composio/anthropic
 
+## 0.11.9
+
+### Patch Changes
+
+- 1b88005: Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.
+
+## 0.11.8
+
+### Patch Changes
+
+- 55d8924: Preserve the originating `tool_use_id` in Python Anthropic tool results and retain session execution status, log IDs, and returned Instant charges in provider execution results. Clarify the TypeScript Anthropic helpers' existing result projection and message correlation in their API documentation.
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+
 ## 0.11.7
 
 ### Patch Changes

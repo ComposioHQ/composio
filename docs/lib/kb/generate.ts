@@ -21,8 +21,8 @@ export interface GenerateKbContentOptions {
 
 const EXTERNAL_RESOURCES: Record<string, { title: string; href: string; description: string }> = {
   'docs-sessions': {
-    title: 'Configure Composio sessions',
-    href: '/docs/configuring-sessions',
+    title: 'Composio sessions',
+    href: '/docs/sessions',
     description: 'Create and configure Tool Router sessions.',
   },
   'docs-api-reference': {

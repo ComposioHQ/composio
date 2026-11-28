@@ -9,6 +9,7 @@ Documentation-site guidance for AI agents working under `docs/`.
 ## Read Next
 
 - Use the `docs-decisions` skill for docs content, changelogs, decisions, docs automation, or docs review.
+- Use `docs-page-rewrite` to restructure a page: `Use docs-page-rewrite to rewrite <page>`. It owns layout and progression; `good-docs-writing` owns prose style.
 - Context references live under `docs/agent-guidance/context/`; use `docs/agent-guidance/context/twoslash.md` before editing typed MDX examples.
 - Read `docs/agent-guidance/context/code-examples.md` before editing code examples.
 - Agent workflow prompts live under `docs/agent-guidance/agents/`.

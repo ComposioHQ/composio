@@ -1,7 +1,8 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem';
 import * as BunPath from '@effect/platform-bun/BunPath';
 import { describe, expect, layer } from '@effect/vitest';
-import { Effect, FileSystem, Layer, Option, Path } from 'effect';
+import { Clock, Effect, Fiber, FileSystem, Layer, Option, Path, PlatformError } from 'effect';
+import { TestClock } from 'effect/testing';
 import { AtomicReplaceError, atomicReplaceFile } from 'src/utils/atomic-replace';
 
 const TestPlatform = Layer.mergeAll(BunFileSystem.layer, BunPath.layer);
@@ -70,6 +71,93 @@ describe('atomic replace', () => {
           'composio.exe.old',
           'source',
         ]);
+      })
+    );
+
+    it.effect.each([
+      {
+        name: 'waits for a briefly busy executable before replacing it',
+        reason: 'Busy',
+        failures: 2,
+        attempts: 3,
+      },
+      {
+        name: 'fails after bounded retries when an executable stays busy',
+        reason: 'Busy',
+        failures: Infinity,
+        attempts: 11,
+      },
+      {
+        name: 'does not retry a permission failure when moving an executable',
+        reason: 'PermissionDenied',
+        failures: Infinity,
+        attempts: 1,
+      },
+    ] as const)('$name', scenario =>
+      Effect.gen(function* () {
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const directory = yield* fs.makeTempDirectoryScoped();
+        const sourcePath = path.join(directory, 'source');
+        const targetPath = path.join(directory, 'composio.exe');
+        const backupPath = `${targetPath}.old`;
+        yield* fs.writeFileString(sourcePath, 'new binary');
+        yield* fs.writeFileString(targetPath, 'old binary');
+        const lockedError = PlatformError.systemError({
+          _tag: scenario.reason,
+          module: 'FileSystem',
+          method: 'rename',
+          pathOrDescriptor: targetPath,
+        });
+        const attemptTimes: number[] = [];
+        const lockedFs = FileSystem.make({
+          ...fs,
+          rename: (from, to) =>
+            Effect.gen(function* () {
+              if (from === targetPath && to === backupPath) {
+                attemptTimes.push(yield* Clock.currentTimeMillis);
+                if (attemptTimes.length <= scenario.failures) {
+                  return yield* Effect.fail(lockedError);
+                }
+              }
+              return yield* fs.rename(from, to);
+            }),
+        });
+        const fiber = yield* Effect.scoped(
+          atomicReplaceFile({ sourcePath, targetPath, backupPath })
+        ).pipe(
+          Effect.provideService(FileSystem.FileSystem, lockedFs),
+          Effect.result,
+          Effect.forkChild
+        );
+        // Filesystem operations use the host event loop. Keep advancing the
+        // clock until they finish and the retry schedule has run.
+        const driveClock = TestClock.adjust('3 seconds').pipe(
+          Effect.andThen(TestClock.withLive(Effect.sleep('1 millis'))),
+          Effect.forever
+        );
+        const result = yield* Effect.raceFirst(Fiber.join(fiber), driveClock);
+
+        expect(attemptTimes).toHaveLength(scenario.attempts);
+        const firstAttempt = attemptTimes[0];
+        expect(attemptTimes.map(time => time - firstAttempt)).toEqual(
+          Array.from({ length: scenario.attempts }, (_, index) => index * 200)
+        );
+        if (scenario.failures === 2) {
+          expect(yield* fs.readFileString(targetPath)).toBe('new binary');
+          expect(yield* fs.readFileString(backupPath)).toBe('old binary');
+        } else {
+          const error = yield* Effect.flip(Effect.fromResult(result));
+          expect(error).toBeInstanceOf(AtomicReplaceError);
+          expect(error.cause).toBe(lockedError);
+          expect(yield* fs.readFileString(targetPath)).toBe('old binary');
+          expect(yield* fs.exists(backupPath)).toBe(false);
+        }
+        expect((yield* fs.readDirectory(directory)).sort()).toEqual(
+          scenario.failures === 2
+            ? ['composio.exe', 'composio.exe.old', 'source']
+            : ['composio.exe', 'source']
+        );
       })
     );
 

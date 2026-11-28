@@ -11,6 +11,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import semver from 'semver';
 import {
@@ -61,7 +62,10 @@ const installHealthCheck = readFileSync(
   new URL('../.github/workflows/cli.install-health-check.yml', import.meta.url),
   'utf8'
 );
-const cliDocsGuide = readFileSync(new URL('../docs/content/docs/cli.mdx', import.meta.url), 'utf8');
+const cliDocsGuide = readFileSync(
+  new URL('../docs/content/docs/cli/installation.mdx', import.meta.url),
+  'utf8'
+);
 const resolveTargetScriptUrl = new URL(
   '../.github/scripts/cli-release/resolve-release-target.sh',
   import.meta.url
@@ -732,6 +736,24 @@ if (!(
   );
 }
 
+const metadataStepIdx = buildCliWorkflow.indexOf(
+  'bash "$RELEASE_HELPERS_DIR/update-release-metadata.sh"'
+);
+if (metadataStepIdx === -1 || metadataStepIdx < publishIdx) {
+  throw new Error(
+    'build-cli-binaries.yml must update the release metadata branch via update-release-metadata.sh after publishing'
+  );
+}
+if (
+  !buildCliWorkflow.includes(
+    "if: needs.prepare.outputs.prerelease == 'false' && needs.prepare.outputs.make_latest == 'true'"
+  )
+) {
+  throw new Error(
+    'build-cli-binaries.yml must gate update-release-metadata.sh to stable latest releases only'
+  );
+}
+
 // The draft script must actually create a draft, and the verify gate must require fully-uploaded
 // assets (not merely present) — that distinction is what stops a release serving 404s.
 if (!createDraftScript.includes('--draft')) {
@@ -870,7 +892,7 @@ if (!verifyAssetsScript.includes('select(.state == "uploaded")')) {
       !deletions[0].includes('composio-windows-x64.zip')
     ) {
       throw new Error(
-        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions}`
+        `a resumed draft must drop only the assets this run does not ship: ${resumed.stderr}${deletions.join('\n')}`
       );
     }
   } finally {
@@ -1087,7 +1109,7 @@ if (installHealthCheck.includes('rm -rf "$HOME/.composio"')) {
 // --- uninstall file lists: the hand-maintained copies must stay in sync ---
 
 // The uninstall file list mirrors the release bundle layout and is duplicated in INSTALL.md,
-// docs/content/docs/cli.mdx, and cli.install-health-check.yml. Drift between them ships
+// docs/content/docs/cli/installation.mdx, and cli.install-health-check.yml. Drift between them ships
 // uninstall guidance (or a health-check reset) that leaves release artifacts behind.
 function readUninstallEntries(source, command, label) {
   const block = requireMatch(
@@ -1106,7 +1128,7 @@ function readUninstallEntries(source, command, label) {
 
 const uninstallGuides = [
   { label: 'INSTALL.md', source: installGuide },
-  { label: 'docs/content/docs/cli.mdx', source: cliDocsGuide },
+  { label: 'docs/content/docs/cli/installation.mdx', source: cliDocsGuide },
   { label: 'cli.install-health-check.yml', source: installHealthCheck },
 ].map(({ label, source }) => ({
   label,
@@ -1215,7 +1237,7 @@ esac
     JSON.stringify(['run build:packages', 'run check:provider-compatibility', 'changeset publish'])
   ) {
     throw new Error(
-      `release script must run build → provider compatibility → publish: ${commands}`
+      `release script must run build → provider compatibility → publish: ${commands.join('\n')}`
     );
   }
 
@@ -1842,6 +1864,10 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
       RUN_NUMBER: '1',
       COMMIT_SHA: 'abc123',
     },
+    releasesFixture: [
+      { tagName: '@composio/cli@0.2.33', isPrerelease: false },
+      { tagName: '@composio/cli@0.3.0-beta.5', isPrerelease: true },
+    ],
     curlFixture: { prerelease: true, target_commitish: 'abc123' },
     // ghViewIsDraft unset ⇒ `gh release view` exits non-zero ⇒ no existing release to refuse.
   });
@@ -1853,6 +1879,9 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   }
   if (r.outputs.prerelease !== 'false' || r.outputs.make_latest !== 'true') {
     throw new Error('promote-stable must emit prerelease=false and make_latest=true');
+  }
+  if (r.outputs.previous_stable_tag !== '@composio/cli@0.2.33') {
+    throw new Error('promote-stable must start release notes at the previous published stable tag');
   }
   if ('checkout_ref' in r.outputs) {
     throw new Error('promote-stable must not emit an input-derived checkout ref');
@@ -1876,6 +1905,84 @@ function runResolver({ env, releasesFixture, curlFixture, ghViewIsDraft }) {
   });
   if (r.status === 0 || !r.stderr.includes('but its release targets')) {
     throw new Error('promote-stable must reject a beta tag/release commit mismatch');
+  }
+}
+
+// Hermetic test of update-release-metadata.sh against a local bare git remote.
+{
+  const metadataScriptPath = fileURLToPath(
+    new URL('../.github/scripts/cli-release/update-release-metadata.sh', import.meta.url)
+  );
+  const fixtureDir = mkdtempSync(join(tmpdir(), 'composio-release-metadata-'));
+  try {
+    const bareRemote = join(fixtureDir, 'remote.git');
+    const initResult = spawnSync('git', ['init', '--bare', '-q', bareRemote], { encoding: 'utf8' });
+    if (initResult.status !== 0) {
+      throw new Error(`git init --bare failed: ${initResult.stderr}`);
+    }
+
+    const runMetadataUpdate = (releaseTag: string) =>
+      spawnSync('bash', [metadataScriptPath], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          RELEASE_TAG: releaseTag,
+          METADATA_REMOTE_URL: bareRemote,
+          METADATA_BRANCH: 'cli-release-metadata',
+        },
+      });
+
+    const readRemoteLatest = () => {
+      const res = spawnSync(
+        'git',
+        ['--git-dir', bareRemote, 'show', 'cli-release-metadata:latest.txt'],
+        { encoding: 'utf8' }
+      );
+      if (res.status !== 0) {
+        throw new Error(`failed to read cli-release-metadata:latest.txt: ${res.stderr}`);
+      }
+      return res.stdout;
+    };
+
+    const countRemoteCommits = () => {
+      const res = spawnSync(
+        'git',
+        ['--git-dir', bareRemote, 'rev-list', '--count', 'cli-release-metadata'],
+        { encoding: 'utf8' }
+      );
+      if (res.status !== 0) {
+        throw new Error(`failed to count cli-release-metadata commits: ${res.stderr}`);
+      }
+      return Number(res.stdout.trim());
+    };
+
+    const first = runMetadataUpdate('@composio/cli@0.6.4');
+    if (first.status !== 0) {
+      throw new Error(`first metadata update failed:\n${first.stderr}`);
+    }
+    if (readRemoteLatest() !== '@composio/cli@0.6.4\n' || countRemoteCommits() !== 1) {
+      throw new Error('first metadata update must create orphan branch with latest.txt');
+    }
+
+    const idempotent = runMetadataUpdate('@composio/cli@0.6.4');
+    if (idempotent.status !== 0 || countRemoteCommits() !== 1) {
+      throw new Error('re-running metadata update with the same tag must be idempotent');
+    }
+
+    const second = runMetadataUpdate('@composio/cli@0.6.5');
+    if (second.status !== 0) {
+      throw new Error(`second metadata update failed:\n${second.stderr}`);
+    }
+    if (readRemoteLatest() !== '@composio/cli@0.6.5\n' || countRemoteCommits() !== 2) {
+      throw new Error('second metadata update must advance cli-release-metadata/latest.txt');
+    }
+
+    const betaRejected = runMetadataUpdate('@composio/cli@0.6.6-beta.1');
+    if (betaRejected.status === 0 || readRemoteLatest() !== '@composio/cli@0.6.5\n') {
+      throw new Error('update-release-metadata.sh must reject beta tags');
+    }
+  } finally {
+    rmSync(fixtureDir, { recursive: true, force: true });
   }
 }
 

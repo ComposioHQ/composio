@@ -4,6 +4,7 @@ import { platform } from '#platform';
 import ComposioClient from '@composio/client';
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from './constants';
 import logger from './logger';
+import { describeThrown } from './userCallback';
 import { getRandomShortId } from './uuid';
 import { base64ToUint8Array, uint8ArrayToBase64 } from './buffer';
 import type { FileDownloadData, FileUploadData } from '../types/files.types';
@@ -166,7 +167,7 @@ const readFileContent = async (
       mimeType: getMimeTypeFromFileName(filePath),
     };
   } catch (error) {
-    throw new Error(`Error reading file at ${filePath}: ${error}`);
+    throw new Error(`Error reading file at ${filePath}: ${describeThrown(error)}`);
   }
 };
 
@@ -472,7 +473,7 @@ export const saveFile = (
       } catch (err) {
         logger.warn(
           `fileDownloadDir "${absDir}" is not writable, falling back to the default ` +
-            `(~/.composio/files). Error: ${err}`
+            `(~/.composio/files). Error: ${describeThrown(err)}`
         );
         composioFilesDir = getComposioTempFilesDir(true);
       }
@@ -495,7 +496,7 @@ export const saveFile = (
 
     return filePath;
   } catch (_error) {
-    logger.debug(`Error saving file: ${_error}`);
+    logger.debug(`Error saving file: ${describeThrown(_error)}`);
     return null;
   }
 };

@@ -30,13 +30,13 @@ Instant support is per tool. [Check each tool's support, rate, and input schema]
 
 First, [enable Instant and check your organization's balance](/docs/instant-tools#enable-instant). Then replace affected toolkit references, tool names, arguments, and response handling in your application.
 
-For example, replace `composio_search` with `exa` in your Session's toolkit filter, choose the replacement search action, and update any tool restrictions. Keep the other toolkits your agent needs. Use the existing [Session and agent examples](/docs/instant-tools#report-charges-and-use-instant-tools) for your framework.
+For example, replace `composio_search` with `exa` in your Session's toolkit filter, choose the replacement search action, and update any tool restrictions. Keep the other toolkits your agent needs. Use the existing [Session and agent examples](/docs/instant-tools#give-your-agent-an-instant-tool) for your framework.
 
 If your Session already permits eligible Instant tools, keep that policy. If it disables Instant, restricts it to other tools, or selects a provider account explicitly, follow [Control Instant usage](/docs/instant-tools#control-instant-usage) and [Know which account runs the tool](/docs/instant-tools#know-which-account-runs-the-tool).
 
 Update or recreate existing Sessions that reference retired toolkits, and update saved configurations for future Sessions. Enabling Instant doesn't rewrite these references.
 
-Keeping retired toolkit references in your Session configuration doesn't block Session creation, but retired tools remain unavailable. Remove any retired tools listed in [`preload.tools`](/docs/configuring-sessions#preloading-tools).
+Keeping retired toolkit references in your Session configuration doesn't block Session creation, but retired tools remain unavailable. Remove any retired tools listed in [`preload.tools`](/docs/sessions/loading-tools#preloading-tools).
 
 ## If you call tools directly
 

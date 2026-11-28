@@ -1,5 +1,78 @@
 # @composio/core
 
+## 0.32.0
+
+### Minor Changes
+
+- 4c53cf0: Session hooks accept a `webhook` handler. `composio.sessions.create()` and `session.update()` take `handler: { type: 'webhook', fallbackAction, timeoutMs }` (TypeScript) or `{"type": "webhook", "fallback_action": ..., "timeout_ms": ...}` (Python) on a `before_execute` or `after_execute` hook. Composio sends each call the hook applies to, before or after it runs, to the project's session webhook URL and waits for your endpoint to let it run, block it, or change it; read the request there with `composio.sessions.webhooks.parse()`. `fallbackAction` is what happens when the endpoint can't answer. A hook result with `status: 'unavailable'` now carries `detail`, the reason the hook could not be evaluated. The event `composio.sessions.webhooks.parse()` returns types the optional `metadata.tool_call_id`, which pairs a call's `before_execute` event with its `after_execute`.
+- 94192e7: Read session webhook events with `composio.sessions.webhooks.parse()`. A session hook with a `webhook` handler sends each tool or proxy call it applies to, before or after it runs, to the project's session webhook URL and waits for the endpoint's answer. `parse({ body, headers, verifySecret })` (TypeScript) / `parse(body=..., headers=..., verify_secret=...)` (Python) verifies the signature with the project's session webhook secret, which is required, and returns the typed event with the field names of the webhook reference. `SessionWebhookBeforeExecuteResponse` and `SessionWebhookAfterExecuteResponse` type the answer.
+
+  Proxy webhook events and request overrides support file uploads through `binary_body`.
+
+### Patch Changes
+
+- 2916f70: Limit trigger webhook request bodies to 10 MiB by default in `triggers.parse()`. Set `maxBodyBytes` to customize the limit or to check an already-buffered payload in `triggers.verifyWebhook()`.
+- ae91cc3: Correct the code examples in the TypeScript SDK reference, which also ships in the package under `dist/docs`. Each class's Usage block now shows its real accessor, such as `composio.webhooks.endpoints` instead of the nonexistent `composio.webhookEndpoints`, and runnable examples are checked against the SDK. Examples now import what they use, declare their own inputs, call methods that exist with their current parameters (for example `composio.mcp` instead of `composio.experimental.mcp`, `AuthScheme.APIKey`, and the `id` and `timestamp` fields of `triggers.verifyWebhook`), and split alternatives into separate examples.
+
+  The Quick Start passes a toolkit version when it executes a tool.
+
+- 1b88005: Format structured error details in SDK diagnostics and fall back when a trigger payload contains a malformed identifier.
+- Updated dependencies [1b88005]
+  - @composio/json-schema-to-zod@0.4.2
+
+## 0.31.0
+
+### Minor Changes
+
+- 7a1e7db: Choose which Composio-managed app an auth config uses. `composio.toolkits.get(slug)` returns `composioManagedAuth` in TypeScript, one entry per managed app with `managedAppId` and `isDefault`. Pass that id as `managedAppId` (TypeScript) or `managed_app_id` (Python) to `composio.authConfigs.create` / `composio.auth_configs.create`; omit it for the toolkit's default app. Auth config create, get and list responses return `managedAppId` in TypeScript (`null` when the auth config isn't on a managed app).
+
+### Patch Changes
+
+- dbcecde: Update the API client dependencies to 2.1.36 to include the latest API changes.
+
+## 0.30.0
+
+### Minor Changes
+
+- 6f8a704: Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.
+- 84fb5ba: Surface the server's error details on every API failure, not only the default `tools.execute` path.
+
+  **TypeScript:** `apiErrorCode` is now on `ComposioError`, derived from the `APIError` cause like `statusCode` and `requestId`, so every SDK wrapper gets it. The 429 branch, the 1803 connected-account branch, tool-fetch failures, and session/Tool Router execution now use the server's message, `suggested_fix`, status, and numeric code. Failures that never reached the API keep their original reason in the message. `ComposioConnectedAccountNotFoundError` keeps its 404 default but uses the server's status when it wraps an API error. Server-controlled error text is stripped of control characters and ANSI/OSC escapes before it reaches a message or terminal output.
+
+  **Python:** status errors raised by the SDK now expose `api_error_code`, `suggested_fix`, and `possible_fixes`, and `api_error_details(error)` gives type checkers a typed view of them. `possible_fixes` uses the server's `suggested_fix` when present and otherwise returns guidance for the HTTP status, so 401, 402, 403, 410, and 5xx no longer suggest checking the tool slug and arguments. Server-controlled text is sanitized before it reaches a message. The message already carries the server's explanation; a regression test now locks that. A tool-fetch 400/404 mapped to `ToolNotFoundError` now appends the server's message.
+
+- be92189: Surface the API's error details when `tools.execute` fails. `ComposioError` now declares `statusCode` and `requestId`, read from the `@composio/client` `APIError` it wraps unless passed explicitly, and `ComposioToolExecutionError` adds `apiErrorCode`, the numeric `error.code` the API sent. `code` stays the SDK's `TS-SDK::` code. Branch on `error.statusCode` (for example `410`) instead of matching message text.
+
+  **Behavior change:** a rejected execution's message now ends with the server's message, and its `possibleFixes` come from the server's `suggested_fix`.
+
+  ```ts
+  // before
+  error.message; // 'Error executing the tool GITHUB_GET_REPOS'
+  error.possibleFixes; // ['Ensure the tool slug is correct and the input arguments for the tool is valid']
+
+  // now
+  error.message; // 'Error executing the tool GITHUB_GET_REPOS: <the API error message>'
+  error.possibleFixes; // ['<the API suggested_fix>']
+  ```
+
+  Without a `suggested_fix`, the fix depends on the HTTP status: a 401, 402, 403, 410 or 5xx no longer suggests checking the tool slug and arguments. A response that is not the API error envelope keeps the old message. `ComposioConnectedAccountNotFoundError` (API code 1803) now keeps the client error as `cause`, and errors that wrap an `APIError` cause, such as `ComposioToolFetchError`, now carry its `statusCode` and `requestId`. `ComposioAPIServerErrorBody` is now the client's `APIErrorBody`, where `request_id` and `suggested_fix` are optional, as the API sends them.
+
+### Patch Changes
+
+- 41c4666: Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.
+- 19a7a09: Update the API client dependencies to 2.1.33 to include the latest API changes.
+- 24dfd33: Let `composio.files.upload()` and `composio.files.download()` be cancelled. Both now accept trailing request options (`{ signal }`), like the other SDK methods that do HTTP I/O. The signal reaches the presigned-URL request and the S3 transfer, and an aborted call rejects with `ComposioRequestCancelledError` instead of running to completion. Calls cancelled by `AbortSignal.timeout()` or by `abort(reason)` during a direct S3 transfer now also reject with `ComposioRequestCancelledError` rather than the signal's raw reason.
+- 23360bb: Stop connection polling at the deadline after a rate-limited response. When a `429` with `Retry-After` reaches the timeout, `waitForConnection()` and `wait_for_connection()` now time out instead of sending another status request with a fresh client retry cycle.
+- 4ee12da: Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+- 6aa3f31: Tolerate malformed tool schemas instead of failing a whole toolkit's tool list. `getRawComposioTools` and the raw list path previously ran every tool's parameters through the strict schema validator with `parse`, so one tool whose schema used a valid-but-unusual JSON Schema shape — a boolean schema node (`items: true`, still emitted by MCP toolkits), a draft-04 boolean `exclusiveMinimum`/`exclusiveMaximum`, or a bare combinator root with no `type: "object"` — threw a `ZodError` and returned no tools at all for that toolkit (8 of 1562 toolkits ship such tools). Those shapes are now rewritten into the strict subset, preserving their meaning (`true` becomes `{}`, `false` becomes `{ not: {} }` — coercing it to `{}` would invert the schema). If a schema still cannot be repaired, the tool is skipped with a warning when its _input_ schema failed — providers build their call schema from it, so a tool without one is not callable — and returned without the _output_ schema when only that side failed. Identity-field failures stay loud.
+- b2b9d38: Match the `toolkits` filter of `triggers.subscribe()` for toolkits whose slug contains an underscore
+
+  The toolkit of an incoming event is derived from the first `_` segment of its trigger slug, so `ONE_DRIVE_FILE_CREATED_TRIGGER` was attributed to `ONE` and `subscribe(fn, { toolkits: ['one_drive'] })` dropped every OneDrive event. The same happened to `launch_darkly` and `agent_mail`. A `toolkits` entry now also matches when the trigger slug starts with `<toolkit>_`.
+
+- Updated dependencies [d5c1861]
+  - @composio/json-schema-to-zod@0.4.1
+
 ## 0.29.0
 
 ### Minor Changes

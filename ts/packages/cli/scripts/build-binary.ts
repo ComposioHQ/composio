@@ -1,86 +1,34 @@
+import path from 'node:path';
 import process from 'node:process';
-import { Config, ConfigProvider, Console, Effect, Stream, Logger, Layer, References } from 'effect';
-import { ChildProcess as Command } from 'effect/process';
+import { parseArgs } from 'node:util';
+import { Config, ConfigProvider, Effect, Logger, Layer, References } from 'effect';
 import * as BunServices from '@effect/platform-bun/BunServices';
 import * as BunRuntime from '@effect/platform-bun/BunRuntime';
-import { buildCompanionModules, posthogBakeArgs, teardown } from './_shared';
-import { BinaryBuildError } from './build-error';
-import { buildCliReleaseVersionDefineArgs } from '../src/utils/cli-release-version';
+import { buildCompanionModules, compileExecutable, teardown } from './_shared';
 
 /**
- * Usage: `bun scripts/build-binary.ts`
+ * Build the CLI executable for the host, with its companion modules next to it.
+ *
+ * Usage: `bun scripts/build-binary.ts [--outdir <dir>]`
+ *
+ * Writes `<dir>/composio` and the companion modules into `<dir>` (default `./dist`).
+ * The e2e Docker images build through this script, so they test the release flags.
  */
-export function buildBinary() {
+const parseOutdir = (): string =>
+  parseArgs({ options: { outdir: { type: 'string', default: './dist' } } }).values.outdir;
+
+export function buildBinary(outdir = parseOutdir()) {
   return Effect.gen(function* () {
-    const cwd = process.cwd();
-    yield* Effect.logDebug(`Building binary in ${cwd}`);
+    yield* Effect.logDebug(`Building binary in ${process.cwd()} into ${outdir}`);
 
-    const args = [
-      'bun',
-      /**
-       * Transpile and bundle the CLI app.
-       */
-      'build',
-      './src/bin.ts',
-
-      /**
-       * Statically inline any environment variable that matches `DEBUG_OVERRIDE_*`.
-       */
-      '--env',
-      'DEBUG_OVERRIDE_*',
-      ...posthogBakeArgs(),
-
-      ...buildCliReleaseVersionDefineArgs(process.env.RELEASE_TAG),
-
-      /**
-       * Generate a standalone Bun executable containing your bundled code.
-       */
-      '--compile',
-      '--production',
-
-      /**
-       * Output file destination.
-       */
-      '--outfile',
-      './dist/composio',
-    ] as const satisfies ReadonlyArray<string>;
-
-    yield* Effect.logDebug('Running build command with', args.join(' '), '');
-
-    const child = yield* Command.make(args[0], args.slice(1));
-
-    const { exitCode } = yield* Effect.all(
-      {
-        exitCode: child.exitCode,
-        output: Stream.merge(
-          Stream.decodeText(child.stdout, { encoding: 'utf-8' }),
-          Stream.decodeText(child.stderr, { encoding: 'utf-8' }),
-          { haltStrategy: 'left' }
-        ).pipe(
-          Stream.tap(chunk => Console.log(chunk)),
-          Stream.runDrain
-        ),
-      },
-      {
-        concurrency: 'unbounded',
-      }
-    );
-
-    process.exitCode = exitCode;
-
-    if (exitCode !== 0) {
-      return yield* new BinaryBuildError({
-        message: 'Failed to build binary',
-        exitCode,
-      });
-    }
+    yield* compileExecutable(path.join(outdir, 'composio'));
 
     yield* Effect.logDebug('', 'Binary built successfully');
 
     // Build companion modules that `composio run` imports in the child process.
     // These cannot live inside the compiled binary because they run in a separate
     // Bun process via the --preload globals file.
-    yield* buildCompanionModules('./dist');
+    yield* buildCompanionModules(outdir);
 
     yield* Effect.logDebug('', 'Companion modules built successfully');
   });

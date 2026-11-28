@@ -1,15 +1,10 @@
 ---
 title: Custom MCP
 description: Use tools from a remote MCP server in Composio sessions
-keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, end user mcp, private toolkit, experimental, dcr, cimd, discovery, revocation]
-experimental: true
+keywords: [custom mcp, bring your own mcp, remote mcp, custom toolkits, end user mcp, private toolkit, dcr, cimd, discovery, revocation]
 ---
 
 Custom MCP lets you add your own remote MCP server to Composio and use its tools in sessions, next to Composio's toolkits. A Custom MCP toolkit is either shared with every user in your project or private to one user, so your users can add their own MCP servers too.
-
-<Callout type="warn">
-Custom MCP is experimental. The APIs may change.
-</Callout>
 
 This is different from [Local Tools and Toolkits](/docs/extending-sessions/local-tools-and-toolkits), which run inside your app. A Custom MCP server runs on its own public HTTPS URL.
 
@@ -21,7 +16,7 @@ This is different from [Local Tools and Toolkits](/docs/extending-sessions/local
 4. Composio **syncs** the tools automatically.
 5. **Use** the toolkit in a session.
 
-Use the SDK (`composio.experimental.custom_toolkits` in Python, `composio.experimental.customToolkits` in TypeScript) or the API. See the API reference for [create](/reference/api-reference/toolkits/postCustomToolkits), [update](/reference/api-reference/toolkits/patchCustomToolkitsBySlug), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). `upsert()` is deprecated; use `create()` and `update()`. See [Move from upsert](#move-from-upsert).
+Use the SDK (`composio.custom_toolkits` in Python, `composio.customToolkits` in TypeScript) or the API. See the API reference for [create](/reference/api-reference/toolkits/postCustomToolkits), [update](/reference/api-reference/toolkits/patchCustomToolkitsBySlug), [sync](/reference/api-reference/toolkits/postCustomToolkitsSync), and [delete](/reference/api-reference/toolkits/deleteCustomToolkitsBySlug). `upsert()` is deprecated; use `create()` and `update()`. See [Move from upsert](#move-from-upsert).
 
 ## Create a toolkit
 
@@ -30,7 +25,7 @@ Pass your MCP server's URL as `mcp_url`, how to authenticate, and `user_id`. Use
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.create(
+result = composio.custom_toolkits.create(
     name="Acme",
     mcp_url="https://mcp.acme.com/mcp",
     auth_schemes=[{"mode": "NO_AUTH"}],
@@ -45,7 +40,7 @@ print(result.slug)  # CUSTOM_ACME
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.create({
+const result = await composio.customToolkits.create({
   name: 'Acme',
   mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [{ mode: 'NO_AUTH' }],
@@ -98,7 +93,7 @@ Set `user_id` to a user's ID to make the toolkit private: only that user's sessi
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.create(
+result = composio.custom_toolkits.create(
     name="Acme",
     mcp_url="https://mcp.acme.com/mcp",
     auth_schemes=[
@@ -121,7 +116,7 @@ if result.connect_link is not None:
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.create({
+const result = await composio.customToolkits.create({
   name: 'Acme',
   mcpUrl: 'https://mcp.acme.com/mcp',
   authSchemes: [
@@ -194,7 +189,7 @@ Sync again only if that first sync fails or the server's tools change. Pass an a
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.sync(
+result = composio.custom_toolkits.sync(
     "CUSTOM_ACME",
     connected_account_id="ca_custom_acme",
 )
@@ -207,7 +202,7 @@ print(result.version, result.synced_count)
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.sync('CUSTOM_ACME', {
+const result = await composio.customToolkits.sync('CUSTOM_ACME', {
   connectedAccountId: 'ca_custom_acme',
 });
 
@@ -233,7 +228,7 @@ Update changes `name`, `logo_file`, or the API key field's label (`api_key_field
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.update("CUSTOM_ACME", name="Acme (prod)")
+result = composio.custom_toolkits.update("CUSTOM_ACME", name="Acme (prod)")
 
 print(result.success)  # True
 ```
@@ -243,7 +238,7 @@ print(result.success)  # True
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.update('CUSTOM_ACME', {
+const result = await composio.customToolkits.update('CUSTOM_ACME', {
   name: 'Acme (prod)',
 });
 
@@ -267,7 +262,7 @@ Delete removes the toolkit and its tools, auth configs, and connected accounts.
 <Tabs groupId="language" items={['Python', 'TypeScript', 'API']} persist>
 <Tab value="Python">
 ```python
-result = composio.experimental.custom_toolkits.delete("CUSTOM_ACME")
+result = composio.custom_toolkits.delete("CUSTOM_ACME")
 
 print(result.deleted, result.revoke_job_ids)
 ```
@@ -277,7 +272,7 @@ print(result.deleted, result.revoke_job_ids)
 import { Composio } from '@composio/core';
 const composio = new Composio();
 // ---cut---
-const result = await composio.experimental.customToolkits.delete('CUSTOM_ACME');
+const result = await composio.customToolkits.delete('CUSTOM_ACME');
 
 console.log(result.deleted, result.revokeJobIds);
 ```
@@ -414,6 +409,6 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 <Cards>
 <Card title="Using sessions via MCP" href="/docs/sessions-via-mcp" description="Connect an MCP client to a Composio-hosted session" />
 <Card title="Local Tools and Toolkits" href="/docs/extending-sessions/local-tools-and-toolkits" description="Run your own tools inside your application process" />
-<Card title="Configuring Sessions" href="/docs/configuring-sessions" description="Configure toolkit and tool filtering" />
+<Card title="Restrict tool access" href="/docs/sessions/tool-access" description="Choose allowed toolkits, filter tools and tags, and require approval" />
 <Card title="Managing Multiple Connected Accounts" href="/docs/authentication/managing-multiple-connected-accounts" description="Select a connected account explicitly" />
 </Cards>

@@ -23,7 +23,13 @@ import {
   head,
   releaseFiles,
 } from './sdk-release-controller-fixture';
-import { resolvePath, runOnTestClock, runRelease, type Fetch } from './sdk-release-harness';
+import {
+  fetchInputUrl,
+  resolvePath,
+  runOnTestClock,
+  runRelease,
+  type Fetch,
+} from './sdk-release-harness';
 
 const NPM = 'https://registry.npmjs.org';
 const MINUTE = 60_000;
@@ -119,7 +125,7 @@ function npmRegistry(
     (now: () => number): Fetch =>
     async input => {
       clock = now;
-      const url = String(input);
+      const url = fetchInputUrl(input);
       const respond = (data: unknown) => new Response(JSON.stringify(data));
       const notFound = new Response('{}', { status: 404 });
       const scanned = (version: string) =>

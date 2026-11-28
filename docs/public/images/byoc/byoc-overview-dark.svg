@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="672" viewBox="0 0 640 672" role="img" aria-labelledby="title description">
+  <title id="title">What runs in your cloud account and what crosses its boundary</title>
+  <desc id="description">Your application calls a private endpoint in your cloud account. The API, runtime, and workers, operated by Composio, look up encrypted credentials stored in the same account. A release pipeline in the account updates those services. Three connections cross the account boundary: authenticated HTTPS requests to provider APIs, background jobs to Temporal Cloud, and releases and status exchanged with Composio.</desc>
+  <style>
+    svg { color: #fbfbfb; }
+    text { fill: currentColor; font-family: Arial, Helvetica, sans-serif; }
+    .label { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 15px; letter-spacing: 1px; }
+    .flow { fill: none; stroke: currentColor; stroke-width: 2; stroke-opacity: 0.75; }
+    .box { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-opacity: 0.4; }
+    .sub { font-size: 15px; opacity: 0.7; }
+    .note { font-size: 16px; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#0f0f0f"/>
+
+  <!-- Your application, outside the account -->
+  <rect class="box" x="64" y="20" width="236" height="60" rx="8"/>
+  <text x="182" y="58" text-anchor="middle" font-size="22">Your application</text>
+  <path class="flow" d="M152 80V206" marker-end="url(#arrow)"/>
+  <path class="flow" d="M212 208V82" marker-end="url(#arrow)"/>
+  <text x="138" y="118" text-anchor="end" class="note">Tool call</text>
+  <text x="226" y="118" class="note">Result</text>
+
+  <!-- The account boundary -->
+  <rect class="box" x="24" y="140" width="592" height="292" rx="12" stroke-dasharray="6 5"/>
+  <text x="592" y="176" text-anchor="end" class="label" opacity="0.7">YOUR CLOUD ACCOUNT</text>
+
+  <rect class="box" x="64" y="208" width="236" height="60" rx="8"/>
+  <text x="182" y="245" text-anchor="middle" font-size="21">Private endpoint</text>
+
+  <rect class="box" x="372" y="208" width="204" height="60" rx="8"/>
+  <text x="474" y="234" text-anchor="middle" font-size="18">Encrypted credentials</text>
+  <text x="474" y="256" text-anchor="middle" font-size="18">and data</text>
+
+  <path class="flow" d="M152 268V318" marker-end="url(#arrow)"/>
+  <path class="flow" d="M212 320V270" marker-end="url(#arrow)"/>
+  <path class="flow" d="M388 270V318" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="402" y="300" class="note">Lookup</text>
+
+  <rect x="64" y="320" width="340" height="76" rx="8" fill="currentColor" fill-opacity="0.035" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.6"/>
+  <text x="234" y="352" text-anchor="middle" font-size="21">API, runtime, and workers</text>
+  <text x="234" y="378" text-anchor="middle" class="sub">Operated by Composio</text>
+
+  <rect class="box" x="436" y="320" width="140" height="76" rx="8"/>
+  <text x="506" y="352" text-anchor="middle" font-size="20">Release</text>
+  <text x="506" y="376" text-anchor="middle" font-size="20">pipeline</text>
+  <path class="flow" d="M436 358H406" marker-end="url(#arrow)"/>
+
+  <!-- What crosses the boundary -->
+  <path class="flow" d="M88 396V570" marker-end="url(#arrow)"/>
+  <path class="flow" d="M140 572V398" marker-end="url(#arrow)"/>
+  <text x="154" y="480" class="note">HTTPS request</text>
+  <text x="154" y="502" class="note">with credential</text>
+
+  <path class="flow" d="M300 396V570" marker-end="url(#arrow)"/>
+  <text x="314" y="480" class="note">Background jobs</text>
+
+  <path class="flow" d="M506 398V570" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="520" y="480" class="note">Releases in</text>
+  <text x="520" y="502" class="note">Status out</text>
+
+  <rect class="box" x="24" y="572" width="184" height="80" rx="8"/>
+  <text x="116" y="606" text-anchor="middle" font-size="21">Provider APIs</text>
+  <text x="116" y="632" text-anchor="middle" class="sub">GitHub, Slack, others</text>
+
+  <rect class="box" x="228" y="572" width="184" height="80" rx="8"/>
+  <text x="320" y="606" text-anchor="middle" font-size="21">Temporal Cloud</text>
+  <text x="320" y="632" text-anchor="middle" class="sub">Triggers and keep-alive</text>
+
+  <rect class="box" x="432" y="572" width="184" height="80" rx="8"/>
+  <text x="524" y="606" text-anchor="middle" font-size="21">Composio</text>
+  <text x="524" y="632" text-anchor="middle" class="sub">Release registry</text>
+</svg>

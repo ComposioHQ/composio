@@ -43,16 +43,16 @@ A beta goes through the same release PR, approval, gate and tag as a stable rele
 
 ## Review and approve
 
-The release PR description lists each package's old and new version, the changesets it consumes or leaves for later, and links to the changelogs and regenerated references. It names the requester, who may not approve.
+The release PR description lists each package's old and new version, the changesets it consumes or leaves for later, and links to the changelogs and regenerated references. It names the requester, who may approve only with repository admin permission.
 
-1. Wait for the `SDK candidate (<language>)` and `SDK candidate smoke (<language>)` checks. The first builds the exact files that will be published. The second installs them in a clean project like a user would; for Python it also tests the new core with the latest published providers. A stable release also runs `SDK candidate docs`: it installs the docs against the candidate packages through a job-local registry, then runs the docs lint, type, snippet and build checks, so a guide that breaks against the new SDK blocks the release. The ordinary docs checks skip release PRs.
-2. A repository writer who did not request the release approves the head.
+1. Wait for the `SDK candidate (<language>)` and `SDK candidate smoke (<language>)` checks. The first builds the exact files that will be published. The second installs them in a clean project like a user would; for Python it also tests the new core with the latest published providers. A stable release also runs `SDK candidate docs`: it installs the docs against the candidate packages through a job-local registry, then runs the docs lint, type, snippet and build checks, so a guide that breaks against the new SDK blocks the release. Every release, stable or beta, also runs `SDK candidate reference`: it compiles the TypeScript SDK reference that ships in the `@composio/core` tarball under `dist/docs` against that candidate and checks the packed pages match the repository; a release without a core candidate passes it without work. The ordinary docs checks skip release PRs.
+2. A repository writer other than the PR author approves the head. If you requested the release, you may approve it only while you have repository `admin` permission. The gate checks your current permission through GitHub when tagging or re-gating; `write` and `maintain` permission do not qualify for this exception. Any writer's outstanding change request still blocks the release.
 
 Do not push to the release branch. The tag step accepts only the bot's commit, so a pushed commit (including **Update branch**) makes the merge fail the gate. To change the notes, fix the changesets on `next`, close the release PR, and request a new release.
 
 ## Merge and publish
 
-A person merges the approved, green release PR under normal `next` protection. On merge, the `tag` job checks that the head is the bot's commit, the approval, and the candidate checks (plus `SDK candidate docs` for a stable release), then tags the head `sdk-release/<id>`. If the gate refuses the release it creates no tag and comments on the PR; [Recover a failed release](#recover-a-failed-release) says what to do next. Closing the release PR without merging abandons the release.
+A person merges the approved, green release PR under normal `next` protection. On merge, the `tag` job checks that the head is the bot's commit, the approval, and the candidate checks (plus `SDK candidate reference`, and `SDK candidate docs` for a stable release), then tags the head `sdk-release/<id>`. If the gate refuses the release it creates no tag and comments on the PR; [Recover a failed release](#recover-a-failed-release) says what to do next. Closing the release PR without merging abandons the release.
 
 The tag run then:
 
@@ -76,7 +76,7 @@ Pick the row that matches what happened.
 | The candidate artifacts expired (30 days after the candidate build)                 | Revert the release PR on `next`, then request the release again.                    |
 | The tag exists but publishing failed                                                | Open the tag run and choose **Re-run failed jobs**.                                 |
 
-A re-run of the tag job runs the gate as `next` had it before the merge, so it repeats a gate bug. `regate` runs the gate as `next` has it now. It finds the release from the plan `next` carries and its release PR from the branch name, so it cannot be pointed at another PR or commit, and it applies exactly the same checks: the bot's head, an independent approval of that head, and green candidate checks. It tags the reviewed head if the release passes, does nothing if that tag already exists, and shares a concurrency group with the tag job. The new tag starts publishing as usual, and the request issue reopens.
+A re-run of the tag job runs the gate as `next` had it before the merge, so it repeats a gate bug. `regate` runs the gate as `next` has it now. It finds the release from the plan `next` carries and its release PR from the branch name, so it cannot be pointed at another PR or commit, and it applies exactly the same checks: the bot's head, an eligible approval of that head, and green candidate checks. It tags the reviewed head if the release passes, does nothing if that tag already exists, and shares a concurrency group with the tag job. The new tag starts publishing as usual, and the request issue reopens.
 
 A re-run of the tag run publishes the same pinned files, skips files already published, and uploads the rest. This works while the candidate artifacts exist, 30 days from the candidate build. If a registry already serves different bytes, add changesets for the affected packages on `next` and request a new release. It plans from the versions in `next`, so the unpublished versions are skipped and the packages move to the next version.
 
@@ -134,6 +134,48 @@ Put prose types such as `Array<Tool>` in code spans because summaries become MDX
 - The release PR commits the SDK reference docs, generated from the released source, and the docs changelog entry. `Docs - SDK reference drift` regenerates both references on every PR to `next` that changes SDK sources or the generators, so the release PR only changes version strings in them. Changelog snippets are not type-checked, because they may describe APIs released after the docs pins.
 - `SDK candidate docs` checks every guide snippet against the release's candidate packages before approval. The docs pin PR then moves the docs to the released npm versions.
 - `docs.sdk-change-sync.yml` keeps updating guides for SDK source changes; it no longer touches the version pins.
+
+### Stable SDK reference promotion
+
+The post-publication docs PR carries the npm pins and the reference snapshots for
+stable core packages that passed their registry verification jobs. Each language can
+advance independently. The tag checkout supplies the reference pages; a fresh
+`next` checkout supplies the previous snapshot. Retries leave newer snapshots and
+corrections to the same package version in place.
+
+Production uses the Git-tracked snapshots under `docs/sdk-reference-snapshots/`
+for both HTML and Markdown. A snapshot stores exactly what production serves: each
+page carries a banner naming the package version with the exact install command,
+its `PackageInstall` widgets already name that version, and its source links already
+point at the manifest's `sourceCommit`. Pinning happens once, when the snapshot is
+promoted, so the file a reviewer reads is the file users get. Line numbers in
+snapshot pages must therefore match that commit.
+Preview builds use the workspace reference. After this workflow
+lands, require the **Stable SDK reference** check on `next` so the docs PR must pass
+its installed-package checks and production-mode build before it merges.
+
+Promotion never moves backwards. A release may advance the version, and it may also
+replace its own first promotion of the same version while that promotion is still
+revision 1 — that is how a bad release-tool render is repaired without hand edits.
+Once anyone corrects a snapshot, the revision moves past 1 and the release job
+stands down: it reports `not ahead of <version> revision <n>` instead of overwriting
+the correction.
+
+To correct the current reference between SDK releases, edit the affected snapshot's
+pages and run `bun docs/scripts/sdk-reference-snapshot.ts revise <language>` from the
+repository root. The command refuses a page that is not frozen — a missing version
+banner, an unpinned install command, or a source link back to `next` — then records
+the new digest against a bumped revision. CI verifies the new digest against the
+current snapshot revision
+and checks the pages against the same registry package. Also correct any affected
+source example and regenerate the workspace reference so the next release carries
+the fix. For immediate rollback, redeploy the previous successful Vercel
+deployment and promote a corrected revision through a reviewed PR.
+
+The initial snapshots were generated from the release source at
+`sdk-release/44799501018` with the checked generators and corrected examples.
+They cover `@composio/core@0.31.0` and `composio==0.34.0`.
+
 
 ## Owner setup
 

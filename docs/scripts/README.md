@@ -2,8 +2,8 @@
 
 ## fetch-with-retry.ts
 
-Shared `fetchWithRetry` helper used by the data-generation scripts
-(`generate-toolkits.ts`, `generate-meta-tools.ts`). It wraps the global `fetch`
+Shared `fetchWithRetry` helper used by the toolkit generator and parity checker.
+It wraps the global `fetch`
 with rate-limit-aware retry/backoff: it retries `429` and transient 5xx
 responses, honors the `Retry-After` header when present, otherwise falls back to
 exponential backoff with jitter, and caps attempts so CI still fails fast when
@@ -12,8 +12,15 @@ the backend is genuinely down.
 This matters because `generate-toolkits.ts` issues ~6500 requests per run
 (a few catalog pages + 3 per toolkit across a ~2.1k catalog), which can exceed
 the backend request limit.
-Before this helper, runs failed with `429`, and `generate-meta-tools.ts` — which
-runs immediately after — inherited the exhausted rate-limit window.
+
+## Meta-tools reference
+
+`bun run generate:meta-tools` renders the reference from
+`public/data/meta-tools.json`. Set `COMPOSIO_META_TOOLS_SCHEMA_URL` to the
+production Platform HTTPS export to update the snapshot before rendering. The
+export must return the same JSON array format as the snapshot. Docs - Update Data
+reads the URL from the repository variable of the same name. With the variable
+unset, reference pages use the checked-in schema version.
 
 ## Toolkit versions
 
@@ -101,9 +108,4 @@ warnings too. See `docs/decisions/kb-freshness-verification.md` for what is
 checked and why placeholders, bare URLs, and 5xx responses are excluded.
 
 A guide that deliberately cites a removed identifier declares it in
-`verifyIgnoreToolSlugs` in `kb/manifest.json`.
-
-`--check-source-pin` resolves `manifest.source.commit` against the upstream KB
-repository. It needs `GH_TOKEN`/`GITHUB_TOKEN` with read access there; without
-it the check reports "unverifiable" and emits nothing, so a narrow token
-degrades quietly instead of reporting false provenance breakage.
+`verifyIgnoreToolSlugs` in its `kb/guides/<slug>.json`.

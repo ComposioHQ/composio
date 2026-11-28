@@ -1,5 +1,17 @@
 # @composio/json-schema-to-zod
 
+## 0.4.2
+
+### Patch Changes
+
+- 1b88005: Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.
+
+## 0.4.1
+
+### Patch Changes
+
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+
 ## 0.4.0
 
 ### Minor Changes

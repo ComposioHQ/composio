@@ -20,7 +20,7 @@ describe('MCP.generate managed auth deprecation', () => {
       logLevel: 'warn',
       transport: createFetchTransport({
         fetch: async input =>
-          String(input).includes('/generate')
+          (input instanceof Request ? input.url : input.toString()).includes('/generate')
             ? json({ mcp_url: 'https://mcp.test', connected_account_urls: [], user_ids_url: ['u'] })
             : json({ id: 'mcp_123', name: 'server', allowed_tools: [], auth_config_ids: [] }),
       }),

@@ -12,6 +12,10 @@ import { mkdir, writeFile, rm, readdir, readFile } from 'fs/promises';
 import { join, dirname, resolve } from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { z } from 'zod';
+import { Effect } from 'effect';
+import ts from 'typescript6';
+import { renderAuthoredExample } from '../../../../scripts/docs-reference-check/pages';
 
 // Paths (relative to ts/packages/core)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -129,38 +133,6 @@ export function runTypeDocCommand(
   );
 }
 
-// Discover classes to document from TypeDoc output
-function discoverClassesToDocument(project: TypeDocProject): string[] {
-  const classes: string[] = [];
-
-  // Always include Composio first
-  classes.push('Composio');
-
-  if (!project.children) return classes;
-
-  for (const child of project.children) {
-    // Direct class
-    if (child.kind === TYPEDOC_KIND.Class && !INTERNAL_CLASSES.has(child.name)) {
-      if (!classes.includes(child.name)) {
-        classes.push(child.name);
-      }
-    }
-
-    // Class inside a module
-    if (child.kind === TYPEDOC_KIND.Module && child.children) {
-      for (const nested of child.children) {
-        if (nested.kind === TYPEDOC_KIND.Class && !INTERNAL_CLASSES.has(nested.name)) {
-          if (!classes.includes(nested.name)) {
-            classes.push(nested.name);
-          }
-        }
-      }
-    }
-  }
-
-  return classes;
-}
-
 // TypeDoc kind numbers (v2.0 schema)
 const TYPEDOC_KIND = {
   Module: 2,
@@ -171,27 +143,205 @@ const TYPEDOC_KIND = {
   Accessor: 262144,
 } as const;
 
-// Helper to find a class by name, searching through modules
-function findClass(project: TypeDocProject, className: string): TypeDocReflection | undefined {
-  if (!project.children) return undefined;
+// The subset of TypeDoc's JSON that the Usage walk reads. Parsing it at load
+// time turns a TypeDoc schema change into an error that names the field,
+// instead of a Usage block that silently disappears.
+const typeDocCommentSchema = z.object({
+  blockTags: z.array(z.object({ tag: z.string() })).optional(),
+});
 
-  for (const child of project.children) {
-    // Check if this child is the class we're looking for
-    if (child.name === className && child.kind === TYPEDOC_KIND.Class) {
-      return child;
-    }
+const typeDocMemberTypeSchema = z.object({
+  type: z.string(),
+  // A number for reflections in this project; an object for external symbols.
+  target: z.unknown().optional(),
+  refersToTypeParameter: z.boolean().optional(),
+});
 
-    // If it's a module, search inside it
-    if (child.kind === TYPEDOC_KIND.Module && child.children) {
-      for (const nested of child.children) {
-        if (nested.name === className && nested.kind === TYPEDOC_KIND.Class) {
-          return nested;
+const typeDocGraphNodeSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  kind: z.number(),
+  flags: z
+    .object({
+      isPrivate: z.boolean().optional(),
+      isProtected: z.boolean().optional(),
+      isStatic: z.boolean().optional(),
+    })
+    .optional(),
+  comment: typeDocCommentSchema.optional(),
+  sources: z
+    .array(z.object({ fileName: z.string(), line: z.number(), character: z.number() }))
+    .optional(),
+  type: typeDocMemberTypeSchema.optional(),
+  getSignature: z
+    .object({
+      comment: typeDocCommentSchema.optional(),
+      type: typeDocMemberTypeSchema.optional(),
+    })
+    .optional(),
+  get children() {
+    return z.array(typeDocGraphNodeSchema).optional();
+  },
+});
+
+type TypeDocGraphNode = z.infer<typeof typeDocGraphNodeSchema>;
+
+export function parseTypeDocGraph(json: unknown): TypeDocGraphNode {
+  const result = typeDocGraphNodeSchema.safeParse(json);
+  if (!result.success) {
+    throw new Error(
+      `TypeDoc output does not have the shape the Usage walk reads:\n${z.prettifyError(result.error)}`
+    );
+  }
+  return result.data;
+}
+
+/** How a documented class is reached from a `Composio` instance. */
+export interface AccessPath {
+  path: string[];
+  deprecated: boolean;
+}
+
+interface RankedAccessPath extends AccessPath {
+  sourceMembers: TypeDocGraphNode[];
+}
+
+function compareDeclaration(left: TypeDocGraphNode, right: TypeDocGraphNode): number {
+  const a = left.sources?.[0];
+  const b = right.sources?.[0];
+  if (a && b) {
+    const position =
+      a.fileName.localeCompare(b.fileName) || a.line - b.line || a.character - b.character;
+    if (position !== 0) return position;
+  }
+  // TypeDoc allocates reflection IDs before sorting its children for presentation.
+  return left.id - right.id;
+}
+
+function isDeprecatedComment(comment: TypeDocGraphNode['comment']): boolean {
+  return comment?.blockTags?.some(tag => tag.tag === '@deprecated') ?? false;
+}
+
+/** The reflection fields that identify a class and nest it in a module. */
+interface TypeDocCatalogNode<N> {
+  id: number;
+  name: string;
+  kind: number;
+  children?: N[];
+}
+
+/**
+ * Every class in a TypeDoc project, declared at the top level or one module
+ * deep, in project order. This is the only walk that enumerates classes, so
+ * documentation order, name lookup, ID lookup, and access paths agree on
+ * which classes exist.
+ */
+export class TypeDocClassCatalog<N extends TypeDocCatalogNode<N>> {
+  readonly classes: readonly N[];
+  private readonly ids = new Map<number, N>();
+
+  constructor(project: { children?: N[] }) {
+    const classes: N[] = [];
+    for (const child of project.children ?? []) {
+      if (child.kind === TYPEDOC_KIND.Class) classes.push(child);
+      if (child.kind === TYPEDOC_KIND.Module) {
+        for (const nested of child.children ?? []) {
+          if (nested.kind === TYPEDOC_KIND.Class) classes.push(nested);
         }
       }
     }
+    this.classes = classes;
+    for (const node of classes) this.ids.set(node.id, node);
   }
 
-  return undefined;
+  /** The first class with this name in project order. */
+  byName(name: string): N | undefined {
+    return this.classes.find(node => node.name === name);
+  }
+
+  byId(id: number): N | undefined {
+    return this.ids.get(id);
+  }
+
+  /**
+   * Names of the classes that get a reference page: `Composio` first, then
+   * every non-internal class in project order, each name once.
+   */
+  documentedNames(): string[] {
+    const names = ['Composio'];
+    for (const node of this.classes) {
+      if (!INTERNAL_CLASSES.has(node.name) && !names.includes(node.name)) names.push(node.name);
+    }
+    return names;
+  }
+
+  /**
+   * Maps each documented class to the property path that reaches it from a
+   * `Composio` instance. Classes reached only through return values (sessions,
+   * remote files) or through internal classes get no entry.
+   */
+  accessPaths(this: TypeDocClassCatalog<TypeDocGraphNode>): Map<string, AccessPath> {
+    const root = this.byName('Composio');
+    if (!root) throw new Error('TypeDoc output has no Composio class');
+
+    const best = new Map<string, RankedAccessPath>();
+
+    const visit = (node: TypeDocGraphNode, from: RankedAccessPath, onPath: Set<number>): void => {
+      for (const member of node.children ?? []) {
+        const targetId = referencedClassId(member);
+        const target = targetId === undefined ? undefined : this.byId(targetId);
+        if (!target || INTERNAL_CLASSES.has(target.name) || onPath.has(target.id)) continue;
+
+        const memberDeprecated =
+          isDeprecatedComment(member.comment) || isDeprecatedComment(member.getSignature?.comment);
+        const candidate: RankedAccessPath = {
+          path: [...from.path, member.name],
+          deprecated: from.deprecated || memberDeprecated,
+          sourceMembers: [...from.sourceMembers, member],
+        };
+        const current = best.get(target.name);
+        if (!current || isBetterPath(candidate, current)) best.set(target.name, candidate);
+
+        visit(target, candidate, new Set([...onPath, target.id]));
+      }
+    };
+
+    visit(root, { path: [], deprecated: false, sourceMembers: [] }, new Set([root.id]));
+
+    return new Map(
+      [...best.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, { path, deprecated }]) => [name, { path, deprecated }])
+    );
+  }
+}
+
+function referencedClassId(member: TypeDocGraphNode): number | undefined {
+  if (member.flags?.isPrivate || member.flags?.isProtected || member.flags?.isStatic) {
+    return undefined;
+  }
+  const type =
+    member.kind === TYPEDOC_KIND.Property
+      ? member.type
+      : member.kind === TYPEDOC_KIND.Accessor
+        ? member.getSignature?.type
+        : undefined;
+  if (type?.type !== 'reference' || type.refersToTypeParameter) return undefined;
+  return typeof type.target === 'number' ? type.target : undefined;
+}
+
+// Ranks candidate paths: non-deprecated first, then shortest, then the
+// earliest member at the first position where the paths differ.
+function isBetterPath(candidate: RankedAccessPath, current: RankedAccessPath): boolean {
+  if (candidate.deprecated !== current.deprecated) return !candidate.deprecated;
+  if (candidate.path.length !== current.path.length) {
+    return candidate.path.length < current.path.length;
+  }
+  for (let i = 0; i < candidate.sourceMembers.length; i++) {
+    const order = compareDeclaration(candidate.sourceMembers[i], current.sourceMembers[i]);
+    if (order !== 0) return order < 0;
+  }
+  return false;
 }
 
 interface TypeDocReflection {
@@ -850,7 +1000,17 @@ function extractClass(reflection: TypeDocReflection): ClassDoc {
   return classDoc;
 }
 
-function generateMethodMdx(method: MethodDoc): string {
+// Fence options are a contract between JSDoc, this generator and the
+// reference checker: only the generator writes `signature`, and authored
+// options such as `nocheck="<reason>"` pass through unchanged.
+const SIGNATURE_FENCE = '```typescript signature';
+function renderExample(example: string, owner: string): string {
+  const rendered = Effect.runSync(Effect.result(renderAuthoredExample(example, owner)));
+  if (rendered._tag === 'Failure') throw new Error(rendered.failure.message);
+  return rendered.success;
+}
+
+function generateMethodMdx(method: MethodDoc, className: string): string {
   const lines: string[] = [];
 
   // Method header. Flag deprecated methods in the heading so they read clearly
@@ -893,7 +1053,7 @@ function generateMethodMdx(method: MethodDoc): string {
       .join(', ');
     const asyncPrefix = method.isAsync ? 'async ' : '';
     const returnType = simplifyTypeForSignature(sig.returnType);
-    lines.push('```typescript');
+    lines.push(SIGNATURE_FENCE);
     lines.push(`${asyncPrefix}${method.name}(${params}): ${returnType}`);
     lines.push('```');
     lines.push('');
@@ -947,22 +1107,7 @@ function generateMethodMdx(method: MethodDoc): string {
     lines.push('**Example**');
     lines.push('');
     for (const example of method.examples) {
-      // Clean up the example - remove surrounding ```typescript blocks if present
-      let cleanExample = example.trim();
-      if (cleanExample.startsWith('```typescript')) {
-        cleanExample = cleanExample.slice('```typescript'.length);
-      }
-      if (cleanExample.startsWith('```ts')) {
-        cleanExample = cleanExample.slice('```ts'.length);
-      }
-      if (cleanExample.endsWith('```')) {
-        cleanExample = cleanExample.slice(0, -3);
-      }
-      cleanExample = cleanExample.trim();
-
-      lines.push('```typescript');
-      lines.push(cleanExample);
-      lines.push('```');
+      lines.push(renderExample(example, `${className}.${method.name}`));
       lines.push('');
     }
   }
@@ -973,7 +1118,47 @@ function generateMethodMdx(method: MethodDoc): string {
   return lines.join('\n');
 }
 
-export function generateClassMdx(classDoc: ClassDoc): string {
+// The Usage section binds the class instance through its real accessor path
+// and calls nothing on it, so it stays valid for every class.
+function generateUsageMdx(access: AccessPath): string[] {
+  const isIdentifier = (name: string) =>
+    /^[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u.test(name);
+  const accessor =
+    'composio' +
+    access.path
+      .map(name => (isIdentifier(name) ? `.${name}` : `[${JSON.stringify(name)}]`))
+      .join('');
+  const last = access.path[access.path.length - 1];
+  const token = ts
+    .createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, last)
+    .scan();
+  const conflicts = ['Composio', 'composio', 'eval', 'arguments'];
+  const binding =
+    isIdentifier(last) && token === ts.SyntaxKind.Identifier && !conflicts.includes(last)
+      ? last
+      : 'instance';
+  const delimiter = '`'.repeat(
+    Math.max(0, ...[...accessor.matchAll(/`+/g)].map(run => run[0].length)) + 1
+  );
+  const inlineAccessor = `${delimiter}${accessor}${delimiter}`;
+  const lines = ['## Usage', ''];
+  if (access.deprecated) {
+    lines.push(`The ${inlineAccessor} property is deprecated.`);
+    lines.push('');
+  }
+  lines.push(`Access this class through the ${inlineAccessor} property:`);
+  lines.push('');
+  lines.push('```typescript');
+  lines.push(`import { Composio } from '@composio/core';`);
+  lines.push('');
+  lines.push(`const composio = new Composio({ apiKey: 'your-api-key' });`);
+  lines.push(`const ${binding} = ${accessor};`);
+  lines.push('```');
+  lines.push('');
+  return lines;
+}
+
+export function generateClassMdx(classDoc: ClassDoc, access?: AccessPath): string {
   const lines: string[] = [];
 
   // Build full description for frontmatter (first sentence + additional context)
@@ -1003,27 +1188,9 @@ export function generateClassMdx(classDoc: ClassDoc): string {
   if (classDoc.constructor && USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
     lines.push('## Constructor');
     lines.push('');
-    lines.push(generateMethodMdx(classDoc.constructor));
-  } else if (!USER_INSTANTIATED_CLASSES.has(classDoc.name) && !(classDoc.name in SLUG_OVERRIDES)) {
-    // Skip the `composio.<accessor>` Usage block for session-object classes —
-    // they are not accessed as a `composio` sub-client property; the class
-    // description explains how to obtain them (via `composio.sessions`).
-    lines.push('## Usage');
-    lines.push('');
-
-    // Handle acronyms (e.g., "MCP" -> "mcp") vs PascalCase (e.g., "AuthConfigs" -> "authConfigs")
-    const accessorName =
-      classDoc.name === classDoc.name.toUpperCase()
-        ? classDoc.name.toLowerCase()
-        : classDoc.name.charAt(0).toLowerCase() + classDoc.name.slice(1);
-    lines.push(`Access this class through the \`composio.${accessorName}\` property:`);
-    lines.push('');
-    lines.push('```typescript');
-    lines.push(`const composio = new Composio({ apiKey: 'your-api-key' });`);
-    const usageCall = classDoc.name === 'Toolkits' ? 'get({})' : 'list()';
-    lines.push(`const result = await composio.${accessorName}.${usageCall};`);
-    lines.push('```');
-    lines.push('');
+    lines.push(generateMethodMdx(classDoc.constructor, classDoc.name));
+  } else if (access && !USER_INSTANTIATED_CLASSES.has(classDoc.name)) {
+    lines.push(...generateUsageMdx(access));
   }
 
   // Properties (if any public ones exist)
@@ -1059,7 +1226,7 @@ export function generateClassMdx(classDoc: ClassDoc): string {
     lines.push('## Methods');
     lines.push('');
     for (const method of classDoc.methods) {
-      lines.push(generateMethodMdx(method));
+      lines.push(generateMethodMdx(method, classDoc.name));
     }
   }
 
@@ -1216,7 +1383,7 @@ export function simplifyTypeForSignature(type: string): string {
   return cleaned;
 }
 
-async function runTypeDoc(): Promise<TypeDocProject> {
+async function runTypeDoc(): Promise<unknown> {
   console.log('Running TypeDoc...');
 
   // Auto-discover entry points from models directory
@@ -1233,7 +1400,7 @@ async function runTypeDoc(): Promise<TypeDocProject> {
   }
 
   const jsonContent = await readFile(TEMP_JSON, 'utf-8');
-  return JSON.parse(jsonContent) as TypeDocProject;
+  return JSON.parse(jsonContent);
 }
 
 async function main() {
@@ -1250,14 +1417,18 @@ async function main() {
   await mkdir(OUTPUT_DIR, { recursive: true });
 
   // Run TypeDoc
-  const project = await runTypeDoc();
+  const typeDocJson = await runTypeDoc();
+  const accessPaths = new TypeDocClassCatalog(parseTypeDocGraph(typeDocJson)).accessPaths();
+  // Class extraction reads many more TypeDoc fields than the Usage walk; it
+  // still relies on the TypeDoc schema the interfaces above describe.
+  const project = typeDocJson as TypeDocProject;
 
   if (!project.children) {
     throw new Error('No classes found in TypeDoc output');
   }
 
-  // Auto-discover classes to document (excludes internal classes)
-  const classesToDocument = discoverClassesToDocument(project);
+  const catalog = new TypeDocClassCatalog(project);
+  const classesToDocument = catalog.documentedNames();
   console.log(
     `  Found ${classesToDocument.length} classes to document: ${classesToDocument.join(', ')}`
   );
@@ -1266,7 +1437,7 @@ async function main() {
   const documented: { name: string; description: string }[] = [];
 
   for (const className of classesToDocument) {
-    const reflection = findClass(project, className);
+    const reflection = catalog.byName(className);
 
     if (!reflection) {
       console.warn(`  Warning: ${className} not found in TypeDoc output`);
@@ -1276,7 +1447,7 @@ async function main() {
     console.log(`  Processing ${className}...`);
 
     const classDoc = extractClass(reflection);
-    const mdx = generateClassMdx(classDoc);
+    const mdx = generateClassMdx(classDoc, accessPaths.get(className));
     const fileName = slugFor(className) + '.mdx';
     const filePath = join(OUTPUT_DIR, fileName);
 
@@ -1325,9 +1496,10 @@ const tools = await composio.tools.get('user-123', {
 });
 
 // Execute a tool
-const result = await composio.tools.execute('GITHUB_GET_REPOS', {
+const result = await composio.tools.execute('GITHUB_LIST_STARGAZERS', {
   userId: 'user-123',
-  arguments: { owner: 'composio' }
+  arguments: { owner: 'ComposioHQ', repo: 'composio' },
+  version: '20250909_00'
 });
 \`\`\`
 `;

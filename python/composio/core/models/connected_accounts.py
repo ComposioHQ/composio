@@ -524,11 +524,13 @@ class ConnectedAccounts:
         :return: The completed ``connected_account_id`` and its ``toolkit_slug``.
 
         Example:
-            result = composio.connected_accounts.complete_auth(
-                user_id="user_123",
-                session_uri=session_uri,  # from the verifier redirect
-            )
-            print(result.connected_account_id)
+            def complete_connection(user_id: str, session_uri: str) -> str:
+                # Pass the session URI received in the verifier redirect.
+                result = composio.connected_accounts.complete_auth(
+                    user_id=user_id,
+                    session_uri=session_uri,
+                )
+                return result.connected_account_id
         """
         return self._client.connected_accounts.complete_auth(
             user_id=user_id, session_uri=session_uri

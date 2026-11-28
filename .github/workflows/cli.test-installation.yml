@@ -601,6 +601,7 @@ jobs:
         env:
           VERSION_INPUT: ${{ inputs.version || github.ref_name }}
           COMPOSIO_CLI_TELEMETRY_DISABLED: '1'
+          COMPOSIO_GITHUB_API_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:VERSION_INPUT -and $env:VERSION_INPUT -ne 'latest') {
@@ -608,6 +609,7 @@ jobs:
           }
           # The documented flow: pipe the script into Invoke-Expression.
           Get-Content -Raw ./install.ps1 | Invoke-Expression
+          Remove-Item Env:COMPOSIO_GITHUB_API_TOKEN
           $expectedVersion = (Get-Content -LiteralPath "$HOME/.composio/release-tag.txt" -Raw).Trim() -replace '^@composio/cli@', ''
           $actualVersion = (& composio --version | Out-String).Trim()
           if ($LASTEXITCODE -ne 0 -or $actualVersion -ne $expectedVersion) {

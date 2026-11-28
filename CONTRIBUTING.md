@@ -225,6 +225,13 @@ Fix a finding by parsing or narrowing input, handling the failure, or keeping th
 
 Existing findings are recorded in [`.ast-grep/baseline.json`](.ast-grep/baseline.json) by rule, path, full matched source lines, and occurrence count. The baseline records adoption debt, not approved patterns. A new source, a changed source, a moved file, or another identical occurrence fails the check. Line-number changes alone do not. After fixing an existing finding, run `pnpm lint:antislop:prune` and include the reduced baseline in your change. Pruning refuses to add allowances. Do not regenerate or expand the baseline to pass CI.
 
+CLI source also enables two local Oxlint rules from [`tools/oxlint/effect`](tools/oxlint/effect/UPSTREAM.md), adapted from MIT-licensed anti-slop rules:
+
+- `composio-effect/require-cause-when-narrowing` rejects broad Effect recovery or error-mapping callbacks that ignore their error and construct a replacement. Keep the original as `cause`, or capture it before replacing it. Tag-specific recovery is excluded. This syntax check does not prove that every error is preserved: callbacks that read their error, object spreads, and preceding error taps are left to review.
+- `composio-effect/no-ordie-in-service-construction` rejects `Effect.orDie`/`orDieWith` in inline service construction and `Layer.orDie`. Keep expected failures in the typed error channel with the package's tagged errors. Operations returned by a service are outside the construction check; it does not follow imported or separately defined helper effects.
+
+Both rules run through `pnpm lint:antislop` and its CI job. Tests, fixtures, and generated files are excluded. Run `pnpm test:effect-rules` for their fixtures and config-enforcement test, and `pnpm typecheck:effect-rules` to typecheck the plugin. A justified exception needs a nearby invariant comment and a rule-specific `oxlint-disable-next-line` directive.
+
 ## Documentation Changes
 
 Update docs when a change affects public behavior, install flows, examples, environment variables, release steps, or provider usage.
@@ -331,7 +338,7 @@ bun run lint:links
 
 ## Release Process
 
-Any active ComposioHQ member can request a stable or beta SDK release through the SDK release issue form. Repository writers can also run **SDK release** on `next`. A repository writer who did not request the release approves the final release PR, a person merges it, and automation publishes the candidates the PR built and checked. See the shared runbook below. CLI binaries and the 1.0 prerelease train on `main` keep their separate workflows.
+Any active ComposioHQ member can request a stable or beta SDK release through the SDK release issue form. Repository writers can also run **SDK release** on `next`. A repository writer other than the PR author approves the final release PR, a person merges it, and automation publishes the candidates the PR built and checked. The requester may approve only with repository `admin` permission, checked at release time. See the shared runbook below. CLI binaries and the 1.0 prerelease train on `main` keep their separate workflows.
 
 - TypeScript packages and the CLI: [`ts/docs/internal/release.md`](ts/docs/internal/release.md)
 - Python packages: [`python/docs/release.md`](python/docs/release.md)

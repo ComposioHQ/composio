@@ -4,7 +4,7 @@ End-to-end tests for the compiled `composio` CLI binary.
 
 ## How It Works
 
-Each test suite runs the `composio` binary inside a scratch Debian Docker container built from `Dockerfile.cli`. The binary is compiled via `bun build --compile` during the Docker image build, producing a self-contained executable with no runtime dependencies.
+Each test suite runs the `composio` binary inside a scratch Debian Docker container built from `Dockerfile.cli`. The binary is compiled during the Docker image build by `ts/packages/cli/scripts/build-binary.ts`, the same flags the release build uses, producing a self-contained executable with no runtime dependencies.
 
 Tests use `runCmd` to execute shell commands in the container and assert on exit code, stdout, and stderr. When stdout is piped (e.g., `composio version > out.txt`), the CLI suppresses all decoration and writes only machine-readable data — these tests verify that contract.
 

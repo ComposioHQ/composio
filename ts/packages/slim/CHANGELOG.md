@@ -1,5 +1,39 @@
 # @composio/slim
 
+## 0.32.0
+
+### Minor Changes
+
+- 4c53cf0: Session hooks accept a `webhook` handler. `composio.sessions.create()` and `session.update()` take `handler: { type: 'webhook', fallbackAction, timeoutMs }` (TypeScript) or `{"type": "webhook", "fallback_action": ..., "timeout_ms": ...}` (Python) on a `before_execute` or `after_execute` hook. Composio sends each call the hook applies to, before or after it runs, to the project's session webhook URL and waits for your endpoint to let it run, block it, or change it; read the request there with `composio.sessions.webhooks.parse()`. `fallbackAction` is what happens when the endpoint can't answer. A hook result with `status: 'unavailable'` now carries `detail`, the reason the hook could not be evaluated. The event `composio.sessions.webhooks.parse()` returns types the optional `metadata.tool_call_id`, which pairs a call's `before_execute` event with its `after_execute`.
+- 94192e7: Read session webhook events with `composio.sessions.webhooks.parse()`. A session hook with a `webhook` handler sends each tool or proxy call it applies to, before or after it runs, to the project's session webhook URL and waits for the endpoint's answer. `parse({ body, headers, verifySecret })` (TypeScript) / `parse(body=..., headers=..., verify_secret=...)` (Python) verifies the signature with the project's session webhook secret, which is required, and returns the typed event with the field names of the webhook reference. `SessionWebhookBeforeExecuteResponse` and `SessionWebhookAfterExecuteResponse` type the answer.
+
+  Proxy webhook events and request overrides support file uploads through `binary_body`.
+
+### Patch Changes
+
+- Updated dependencies [1b88005]
+  - @composio/json-schema-to-zod@0.4.2
+
+## 0.31.0
+
+### Minor Changes
+
+- 7a1e7db: Choose which Composio-managed app an auth config uses. `composio.toolkits.get(slug)` returns `composioManagedAuth` in TypeScript, one entry per managed app with `managedAppId` and `isDefault`. Pass that id as `managedAppId` (TypeScript) or `managed_app_id` (Python) to `composio.authConfigs.create` / `composio.auth_configs.create`; omit it for the toolkit's default app. Auth config create, get and list responses return `managedAppId` in TypeScript (`null` when the auth config isn't on a managed app).
+
+## 0.30.0
+
+### Minor Changes
+
+- 6f8a704: Custom toolkits are no longer experimental. Use `composio.customToolkits` in TypeScript and `composio.custom_toolkits` in Python. `composio.experimental.customToolkits` and `composio.experimental.custom_toolkits` are deprecated aliases of the same object and keep working. Python also exports the class as `CustomToolkits`; `ExperimentalCustomToolkits` stays as an alias.
+
+### Patch Changes
+
+- 41c4666: Allow `RemoteFile.save()` to save to an explicit path when the home directory cannot be resolved.
+- 4ee12da: Use generated client types for inline local-tool payloads and share Python result handling between session tool and meta-tool execution. Public methods and request and response shapes are unchanged.
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+- Updated dependencies [d5c1861]
+  - @composio/json-schema-to-zod@0.4.1
+
 ## 0.29.0
 
 ### Minor Changes

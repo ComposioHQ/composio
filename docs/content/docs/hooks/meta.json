@@ -1,0 +1,5 @@
+{
+  "title": "Hooks",
+  "defaultOpen": false,
+  "pages": ["index", "custom-prompt-checks", "prompt-injection-detection", "webhooks"]
+}

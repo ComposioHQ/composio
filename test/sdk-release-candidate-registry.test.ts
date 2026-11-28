@@ -13,6 +13,7 @@ import { run, withoutReleaseTokens } from '../scripts/sdk-release/runtime';
 import type { ReleaseBatch } from '../scripts/sdk-release/source';
 import { batch } from './sdk-release-controller-fixture';
 import {
+  fetchInputUrl,
   json,
   makeExecutable,
   readText,
@@ -36,7 +37,10 @@ const exec = (cwd: string, executable: string, args: ReadonlyArray<string>) =>
 const pack = async (root: string, file: string, manifest: Record<string, unknown>) => {
   const staging = await directories.create();
   await writeText(`${staging}/package/package.json`, JSON.stringify(manifest));
-  await writeText(`${staging}/package/index.js`, `export const version = '${manifest.version}';\n`);
+  await writeText(
+    `${staging}/package/index.js`,
+    `export const version = '${String(manifest.version)}';\n`
+  );
   await exec(staging, 'tar', ['-czf', `${root}/${file}`, 'package']);
   return new Uint8Array(await Bun.file(`${root}/${file}`).arrayBuffer());
 };
@@ -80,7 +84,7 @@ const fakeUpstream = (
 ) => {
   const requests: string[] = [];
   const fetcher: Fetch = async input => {
-    const url = new URL(String(input));
+    const url = new URL(fetchInputUrl(input));
     requests.push(url.pathname);
     const name = decodeURIComponent(url.pathname).slice(1);
     const versions = Object.values(tarballs).filter(({ manifest }) => manifest.name === name);
@@ -94,7 +98,7 @@ const fakeUpstream = (
             {
               ...manifest,
               dist: {
-                tarball: `${tarballOrigin()}/${name}/-/${name.split('/').at(-1)}-${manifest.version}.tgz`,
+                tarball: `${tarballOrigin()}/${name}/-/${name.split('/').at(-1)}-${String(manifest.version)}.tgz`,
                 integrity: sha512(bytes),
               },
             },
@@ -114,7 +118,7 @@ describe('candidate registry', () => {
     const upstream = fakeUpstream({}, () => UPSTREAM);
     const leftPad = { name: 'left-pad', 'dist-tags': { latest: '1.3.0' }, versions: {} };
     const fetcher: Fetch = async (input, init) =>
-      new URL(String(input)).pathname === '/left-pad'
+      new URL(fetchInputUrl(input)).pathname === '/left-pad'
         ? json(leftPad)
         : upstream.fetcher(input, init);
     const responses = await runRelease(
@@ -322,6 +326,9 @@ describe('docs workflows', () => {
     Bun.YAML.parse(await readText(`.github/workflows/${name}`)) as {
       jobs: Record<string, Record<string, unknown>>;
     };
+  /** A channel's required checks, widened so a job's name can be looked up in them. */
+  const extraChecks = (channel: keyof typeof CHANNELS): ReadonlyArray<string> =>
+    CHANNELS[channel].extraChecks;
   /** Reads the only condition shape these jobs use: a negated head-branch prefix. */
   const headCondition = (condition: unknown) => {
     const match = /^\$\{\{ !startsWith\(github\.head_ref, '([^']+)'\) \}\}$/.exec(
@@ -346,7 +353,9 @@ describe('docs workflows', () => {
     const docs = jobs.docs;
     expect(docs.name).toBe('SDK candidate docs');
     // The stable gate requires the check this job reports, under the same name.
-    expect(CHANNELS.stable.extraChecks.join()).toBe(String(docs.name));
+    expect(extraChecks('stable')).toContain(String(docs.name));
+    expect(extraChecks('beta')).not.toContain(String(docs.name));
+    expect(JSON.stringify(docs)).not.toContain('check:docs-reference');
     expect(docs.needs).toEqual(['select-candidates', 'candidate']);
     expect(docs.if).toBe(
       "${{ !cancelled() && needs.select-candidates.outputs.channel == 'stable' }}"
@@ -354,5 +363,29 @@ describe('docs workflows', () => {
     expect(docs.permissions).toEqual({ contents: 'read' });
     expect(docs['timeout-minutes']).toBeGreaterThan(0);
     expect(JSON.stringify(docs)).not.toContain('secrets.');
+  });
+
+  test('the candidate reference job checks the packed core on every channel and always reports', async () => {
+    const { jobs } = await workflow('sdk.release.candidates.yml');
+    const reference = jobs.reference;
+    expect(reference.name).toBe('SDK candidate reference');
+    // Both gates require it: stable and beta both publish the reference under dist/docs.
+    expect(extraChecks('stable')).toContain(String(reference.name));
+    expect(extraChecks('beta')).toContain(String(reference.name));
+    expect(reference.needs).toEqual(['select-candidates', 'candidate']);
+    // Runs on every release channel (skipped on non-release PRs where select-candidates is skipped
+    // or failed); a release that has no core candidate still reports success via the pass step.
+    expect(reference.if).toBe("${{ !cancelled() && needs.select-candidates.result == 'success' }}");
+    expect(reference.permissions).toEqual({ contents: 'read' });
+    expect(reference['timeout-minutes']).toBeGreaterThan(0);
+    expect(JSON.stringify(reference)).not.toContain('secrets.');
+    const steps = reference.steps as { if?: string; run?: string }[];
+    const check = steps.find(step => step.run?.includes('check:docs-reference'));
+    expect(check?.run).toContain('--package docs/node_modules/@composio/core --compare-packaged');
+    expect(check?.if).toBe("needs.select-candidates.outputs.core == 'true'");
+    // Every step that needs the candidate is skipped together when there is no core candidate.
+    for (const step of steps.slice(1))
+      expect(step.if).toBe("needs.select-candidates.outputs.core == 'true'");
+    expect(steps[0].if).toBe("needs.select-candidates.outputs.core != 'true'");
   });
 });

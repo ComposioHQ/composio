@@ -1,0 +1,42 @@
+---
+title: "SDK release 45520260753"
+date: "2026-11-25"
+sdkRelease: "45520260753"
+sdkReleaseTargets: {"@composio/anthropic":"0.11.9","@composio/claude-agent-sdk":"0.13.2","@composio/core":"0.32.0","@composio/experimental":"0.2.10","@composio/json-schema-to-zod":"0.4.2","@composio/python-sdk":"0.35.0","@composio/slim":"0.32.0"}
+---
+
+See the [release request](https://github.com/ComposioHQ/composio/issues/5557) for publication status.
+
+### SDK Versions
+
+| SDK | Version |
+| --- | --- |
+| TypeScript `@composio/anthropic` | `0.11.9` |
+| TypeScript `@composio/claude-agent-sdk` | `0.13.2` |
+| TypeScript `@composio/core` | `0.32.0` |
+| TypeScript `@composio/experimental` | `0.2.10` |
+| TypeScript `@composio/json-schema-to-zod` | `0.4.2` |
+| Python `composio` | `0.35.0` |
+| TypeScript `@composio/slim` | `0.32.0` |
+
+### Changes
+
+Limit trigger webhook request bodies to 10 MiB by default in `triggers.parse()`. Set `maxBodyBytes` to customize the limit or to check an already-buffered payload in `triggers.verifyWebhook()`.
+
+Fix Python SDK reference examples for MCP server management and schema modifiers. Pin a tool version in the Quick Start so direct execution reaches the API.
+
+Correct the code examples in the TypeScript SDK reference, which also ships in the package under `dist/docs`. Each class's Usage block now shows its real accessor, such as `composio.webhooks.endpoints` instead of the nonexistent `composio.webhookEndpoints`, and runnable examples are checked against the SDK. Examples now import what they use, declare their own inputs, call methods that exist with their current parameters (for example `composio.mcp` instead of `composio.experimental.mcp`, `AuthScheme.APIKey`, and the `id` and `timestamp` fields of `triggers.verifyWebhook`), and split alternatives into separate examples.
+
+The Quick Start passes a toolkit version when it executes a tool.
+
+Session hooks accept a `webhook` handler. `composio.sessions.create()` and `session.update()` take `handler: { type: 'webhook', fallbackAction, timeoutMs }` (TypeScript) or `{"type": "webhook", "fallback_action": ..., "timeout_ms": ...}` (Python) on a `before_execute` or `after_execute` hook. Composio sends each call the hook applies to, before or after it runs, to the project's session webhook URL and waits for your endpoint to let it run, block it, or change it; read the request there with `composio.sessions.webhooks.parse()`. `fallbackAction` is what happens when the endpoint can't answer. A hook result with `status: 'unavailable'` now carries `detail`, the reason the hook could not be evaluated. The event `composio.sessions.webhooks.parse()` returns types the optional `metadata.tool_call_id`, which pairs a call's `before_execute` event with its `after_execute`.
+
+Read session webhook events with `composio.sessions.webhooks.parse()`. A session hook with a `webhook` handler sends each tool or proxy call it applies to, before or after it runs, to the project's session webhook URL and waits for the endpoint's answer. `parse({ body, headers, verifySecret })` (TypeScript) / `parse(body=..., headers=..., verify_secret=...)` (Python) verifies the signature with the project's session webhook secret, which is required, and returns the typed event with the field names of the webhook reference. `SessionWebhookBeforeExecuteResponse` and `SessionWebhookAfterExecuteResponse` type the answer.
+
+Proxy webhook events and request overrides support file uploads through `binary_body`.
+
+Validate the HTTPS host when extracting Composio auth links in Pi and Eve.
+
+Format structured error details in SDK diagnostics and fall back when a trigger payload contains a malformed identifier.
+
+Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.

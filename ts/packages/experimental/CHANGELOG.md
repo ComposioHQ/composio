@@ -1,5 +1,18 @@
 # @composio/experimental
 
+## 0.2.10
+
+### Patch Changes
+
+- 44414f1: Validate the HTTPS host when extracting Composio auth links in Pi and Eve.
+- 1b88005: Simplify the Anthropic tool schema and experimental Pi hook type declarations. Use explicit code-point iteration in JSON Schema to Zod string validation.
+
+## 0.2.9
+
+### Patch Changes
+
+- d5c1861: Update runtime dependencies, require patched Zod 4 releases where used directly, support Anthropic SDK 1.6, and update the AutoGen provider's FLAML dependency. Preserve Zod 3 compatibility fixtures and existing framework version boundaries.
+
 ## 0.2.8
 
 ### Patch Changes

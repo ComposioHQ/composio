@@ -497,6 +497,22 @@ describe('Triggers.verifyWebhook', () => {
   });
 
   describe('payload parsing errors', () => {
+    it('checks the UTF-8 byte limit of an already buffered payload', async () => {
+      const payload = JSON.stringify(createMockV1Payload({ payload: { subject: 'Résumé' } }));
+      const signature = createSignature(testWebhookId, testTimestamp, payload, testSecret);
+
+      await expect(
+        triggers.verifyWebhook({
+          payload,
+          signature,
+          secret: testSecret,
+          id: testWebhookId,
+          timestamp: testTimestamp,
+          maxBodyBytes: payload.length,
+        })
+      ).rejects.toThrow(ComposioWebhookPayloadError);
+    });
+
     it('should throw error when payload is not valid JSON', async () => {
       const invalidJson = 'not-valid-json{';
       const signature = createSignature(testWebhookId, testTimestamp, invalidJson, testSecret);

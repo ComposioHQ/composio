@@ -7,6 +7,10 @@ keywords: [glossary, definitions, terminology]
 
 <Glossary>
 
+<GlossaryTerm name="App">
+A grouping of sibling toolkits for one product in the catalog. The Notion app, for example, contains the `notion` and `notion_mcp` toolkits. Use an App to compare toolkits. SDK and API toolkit parameters take exact toolkit slugs, not App display names. See [Apps and toolkits](/docs/apps-and-toolkits).
+</GlossaryTerm>
+
 <GlossaryTerm name="Auth Config">
 A blueprint that defines how authentication works for a toolkit: the auth method (`OAUTH2`, `API_KEY`, `BEARER_TOKEN`, or `BASIC`), scopes, and credentials. A [session](/docs/how-composio-works) creates one automatically when it needs one. To use your own OAuth credentials or non-default scopes, [create a custom one](/docs/auth-configuration/custom-auth-configs).
 </GlossaryTerm>
@@ -23,6 +27,10 @@ The URL a user returns to after completing an OAuth flow through a Connect Link.
 A project-scoped secret that authenticates your SDK and API requests. Every resource you create with it is scoped to that project.
 </GlossaryTerm>
 
+<GlossaryTerm name="Composio Built">
+A toolkit that Composio builds and maintains on the product's public API, like the `notion` toolkit. Composio Built toolkits can have triggers and commonly authenticate with `OAUTH2` or `API_KEY`, often through Composio Managed Auth. See [Apps and toolkits](/docs/apps-and-toolkits).
+</GlossaryTerm>
+
 <GlossaryTerm name="Composio Managed Auth">
 The default mode in which Composio supplies its own OAuth app credentials for each toolkit. It requires no setup.
 </GlossaryTerm>
@@ -37,6 +45,14 @@ A stored set of credentials (OAuth tokens or API keys) linked to a userID, creat
 
 <GlossaryTerm name="Connection Request">
 The object returned when you initiate authentication. It contains the Connect Link URL and a `waitForConnection()` method that resolves once the user completes the flow.
+</GlossaryTerm>
+
+<GlossaryTerm name="Custom MCP">
+Your own remote MCP server registered into your project as a toolkit with a `CUSTOM_*` slug, usable in sessions alongside catalog toolkits. Custom MCP toolkits can be shared within your project or private to one user. See [Custom MCP](/docs/extending-sessions/custom-mcp).
+</GlossaryTerm>
+
+<GlossaryTerm name="DCR OAuth">
+OAuth Dynamic Client Registration, the auth scheme many Provider MCP toolkits use. The client registers itself with the product's MCP server automatically, so your user just approves access and there is no OAuth app to register.
 </GlossaryTerm>
 
 <GlossaryTerm name="In-Chat Authentication">
@@ -87,6 +103,10 @@ Making authenticated HTTP requests through a toolkit's connected account without
 An adapter package that transforms Composio tools into the format an AI framework expects (OpenAI, Anthropic, LangChain, Vercel AI SDK, and others). See [Providers](/docs/providers).
 </GlossaryTerm>
 
+<GlossaryTerm name="Provider MCP">
+A toolkit that connects to the product's own hosted MCP server, maintained by that product. Many slugs end in `_mcp`, such as `notion_mcp`. Check the catalog type and the toolkit's authentication methods. Not to be confused with a provider, which is an AI-framework adapter. See [Apps and toolkits](/docs/apps-and-toolkits).
+</GlossaryTerm>
+
 <GlossaryTerm name="Session">
 An ephemeral, immutable configuration object returned by `composio.create(userId)`. It ties together a userID, the available toolkits, an auth config, and connected accounts, and it exposes `tools()`, `authorize()`, and `toolkits()` (plus `mcp.url` when created with `mcp: true`). See [What is a session?](/docs/how-composio-works).
 </GlossaryTerm>
@@ -96,11 +116,11 @@ The unique identifier for a session. Meta tools use it internally to share conte
 </GlossaryTerm>
 
 <GlossaryTerm name="Tool">
-An individual action an agent can execute. It has an input schema and an output schema, and is named `{TOOLKIT}_{ACTION}` (for example, `GITHUB_CREATE_ISSUE`).
+An individual action an agent can execute. It has an input schema and an output schema, and is named `{TOOLKIT}_{ACTION}` (for example, `GITHUB_CREATE_AN_ISSUE`).
 </GlossaryTerm>
 
 <GlossaryTerm name="Tool Slug">
-A tool's unique identifier, in the `{TOOLKIT}_{ACTION}` pattern (for example, `GITHUB_CREATE_ISSUE`).
+A tool's unique identifier, in the `{TOOLKIT}_{ACTION}` pattern (for example, `GITHUB_CREATE_AN_ISSUE`).
 </GlossaryTerm>
 
 <GlossaryTerm name="Toolkit">

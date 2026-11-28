@@ -44,4 +44,4 @@ async function run() {
   console.log(text);
 }
 
-run();
+await run();

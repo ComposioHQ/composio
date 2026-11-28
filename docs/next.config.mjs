@@ -49,7 +49,7 @@ const config = {
     '/llms.txt/**': [...OPENAPI_SPEC_FILES],
     '/llms-index.txt/**': [...OPENAPI_SPEC_FILES, './kb/**'],
     '/kb/**': ['./kb/**'],
-    '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './kb/**'],
+    '/api/knowledge-search/**': [...OPENAPI_SPEC_FILES, './content/**', './sdk-reference-snapshots/**', './kb/**'],
     // The OG route reads its fonts and wordmark from disk at request time.
     '/api/og/**': ['./app/fonts/Geist*.ttf', './public/Composio Logo*.svg', './public/og/*'],
   },
@@ -69,6 +69,28 @@ const config = {
   },
   async redirects() {
     return [
+      // Saved policies retain their section anchors at the new URL.
+      ...['/docs/session-configs'].flatMap(source => [
+        { source, destination: '/docs/sessions/saved-session-policies', permanent: true },
+        { source: `${source}.md`, destination: '/docs/sessions/saved-session-policies.md', permanent: true },
+        { source: `${source}.mdx`, destination: '/docs/sessions/saved-session-policies.md', permanent: true },
+        { source: `/llms.mdx${source}`, destination: '/docs/sessions/saved-session-policies.md', permanent: true },
+      ]),
+      // Vendor security review now lives in docs; preserve KB aliases and Markdown URLs.
+      ...[
+        '/kb/guide/platform-compliance-data-handling',
+        '/kb/security-and-trust/platform-compliance-data-handling',
+        '/kb/sdk-and-api/platform-compliance-data-handling',
+        '/kb/guide/canonical-public-sources',
+        '/kb/guide/model-training',
+        '/kb/guide/third-party-providers',
+        '/kb/guide/zero-data-retention-and-no-training-requirements',
+      ].flatMap(source => [
+        { source, destination: '/docs/security/vendor-security-review', permanent: true },
+        { source: `${source}.md`, destination: '/docs/security/vendor-security-review.md', permanent: true },
+        { source: `${source}.mdx`, destination: '/docs/security/vendor-security-review.md', permanent: true },
+        { source: `/llms.mdx${source}`, destination: '/docs/security/vendor-security-review.md', permanent: true },
+      ]),
       // === Docs v3 reorganization redirects (auto-generated: route moves vs pre-reorg) ===
       // Renamed/moved pages -> new location
       {
@@ -154,12 +176,12 @@ const config = {
       },
       {
         source: '/docs/toolkits/enable-and-disable-toolkits',
-        destination: '/docs/configuring-sessions',
+        destination: '/docs/sessions/tool-access#enabling-toolkits',
         permanent: true,
       },
       {
         source: '/docs/toolkits/fetching-tools-and-toolkits',
-        destination: '/docs/configuring-sessions',
+        destination: '/docs/sessions/tool-access#browsing-the-catalog',
         permanent: true,
       },
       {
@@ -570,7 +592,7 @@ const config = {
       },
       {
         source: '/docs/user-management',
-        destination: '/docs/how-composio-works#users',
+        destination: '/docs/sessions#users',
         permanent: true,
       },
             {
@@ -1101,6 +1123,18 @@ const config = {
         destination: '/docs',
         permanent: true,
       },
+      // Guessed /auth slugs that have a real target page (DEVREL-330).
+      // Must precede the /auth/:path* catch-all below.
+      {
+        source: '/auth/token-custody',
+        destination: '/docs/security/token-custody',
+        permanent: true,
+      },
+      {
+        source: '/auth/proxy-execute',
+        destination: '/docs/extending-sessions/proxy-execute',
+        permanent: true,
+      },
       {
         source: '/auth/:path*',
         destination: '/docs/authentication',
@@ -1204,13 +1238,28 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/:legacy(self-hosting|deployment)',
-        destination: '/docs/security/token-custody#deployment-options',
+        source: '/docs/self-hosting',
+        destination: '/docs/deployment',
+        permanent: true,
+      },
+      {
+        source: '/docs/byoc',
+        destination: '/docs/deployment/byoc',
+        permanent: true,
+      },
+      {
+        source: '/docs/security/byoc',
+        destination: '/docs/deployment/byoc',
+        permanent: true,
+      },
+      {
+        source: '/docs/hosting/aws',
+        destination: '/docs/deployment/byoc-architecture',
         permanent: true,
       },
       {
         source: '/docs/hosting/:path*',
-        destination: '/docs/security/token-custody#deployment-options',
+        destination: '/docs/deployment',
         permanent: true,
       },
       {
@@ -1254,11 +1303,6 @@ const config = {
         permanent: true,
       },
       {
-        source: '/docs/sessions',
-        destination: '/docs/configuring-sessions',
-        permanent: true,
-      },
-      {
         source: '/quickstart',
         destination: '/docs/quickstart',
         permanent: true,
@@ -1266,6 +1310,63 @@ const config = {
       {
         source: '/cli',
         destination: '/docs/cli',
+        permanent: true,
+      },
+      // Framework, MCP, and Connect Link URLs agents guess from feature
+      // names (DEVREL-330). Each source returned 404 in Gauge sessions.
+      {
+        source: '/docs/mastra',
+        destination: '/docs/providers/mastra',
+        permanent: true,
+      },
+      {
+        source: '/docs/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/docs/integrations/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/docs/:legacy(langchain|langgraph)',
+        destination: '/docs/providers/langchain',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/providers/vercel-ai-sdk',
+        destination: '/docs/providers/vercel',
+        permanent: true,
+      },
+      {
+        source: '/docs/connect-links',
+        destination: '/docs/authentication',
+        permanent: true,
+      },
+      {
+        source: '/docs/mcp-auth',
+        destination: '/docs/authentication/managed-auth-for-custom-tools',
+        permanent: true,
+      },
+      {
+        source: '/docs/auth-tools/auth-on-mcp',
+        destination: '/docs/authentication/managed-auth-for-custom-tools',
+        permanent: true,
+      },
+      {
+        source: '/providers/mcp',
+        destination: '/docs/single-toolkit-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/providers/mcp',
+        destination: '/docs/single-toolkit-mcp',
         permanent: true,
       },
     ];

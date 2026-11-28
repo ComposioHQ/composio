@@ -8,8 +8,10 @@ description: "`composio.webhooks` namespace.  - `subscriptions`: the project's o
 Access this class through the `composio.webhooks` property:
 
 ```typescript
+import { Composio } from '@composio/core';
+
 const composio = new Composio({ apiKey: 'your-api-key' });
-const result = await composio.webhooks.list();
+const webhooks = composio.webhooks;
 ```
 
 ## Properties

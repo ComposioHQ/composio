@@ -53,6 +53,9 @@ COPY package.json \
      toolchain-versions.json \
      ./
 
+# pnpm applies these dependency patches during install
+COPY patches/ ./patches/
+
 # Copy all ts/packages (pre-built)
 COPY ts/packages/ ./ts/packages/
 
@@ -61,19 +64,13 @@ COPY ts/packages/ ./ts/packages/
 # because it causes native binding issues across builds
 RUN pnpm install --frozen-lockfile
 
-# Build composio CLI binary
+# Build the composio CLI binary and its `composio run` companion modules into
+# /out, through the same script and flags as the release build
+# (`executableBuildArgs` in ts/packages/cli/scripts/_shared.ts). Without the
+# companion wrappers every `composio run` treats the install as broken and
+# enters the GitHub self-repair path.
 WORKDIR /app/ts/packages/cli
-RUN bun build ./src/bin.ts \
-    --env DEBUG_OVERRIDE_* \
-    --compile \
-    --production \
-    --outfile /out/composio
-
-# Build the `composio run` companion modules next to the binary. Without the
-# run-helpers-runtime.mjs and generation-runtime.mjs wrappers every
-# `composio run` treats the install as broken and enters the GitHub self-repair
-# path.
-RUN bun scripts/build-companion-modules.ts /out
+RUN bun scripts/build-binary.ts --outdir /out
 
 # Copy CLI e2e tests last (changes frequently)
 WORKDIR /app

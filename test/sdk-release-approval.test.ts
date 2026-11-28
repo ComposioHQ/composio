@@ -10,7 +10,7 @@ import {
   merge,
   type ControllerOptions,
 } from './sdk-release-controller-fixture';
-import { runRelease } from './sdk-release-harness';
+import { fetchInputUrl, runRelease } from './sdk-release-harness';
 
 const tag = (fetcher: ReturnType<typeof fakeController>['fetcher']) =>
   runRelease(
@@ -30,7 +30,6 @@ const commentBodies = (writes: ReadonlyArray<{ body: unknown }>) =>
   writes.map(write => (write.body as { body: string }).body);
 
 describe('release approval rule', () => {
-  const excluded = ['author', 'requester'];
   const review = { user: 'reviewer', state: 'APPROVED', commitId: head, permission: 'write' };
 
   test.each([
@@ -41,7 +40,32 @@ describe('release approval rule', () => {
       true,
     ],
     ['the requester', [{ ...review, user: 'requester' }], false],
+    ['an admin requester', [{ ...review, user: 'requester', permission: 'admin' }], true],
+    [
+      'a requester with maintain permission',
+      [{ ...review, user: 'requester', permission: 'maintain' }],
+      false,
+    ],
+    [
+      'an admin requester approving an older commit',
+      [{ ...review, user: 'requester', permission: 'admin', commitId: base }],
+      false,
+    ],
+    [
+      'an admin requester whose approval was dismissed',
+      [{ ...review, user: 'requester', permission: 'admin', state: 'DISMISSED' }],
+      false,
+    ],
+    [
+      'an admin requester while another writer requests changes',
+      [
+        { ...review, user: 'requester', permission: 'admin' },
+        { ...review, user: 'maintainer', state: 'CHANGES_REQUESTED' },
+      ],
+      false,
+    ],
     ['the author', [{ ...review, user: 'author' }], false],
+    ['an admin author', [{ ...review, user: 'author', permission: 'admin' }], false],
     ['an approval of an older commit', [{ ...review, commitId: base }], false],
     ['a reader', [{ ...review, permission: 'read' }], false],
     ['an approval later overridden', [review, { ...review, state: 'CHANGES_REQUESTED' }], false],
@@ -51,11 +75,20 @@ describe('release approval rule', () => {
       false,
     ],
   ])('%s → %p', (_name, reviews, expected) => {
-    expect(eligibleApproval(reviews, excluded, head)).toBe(expected);
+    expect(eligibleApproval(reviews, 'author', 'requester', head)).toBe(expected);
   });
 });
 
 describe('source tag', () => {
+  test('an admin requester can approve the exact bot-authored head', async () => {
+    const { fetcher, writes } = fakeController({
+      reviewer: 'requester',
+      reviewerPermission: 'admin',
+    });
+    expect(await tag(fetcher)).toEqual(tagged);
+    expect(writes).toEqual([tagWrite]);
+  });
+
   test.each(['merge', 'squash'] as const)(
     'a merged, approved release tags the reviewed head (%s merge)',
     async mergeKind => {
@@ -75,7 +108,7 @@ describe('source tag', () => {
       conclusion: 'success',
     }));
     const paged: typeof fetcher = (input, init) => {
-      const url = new URL(String(input));
+      const url = new URL(fetchInputUrl(input));
       if (!url.pathname.endsWith('/check-runs')) return fetcher(input, init);
       return (url.searchParams.get('page') ?? '1') === '1'
         ? Promise.resolve(Response.json({ total_count: 103, check_runs: unrelated }))
@@ -106,7 +139,7 @@ describe('source tag', () => {
     expect(await issueOf({ branchSetter: 'writer' })).toEqual(Option.none());
   });
 
-  test('a beta is tagged without either docs check, which never run on a plan-only PR', async () => {
+  test('a beta is tagged without either docs check, which never run on a plan-only PR, but with the reference check', async () => {
     const { fetcher, writes } = fakeController({
       beta: true,
       docs: 'missing',
@@ -130,6 +163,16 @@ describe('source tag', () => {
 
   test.each<[string, ControllerOptions, string]>([
     ['the requester approves', { reviewer: 'requester' }, 'lacks an approval'],
+    [
+      'the admin requester approves an older head',
+      { reviewer: 'requester', reviewerPermission: 'admin', oldReview: true },
+      'lacks an approval',
+    ],
+    [
+      'the admin requester approves but the candidate build failed',
+      { reviewer: 'requester', reviewerPermission: 'admin', failedCandidate: true },
+      'SDK candidate (typescript)',
+    ],
     ['the approval is for an older head', { oldReview: true }, 'lacks an approval'],
     ['a human pushed the head', { headAuthor: 'writer' }, 'release App commit'],
     [
@@ -144,6 +187,19 @@ describe('source tag', () => {
     ['the docs check failed', { docs: 'failure' }, 'SDK candidate docs'],
     ['the docs check is pending', { docs: 'pending' }, 'SDK candidate docs'],
     ['the docs check is missing', { docs: 'missing' }, 'SDK candidate docs'],
+    ['the reference check failed', { reference: 'failure' }, 'SDK candidate reference'],
+    ['the reference check is pending', { reference: 'pending' }, 'SDK candidate reference'],
+    ['the reference check is missing', { reference: 'missing' }, 'SDK candidate reference'],
+    [
+      'a beta reference check failed',
+      { beta: true, docs: 'missing', reference: 'failure' },
+      'SDK candidate reference',
+    ],
+    [
+      'a beta reference check is missing',
+      { beta: true, docs: 'missing', reference: 'missing' },
+      'SDK candidate reference',
+    ],
     [
       'a re-run of a passed check failed',
       { rerunFailed: 'SDK candidate (typescript)' },
@@ -169,7 +225,7 @@ describe('source tag', () => {
   test('a GitHub error during the gate fails the job for a re-run and refuses nothing', async () => {
     const { fetcher, writes } = fakeController();
     const unavailable: typeof fetcher = (input, init) =>
-      new URL(String(input)).pathname.includes('/check-runs')
+      new URL(fetchInputUrl(input)).pathname.includes('/check-runs')
         ? Promise.resolve(new Response('Bad Gateway', { status: 502 }))
         : fetcher(input, init);
     await expect(tag(unavailable)).rejects.toThrow('(502)');
@@ -180,7 +236,8 @@ describe('source tag', () => {
     const { fetcher, writes } = fakeController();
     const withoutMerged: typeof fetcher = async (input, init) => {
       const response = await fetcher(input, init);
-      if (new URL(String(input)).pathname !== '/repos/ComposioHQ/composio/pulls/9') return response;
+      if (new URL(fetchInputUrl(input)).pathname !== '/repos/ComposioHQ/composio/pulls/9')
+        return response;
       const { merged: _merged, ...rest } = (await response.json()) as Record<string, unknown>;
       return Response.json(rest);
     };

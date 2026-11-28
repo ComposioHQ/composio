@@ -44,11 +44,11 @@ assert_dir_empty() {
 
 # Extract the uninstall snippet verbatim from the docs so this suite can never
 # drift from what users actually run: the first ```bash fence after the
-# "### Uninstall" heading.
-docs_file="$repo_root/docs/content/docs/cli.mdx"
+# "## Uninstall" heading.
+docs_file="$repo_root/docs/content/docs/cli/installation.mdx"
 snippet_file="$suite_tmp/uninstall-snippet.sh"
 awk '
-  /^### Uninstall$/ { in_section = 1; next }
+  /^## Uninstall$/ { in_section = 1; next }
   in_section && $0 == "```bash" && !captured { in_block = 1; next }
   in_block && $0 == "```" { captured = 1; in_block = 0; next }
   in_block { print }

@@ -66,7 +66,7 @@ describe('unified knowledge metadata', () => {
     ['/docs/migration-guide/new-sdk', 'sdk-api-and-mcp'],
     ['/docs/sandbox/remote', 'tools-actions-and-execution'],
     ['/docs/sessions-via-mcp', 'sdk-api-and-mcp'],
-    ['/docs/configuring-sessions', 'tools-actions-and-execution'],
+    ['/docs/sessions/create-and-reuse', 'tools-actions-and-execution'],
   ])('maps %s to %s', (canonicalUrl, expectedArea) => {
     const metadata = classifyKnowledgeRecord({ sourceType: 'docs', canonicalUrl });
     expect(metadata.product_areas).toContain(expectedArea);

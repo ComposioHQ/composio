@@ -7,7 +7,7 @@ the user ID to isolate connections and tool calls, so each application user
 must resolve to the same Composio user ID across sessions.
 
 - [Authentication and user IDs](https://docs.composio.dev/docs/authentication)
-- [How Composio sessions work](https://docs.composio.dev/docs/how-composio-works)
+- [How Composio sessions work](https://docs.composio.dev/docs/sessions)
 
 ## Isolate environments with separate Composio projects when needed
 
@@ -20,12 +20,13 @@ apps, scopes, or provider credentials differ.
 - [Composio glossary: Project](https://docs.composio.dev/reference/glossary#project)
 - [Configure authentication](https://docs.composio.dev/docs/tools-direct/authenticating-tools)
 
-## Switch from managed auth only when production requirements call for it
+## Use managed auth in production, and your own OAuth app when you need dedicated limits
 
-Keep Composio-managed OAuth apps in production when their consent branding,
-scopes, and shared provider quotas fit your product. Create a custom auth
-config when you need your application's own OAuth brand, custom scopes, a
-dedicated provider quota, different polling requirements, or a custom instance.
+Composio-managed OAuth apps work in production. Because the OAuth app is shared,
+you may run into shared provider rate limits as your usage grows. For higher
+volume, we recommend a custom auth config with your own OAuth app. It also gives
+you your application's OAuth brand, custom scopes, a dedicated provider quota,
+different polling requirements, and custom instances.
 Both options keep connected-account credential storage and refresh in Composio.
 Pass the resulting auth config ID to the session; creating the config alone
 does not make the session use it.
@@ -40,7 +41,7 @@ sensitive or deterministic workflow, prefer an explicit allowlist of exact
 tool slugs. For a broader read-only agent, filter on `readOnlyHint` and disable
 `destructiveHint`, then inspect the resulting tool set before rollout.
 
-- [Configure session tool access](https://docs.composio.dev/docs/configuring-sessions)
+- [Configure session tool access](https://docs.composio.dev/docs/sessions/tool-access)
 - [Create read-only and restricted sessions](../session-tool-policies/public.md)
 
 ## Reuse a stored session until the user or configuration changes
@@ -51,7 +52,7 @@ user or a materially different setup, such as a new tool policy or auth-config
 mapping. A session preserves its scoped runtime state, but it is not the
 language model's conversation memory.
 
-- [Reuse a session](https://docs.composio.dev/docs/how-composio-works#how-sessions-behave)
+- [Reuse a session](https://docs.composio.dev/docs/sessions/create-and-reuse#how-sessions-behave)
 
 ## Test production trigger handling through the real webhook path
 

@@ -2,14 +2,18 @@
 
 Neutral decision records and long-running docs plans. Add every new decision record here.
 
+- [Sessions page split proposals](sessions-page-split.md) - option 1 approved on 2026-11-22, with nine task pages and bookmark compatibility.
+
 Read these when a docs change touches an existing architecture, generated-data pipeline, or documented product pattern:
 
 - `examples.md` - cookbook/examples restructuring plan.
 - `feedback.md` - feedback collection system.
 - `llm-guardrails.md` - LLM guardrail injection for markdown endpoints.
-- `public-knowledge-base.md` - event-driven public support publication, unified
-  search, and Composio For You snapshot rules.
+- `public-knowledge-base.md` - support-portal KB publication, unified search,
+  and Composio For You snapshot rules.
 - `toolkit-page-availability.md` - docs-sync permissions, optional KB isolation,
-  and snapshot-miss toolkit page fallback.
+  snapshot-miss toolkit page fallback, and paginated live tool lists with their
+  parity monitor.
 - `toolkits.md` - toolkit page data, rendering, and live Instant eligibility filter decisions.
 - `cookbooks-revamp-plan.md` - historical cookbook revamp tracker.
+- `apps-and-toolkits.md` - Apps, Composio Built toolkits, and Provider MCP toolkits: vocabulary, sibling rendering, and search-contract wording.

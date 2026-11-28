@@ -19,14 +19,16 @@
  *
  * Run manually with `bun scripts/build-agent-index.ts`.
  */
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { resolveToolkitCount } from '../lib/toolkit-count';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { stripTagsOutsideCode } from '../lib/markdown-code-guard';
+import { resolveStableReference } from '../lib/sdk-reference-snapshot';
 
 const ROOT = process.cwd();
 const CONTENT = join(ROOT, 'content');
-const KNOWLEDGE_FILE = join(ROOT, 'agent', 'knowledge.md');
-const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits'] as const;
+const reference = resolveStableReference(ROOT);
+const COLLECTIONS = ['docs', 'reference', 'examples', 'toolkits', 'kb'] as const;
 const LEGACY_URL_PATTERNS = [
   '/docs/tools-direct',
   '/docs/auth-configuration',
@@ -96,8 +98,8 @@ function isLegacyUrl(url: string): boolean {
   return LEGACY_URL_PATTERNS.some(p => url === p || url.startsWith(`${p}/`));
 }
 
-function urlFromContentPath(absPath: string): string | undefined {
-  const rel = relative(CONTENT, absPath).replace(/\\/g, '/');
+function urlFromContentPath(path: string): string | undefined {
+  const rel = path.replace(/\\/g, '/');
   const withoutExt = rel.replace(/\.mdx?$/, '');
   const parts = withoutExt.split('/');
   const collection = parts.shift();
@@ -105,6 +107,7 @@ function urlFromContentPath(absPath: string): string | undefined {
   if (collection === 'docs') return `/docs/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'examples') return `/examples/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'reference') return `/reference/${parts.join('/')}`.replace(/\/index$/, '');
+  if (collection === 'kb') return `/kb/${parts.join('/')}`.replace(/\/index$/, '');
   if (collection === 'toolkits') {
     if (parts[0] === 'faq') return undefined;
     return `/toolkits/${parts.join('/')}`.replace(/\/index$/, '');
@@ -153,8 +156,7 @@ function toPlainText(body: string): string {
 
 function toCleanMarkdown(raw: string): string {
   const { body } = parseFrontmatter(raw);
-  return body
-    .replace(/<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g, '')
+  return stripTagsOutsideCode(body, /<\/?[A-Za-z][A-Za-z0-9.]*(\s[^>]*)?\/?>/g)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
@@ -214,35 +216,6 @@ function makeSearchPage(args: {
   };
 }
 
-function loadKnowledgePages(): BundlePage[] {
-  if (!existsSync(KNOWLEDGE_FILE)) return [];
-
-  const raw = readFileSync(KNOWLEDGE_FILE, 'utf8');
-  const pages: BundlePage[] = [];
-  const sectionRe = /^##\s+(.+?)\s*(?:\(([^)]+)\))?\s*$/gm;
-  const matches = [...raw.matchAll(sectionRe)];
-
-  for (let index = 0; index < matches.length; index++) {
-    const match = matches[index];
-    const title = match[1].trim();
-    const url = (match[2] ?? '').trim() || '/docs';
-    const bodyStart = match.index! + match[0].length;
-    const bodyEnd = index + 1 < matches.length ? matches[index + 1].index! : raw.length;
-    const body = raw.slice(bodyStart, bodyEnd).trim();
-
-    pages.push({
-      collection: 'knowledge',
-      url,
-      title,
-      description: '',
-      legacy: false,
-      markdown: body,
-    });
-  }
-
-  return pages;
-}
-
 function searchPageForToolkit(tk: BundleToolkit): SearchPage {
   const name = tk.name ?? tk.slug;
   const body = `${tk.description ?? ''} Category: ${tk.category ?? ''}. Toolkit slug: ${tk.slug}.`;
@@ -295,7 +268,7 @@ function buildSearchIndex(searchPages: SearchPage[]) {
 
 const pages: BundlePage[] = [];
 for (const collection of COLLECTIONS) {
-  const dir = join(CONTENT, collection);
+  const dir = collection === 'reference' ? reference.dir : join(CONTENT, collection);
   let entries: string[];
   try {
     entries = readdirSync(dir, { recursive: true }) as string[];
@@ -305,8 +278,10 @@ for (const collection of COLLECTIONS) {
   for (const entry of entries) {
     if (!/\.mdx?$/.test(entry)) continue;
     const absPath = join(dir, entry);
-    const url = urlFromContentPath(absPath);
+    const url = urlFromContentPath(join(collection, entry));
     if (!url) continue;
+    // These pages preserve bookmarks; the task pages contain the documentation.
+    if (url === '/docs/configuring-sessions' || url === '/docs/how-composio-works') continue;
     const raw = resolveToolkitCount(readFileSync(absPath, 'utf8'));
     const { title, description, legacy } = parseFrontmatter(raw);
     pages.push({
@@ -346,21 +321,9 @@ const contentSearchPages = pages.map(page =>
     body: page.markdown,
   })
 );
-const knowledgePages = loadKnowledgePages();
-pages.push(...knowledgePages);
-const knowledgeSearchPages = knowledgePages.map(page =>
-  makeSearchPage({
-    collection: page.collection,
-    title: page.title,
-    description: page.description,
-    url: page.url,
-    body: page.markdown,
-  })
-);
 const toolkitSearchPages = toolkits.map(searchPageForToolkit);
 const search = buildSearchIndex([
   ...contentSearchPages,
-  ...knowledgeSearchPages,
   ...toolkitSearchPages,
 ]);
 
@@ -368,7 +331,7 @@ const search = buildSearchIndex([
 // accepts authored modules there, so a raw .json fails `eve build`. We embed the
 // snapshot as a JSON string parsed at runtime — a plain string literal keeps the
 // source fast for tsc and free of escaping pitfalls, and lets eve bundle it.
-const json = JSON.stringify({ pages, toolkits, search });
+const json = JSON.stringify({ pages, toolkits, search, stableReference: reference.kind === 'assembled' });
 const ts =
   `/* eslint-disable */\n` +
   `// Auto-generated by scripts/build-agent-index.ts — do not edit by hand.\n` +

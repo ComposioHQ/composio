@@ -1,0 +1,31 @@
+{
+  "slug": "toolkits-servicenow",
+  "title": "ServiceNow authentication",
+  "description": "Current instance-specific authentication setup for ServiceNow.",
+  "articlePath": "toolkits-servicenow.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/servicenow/public.md",
+      "sourceHeading": "ServiceNow credentials and instance subdomain are collected at different stages"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "platform",
+    "servicenow"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

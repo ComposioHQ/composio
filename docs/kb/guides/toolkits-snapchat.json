@@ -1,0 +1,32 @@
+{
+  "slug": "toolkits-snapchat",
+  "title": "Snapchat authentication",
+  "description": "Current customer-owned OAuth setup for the Snapchat toolkit.",
+  "articlePath": "toolkits-snapchat.md",
+  "sources": [
+    {
+      "sourcePath": "toolkits/snapchat/public.md",
+      "sourceHeading": "Snapchat uses customer-owned OAuth credentials"
+    }
+  ],
+  "topics": [
+    "auth-config",
+    "authentication",
+    "errors-and-troubleshooting",
+    "toolkits-and-providers"
+  ],
+  "tags": [
+    "for-you",
+    "platform",
+    "snapchat"
+  ],
+  "aliases": [],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-17",
+  "lastVerifiedAt": "2026-08-17",
+  "reviewAfter": "2026-11-15",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

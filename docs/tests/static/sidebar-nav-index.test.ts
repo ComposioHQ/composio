@@ -62,17 +62,23 @@ describe('buildSidebarNavIndex', () => {
   });
 
   test('governance guides stay top-level within the Governance section', () => {
-    expect(index['/docs/governance/tool-hints']).toEqual({
+    expect(index['/docs/governance/action-permissions']).toEqual({
       group: 'Governance',
       folder: null,
       depth: 1,
       position: 1,
     });
-    expect(index['/docs/governance/approvals']).toEqual({
+    expect(index['/docs/governance/tool-hints']).toEqual({
       group: 'Governance',
       folder: null,
       depth: 1,
       position: 2,
+    });
+    expect(index['/docs/governance/approvals']).toEqual({
+      group: 'Governance',
+      folder: null,
+      depth: 1,
+      position: 3,
     });
   });
 
@@ -89,7 +95,7 @@ describe('buildSidebarNavIndex', () => {
     // Core concepts opens a new group, so its first entry restarts at 1 rather
     // than continuing Get Started's numbering.
     expect(index['/docs'].position).toBe(1);
-    expect(index['/docs/how-composio-works'].position).toBe(1);
+    expect(index['/docs/sessions'].position).toBe(1);
   });
 
   test('a folder counts as one entry for its siblings', () => {

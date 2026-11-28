@@ -8,7 +8,7 @@ import {
   merge,
   type ControllerOptions,
 } from './sdk-release-controller-fixture';
-import { json, readText, runRelease } from './sdk-release-harness';
+import { fetchInputUrl, json, readText, runRelease } from './sdk-release-harness';
 
 /** Regate as the workflow runs it: `next` at batch 8's merge commit, dispatched by the requester. */
 const regate = (fetcher: ReturnType<typeof fakeController>['fetcher'], actor = 'requester') =>
@@ -26,6 +26,14 @@ const tagged = Exit.succeed({ _tag: 'Tagged', tag: 'sdk-release/8' } as const);
 const controller = (options: ControllerOptions = {}) => fakeController(options);
 
 describe('regate', () => {
+  test('accepts an admin requester approval when re-gating a merged release', async () => {
+    const github = controller({ reviewer: 'requester', reviewerPermission: 'admin' });
+    expect(await regate(github.fetcher)).toEqual(tagged);
+    expect(github.writes).toEqual([
+      { method: 'POST', path: '/git/refs', body: { ref: 'refs/tags/sdk-release/8', sha: head } },
+    ]);
+  });
+
   test('tags the merged, untagged release on next at its reviewed head', async () => {
     const github = controller();
     expect(await regate(github.fetcher)).toEqual(tagged);
@@ -75,7 +83,7 @@ describe('regate', () => {
   test('requires an active ComposioHQ member', async () => {
     const github = controller();
     const outsider: typeof github.fetcher = (input, init) =>
-      new URL(String(input)).pathname === '/orgs/ComposioHQ/memberships/outsider'
+      new URL(fetchInputUrl(input)).pathname === '/orgs/ComposioHQ/memberships/outsider'
         ? Promise.resolve(json({ message: 'Not Found' }, 404))
         : github.fetcher(input, init);
     expect(String(await regate(outsider, 'outsider'))).toContain('(404)');

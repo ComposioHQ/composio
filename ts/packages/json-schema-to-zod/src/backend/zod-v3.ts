@@ -27,6 +27,7 @@ const guardedSchemaClass = (Base: ZodSchemaClass): ZodSchemaClass => {
     return cached;
   }
 
+  // oxlint-disable-next-line typescript/unbound-method -- called with the guarded instance as receiver
   const parseAsBase = Base.prototype._parse;
   class Guarded extends Base {
     override _parse(input: z.ParseInput): z.ParseReturnType<unknown> {

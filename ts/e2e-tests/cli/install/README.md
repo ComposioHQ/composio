@@ -28,4 +28,4 @@ COMPOSIO_INSTALL_E2E_VERSION=latest \
 pnpm test:e2e:install
 ```
 
-Set `COMPOSIO_INSTALL_E2E_VERSION=@composio/cli@0.3.1` to cover the shell-configuration fallback for a CLI release that predates `composio install --shell`.
+Set `COMPOSIO_INSTALL_E2E_VERSION=@composio/cli@0.3.1` to cover graceful install + recovery guidance for a CLI release that predates `composio install --shell`.

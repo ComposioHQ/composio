@@ -1,0 +1,45 @@
+{
+  "slug": "platform-project-api-key-permissions",
+  "title": "Project API Key Permissions",
+  "description": "Public guidance for scoped Project API key permissions.",
+  "articlePath": "platform-project-api-key-permissions.md",
+  "sources": [
+    {
+      "sourcePath": "platform/project-api-key-permissions/public.md",
+      "sourceHeading": "Proxy Execute requires an explicitly allowed Project API key"
+    },
+    {
+      "sourcePath": "platform/project-api-key-permissions/public.md",
+      "sourceHeading": "Tool Router session creation requires Sessions write access"
+    },
+    {
+      "sourcePath": "platform/project-api-key-permissions/public.md",
+      "sourceHeading": "Tool execution requires Tool execution write access"
+    }
+  ],
+  "topics": [
+    "authentication",
+    "errors-and-troubleshooting",
+    "sessions-and-execution"
+  ],
+  "tags": [
+    "api-keys",
+    "permissions",
+    "platform",
+    "sessions",
+    "tool-router"
+  ],
+  "aliases": [
+    "/kb/sdk-and-api/platform-project-api-key-permissions",
+    "org-api-created-keys-do-not-currently-enable-proxy-execute",
+    "tool-router-session-creation-requires-sessions-write-access"
+  ],
+  "relatedGuides": [],
+  "externalResources": [],
+  "updatedAt": "2026-08-28",
+  "lastVerifiedAt": "2026-08-28",
+  "reviewAfter": "2026-11-26",
+  "freshness": "evergreen",
+  "state": "published",
+  "featured": false
+}

@@ -70,10 +70,10 @@ A toolkit version is **required** for direct execution — \`tools.execute()\` w
 from composio import Composio
 
 composio = Composio(toolkit_versions={"github": "latest"})
-tools = composio.tools.get("user_123", tools=["GITHUB_CREATE_ISSUE"])
+tools = composio.tools.get("user_123", tools=["GITHUB_CREATE_AN_ISSUE"])
 
 result = composio.tools.execute(
-    "GITHUB_CREATE_ISSUE",
+    "GITHUB_CREATE_AN_ISSUE",
     {"owner": "org", "repo": "repo", "title": "Bug report"},
     user_id="user_123",
     dangerously_skip_version_check=True,  # required when running "latest"
@@ -86,9 +86,9 @@ result = composio.tools.execute(
 import { Composio } from "@composio/core";
 
 const composio = new Composio({ toolkitVersions: { github: "latest" } });
-const tools = await composio.tools.get("user_123", { tools: ["GITHUB_CREATE_ISSUE"] });
+const tools = await composio.tools.get("user_123", { tools: ["GITHUB_CREATE_AN_ISSUE"] });
 
-const result = await composio.tools.execute("GITHUB_CREATE_ISSUE", {
+const result = await composio.tools.execute("GITHUB_CREATE_AN_ISSUE", {
     userId: "user_123",
     arguments: { owner: "org", repo: "repo", title: "Bug report" },
     dangerouslySkipVersionCheck: true, // required when running "latest"
@@ -103,8 +103,8 @@ The deliberate \`latest\` choice matches the SDK examples' explicit version-chec
 set -euo pipefail
 curl --fail-with-body -s --get https://backend.composio.dev/api/v3.1/tools \\
   -H "x-api-key: $COMPOSIO_API_KEY" \\
-  --data-urlencode 'tool_slugs=GITHUB_CREATE_ISSUE' --data-urlencode 'toolkit_versions=latest'
-curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_ISSUE \\
+  --data-urlencode 'tool_slugs=GITHUB_CREATE_AN_ISSUE' --data-urlencode 'toolkit_versions=latest'
+curl --fail-with-body -s -X POST https://backend.composio.dev/api/v3.1/tools/execute/GITHUB_CREATE_AN_ISSUE \\
   -H "x-api-key: $COMPOSIO_API_KEY" -H "Content-Type: application/json" \\
   -d '{"user_id":"user_123","version":"latest","arguments":{"owner":"org","repo":"repo","title":"Bug report"}}'
 \`\`\`
