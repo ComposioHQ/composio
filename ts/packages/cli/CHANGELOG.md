@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- `composio generate ts --type-tools` no longer fails with "Can't resolve $ref" on toolkits such as GitHub and Gmail. References into a schema's `$defs` are inlined, so tool outputs keep their types; a reference whose target is missing, external, or recursive is typed as `unknown`.
+- `composio generate ts --type-tools` no longer fails with "Can't resolve $ref" on toolkits such as GitHub and Gmail. References into a schema's `$defs` are inlined, so tool outputs keep their types; a reference whose target is missing, external, or recursive is typed as `unknown`. A schema whose references would expand past 100,000 nodes keeps them, typed as `unknown`, with a warning.
 
 - `composio generate ts` and `composio generate` accept `--no-comments`, which leaves out the doc comments printed from tool and trigger schemas (titles, descriptions, examples). Comments stay on by default; with `--type-tools` they are most of the output (about 4.5 MB of the 6.3 MB `github.ts`).
 

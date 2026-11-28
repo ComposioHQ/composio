@@ -9,6 +9,11 @@ export { GenerateTypeFromJsonSchemaError };
  * `type <name> = …;` for the `properties` of a tool or trigger schema. A schema
  * the printer cannot read (a keyword with the wrong JSON type) fails with
  * `GenerateTypeFromJsonSchemaError`.
+ *
+ * Local `$ref` pointers (into the schema's `$defs`) are inlined the way the SDK
+ * inlines them at runtime; a missing target or a cycle becomes a permissive object.
+ * A schema whose references expand past core's caps keeps them, and the printer
+ * types each one as `unknown`.
  */
 export function generateTypeFromJsonSchema(
   name: string,
@@ -16,25 +21,29 @@ export function generateTypeFromJsonSchema(
   options: PrintTypeOptions = { comments: true }
 ) {
   return Effect.try({
-    // Local `$ref` pointers (into the schema's `$defs`) are inlined the way the SDK inlines
-    // them at runtime; a missing target or a cycle becomes a permissive object.
-    // The Composio API returns schemas whose discriminator.mapping points to #/$defs/... paths
-    // while the variants are inlined in oneOf/anyOf arrays. A union needs no discriminator, so
-    // it is removed.
-    try: () =>
-      printTypeFromJsonSchema(
-        name,
-        removeDiscriminators(
-          dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' })['properties']
-        ),
-        options
-      ),
-    catch: cause =>
-      new GenerateTypeFromJsonSchemaError({
-        cause,
-        message: 'Failed to generate type from JSON schema',
-      }),
-  });
+    try: () => dereferenceJsonSchema(schema, { onUnresolved: 'sentinel' }),
+    catch: cause => (cause instanceof Error ? cause.message : String(cause)),
+  }).pipe(
+    Effect.catch(reason =>
+      Effect.logWarning(`${name}: ${reason}; its references are typed as unknown`).pipe(
+        Effect.as(schema)
+      )
+    ),
+    Effect.flatMap(inlined =>
+      Effect.try({
+        // The Composio API returns schemas whose discriminator.mapping points to #/$defs/...
+        // paths while the variants are inlined in oneOf/anyOf arrays. A union needs no
+        // discriminator, so it is removed.
+        try: () =>
+          printTypeFromJsonSchema(name, removeDiscriminators(inlined['properties']), options),
+        catch: cause =>
+          new GenerateTypeFromJsonSchemaError({
+            cause,
+            message: 'Failed to generate type from JSON schema',
+          }),
+      })
+    )
+  );
 }
 
 /**

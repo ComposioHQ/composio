@@ -118,4 +118,24 @@ describe('generateTypeFromJsonSchema with $ref', () => {
       expect(printed).toContain('id?: number;');
     })
   );
+
+  it.effect('keeps the references of a schema that would expand exponentially', () =>
+    Effect.gen(function* () {
+      // Each definition references the next one twice: inlining would copy x40 2^40 times.
+      const $defs = Object.fromEntries(
+        Array.from({ length: 40 }, (_, i) => [
+          `x${i}`,
+          {
+            type: 'object',
+            properties: { a: { $ref: `#/$defs/x${i + 1}` }, b: { $ref: `#/$defs/x${i + 1}` } },
+          },
+        ])
+      );
+      const printed = yield* generateTypeFromJsonSchema('DOUBLING', {
+        $defs: { ...$defs, x40: { type: 'string' } },
+        properties: { root: { $ref: '#/$defs/x0' } },
+      });
+      expect(printed).toContain('root?: unknown;');
+    })
+  );
 });

@@ -18,6 +18,23 @@ from composio.utils.json_schema import (
 )
 
 
+def _doubling_schema() -> t.Dict[str, t.Any]:
+    """Each definition references the next one twice: inlining copies x40 2**40 times
+    while the chain stays 40 refs deep, under both depth caps."""
+    defs: t.Dict[str, t.Any] = {
+        f"x{i}": {
+            "type": "object",
+            "properties": {
+                "a": {"$ref": f"#/$defs/x{i + 1}"},
+                "b": {"$ref": f"#/$defs/x{i + 1}"},
+            },
+        }
+        for i in range(40)
+    }
+    defs["x40"] = {"type": "string"}
+    return {"$defs": defs, "$ref": "#/$defs/x0"}
+
+
 def _contains_ref(value: t.Any) -> bool:
     if isinstance(value, dict):
         if "$ref" in value:
@@ -195,6 +212,10 @@ class TestDereferenceJsonSchema:
                 }
             )
 
+    def test_throws_when_expansion_exceeds_node_cap(self):
+        with pytest.raises(JSONSchemaRefResolutionError, match="node cap"):
+            dereference_json_schema(_doubling_schema())
+
     def test_throws_on_pathologically_deep_nesting(self):
         leaf: t.Dict[str, t.Any] = {"type": "string"}
         for _ in range(1000):
@@ -354,6 +375,10 @@ class TestSentinelMode:
             leaf = {"type": "object", "properties": {"x": leaf}}
         with pytest.raises(JSONSchemaRefResolutionError):
             dereference_json_schema(leaf, on_unresolved="sentinel")
+
+    def test_still_throws_on_node_cap(self):
+        with pytest.raises(JSONSchemaRefResolutionError, match="node cap"):
+            dereference_json_schema(_doubling_schema(), on_unresolved="sentinel")
 
     def test_explicit_throw_matches_default(self):
         with pytest.raises(JSONSchemaRefResolutionError):
