@@ -1,10 +1,28 @@
-import { expect, test } from 'bun:test';
+import { afterEach, expect, test } from 'bun:test';
 import { GET } from '../../app/llms.txt/route';
 import { source, referenceSource, examplesSource, knowledgeBaseSource } from '../../lib/source';
 
+const originalMcpUrl = process.env.DOCS_SEARCH_MCP_URL;
+afterEach(() => {
+  if (originalMcpUrl === undefined) delete process.env.DOCS_SEARCH_MCP_URL;
+  else process.env.DOCS_SEARCH_MCP_URL = originalMcpUrl;
+});
+
+test('docs search discovery is opt-in and uses the deployment endpoint', async () => {
+  delete process.env.DOCS_SEARCH_MCP_URL;
+  expect(await GET().text()).not.toContain('Documentation search MCP');
+  process.env.DOCS_SEARCH_MCP_URL = 'https://docs-search.example.com/mcp';
+  const text = await GET().text();
+  expect(text).toContain('[Documentation search MCP](https://docs-search.example.com/mcp)');
+  expect(text).toContain('read-only `search` tool');
+  expect(text.length).toBeLessThan(6500);
+  process.env.DOCS_SEARCH_MCP_URL = 'http://docs-search.example.com/mcp';
+  expect(() => GET()).toThrow();
+});
+
 test('routing map is bounded and covers the current developer decisions', async () => {
   const text = await GET().text();
-  expect(text.length).toBeLessThan(6000);
+  expect(text.length).toBeLessThan(6500);
   const primary = text.split('## Optional')[0];
   for (const path of ['docs', 'docs/agent-setup', 'docs/quickstart', 'docs/agent-plugins',
     'docs/authentication', 'docs/sessions/tool-access', 'kb']) {

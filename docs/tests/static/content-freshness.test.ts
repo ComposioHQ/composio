@@ -45,6 +45,42 @@ afterEach(() => {
 });
 
 describe('source-backed page freshness', () => {
+  test('maps an isolated docs root to exact-commit repository history', () => {
+    const original = repository();
+    put(original, 'docs/content/guide.mdx', 'original');
+    commit(original, initial);
+    put(original, 'docs/content/guide.mdx', 'changed');
+    commit(original, changed);
+    const isolated = temporaryDirectory();
+    put(isolated, 'content/guide.mdx', 'changed');
+    const definitions = [{ pathname: '/docs/guide', sources: ['content/guide.mdx'] }];
+    expect(buildContentFreshness(isolated, definitions).pages['/docs/guide']).toBeUndefined();
+    const previous = process.env.DOCS_FRESHNESS_HISTORY_ROOT;
+    try {
+      process.env.DOCS_FRESHNESS_HISTORY_ROOT = original;
+      expect(buildContentFreshness(isolated, definitions).pages['/docs/guide']).toBe('2025-02-02T12:00:00.000Z');
+      process.env.DOCS_FRESHNESS_HISTORY_ROOT = join(original, 'missing');
+      expect(() => buildContentFreshness(isolated, definitions)).toThrow('Cannot read fetched docs source history');
+    } finally {
+      if (previous === undefined) delete process.env.DOCS_FRESHNESS_HISTORY_ROOT;
+      else process.env.DOCS_FRESHNESS_HISTORY_ROOT = previous;
+    }
+  });
+
+  test('bundled freshness is independent of the runtime working directory', () => {
+    const root = temporaryDirectory();
+    const timestamp = '2025-01-01T12:00:00.000Z';
+    const script = `import { mock } from 'bun:test';
+      mock.module(${JSON.stringify(fileURLToPath(new URL('../../.generated/content-freshness.json', import.meta.url)))}, () => ({
+        default: { version: 1, pages: { '/fixture': ${JSON.stringify(timestamp)} } },
+      }));
+      const { getPageLastUpdated } = await import(${JSON.stringify(fileURLToPath(new URL('../../lib/content-freshness.ts', import.meta.url)))});
+      console.log(await getPageLastUpdated('/fixture'));
+      console.log(await getPageLastUpdated('toString'));`;
+    const output = execFileSync(process.execPath, ['-e', script], { cwd: root, encoding: 'utf8' }).trim();
+    expect(output).toBe(`${timestamp}\nnull`);
+  });
+
   test('tracks a changed source, not unrelated commits or filesystem write time', () => {
     const root = repository();
     put(root, 'content/docs/guide.mdx', 'original');
