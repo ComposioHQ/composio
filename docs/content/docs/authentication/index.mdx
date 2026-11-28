@@ -10,6 +10,8 @@ This is the core idea: your agent runs the same tools for many people, and every
 
 Because connections are stored under the `userID`, use a stable identifier, like your database ID, never one that can change.
 
+For a B2B SaaS product, start with the [tenant resource hierarchy](/docs/b2b-agents#map-your-customers-to-composio-resources), then [choose a project topology](/docs/b2b-agents#start-with-one-project-per-environment) and [customer authentication model](/docs/b2b-agents#choose-the-customers-authentication-model). Review [production controls](/docs/production-readiness) before launch.
+
 <Accordions>
 <Accordion title="userID best practices">
 - **Recommended:** database UUID or primary key (`user.id`)

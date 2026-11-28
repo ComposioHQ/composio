@@ -26,7 +26,7 @@ You can still [white-label the Connect Link page](/docs/authentication/white-lab
 
 ## What changes with your own app
 
-- **Dedicated provider rate limits.** Some provider limits apply per OAuth app. On a managed app, connections share them with other Composio customers. Your own app has its own. See [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits) and [provider quota errors](/reference/rate-limits#provider-quota-errors).
+- **Dedicated provider rate limits.** Some provider limits apply per OAuth app. On a managed app, connections share them with other Composio customers. Your own app has its own. Provider account and workspace limits can still apply, and your organization's Composio API limit stays the same. See [Avoid and recover from rate limits](/docs/poc-to-prod/avoid-rate-limits) and [provider quota errors](/reference/rate-limits#provider-quota-errors).
 - **Your name on the consent screen.** Users see your app name when they approve access.
 - **Your own scopes.** You can [adjust scopes](/docs/authentication/controlling-scopes) on a managed config, but only within what Composio's app is set up to request. A scope outside that set needs your own app.
 
@@ -42,7 +42,7 @@ If you expect high volume, we suggest setting up your own app early. Managed con
 
 Some toolkits have no managed app at all. See [Toolkits without managed auth](#toolkits-without-managed-auth).
 
-Ready to move? Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app). Existing connections keep working while you switch.
+Ready to move? Follow [Move to your own OAuth app](/docs/migration-guide/managed-to-own-app). Existing connections keep working while you switch. Users must [reconnect to your app, and their triggers must be recreated](/docs/migration-guide/managed-to-own-app#what-doesnt-carry-over).
 
 ## Create a custom auth config
 
