@@ -46,7 +46,7 @@ jobs:
           published=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1000 --json tagName --jq '.[].tagName')
           mapfile -t tags <<< "$published"
           bun .github/scripts/cli-release/update-changelog.ts "${tags[@]}"
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         id: app
         with:
           client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
