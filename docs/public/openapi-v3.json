@@ -1545,6 +1545,10 @@
                   "unavailable"
                 ],
                 "description": "The hook could not be evaluated"
+              },
+              "detail": {
+                "type": "string",
+                "description": "The reason the hook is unavailable, for example `The webhook endpoint timed out`."
               }
             },
             "required": [
@@ -1619,7 +1623,7 @@
             "items": {
               "$ref": "#/components/schemas/HookResult"
             },
-            "description": "Every session hook that applied to this call. Omitted when none applied."
+            "description": "The session hooks that ran on this call, each with its result. Omitted when none applied."
           }
         },
         "required": [
@@ -1694,7 +1698,7 @@
             "items": {
               "$ref": "#/components/schemas/HookResult"
             },
-            "description": "Every session hook that applied to this call. Omitted when none applied."
+            "description": "The session hooks that ran on this call, each with its result. Omitted when none applied."
           }
         },
         "required": [
@@ -1803,7 +1807,7 @@
             "items": {
               "$ref": "#/components/schemas/HookResult"
             },
-            "description": "Every session hook that applied to this call. Omitted when none applied."
+            "description": "The session hooks that ran on this call, each with its result. Omitted when none applied."
           }
         },
         "required": [
@@ -1972,7 +1976,7 @@
             "items": {
               "$ref": "#/components/schemas/HookResult"
             },
-            "description": "Every session hook that applied to this request. Omitted when none applied."
+            "description": "The session hooks that ran on this request, each with its result. Omitted when none applied."
           }
         },
         "required": [
@@ -2003,7 +2007,7 @@
             "items": {
               "$ref": "#/components/schemas/HookResult"
             },
-            "description": "Every session hook that applied to this call. Omitted when none applied."
+            "description": "The session hooks that ran on this call, each with its result. Omitted when none applied."
           }
         },
         "required": [
@@ -19215,33 +19219,68 @@
                               "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
                             },
                             "handler": {
-                              "type": "object",
-                              "properties": {
-                                "type": {
-                                  "type": "string",
-                                  "enum": [
-                                    "condition_check"
-                                  ]
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "condition_check"
+                                      ]
+                                    },
+                                    "condition": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2000,
+                                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "condition",
+                                    "action"
+                                  ],
+                                  "additionalProperties": false
                                 },
-                                "condition": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 2000,
-                                  "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                                },
-                                "action": {
-                                  "type": "string",
-                                  "enum": [
-                                    "block"
-                                  ]
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "webhook"
+                                      ]
+                                    },
+                                    "timeout_ms": {
+                                      "type": "integer",
+                                      "minimum": 100,
+                                      "maximum": 5000,
+                                      "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                    },
+                                    "fallback_action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block",
+                                        "continue"
+                                      ],
+                                      "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "fallback_action"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                 }
-                              },
-                              "required": [
-                                "type",
-                                "condition",
-                                "action"
-                              ],
-                              "additionalProperties": false
+                              ]
                             }
                           },
                           "required": [
@@ -19354,6 +19393,37 @@
                                   ],
                                   "additionalProperties": false,
                                   "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "webhook"
+                                      ]
+                                    },
+                                    "timeout_ms": {
+                                      "type": "integer",
+                                      "minimum": 100,
+                                      "maximum": 5000,
+                                      "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                    },
+                                    "fallback_action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block",
+                                        "continue"
+                                      ],
+                                      "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "fallback_action"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                 }
                               ]
                             }
@@ -20155,33 +20225,68 @@
                                     "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
                                   },
                                   "handler": {
-                                    "type": "object",
-                                    "properties": {
-                                      "type": {
-                                        "type": "string",
-                                        "enum": [
-                                          "condition_check"
-                                        ]
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "condition_check"
+                                            ]
+                                          },
+                                          "condition": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000,
+                                            "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "condition",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "condition": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "maxLength": 2000,
-                                        "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                                      },
-                                      "action": {
-                                        "type": "string",
-                                        "enum": [
-                                          "block"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "webhook"
+                                            ]
+                                          },
+                                          "timeout_ms": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 5000,
+                                            "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                          },
+                                          "fallback_action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block",
+                                              "continue"
+                                            ],
+                                            "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "fallback_action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                       }
-                                    },
-                                    "required": [
-                                      "type",
-                                      "condition",
-                                      "action"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -20294,6 +20399,37 @@
                                         ],
                                         "additionalProperties": false,
                                         "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "webhook"
+                                            ]
+                                          },
+                                          "timeout_ms": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 5000,
+                                            "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                          },
+                                          "fallback_action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block",
+                                              "continue"
+                                            ],
+                                            "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "fallback_action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                       }
                                     ]
                                   }
@@ -21700,33 +21836,68 @@
                                     "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
                                   },
                                   "handler": {
-                                    "type": "object",
-                                    "properties": {
-                                      "type": {
-                                        "type": "string",
-                                        "enum": [
-                                          "condition_check"
-                                        ]
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "condition_check"
+                                            ]
+                                          },
+                                          "condition": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000,
+                                            "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "condition",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "condition": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "maxLength": 2000,
-                                        "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                                      },
-                                      "action": {
-                                        "type": "string",
-                                        "enum": [
-                                          "block"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "webhook"
+                                            ]
+                                          },
+                                          "timeout_ms": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 5000,
+                                            "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                          },
+                                          "fallback_action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block",
+                                              "continue"
+                                            ],
+                                            "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "fallback_action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                       }
-                                    },
-                                    "required": [
-                                      "type",
-                                      "condition",
-                                      "action"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -21839,6 +22010,37 @@
                                         ],
                                         "additionalProperties": false,
                                         "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "webhook"
+                                            ]
+                                          },
+                                          "timeout_ms": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 5000,
+                                            "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                          },
+                                          "fallback_action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block",
+                                              "continue"
+                                            ],
+                                            "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "fallback_action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                       }
                                     ]
                                   }
@@ -22840,33 +23042,68 @@
                               "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
                             },
                             "handler": {
-                              "type": "object",
-                              "properties": {
-                                "type": {
-                                  "type": "string",
-                                  "enum": [
-                                    "condition_check"
-                                  ]
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "condition_check"
+                                      ]
+                                    },
+                                    "condition": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 2000,
+                                      "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                    },
+                                    "action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "condition",
+                                    "action"
+                                  ],
+                                  "additionalProperties": false
                                 },
-                                "condition": {
-                                  "type": "string",
-                                  "minLength": 1,
-                                  "maxLength": 2000,
-                                  "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                                },
-                                "action": {
-                                  "type": "string",
-                                  "enum": [
-                                    "block"
-                                  ]
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "webhook"
+                                      ]
+                                    },
+                                    "timeout_ms": {
+                                      "type": "integer",
+                                      "minimum": 100,
+                                      "maximum": 5000,
+                                      "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                    },
+                                    "fallback_action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block",
+                                        "continue"
+                                      ],
+                                      "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "fallback_action"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                 }
-                              },
-                              "required": [
-                                "type",
-                                "condition",
-                                "action"
-                              ],
-                              "additionalProperties": false
+                              ]
                             }
                           },
                           "required": [
@@ -22979,6 +23216,37 @@
                                   ],
                                   "additionalProperties": false,
                                   "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "webhook"
+                                      ]
+                                    },
+                                    "timeout_ms": {
+                                      "type": "integer",
+                                      "minimum": 100,
+                                      "maximum": 5000,
+                                      "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                    },
+                                    "fallback_action": {
+                                      "type": "string",
+                                      "enum": [
+                                        "block",
+                                        "continue"
+                                      ],
+                                      "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "fallback_action"
+                                  ],
+                                  "additionalProperties": false,
+                                  "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                 }
                               ]
                             }
@@ -23670,33 +23938,68 @@
                                     "description": "Which tools the hook covers: \"all\" for all of them, or only the listed toolkits."
                                   },
                                   "handler": {
-                                    "type": "object",
-                                    "properties": {
-                                      "type": {
-                                        "type": "string",
-                                        "enum": [
-                                          "condition_check"
-                                        ]
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "condition_check"
+                                            ]
+                                          },
+                                          "condition": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 2000,
+                                            "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
+                                          },
+                                          "action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "condition",
+                                          "action"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "condition": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "maxLength": 2000,
-                                        "description": "What to block, written as a plain sentence. For example: \"Sending email to anyone outside example.org\"."
-                                      },
-                                      "action": {
-                                        "type": "string",
-                                        "enum": [
-                                          "block"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "webhook"
+                                            ]
+                                          },
+                                          "timeout_ms": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 5000,
+                                            "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                          },
+                                          "fallback_action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block",
+                                              "continue"
+                                            ],
+                                            "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "fallback_action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                       }
-                                    },
-                                    "required": [
-                                      "type",
-                                      "condition",
-                                      "action"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -23809,6 +24112,37 @@
                                         ],
                                         "additionalProperties": false,
                                         "description": "Blocks a tool response that tries to manipulate the agent: override its instructions, change its role, or make it take actions the user didn't ask for."
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "type": {
+                                            "type": "string",
+                                            "enum": [
+                                              "webhook"
+                                            ]
+                                          },
+                                          "timeout_ms": {
+                                            "type": "integer",
+                                            "minimum": 100,
+                                            "maximum": 5000,
+                                            "description": "How long to wait for your endpoint to answer, in milliseconds. Defaults to 3000."
+                                          },
+                                          "fallback_action": {
+                                            "type": "string",
+                                            "enum": [
+                                              "block",
+                                              "continue"
+                                            ],
+                                            "description": "What happens to the call when your endpoint times out, can't be reached, or sends an answer that can't be read."
+                                          }
+                                        },
+                                        "required": [
+                                          "type",
+                                          "fallback_action"
+                                        ],
+                                        "additionalProperties": false,
+                                        "description": "Experimental. Sends the call to the project's session webhook URL and waits for your endpoint to answer. The answer can let the call run, block it, or change it."
                                       }
                                     ]
                                   }
