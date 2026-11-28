@@ -1,10 +1,10 @@
 ---
-title: Firewall
+title: Overview
 description: Block tool calls and tool results you don't want your agent to act on
-keywords: [firewall, hooks, guardrails, condition_check, prompt_injection_check, prompt injection, before_execute, after_execute]
+keywords: [guardrails, hooks, condition_check, prompt_injection_check, prompt injection, before_execute, after_execute]
 ---
 
-Firewall lets you block actions you don't want your agent to take, or tool results you don't want it to receive. For example, you can stop your agent from:
+Guardrails let you block actions you don't want your agent to take, or tool results you don't want it to receive. For example, you can stop your agent from:
 
 - sharing internal pricing with customers
 - posting about unreleased products in public Slack channels
@@ -13,7 +13,7 @@ Firewall lets you block actions you don't want your agent to take, or tool resul
 
 Your agent can still use the same tools for everything else.
 
-Firewall is built on [hooks](/docs/hooks), which run before or after each tool call your agent makes. There are three kinds of checks you can add.
+This part of Guardrails is built on [hooks](/docs/sessions/hooks), which run before or after each tool call your agent makes. There are three kinds of checks you can add.
 
 ## Custom prompt checks
 
@@ -23,7 +23,7 @@ Every time your agent calls a tool, a decision model compares the tool call to y
 
 A check can run before a tool call, on its arguments, or after it, on what the tool returns.
 
-See [Custom prompt checks](/docs/hooks/custom-prompt-checks) for how to add one and how to write a condition.
+See [Custom prompt checks](/docs/sessions/hooks/custom-prompt-checks) for how to add one and how to write a condition.
 
 ## Prompt injection detection
 
@@ -31,7 +31,7 @@ Tool results are where outside content reaches your agent: emails, web pages, ti
 
 When this check is on, a decision model screens every tool result before your agent reads it. If a result contains a prompt injection, it's blocked, and your agent gets an error instead of the content. There's no condition to write. You turn the check on and choose which toolkits it covers.
 
-See [Prompt injection detection](/docs/hooks/prompt-injection-detection) for how to turn it on.
+See [Prompt injection detection](/docs/sessions/hooks/prompt-injection-detection) for how to turn it on.
 
 ## Webhooks
 
@@ -41,10 +41,14 @@ A webhook sends each tool call to an endpoint you host, as an HTTP request. The 
 - **Block:** The tool call is stopped, and your agent gets the error message you return.
 - **Override:** The tool call goes ahead with your changes. Before the tool runs, you can replace its arguments. After it runs, you can replace its result.
 
-For example, when a Salesforce record contains a customer's phone number, you can remove the phone number and return the rest, instead of blocking the whole record.
+For example, when a Salesforce record contains a customer's phone number, you can remove the phone number and return the rest, instead of blocking the whole record. You can also scope a webhook to specific toolkits; see [Scoping webhooks to toolkits](/docs/sessions/hooks/webhooks#scoping-webhooks-to-toolkits).
 
-See [Webhooks](/docs/hooks/webhooks) for how to set one up.
+See [Webhooks](/docs/sessions/hooks/webhooks) for how to set one up.
 
 <Callout type="info">
 Custom prompt checks and prompt injection detection are available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform). Webhooks are available on the Enterprise plan.
 </Callout>
+
+## The other three layers
+
+Guardrails also covers the rest of Composio's permission model: which toolkits and tools a session can run, how tool hints steer that policy, and approvals. See [Per-action permissions](/docs/guardrails/action-permissions), [Tool hints](/docs/guardrails/tool-hints), and [Approvals](/docs/guardrails/approvals).

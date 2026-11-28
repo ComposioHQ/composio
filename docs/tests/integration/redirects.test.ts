@@ -14,7 +14,7 @@ const EVIDENCED_REDIRECTS = [
   { from: "/authentication/authentication-overview", to: "/docs/authentication", markdown: false },
   { from: "/authentication/connected-accounts/overview", to: "/docs/authentication/manually-authenticating", markdown: false },
   { from: "/llms.mdx/authentication/connected-accounts/overview", to: "/docs/authentication/manually-authenticating.md", markdown: true },
-  { from: "/llms.mdx/sessions/sessions-via-mcp", to: "/docs/sessions-via-mcp.md", markdown: true },
+  { from: "/llms.mdx/sessions/sessions-via-mcp", to: "/docs/sessions/sessions-via-mcp.md", markdown: true },
   { from: "/docs/manually-authenticating.md", to: "/docs/authentication/manually-authenticating.md", markdown: true },
 ];
 
@@ -47,10 +47,15 @@ const REDIRECTS = [
   { from: "/authentication", to: "/docs/authentication" },
   { from: "/changelog", to: "/docs/changelog" },
   { from: "/docs/mcp-quickstart", to: "/docs/single-toolkit-mcp" },
-  { from: "/docs/tool-tags", to: "/docs/governance/tool-hints" },
-  { from: "/docs/tool-tags.md", to: "/docs/governance/tool-hints.md" },
-  { from: "/docs/approvals", to: "/docs/governance/approvals" },
-  { from: "/docs/approvals.md", to: "/docs/governance/approvals.md" },
+  { from: "/docs/tool-tags", to: "/docs/guardrails/tool-hints" },
+  { from: "/docs/tool-tags.md", to: "/docs/guardrails/tool-hints.md" },
+  { from: "/docs/approvals", to: "/docs/guardrails/approvals" },
+  { from: "/docs/approvals.md", to: "/docs/guardrails/approvals.md" },
+  { from: "/docs/governance/tool-hints", to: "/docs/guardrails/tool-hints" },
+  { from: "/docs/firewall", to: "/docs/guardrails" },
+  { from: "/docs/hooks/webhooks", to: "/docs/sessions/hooks/webhooks" },
+  { from: "/docs/sessions-via-mcp", to: "/docs/sessions/sessions-via-mcp" },
+  { from: "/docs/native-tools-vs-mcp", to: "/docs/sessions/sessions-via-mcp" },
   { from: "/docs/welcome", to: "/docs" },
   { from: "/docs/managed-authentication", to: "/docs/authentication" },
   { from: "/docs/workbench", to: "/docs/sandbox/remote" },
@@ -202,7 +207,7 @@ describe("Redirects - saved tool tag section links", () => {
     const html = await res.text();
 
     expect(res.status).toBe(200);
-    expect(new URL(res.url).pathname).toBe("/docs/governance/tool-hints");
+    expect(new URL(res.url).pathname).toBe("/docs/guardrails/tool-hints");
 
     for (const id of [
       "tags",

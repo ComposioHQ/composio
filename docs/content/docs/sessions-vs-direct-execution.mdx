@@ -13,7 +13,7 @@ A **session** is the runtime context Composio creates for one of your users with
 
 **Direct execution** skips the session. Your code fetches specific tool schemas, manages auth itself, and calls `tools.execute()` directly.
 
-If you need approval before execution, use [approvals](/docs/governance/approvals): the session asks the user before it runs the tools you choose, including calls inside meta tools that execute multiple app tools. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
+If you need approval before execution, use [approvals](/docs/guardrails/approvals): the session asks the user before it runs the tools you choose, including calls inside meta tools that execute multiple app tools. The comparison below describes the tradeoffs when maintaining a direct-execution integration.
 
 | | Sessions | Direct execution |
 |---|---|---|
@@ -23,7 +23,7 @@ If you need approval before execution, use [approvals](/docs/governance/approval
 | **Memory** | Meta tools share context across calls, storing discovered IDs and relationships | You manage state between calls |
 | **Auth** | [In-chat](/docs/authentication#in-chat-authentication): agent prompts the user to connect when needed. Also supports [manual](/docs/authentication/manually-authenticating) | You build the auth flow with [connect links](/docs/tools-direct/authenticating-tools) |
 | **[Sandbox](/docs/sandbox/remote)** | Built in, large responses offloaded automatically | Not available |
-| **Human approval** | [Approvals](/docs/governance/approvals) ask the user before the tools you choose run, including inside meta tools | You intercept before each call in your code |
+| **Human approval** | [Approvals](/docs/guardrails/approvals) ask the user before the tools you choose run, including inside meta tools | You intercept before each call in your code |
 | **Latency** | Multiple LLM turns (search, then execute) | Single call |
 
 Sessions are configurable. [Restrict toolkits](/docs/sessions/tool-access), set [auth configs](/docs/auth-configuration/custom-auth-configs) for white-labeled OAuth, and pin [connected accounts](/docs/sessions/connections#account-selection). See [Restrict tool access](/docs/sessions/tool-access) for the full list.

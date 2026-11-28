@@ -72,11 +72,11 @@ describe('Docs product navigation', () => {
     expect(docsProductDestination('/docs/agent-plugins', 'platform')).toBe(
       '/docs/quickstart',
     );
-    expect(docsProductDestination('/docs/sessions-via-mcp', 'for-you')).toBe(
+    expect(docsProductDestination('/docs/sessions/sessions-via-mcp', 'for-you')).toBe(
       '/docs/composio-connect',
     );
     expect(docsProductDestination('/docs/composio-connect', 'platform')).toBe(
-      '/docs/sessions-via-mcp',
+      '/docs/sessions/sessions-via-mcp',
     );
     expect(docsProductDestination('/docs/authentication', 'for-you')).toBe(
       '/docs/agent-plugins',
@@ -231,11 +231,11 @@ describe('Docs product navigation', () => {
       '/docs/security/vendor-security-review',
     );
     expect(knowledgeBaseSource.getPage(['guide', 'platform-compliance-data-handling'])).toBeUndefined();
-    const governance = platformTree.children.find(
-      node => node.type === 'folder' && node.name === 'Governance',
+    const guardrails = platformTree.children.find(
+      node => node.type === 'folder' && node.name === 'Guardrails',
     );
-    expect(governance?.type).toBe('folder');
-    expect(securityPages).not.toContain(governance);
+    expect(guardrails?.type).toBe('folder');
+    expect(securityPages).not.toContain(guardrails);
 
     const readiness = platformTree.children.flatMap(node =>
       node.type === 'folder' ? [node, ...node.children] : [node],

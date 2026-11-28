@@ -18,7 +18,7 @@ describe('Welcome navigation', () => {
     expect(HOME_INTENTS[0].links.map(link => link.href)).toEqual([
       '/docs/quickstart',
       '/docs/providers',
-      '/docs/sessions-via-mcp',
+      '/docs/sessions/sessions-via-mcp',
     ]);
     expect(HOME_INTENTS[1].links.map(link => link.href)).toEqual([
       '/docs/agent-plugins',

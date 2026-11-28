@@ -145,17 +145,36 @@ describe('Sessions task pages', () => {
     expect(config).not.toMatch(/source:\s*['"]\/docs\/sessions['"]/);
   });
 
-  test('both sidebars link the Sessions header to the overview with eight task children', () => {
+  test('both sidebars link the Sessions header to the overview with eight task children, Sessions via MCP, and a nested Hooks section', () => {
     for (const tree of [source.pageTree, buildProductPageTree(source.pageTree, 'platform')]) {
       const folder = tree.children.find(node => node.type === 'folder' && node.name === 'Sessions');
       expect(folder?.type).toBe('folder');
       if (folder?.type !== 'folder') throw new Error('Sessions folder is missing');
       expect(folder.index?.url).toBe('/docs/sessions');
       expect(readPage('/docs/sessions').match(/^title: (.+)$/m)?.[1]).toBe('Sessions overview');
-      expect(folder.children.every(node => node.type === 'page')).toBe(true);
-      expect(folder.children.map(node => (node.type === 'page' ? node.url : null))).toEqual(
-        expectedPages.map(([, url]) => url)
+
+      const pageChildren = folder.children.filter(node => node.type === 'page');
+      // Sessions via MCP moved under Sessions as a ninth flat page, after the
+      // eight task pages; it isn't one of the overview's "Choose a task" links,
+      // so it's checked separately rather than folded into expectedPages.
+      expect(pageChildren.map(node => node.url)).toEqual([
+        ...expectedPages.map(([, url]) => url),
+        '/docs/sessions/sessions-via-mcp',
+      ]);
+
+      // Hooks moved under Sessions as its own nested section. Its own
+      // meta.json lists "index" explicitly among its pages (so each hook
+      // page's frontmatter title is honored), which makes fumadocs treat the
+      // overview as a regular child page rather than the folder's `.index`.
+      const hooksFolder = folder.children.find(
+        node => node.type === 'folder' && node.name === 'Hooks'
       );
+      expect(hooksFolder?.type).toBe('folder');
+      if (hooksFolder?.type !== 'folder') throw new Error('Hooks folder is missing under Sessions');
+      expect(
+        hooksFolder.children.some(node => node.type === 'page' && node.url === '/docs/sessions/hooks')
+      ).toBe(true);
+
       // Bun's MDX test loader uses filename fallbacks for page names.
       // Production compilation reads these frontmatter titles.
       for (const [title, url] of expectedPages) {
@@ -166,8 +185,9 @@ describe('Sessions task pages', () => {
       expect(urls).not.toContain('/docs/configuring-sessions');
       expect(urls).not.toContain('/docs/how-composio-works');
       expect(urls).not.toContain('/docs/session-configs');
-      expect(urls).toContain('/docs/sessions-via-mcp');
+      expect(urls).toContain('/docs/sessions/sessions-via-mcp');
       expect(urls).toContain('/docs/extending-sessions/local-tools-and-toolkits');
+      expect(urls).toContain('/docs/sessions/hooks/webhooks');
     }
   });
 

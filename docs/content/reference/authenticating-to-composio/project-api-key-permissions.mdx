@@ -152,7 +152,7 @@ Search and execute tools through sessions and session-linked MCP servers, includ
 | Write  | `POST` | `/tool_router/session/{session_id}/search`       |
 | Write  | `POST` | `/tool_router/session/{session_id}/proxy_execute` |
 
-For [session-linked MCP access](/docs/sessions-via-mcp), use `session.mcp.url` and `session.mcp.headers` unchanged. `POST` requests require Session tool execution with Write only access. The transport does not support `GET` (SSE) or `DELETE`; granting additional permissions does not enable those methods.
+For [session-linked MCP access](/docs/sessions/sessions-via-mcp), use `session.mcp.url` and `session.mcp.headers` unchanged. `POST` requests require Session tool execution with Write only access. The transport does not support `GET` (SSE) or `DELETE`; granting additional permissions does not enable those methods.
 
 ## Toolkits
 

@@ -8,7 +8,7 @@ Scopes are the permissions an OAuth toolkit grants your app: read email, write t
 
 You control scopes on an [auth config](/docs/authentication#behind-the-scenes), then [pass that auth config to a session](#use-the-auth-config-in-a-session) so the session requests your scopes when users connect.
 
-Scopes limit what the app's API allows. To limit which tools an agent can call with those credentials, add tool filters to the session. See [Per-action permissions](/docs/governance/action-permissions).
+Scopes limit what the app's API allows. To limit which tools an agent can call with those credentials, add tool filters to the session. See [Per-action permissions](/docs/guardrails/action-permissions).
 
 <Callout type="info">
 Scopes apply to OAuth toolkits. Toolkits that authenticate with API keys or bearer tokens don't have scopes to set.

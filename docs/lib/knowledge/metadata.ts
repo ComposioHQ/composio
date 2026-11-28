@@ -29,7 +29,7 @@ const DOC_PATH_AREAS: Array<[prefix: string, area: ProductAreaSlug]> = [
   ['/docs/extending-sessions', 'tools-actions-and-execution'],
   ['/docs/migration-guide', 'sdk-api-and-mcp'],
   ['/docs/sandbox', 'tools-actions-and-execution'],
-  ['/docs/sessions-via-mcp', 'sdk-api-and-mcp'],
+  ['/docs/sessions/sessions-via-mcp', 'sdk-api-and-mcp'],
   ['/docs/single-toolkit-mcp', 'sdk-api-and-mcp'],
   ['/docs/composio-connect', 'sdk-api-and-mcp'],
   ['/docs/claude-code-plugin', 'sdk-api-and-mcp'],

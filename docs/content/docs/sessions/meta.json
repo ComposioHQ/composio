@@ -9,6 +9,8 @@
     "connections",
     "sandbox-settings",
     "updating-sessions",
-    "executing-tools"
+    "executing-tools",
+    "sessions-via-mcp",
+    "hooks"
   ]
 }

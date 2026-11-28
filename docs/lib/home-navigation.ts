@@ -128,21 +128,21 @@ export const DOCS_PRODUCTS = {
       '/docs/production-readiness',
       '/docs/providers',
       '/docs/sessions',
-      '/docs/hooks',
+      '/docs/sessions/hooks',
       '/docs/how-composio-works',
       '/docs/apps-and-toolkits',
       '/docs/configuring-sessions',
       '/docs/session-configs',
-      '/docs/governance/action-permissions',
-      '/docs/governance/approvals',
-      '/docs/firewall',
+      '/docs/guardrails',
+      '/docs/guardrails/action-permissions',
+      '/docs/guardrails/approvals',
       '/docs/instant-tools',
       '/docs/toolkits',
-      '/docs/governance/tool-hints',
+      '/docs/guardrails/tool-hints',
       '/docs/authentication',
       '/docs/triggers',
       '/docs/skills',
-      '/docs/sessions-via-mcp',
+      '/docs/sessions/sessions-via-mcp',
       '/docs/sandbox',
       '/docs/extending-sessions',
       '/docs/setting-up-triggers',
@@ -168,7 +168,6 @@ export const DOCS_PRODUCTS = {
         label: 'Build',
         items: [
           { type: 'folder', path: 'sessions' },
-          { type: 'page', url: '/docs/sessions-via-mcp' },
           {
             type: 'group',
             label: 'Toolkits & Tools',
@@ -182,22 +181,12 @@ export const DOCS_PRODUCTS = {
           },
           {
             type: 'group',
-            label: 'Hooks',
+            label: 'Guardrails',
             links: [
-              { url: '/docs/hooks' },
-              { url: '/docs/hooks/custom-prompt-checks' },
-              { url: '/docs/hooks/prompt-injection-detection' },
-              { url: '/docs/hooks/webhooks' },
-            ],
-          },
-          {
-            type: 'group',
-            label: 'Governance',
-            links: [
-              { url: '/docs/governance/action-permissions' },
-              { url: '/docs/governance/tool-hints' },
-              { url: '/docs/governance/approvals' },
-              { url: '/docs/firewall' },
+              { url: '/docs/guardrails' },
+              { url: '/docs/guardrails/action-permissions' },
+              { url: '/docs/guardrails/tool-hints' },
+              { url: '/docs/guardrails/approvals' },
             ],
           },
           {
@@ -329,7 +318,7 @@ export const DOCS_PRODUCTS = {
         {
           title: 'Sessions via MCP',
           description: 'Expose a Composio session through a hosted MCP endpoint.',
-          href: '/docs/sessions-via-mcp',
+          href: '/docs/sessions/sessions-via-mcp',
         },
       ],
     },
@@ -346,7 +335,7 @@ export const HOME_INTENTS: readonly HomeIntent[] = HOME_PRODUCT_ORDER.map(produc
 
 const PRODUCT_COUNTERPARTS = [
   { platform: '/docs/quickstart', 'for-you': '/docs/agent-plugins' },
-  { platform: '/docs/sessions-via-mcp', 'for-you': '/docs/composio-connect' },
+  { platform: '/docs/sessions/sessions-via-mcp', 'for-you': '/docs/composio-connect' },
 ] as const;
 
 function matchesRoute(pathname: string, prefix: string): boolean {

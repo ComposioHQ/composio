@@ -1,0 +1,4 @@
+{
+  "title": "Guardrails",
+  "pages": ["index", "action-permissions", "tool-hints", "approvals"]
+}

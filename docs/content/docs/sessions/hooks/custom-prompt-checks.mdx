@@ -5,7 +5,7 @@ description: Block tool calls and tool results that match a condition you write 
 keywords: [custom prompt checks, condition_check, hooks, firewall, guardrails, before_execute, after_execute]
 ---
 
-A custom prompt check blocks a tool call, or its result, if it matches a condition you write in natural language. You add one as a [hook](/docs/hooks) with the `condition_check` handler.
+A custom prompt check blocks a tool call, or its result, if it matches a condition you write in natural language. You add one as a [hook](/docs/sessions/hooks) with the `condition_check` handler.
 
 <Callout type="info">
 Custom prompt checks are available on paid plans, with [usage-based pricing](https://composio.dev/pricing/platform).
@@ -79,7 +79,7 @@ curl -X POST https://backend.composio.dev/api/v3.1/tool_router/session \
 </Tab>
 </Tabs>
 
-When your agent tries to email internal pricing to someone outside your company, the email isn't sent, and your agent sees the tool call fail with an error. See [Blocked tool calls](/docs/hooks#blocked-tool-calls) for what's returned when a hook blocks a tool call.
+When your agent tries to email internal pricing to someone outside your company, the email isn't sent, and your agent sees the tool call fail with an error. See [Blocked tool calls](/docs/sessions/hooks#blocked-tool-calls) for what's returned when a hook blocks a tool call.
 
 Here's an `after_execute` hook that keeps emails with passwords or API keys away from your agent:
 

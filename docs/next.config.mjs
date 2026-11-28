@@ -146,7 +146,7 @@ const config = {
       },
       {
         source: '/docs/native-tools-vs-mcp',
-        destination: '/docs/sessions-via-mcp',
+        destination: '/docs/sessions/sessions-via-mcp',
         permanent: true,
       },
       {
@@ -215,25 +215,58 @@ const config = {
         permanent: true,
       },
       // === end docs v3 reorganization redirects ===
-      // Governance guides moved to a shared route namespace.
+      // Governance guides moved to a shared route namespace, later renamed to Guardrails.
       {
         source: '/docs/tool-tags',
-        destination: '/docs/governance/tool-hints',
+        destination: '/docs/guardrails/tool-hints',
         permanent: true,
       },
       {
         source: '/docs/tool-tags.:format(md|mdx)',
-        destination: '/docs/governance/tool-hints.md',
+        destination: '/docs/guardrails/tool-hints.md',
         permanent: true,
       },
       {
         source: '/docs/approvals',
-        destination: '/docs/governance/approvals',
+        destination: '/docs/guardrails/approvals',
         permanent: true,
       },
       {
         source: '/docs/approvals.:format(md|mdx)',
-        destination: '/docs/governance/approvals.md',
+        destination: '/docs/guardrails/approvals.md',
+        permanent: true,
+      },
+      // Governance renamed to Guardrails, and Firewall folded into its overview page.
+      {
+        source: '/docs/governance/:page*',
+        destination: '/docs/guardrails/:page*',
+        permanent: true,
+      },
+      {
+        source: '/docs/firewall',
+        destination: '/docs/guardrails',
+        permanent: true,
+      },
+      {
+        source: '/docs/firewall.:format(md|mdx)',
+        destination: '/docs/guardrails.md',
+        permanent: true,
+      },
+      // Hooks moved under Sessions.
+      {
+        source: '/docs/hooks/:page*',
+        destination: '/docs/sessions/hooks/:page*',
+        permanent: true,
+      },
+      // Sessions via MCP moved under Sessions.
+      {
+        source: '/docs/sessions-via-mcp',
+        destination: '/docs/sessions/sessions-via-mcp',
+        permanent: true,
+      },
+      {
+        source: '/docs/sessions-via-mcp.:format(md|mdx)',
+        destination: '/docs/sessions/sessions-via-mcp.md',
         permanent: true,
       },
       {
@@ -1212,7 +1245,7 @@ const config = {
       },
       {
         source: '/llms.mdx/sessions/sessions-via-mcp',
-        destination: '/docs/sessions-via-mcp.md',
+        destination: '/docs/sessions/sessions-via-mcp.md',
         permanent: true,
       },
       {
